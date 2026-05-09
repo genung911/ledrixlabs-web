@@ -1,8 +1,25 @@
 'use client';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const ACCENT = '#00F3FF';
+
+function Logo({ size = 32 }: { size?: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{
+        width: size, height: size,
+        border: `2px solid ${ACCENT}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 6,
+      }}>
+        <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.45, letterSpacing: -1 }}>LX</span>
+      </div>
+      <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.5, letterSpacing: -0.5 }}>
+        LEDRIX
+      </span>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -12,21 +29,21 @@ export default function Home() {
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 40px',
-        backgroundColor: 'rgba(8,8,8,0.85)',
+        padding: '14px 24px',
+        backgroundColor: 'rgba(8,8,8,0.9)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid #111',
       }}>
-        <Image src="/logo.png" alt="Ledrix" width={80} height={40} style={{ objectFit: 'contain' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          <a href="#product" style={{ color: '#555', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>PRODUCT</a>
-          <a href="#vision" style={{ color: '#555', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>VISION</a>
-          <a href="#contact" style={{ color: '#555', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>CONTACT</a>
+        <Logo size={30} />
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <a href="#product" style={{ color: '#555', fontSize: 11, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>PRODUCT</a>
+          <a href="#vision" style={{ color: '#555', fontSize: 11, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>VISION</a>
+          <a href="#contact" style={{ color: '#555', fontSize: 11, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>CONTACT</a>
           <a
             href="https://apps.apple.com"
             style={{
               backgroundColor: ACCENT, color: '#000', fontSize: 11, fontWeight: 900,
-              letterSpacing: 1.5, padding: '10px 20px', borderRadius: 8, textDecoration: 'none',
+              letterSpacing: 1, padding: '9px 16px', borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap',
             }}
           >
             APP STORE ↗
@@ -284,7 +301,7 @@ export default function Home() {
         flexWrap: 'wrap', gap: 16,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Image src="/logo.png" alt="Ledrix" width={40} height={24} style={{ objectFit: 'contain' }} />
+          <Logo size={22} />
           <span style={{ color: '#222', fontSize: 11, fontFamily: 'Roboto Mono, monospace' }}>
             © 2026 Ledrix Labs. All rights reserved.
           </span>

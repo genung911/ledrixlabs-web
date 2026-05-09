@@ -36,3 +36,9 @@ body {
   background: #00F3FF33;
   border-radius: 2px;
 }
+
+@media (max-width: 640px) {
+  .nav-links a:not(:last-child) {
+    display: none;
+  }
+}
