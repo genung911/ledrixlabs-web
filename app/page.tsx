@@ -95,7 +95,7 @@ export default function Home() {
           {[
             { val: 'AI', label: 'Anomaly Detection' },
             { val: 'VAL', label: 'Voice Activated Logging' },
-            { val: 'PDF', label: 'Instant Client Reports' },
+            { val: 'APP', label: 'Client Home Portal' },
             { val: '4K', label: 'Evidence Capture' },
           ].map(s => (
             <div key={s.val} style={{ textAlign: 'center' }}>
