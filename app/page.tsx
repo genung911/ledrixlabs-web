@@ -1,24 +1,11 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const ACCENT = '#00F3FF';
 
-function Logo({ size = 32 }: { size?: number }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{
-        width: size, height: size,
-        border: `2px solid ${ACCENT}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        borderRadius: 6,
-      }}>
-        <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.45, letterSpacing: -1 }}>LX</span>
-      </div>
-      <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.5, letterSpacing: -0.5 }}>
-        LEDRIX
-      </span>
-    </div>
-  );
+function Logo({ size = 36 }: { size?: number }) {
+  return <Image src="/logo.png" alt="Ledrix" width={size} height={size} style={{ borderRadius: 8 }} />;
 }
 
 export default function Home() {
