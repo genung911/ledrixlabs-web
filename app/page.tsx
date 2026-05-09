@@ -45,19 +45,14 @@ export default function Home() {
         padding: '120px 24px 80px',
         background: 'radial-gradient(ellipse 80% 60% at 50% 0%, #00F3FF0d 0%, transparent 70%)',
       }}>
-        <div style={{
-          display: 'inline-block', backgroundColor: '#00F3FF11', border: '1px solid #00F3FF33',
-          borderRadius: 100, padding: '6px 16px', marginBottom: 32,
-        }}>
-          <span style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>
-            NOW AVAILABLE ON THE APP STORE
-          </span>
-        </div>
+        <h1 style={{ fontSize: 'clamp(56px, 12vw, 140px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: -4, marginBottom: 24, color: '#fff' }}>
+          Ledrix
+        </h1>
 
-        <h1 style={{ fontSize: 'clamp(40px, 8vw, 96px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: -3, marginBottom: 28, maxWidth: 900 }}>
+        <h2 style={{ fontSize: 'clamp(28px, 6vw, 72px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: -2, marginBottom: 28, maxWidth: 900 }}>
           Infrastructure Intelligence.<br />
           <span style={{ color: ACCENT }}>Before Disaster Strikes.</span>
-        </h1>
+        </h2>
 
         <p style={{ fontSize: 18, color: '#555', maxWidth: 560, lineHeight: 1.7, marginBottom: 48 }}>
           Ledrix is an AI-powered inspection platform for licensed professionals —
