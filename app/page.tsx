@@ -170,7 +170,7 @@ export default function Home() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ marginBottom: 64, textAlign: 'center' }}>
             <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
-              LEDRIX LABS VISION
+              LEDRIX AI
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 900, letterSpacing: -2 }}>
               The future of infrastructure<br />
