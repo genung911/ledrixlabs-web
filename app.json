@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "5723963a-0618-4da6-8e26-308bc1ce1e68"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.genung911.ledrixlabsweb",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

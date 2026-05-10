@@ -162,76 +162,99 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Vision ──────────────────────────────────────────────────── */}
+      {/* ── The New Way ─────────────────────────────────────────────── */}
       <section id="vision" style={{
         padding: '100px 24px',
         background: 'radial-gradient(ellipse 100% 80% at 50% 50%, #00F3FF08 0%, transparent 70%)',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ marginBottom: 64, textAlign: 'center' }}>
+
+          {/* Heading */}
+          <div style={{ marginBottom: 72, textAlign: 'center' }}>
             <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
-              LEDRIX AI
+              THE LEDRIX WAY
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 900, letterSpacing: -2 }}>
-              The future of infrastructure<br />
-              <span style={{ color: ACCENT }}>is autonomous.</span>
+              The end of the<br />
+              <span style={{ color: ACCENT }}>tap-and-scroll era.</span>
             </h2>
-            <p style={{ fontSize: 16, color: '#444', maxWidth: 560, margin: '24px auto 0', lineHeight: 1.7 }}>
-              We're building the world's first self-repairing infrastructure network —
-              sensors that watch, AI that thinks, and robots that act before failure happens.
+            <p style={{ fontSize: 16, color: '#444', maxWidth: 600, margin: '24px auto 0', lineHeight: 1.7 }}>
+              Traditional apps force you to look at a screen instead of the structure.
+              With VAL, your interface is the house itself. You see it, you say it, Ledrix logs it.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+          {/* Three pillars */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, marginBottom: 80 }}>
             {[
               {
-                phase: '01',
-                title: 'Sensor Pods',
-                body: 'Battery-operated sensor pods installed in attics, crawl spaces, and plumbing walls via a simple sheath system. Homeowners install them in minutes. The grid never sleeps.',
-                status: 'IN DEVELOPMENT',
+                label: 'ZERO-UI REPORTING',
+                title: 'Say it. Done.',
+                body: 'Instead of tapping Electrical → Panel → Federal Pacific, you say: "VAL, identify critical fire risk: Federal Pacific Stab-Lok panel in garage." The AI handles categorization, the write-up, and severity tagging instantly.',
               },
               {
-                phase: '02',
-                title: 'Autonomous Drones',
-                body: 'Docked drones that launch on schedule — daily or hourly — to inspect exteriors, attics, and crawl spaces. No inspector required for routine monitoring.',
-                status: 'COMING SOON',
+                label: 'SPATIAL AWARENESS',
+                title: 'It already knows where you are.',
+                body: 'Ledrix uses a dead-reckoning spatial engine to track your position in real time. You don\'t have to tell it you\'re in the master bedroom — it knows from the live floor plan being built as you walk.',
               },
               {
-                phase: '03',
-                title: 'Repair Robots',
-                body: 'When a sensor pings an anomaly, a robot dispatches to make the repair before it becomes a disaster. Predictive maintenance at the structural level.',
-                status: 'COMING SOON',
+                label: 'INSTANT DELIVERY',
+                title: 'Report done when you leave.',
+                body: 'No late-night typing. No manual write-ups at home. When the inspection ends, the report is finished — GPS-anchored evidence, AI-generated findings, and client delivery in one tap.',
               },
-              {
-                phase: '04',
-                title: 'Infrastructure AI',
-                body: 'Every inspection, every sensor reading, every repair — training a proprietary AI model on the largest structural dataset ever built. The model gets smarter with every home.',
-                status: 'LONG-TERM',
-              },
-            ].map(v => (
-              <div key={v.phase} style={{
-                backgroundColor: '#0a0a0a',
-                border: '1px solid #00F3FF22',
-                padding: '36px 32px',
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  position: 'absolute', top: 24, right: 24,
-                  fontSize: 9, fontWeight: 700, letterSpacing: 2,
-                  color: v.status === 'IN DEVELOPMENT' ? ACCENT : '#333',
-                  fontFamily: 'Roboto Mono, monospace',
-                }}>
-                  {v.status}
-                </div>
-                <div style={{ fontSize: 11, color: '#333', fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 12 }}>
-                  PHASE {v.phase}
-                </div>
-                <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 12, letterSpacing: -0.5 }}>{v.title}</h3>
-                <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{v.body}</p>
+            ].map(p => (
+              <div key={p.label} style={{ backgroundColor: '#0a0a0a', border: '1px solid #111', padding: '40px 32px' }}>
+                <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>{p.label}</div>
+                <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 12, letterSpacing: -0.5 }}>{p.title}</h3>
+                <p style={{ fontSize: 13, color: '#555', lineHeight: 1.8 }}>{p.body}</p>
               </div>
             ))}
           </div>
+
+          {/* Comparison table */}
+          <div style={{ marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
+              OLD WAY VS. LEDRIX
+            </div>
+            <h3 style={{ fontSize: 'clamp(22px, 4vw, 40px)', fontWeight: 900, letterSpacing: -1, marginBottom: 48 }}>
+              A workflow built for the field,<br />not the office.
+            </h3>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #161616', overflow: 'hidden' }}>
+            {/* Headers */}
+            <div style={{ backgroundColor: '#0a0a0a', padding: '20px 32px', borderBottom: '1px solid #161616', borderRight: '1px solid #161616' }}>
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: 2, color: '#333' }}>THE OLD WAY</span>
+            </div>
+            <div style={{ backgroundColor: '#00F3FF0d', padding: '20px 32px', borderBottom: '1px solid #00F3FF22' }}>
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: 2, color: ACCENT }}>THE LEDRIX WAY</span>
+            </div>
+
+            {[
+              ['Eyes on the Screen: Constantly checking boxes.', 'Eyes on the Infrastructure: AI-assisted observation.'],
+              ['Manual Data Entry: Tapping through 100+ sections.', 'Natural Language: "VAL, log minor crack in foundation."'],
+              ['Late-Night Reporting: 2 hours typing at home.', 'Instant Delivery: Report finished when you leave.'],
+              ['Static Images: Photos with no context.', 'GPS-Anchored Evidence: Every photo tied to a 2D map.'],
+            ].map(([old, neo], i) => (
+              <>
+                <div key={`old-${i}`} style={{
+                  padding: '24px 32px', borderRight: '1px solid #161616',
+                  borderBottom: i < 3 ? '1px solid #161616' : 'none',
+                  backgroundColor: '#080808',
+                }}>
+                  <p style={{ fontSize: 13, color: '#444', lineHeight: 1.7 }}>{old}</p>
+                </div>
+                <div key={`new-${i}`} style={{
+                  padding: '24px 32px',
+                  borderBottom: i < 3 ? '1px solid #161616' : 'none',
+                  backgroundColor: '#00F3FF05',
+                }}>
+                  <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.7 }}>{neo}</p>
+                </div>
+              </>
+            ))}
+          </div>
+
         </div>
       </section>
 
