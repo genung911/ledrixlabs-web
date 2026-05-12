@@ -335,48 +335,100 @@ export default function Home() {
         background: 'radial-gradient(ellipse 80% 60% at 50% 50%, #00F3FF06 0%, transparent 70%)',
         borderTop: '1px solid #0d0d0d',
       }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
-            OPEN A SAMPLE
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
+              OPEN A SAMPLE
+            </div>
+            <h2 style={{ fontSize: 'clamp(24px, 4vw, 48px)', fontWeight: 900, letterSpacing: -2, marginBottom: 16 }}>
+              See exactly what your clients receive.
+            </h2>
+            <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
+              Every Ledrix inspection delivers two things: a live client home portal and a tamper-evident PDF report.
+            </p>
           </div>
-          <h2 style={{ fontSize: 'clamp(24px, 4vw, 48px)', fontWeight: 900, letterSpacing: -2, marginBottom: 16 }}>
-            See exactly what your clients receive.
-          </h2>
-          <p style={{ fontSize: 14, color: '#444', marginBottom: 48, lineHeight: 1.7 }}>
-            Every Ledrix inspection delivers two things: a tamper-evident PDF report and a permanent client home portal. Open both samples below.
-          </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+
+            {/* Home Portal tile */}
             <a
               href="/sample-home-app.html"
               target="_blank"
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                backgroundColor: '#0a0a0a', border: '1px solid rgba(0,243,255,0.2)',
-                padding: '24px 28px', borderRadius: 16, textDecoration: 'none',
-                minWidth: 260, textAlign: 'left',
-                boxShadow: '0 0 40px rgba(0,243,255,0.06)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                backgroundColor: '#080808', border: '1px solid rgba(0,243,255,0.18)',
+                padding: '52px 48px', textDecoration: 'none', minHeight: 380,
+                boxShadow: 'inset 0 0 80px rgba(0,243,255,0.03)',
+                position: 'relative', overflow: 'hidden',
               }}
             >
-              <div style={{ fontSize: 24, marginBottom: 12 }}>📱</div>
-              <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>CLIENT HOME APP</div>
-              <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, marginBottom: 8 }}>Sample Home Portal →</div>
-              <div style={{ color: '#444', fontSize: 12, lineHeight: 1.6 }}>The live home intelligence portal your client receives after every inspection.</div>
+              {/* Subtle grid bg */}
+              <div style={{
+                position: 'absolute', inset: 0, opacity: 0.4,
+                backgroundImage: 'linear-gradient(rgba(0,243,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,243,255,0.05) 1px, transparent 1px)',
+                backgroundSize: '40px 40px',
+              }} />
+              <div style={{ position: 'relative' }}>
+                {/* Val icon */}
+                <div style={{ marginBottom: 36 }}>
+                  <ValDeltaSVG size={72} color={ACCENT} />
+                </div>
+                <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>
+                  CLIENT HOME APP
+                </div>
+                <div style={{ color: '#fff', fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, marginBottom: 16 }}>
+                  Sample<br />Home Portal
+                </div>
+                <div style={{ color: '#444', fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
+                  The live home intelligence portal your client receives after every inspection — health score, findings, maintenance schedule, and property records. Permanent. Always accessible.
+                </div>
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>
+                <span style={{ color: ACCENT, fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>OPEN SAMPLE</span>
+                <span style={{ color: ACCENT, fontSize: 18, lineHeight: 1 }}>→</span>
+              </div>
             </a>
+
+            {/* PDF Report tile */}
             <a
               href="/sample-report.html"
               target="_blank"
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a',
-                padding: '24px 28px', borderRadius: 16, textDecoration: 'none',
-                minWidth: 260, textAlign: 'left',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                backgroundColor: '#080808', border: '1px solid #111',
+                padding: '52px 48px', textDecoration: 'none', minHeight: 380,
               }}
             >
-              <div style={{ fontSize: 24, marginBottom: 12 }}>📄</div>
-              <div style={{ color: '#555', fontSize: 9, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>INSPECTION REPORT</div>
-              <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, marginBottom: 8 }}>Sample PDF Report →</div>
-              <div style={{ color: '#444', fontSize: 12, lineHeight: 1.6 }}>Cryptographically signed, GPS-anchored, AI-generated report ready before you leave the driveway.</div>
+              <div>
+                {/* Document icon */}
+                <div style={{ marginBottom: 36 }}>
+                  <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="10" y="6" width="42" height="54" rx="4" stroke="#333" strokeWidth="2" />
+                    <rect x="10" y="6" width="42" height="54" rx="4" fill="none" />
+                    <line x1="20" y1="24" x2="42" y2="24" stroke="#333" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="20" y1="33" x2="42" y2="33" stroke="#333" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="20" y1="42" x2="34" y2="42" stroke="#333" strokeWidth="2" strokeLinecap="round" />
+                    <rect x="32" y="42" width="24" height="18" rx="3" fill="#080808" stroke="#555" strokeWidth="1.5" />
+                    <line x1="38" y1="49" x2="50" y2="49" stroke="#555" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="38" y1="54" x2="46" y2="54" stroke="#555" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div style={{ color: '#444', fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>
+                  INSPECTION REPORT
+                </div>
+                <div style={{ color: '#fff', fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, marginBottom: 16 }}>
+                  Sample<br />PDF Report
+                </div>
+                <div style={{ color: '#444', fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
+                  Cryptographically signed, GPS-anchored, AI-generated inspection report complete with system scores, repair cost estimates, and a SHA-256 integrity hash.
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>
+                <span style={{ color: '#555', fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>OPEN SAMPLE</span>
+                <span style={{ color: '#555', fontSize: 18, lineHeight: 1 }}>→</span>
+              </div>
             </a>
+
           </div>
         </div>
       </section>
