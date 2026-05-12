@@ -24,7 +24,16 @@ function ValDeltaSVG({ size = 28, color = ACCENT }: { size?: number; color?: str
 }
 
 function Logo({ size = 36 }: { size?: number }) {
-  return <Image src="/logo.png" alt="Ledrix" width={size} height={size} style={{ borderRadius: 8 }} />;
+  const r = Math.round(size * 0.22);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: r,
+      backgroundColor: '#080808',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <ValDeltaSVG size={Math.round(size * 0.82)} />
+    </div>
+  );
 }
 
 export default function Home() {

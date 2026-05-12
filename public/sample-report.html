@@ -45,7 +45,6 @@
       border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 16px;
     }
     .logo { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
-    .logo span { color: #00C8D4; }
     .logo-sub { font-size: 8px; font-weight: 700; letter-spacing: 2.5px; color: #aaa; font-family: 'Roboto Mono', monospace; margin-top: 3px; }
     .header-right { text-align: right; font-family: 'Roboto Mono', monospace; font-size: 8px; color: #aaa; line-height: 1.9; }
     .header-right strong { color: #000; font-size: 10px; display: block; }
@@ -145,9 +144,15 @@
   <div class="page">
 
     <div class="header">
-      <div>
-        <div class="logo">LEDRIX<span>.</span></div>
-        <div class="logo-sub">AI-POWERED INSPECTION REPORT</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="9" fill="#000000"/>
+          <path d="M 20 6.84 L 4.80 33.16 L 13.92 33.16 M 26.08 33.16 L 35.20 33.16 L 20 6.84" stroke="#00C8D4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <div class="logo">LEDRIX</div>
+          <div class="logo-sub">AI-POWERED INSPECTION REPORT</div>
+        </div>
       </div>
       <div class="header-right">
         <strong>REPORT ID: LDX-2026-0511-4892</strong>
