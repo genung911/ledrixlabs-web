@@ -42,3 +42,28 @@ body {
     display: none;
   }
 }
+
+@media (max-width: 768px) {
+  .ledrix-how-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ledrix-how-img {
+    min-height: 300px !important;
+  }
+  .ledrix-how-copy {
+    padding: 40px 28px !important;
+  }
+  .ledrix-sample-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ledrix-sample-tile {
+    min-height: auto !important;
+    padding: 36px 28px !important;
+  }
+  .ledrix-comparison-wrap {
+    overflow-x: auto;
+  }
+  .ledrix-comparison-grid {
+    min-width: 520px;
+  }
+}

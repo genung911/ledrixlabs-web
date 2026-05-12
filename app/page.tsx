@@ -132,13 +132,13 @@ export default function Home() {
         overflow: 'hidden',
         position: 'relative',
       }}>
-        <div style={{
+        <div className="ledrix-how-grid" style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           minHeight: 560,
         }}>
           {/* Left — image */}
-          <div style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
+          <div className="ledrix-how-img" style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
             <Image
               src="/site_image.png"
               alt="Inspector using Ledrix with live floor plan overlay"
@@ -152,7 +152,7 @@ export default function Home() {
           </div>
 
           {/* Right — copy */}
-          <div style={{
+          <div className="ledrix-how-copy" style={{
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             padding: '80px 64px 80px 48px',
             background: '#080808',
@@ -348,12 +348,13 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <div className="ledrix-sample-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
 
             {/* Home Portal tile */}
             <a
               href="/sample-home-app.html"
               target="_blank"
+              className="ledrix-sample-tile"
               style={{
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 backgroundColor: '#080808', border: '1px solid rgba(0,243,255,0.18)',
@@ -393,6 +394,7 @@ export default function Home() {
             <a
               href="/sample-report.html"
               target="_blank"
+              className="ledrix-sample-tile"
               style={{
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 backgroundColor: '#080808', border: '1px solid #111',
@@ -492,7 +494,8 @@ export default function Home() {
             </h3>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #161616', overflow: 'hidden' }}>
+          <div className="ledrix-comparison-wrap" style={{ overflowX: 'auto' }}>
+          <div className="ledrix-comparison-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #161616', overflow: 'hidden' }}>
             {/* Headers */}
             <div style={{ backgroundColor: '#0a0a0a', padding: '20px 32px', borderBottom: '1px solid #161616', borderRight: '1px solid #161616' }}>
               <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: 2, color: '#333' }}>THE OLD WAY</span>
@@ -524,6 +527,7 @@ export default function Home() {
                 </div>
               </>
             ))}
+          </div>
           </div>
 
         </div>
