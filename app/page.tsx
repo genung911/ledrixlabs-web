@@ -143,7 +143,7 @@ export default function Home() {
               src="/site_image.png"
               alt="Inspector using Ledrix with live floor plan overlay"
               fill
-              style={{ objectFit: 'cover', objectPosition: 'center top' }}
+              style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
             />
             <div style={{
               position: 'absolute', inset: 0,
@@ -325,6 +325,58 @@ export default function Home() {
                 Every anomaly pinned to an exact location on the live floor plan.
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── See It Live ─────────────────────────────────────────────── */}
+      <section style={{
+        padding: '80px 24px',
+        background: 'radial-gradient(ellipse 80% 60% at 50% 50%, #00F3FF06 0%, transparent 70%)',
+        borderTop: '1px solid #0d0d0d',
+      }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
+            OPEN A SAMPLE
+          </div>
+          <h2 style={{ fontSize: 'clamp(24px, 4vw, 48px)', fontWeight: 900, letterSpacing: -2, marginBottom: 16 }}>
+            See exactly what your clients receive.
+          </h2>
+          <p style={{ fontSize: 14, color: '#444', marginBottom: 48, lineHeight: 1.7 }}>
+            Every Ledrix inspection delivers two things: a tamper-evident PDF report and a permanent client home portal. Open both samples below.
+          </p>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/sample-home-app.html"
+              target="_blank"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                backgroundColor: '#0a0a0a', border: '1px solid rgba(0,243,255,0.2)',
+                padding: '24px 28px', borderRadius: 16, textDecoration: 'none',
+                minWidth: 260, textAlign: 'left',
+                boxShadow: '0 0 40px rgba(0,243,255,0.06)',
+              }}
+            >
+              <div style={{ fontSize: 24, marginBottom: 12 }}>📱</div>
+              <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>CLIENT HOME APP</div>
+              <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, marginBottom: 8 }}>Sample Home Portal →</div>
+              <div style={{ color: '#444', fontSize: 12, lineHeight: 1.6 }}>The live home intelligence portal your client receives after every inspection.</div>
+            </a>
+            <a
+              href="/sample-report.html"
+              target="_blank"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a',
+                padding: '24px 28px', borderRadius: 16, textDecoration: 'none',
+                minWidth: 260, textAlign: 'left',
+              }}
+            >
+              <div style={{ fontSize: 24, marginBottom: 12 }}>📄</div>
+              <div style={{ color: '#555', fontSize: 9, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>INSPECTION REPORT</div>
+              <div style={{ color: '#fff', fontSize: 15, fontWeight: 800, marginBottom: 8 }}>Sample PDF Report →</div>
+              <div style={{ color: '#444', fontSize: 12, lineHeight: 1.6 }}>Cryptographically signed, GPS-anchored, AI-generated report ready before you leave the driveway.</div>
+            </a>
           </div>
         </div>
       </section>

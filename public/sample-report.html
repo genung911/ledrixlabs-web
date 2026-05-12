@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ledrix Inspection Report — 1492 Maple Ridge Lane</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @page { size: letter; margin: 0.5in; }
+
+    @media print {
+      .print-btn { display: none !important; }
+      body { padding: 0; }
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f4f4;
+      color: #111;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .print-btn {
+      position: fixed; top: 16px; right: 16px; z-index: 999;
+      background: #00C8D4; color: #000; padding: 10px 20px;
+      border-radius: 6px; font-size: 11px; font-weight: 900;
+      letter-spacing: 1px; cursor: pointer; border: none;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .page {
+      background: #fff;
+      width: 7.5in;
+      margin: 32px auto;
+      padding: 0.45in;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+    }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 16px;
+    }
+    .logo { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+    .logo span { color: #00C8D4; }
+    .logo-sub { font-size: 8px; font-weight: 700; letter-spacing: 2.5px; color: #aaa; font-family: 'Roboto Mono', monospace; margin-top: 3px; }
+    .header-right { text-align: right; font-family: 'Roboto Mono', monospace; font-size: 8px; color: #aaa; line-height: 1.9; }
+    .header-right strong { color: #000; font-size: 10px; display: block; }
+
+    .property-block {
+      display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+      background: #000; color: #fff; padding: 16px 20px;
+      border-radius: 4px; margin-bottom: 14px;
+    }
+    .property-address { font-size: 17px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .property-tag { font-size: 8px; color: #00C8D4; letter-spacing: 2px; font-family: 'Roboto Mono', monospace; margin-bottom: 8px; }
+    .property-meta { font-size: 9px; color: #666; line-height: 1.8; }
+    .score-box { text-align: center; background: #111; border-radius: 8px; padding: 14px 22px; }
+    .score-big { font-size: 40px; font-weight: 900; color: #22C55E; line-height: 1; }
+    .score-grade { font-size: 12px; font-weight: 700; color: #22C55E; }
+    .score-lbl { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #555; margin-top: 2px; font-family: 'Roboto Mono', monospace; }
+
+    .sec-head {
+      font-size: 7px; font-weight: 700; letter-spacing: 3px; color: #00C8D4;
+      font-family: 'Roboto Mono', monospace; margin: 14px 0 8px;
+      text-transform: uppercase;
+    }
+
+    .summary {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .summary-item { padding: 14px; text-align: center; border-right: 1px solid #e8e8e8; }
+    .summary-item:last-child { border-right: none; }
+    .summary-num { font-size: 24px; font-weight: 900; line-height: 1; }
+    .summary-lbl { font-size: 7px; font-weight: 700; letter-spacing: 1.5px; color: #aaa; margin-top: 4px; font-family: 'Roboto Mono', monospace; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 14px; }
+    thead th {
+      padding: 8px 10px; text-align: left; font-size: 8px; font-weight: 700;
+      letter-spacing: 1px; font-family: 'Roboto Mono', monospace;
+      border-bottom: 2px solid #000; background: #fafafa;
+    }
+    tbody td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; line-height: 1.5; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafeff; }
+    .sev-critical { color: #CC0000; font-weight: 800; font-size: 8px; letter-spacing: 1px; font-family: 'Roboto Mono', monospace; }
+    .sev-moderate { color: #997700; font-weight: 800; font-size: 8px; letter-spacing: 1px; font-family: 'Roboto Mono', monospace; }
+    .sev-cosmetic { color: #aaa; font-weight: 800; font-size: 8px; letter-spacing: 1px; font-family: 'Roboto Mono', monospace; }
+    .finding-detail { font-size: 9px; color: #888; margin-top: 3px; line-height: 1.5; }
+
+    .sys-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .sys-box { border: 1px solid #e8e8e8; border-radius: 4px; padding: 11px; }
+    .sys-name { font-size: 9px; font-weight: 700; margin-bottom: 7px; }
+    .sys-bar-track { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+    .sys-bar-fill { height: 100%; border-radius: 3px; }
+    .sys-score { font-size: 12px; font-weight: 900; }
+
+    .evidence-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .evidence-box { border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden; }
+    .evidence-photo {
+      height: 72px; background: linear-gradient(135deg, #f5f5f5 0%, #ebebeb 100%);
+      display: flex; align-items: center; justify-content: center;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .evidence-placeholder { text-align: center; color: #ccc; font-size: 8px; font-family: 'Roboto Mono', monospace; line-height: 1.6; }
+    .evidence-info { padding: 8px 10px; }
+    .evidence-title { font-size: 9px; font-weight: 700; margin-bottom: 2px; }
+    .evidence-meta { font-size: 8px; color: #bbb; font-family: 'Roboto Mono', monospace; line-height: 1.6; }
+
+    .repair-box { border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+    .repair-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f5f5f5; font-size: 10px; }
+    .repair-row:last-child { border-bottom: none; border-top: 2px solid #000; padding: 11px 12px; font-weight: 800; font-size: 11px; background: #fafafa; }
+    .repair-item { color: #555; }
+    .repair-cost { font-weight: 700; color: #000; font-family: 'Roboto Mono', monospace; }
+
+    .integrity {
+      background: #f9fffe; border: 1px solid #d0f0f0; border-radius: 4px;
+      padding: 11px 14px; margin-bottom: 14px;
+    }
+    .integrity-label { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #00C8D4; font-family: 'Roboto Mono', monospace; margin-bottom: 5px; }
+    .integrity-hash { font-size: 8px; color: #bbb; font-family: 'Roboto Mono', monospace; word-break: break-all; line-height: 1.6; }
+    .integrity-note { font-size: 8px; color: #aaa; margin-top: 5px; }
+
+    .signoff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .signoff-box { border: 1px solid #e8e8e8; border-radius: 4px; padding: 12px; }
+    .signoff-label { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: #aaa; font-family: 'Roboto Mono', monospace; margin-bottom: 10px; }
+    .signoff-line { border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px; }
+    .signoff-name { font-size: 9px; color: #aaa; }
+    .signoff-stamp { font-size: 14px; font-weight: 900; margin: 6px 0 3px; }
+
+    .footer { border-top: 1px solid #eee; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 8px; color: #ccc; font-family: 'Roboto Mono', monospace; }
+    .footer-right { font-size: 8px; color: #ccc; font-family: 'Roboto Mono', monospace; text-align: right; }
+  </style>
+</head>
+<body>
+
+  <button class="print-btn" onclick="window.print()">PRINT / SAVE AS PDF</button>
+
+  <div class="page">
+
+    <div class="header">
+      <div>
+        <div class="logo">LEDRIX<span>.</span></div>
+        <div class="logo-sub">AI-POWERED INSPECTION REPORT</div>
+      </div>
+      <div class="header-right">
+        <strong>REPORT ID: LDX-2026-0511-4892</strong>
+        Date Inspected: May 11, 2026<br/>
+        Generated: 2:47 PM EDT<br/>
+        ledrixlabs.com
+      </div>
+    </div>
+
+    <div class="property-block">
+      <div>
+        <div class="property-tag">FULL HOME INSPECTION</div>
+        <div class="property-address">1492 Maple Ridge Lane</div>
+        <div class="property-meta">
+          Riverdale, GA 30274 &nbsp;·&nbsp;
+          Year Built: 1987 &nbsp;·&nbsp;
+          Sq. Ft.: 2,340<br/>
+          Inspector: J. Williams &nbsp;·&nbsp; License: GA-HI-2289
+        </div>
+      </div>
+      <div class="score-box">
+        <div class="score-big">67</div>
+        <div class="score-grade">Grade B</div>
+        <div class="score-lbl">HEALTH SCORE</div>
+      </div>
+    </div>
+
+    <div class="sec-head">Executive Summary</div>
+    <div class="summary">
+      <div class="summary-item">
+        <div class="summary-num" style="color:#CC0000">1</div>
+        <div class="summary-lbl">CRITICAL</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" style="color:#997700">2</div>
+        <div class="summary-lbl">MODERATE</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" style="color:#aaa">2</div>
+        <div class="summary-lbl">COSMETIC</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num">5</div>
+        <div class="summary-lbl">TOTAL FINDINGS</div>
+      </div>
+    </div>
+
+    <div class="sec-head">Findings Log</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:86px">SEVERITY</th>
+          <th>SYSTEM / FINDING</th>
+          <th style="width:110px">LOCATION</th>
+          <th style="width:110px">EST. REPAIR</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="sev-critical">● CRITICAL</span></td>
+          <td>
+            <strong>Main Electrical Panel — Federal Pacific Stab-Lok</strong>
+            <div class="finding-detail">Active fire risk. Breakers fail to trip under overload. Panel replacement required immediately. Recommend licensed electrician.</div>
+          </td>
+          <td>Utility Room</td>
+          <td style="font-weight:700; font-family:'Roboto Mono',monospace">$2,400–$3,800</td>
+        </tr>
+        <tr>
+          <td><span class="sev-moderate">● MODERATE</span></td>
+          <td>
+            <strong>HVAC System — Heat Exchanger Stress Fractures</strong>
+            <div class="finding-detail">CO hazard potential. Fractures observed on heat exchanger. Immediate service by licensed HVAC technician required.</div>
+          </td>
+          <td>Mechanical Room</td>
+          <td style="font-weight:700; font-family:'Roboto Mono',monospace">$800–$1,400</td>
+        </tr>
+        <tr>
+          <td><span class="sev-moderate">● MODERATE</span></td>
+          <td>
+            <strong>Roof — Missing Shingles (North Slope)</strong>
+            <div class="finding-detail">7–9 asphalt shingles missing on north-facing slope. Active moisture intrusion risk. Repair before next rain event.</div>
+          </td>
+          <td>Exterior — Roof</td>
+          <td style="font-weight:700; font-family:'Roboto Mono',monospace">$1,200–$2,200</td>
+        </tr>
+        <tr>
+          <td><span class="sev-cosmetic">○ COSMETIC</span></td>
+          <td>
+            <strong>General / Structural — Carpet Stain</strong>
+            <div class="finding-detail">Small red stain on carpet flooring. No structural concern. Cosmetic repair at owner discretion.</div>
+          </td>
+          <td>Master Bedroom</td>
+          <td style="font-weight:700; font-family:'Roboto Mono',monospace">$0–$200</td>
+        </tr>
+        <tr>
+          <td><span class="sev-cosmetic">○ COSMETIC</span></td>
+          <td>
+            <strong>Interior Wall — Hairline Crack</strong>
+            <div class="finding-detail">Hairline crack above window frame. Settlement-related. No immediate concern. Monitor annually.</div>
+          </td>
+          <td>Living Room</td>
+          <td style="font-weight:700; font-family:'Roboto Mono',monospace">$50–$150</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="sec-head">System Scores</div>
+    <div class="sys-grid">
+      <div class="sys-box">
+        <div class="sys-name">Structural</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:80%; background:#22C55E"></div></div>
+        <div class="sys-score" style="color:#22C55E">80 / 100</div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-name">Electrical</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:42%; background:#CC0000"></div></div>
+        <div class="sys-score" style="color:#CC0000">42 / 100</div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-name">HVAC</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:55%; background:#997700"></div></div>
+        <div class="sys-score" style="color:#997700">55 / 100</div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-name">Roofing</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:61%; background:#997700"></div></div>
+        <div class="sys-score" style="color:#997700">61 / 100</div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-name">Plumbing</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:88%; background:#22C55E"></div></div>
+        <div class="sys-score" style="color:#22C55E">88 / 100</div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-name">Interior</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill" style="width:74%; background:#22C55E"></div></div>
+        <div class="sys-score" style="color:#22C55E">74 / 100</div>
+      </div>
+    </div>
+
+    <div class="sec-head">Evidence Chain — GPS-Anchored Captures</div>
+    <div class="evidence-row">
+      <div class="evidence-box">
+        <div class="evidence-photo">
+          <div class="evidence-placeholder">PHOTO #001<br/>ELECTRICAL PANEL</div>
+        </div>
+        <div class="evidence-info">
+          <div class="evidence-title">Federal Pacific Panel</div>
+          <div class="evidence-meta">33.5731°N 84.4099°W<br/>2:12:04 PM · Floor 1</div>
+        </div>
+      </div>
+      <div class="evidence-box">
+        <div class="evidence-photo">
+          <div class="evidence-placeholder">PHOTO #002<br/>HVAC UNIT</div>
+        </div>
+        <div class="evidence-info">
+          <div class="evidence-title">Heat Exchanger Detail</div>
+          <div class="evidence-meta">33.5731°N 84.4099°W<br/>2:19:33 PM · Basement</div>
+        </div>
+      </div>
+      <div class="evidence-box">
+        <div class="evidence-photo">
+          <div class="evidence-placeholder">PHOTO #003<br/>ROOF NORTH SLOPE</div>
+        </div>
+        <div class="evidence-info">
+          <div class="evidence-title">Missing Shingles</div>
+          <div class="evidence-meta">33.5731°N 84.4099°W<br/>1:58:17 PM · Exterior</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-head">Repair Cost Estimate</div>
+    <div class="repair-box">
+      <div class="repair-row">
+        <span class="repair-item">Electrical Panel Replacement (Federal Pacific → Modern)</span>
+        <span class="repair-cost">$2,400 – $3,800</span>
+      </div>
+      <div class="repair-row">
+        <span class="repair-item">HVAC Heat Exchanger Repair / Replacement</span>
+        <span class="repair-cost">$800 – $1,400</span>
+      </div>
+      <div class="repair-row">
+        <span class="repair-item">Roof Shingle Replacement (North Slope)</span>
+        <span class="repair-cost">$1,200 – $2,200</span>
+      </div>
+      <div class="repair-row">
+        <span class="repair-item">Carpet Stain Treatment (Master Bedroom)</span>
+        <span class="repair-cost">$0 – $200</span>
+      </div>
+      <div class="repair-row">
+        <span class="repair-item">Drywall Crack Repair (Living Room)</span>
+        <span class="repair-cost">$50 – $150</span>
+      </div>
+      <div class="repair-row">
+        <span class="repair-item">TOTAL ESTIMATED REPAIR RANGE</span>
+        <span class="repair-cost">$4,450 – $7,750</span>
+      </div>
+    </div>
+
+    <div class="integrity">
+      <div class="integrity-label">SHA-256 Integrity Hash · Tamper-Evident Record</div>
+      <div class="integrity-hash">a3f8c2d194e7b56f029d1e830ac476d5b3f8e92c1d4a7b60f839e1c2d4a5b6f7e8c9d0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9</div>
+      <div class="integrity-note">This report was cryptographically signed at generation time. Any modification invalidates this hash. Verify at ledrixlabs.com/verify</div>
+    </div>
+
+    <div class="sec-head">Inspector Sign-Off</div>
+    <div class="signoff">
+      <div class="signoff-box">
+        <div class="signoff-label">Inspector Signature</div>
+        <div class="signoff-line"></div>
+        <div class="signoff-name">J. Williams · License #GA-HI-2289</div>
+      </div>
+      <div class="signoff-box">
+        <div class="signoff-label">Date &amp; Time Stamp</div>
+        <div class="signoff-stamp">May 11, 2026 · 2:47 PM</div>
+        <div class="signoff-name">Report ID: LDX-2026-0511-4892</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-left">© 2026 Ledrix Labs · ledrixlabs.com · ledrixlabs@gmail.com</div>
+      <div class="footer-right">LDX-2026-0511-4892 · Page 1 of 1</div>
+    </div>
+
+  </div>
+
+</body>
+</html>
