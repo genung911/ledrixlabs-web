@@ -125,6 +125,64 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Inspector Feature Image ─────────────────────────────────── */}
+      <section style={{
+        borderTop: '1px solid #0d0d0d',
+        borderBottom: '1px solid #0d0d0d',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          minHeight: 560,
+        }}>
+          {/* Left — image */}
+          <div style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
+            <Image
+              src="/site_image.png"
+              alt="Inspector using Ledrix with live floor plan overlay"
+              fill
+              style={{ objectFit: 'cover', objectPosition: 'center top' }}
+            />
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to right, transparent 60%, #080808 100%)',
+            }} />
+          </div>
+
+          {/* Right — copy */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            padding: '80px 64px 80px 48px',
+            background: '#080808',
+          }}>
+            <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 20 }}>
+              HOW IT WORKS
+            </div>
+            <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 52px)', fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 24 }}>
+              Walk the property.<br />
+              <span style={{ color: ACCENT }}>Ledrix builds the record.</span>
+            </h2>
+            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>
+              As you move through the structure, Ledrix maps every room, logs every anomaly, and anchors every photo to a live floor plan — automatically. No tapping. No templates. No late-night write-ups.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {[
+                'Dead-reckoning spatial engine tracks your position in real time',
+                'AI detects structural anomalies from your camera feed',
+                'VAL logs findings by voice while your hands stay on the job',
+              ].map(pt => (
+                <div key={pt} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT, marginTop: 7, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>{pt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Product ─────────────────────────────────────────────────── */}
       <section id="product" style={{ padding: '100px 24px', maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ marginBottom: 64, textAlign: 'center' }}>
@@ -241,6 +299,30 @@ export default function Home() {
               <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>AI Anomaly Detail</div>
               <div style={{ color: '#444', fontSize: 11, maxWidth: 200, lineHeight: 1.6 }}>
                 Every finding tagged, classified, and repair-cost estimated automatically.
+              </div>
+            </div>
+          </div>
+
+          {/* Screenshot 3 — Anomaly pinned to floor plan */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
+            <div style={{
+              borderRadius: 36, overflow: 'hidden',
+              border: '1px solid rgba(0,243,255,0.18)',
+              boxShadow: '0 0 60px rgba(0,243,255,0.08)',
+              width: 240,
+            }}>
+              <Image
+                src="/site_image_2.png"
+                alt="Ledrix anomaly pinned to live floor plan"
+                width={240}
+                height={520}
+                style={{ display: 'block', width: '100%', height: 'auto' }}
+              />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>GPS-Anchored Evidence</div>
+              <div style={{ color: '#444', fontSize: 11, maxWidth: 200, lineHeight: 1.6 }}>
+                Every anomaly pinned to an exact location on the live floor plan.
               </div>
             </div>
           </div>
