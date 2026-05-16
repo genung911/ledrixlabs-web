@@ -55,7 +55,7 @@ export default function Home() {
           <a href="#vision" style={{ color: '#555', fontSize: 11, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>VISION</a>
           <a href="#contact" style={{ color: '#555', fontSize: 11, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>CONTACT</a>
           <a
-            href="https://apps.apple.com"
+            href="https://apps.apple.com/us/app/ledrix/id6762490661"
             style={{
               backgroundColor: ACCENT, color: '#000', fontSize: 11, fontWeight: 900,
               letterSpacing: 1, padding: '9px 16px', borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap',
@@ -90,7 +90,7 @@ export default function Home() {
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <a
-            href="https://apps.apple.com"
+            href="https://apps.apple.com/us/app/ledrix/id6762490661"
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               backgroundColor: '#fff', color: '#000', padding: '14px 28px',
@@ -560,7 +560,7 @@ export default function Home() {
           Available now for licensed inspectors on iOS. Android coming soon.
         </p>
         <a
-          href="https://apps.apple.com"
+          href="https://apps.apple.com/us/app/ledrix/id6762490661"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
             backgroundColor: ACCENT, color: '#000', padding: '16px 36px',
