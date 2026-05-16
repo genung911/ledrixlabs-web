@@ -20,58 +20,66 @@ export default function PrivacyPolicy() {
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Privacy Policy</h1>
         <p style={{ color: '#333', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
-          Effective Date: January 1, 2026 · Ledrix Labs
+          Effective Date: January 1, 2026 · Last Updated: May 15, 2026 · Ledrix Labs
         </p>
 
         {[
           {
             title: '1. Information We Collect',
-            body: `We collect information you provide directly, including your name, email address, and professional license number when you create an account. During inspections, Ledrix collects photos and videos, GPS location data, audio recordings via voice commands, device sensor data (accelerometer, gyroscope, barometer) for floor plan generation, and inspection notes and findings you create. We also collect standard usage data such as app version, device type, and crash reports to improve the platform.`,
+            body: `We collect information you provide directly, including your name, email address, and professional license number when you create an account. During inspections, Ledrix collects photos and videos of the property being inspected, GPS location data anchored to property records, audio recordings made during explicitly activated voice command sessions, device sensor data (accelerometer, gyroscope, barometer) used solely for real-time floor plan generation, and inspection notes and findings you create. We also collect standard usage data such as app version, device type, and crash reports to improve the platform.`,
           },
           {
             title: '2. How We Use Your Information',
-            body: `Your information is used to provide and improve the Ledrix platform, generate inspection reports on your behalf, sync your data across your devices, and deliver inspection results to your clients through the Home App portal. We do not sell your personal data to third parties. We do not use your data for advertising purposes.`,
+            body: `Your information is used to provide and improve the Ledrix platform, generate inspection reports on your behalf, sync your data across your devices, and deliver inspection results to your clients through the Ledrix Home App portal. We do not sell your personal data to third parties. We do not use your data for advertising purposes.`,
           },
           {
-            title: '3. AI Processing',
-            body: `Ledrix uses artificial intelligence to assist with anomaly detection and inspection analysis. AI-assisted findings are for informational purposes only and do not replace the professional judgment of a licensed inspector. All AI analysis is performed to assist you — you remain solely responsible for the accuracy of your inspection reports.`,
+            title: '3. Voice and Audio Recording',
+            body: `Ledrix records audio only during explicitly activated push-to-talk voice command sessions initiated by the inspector. Recording does not occur in the background, automatically, or without a deliberate action from the user. Audio is processed in real time for transcription and immediately discarded — raw audio files are not stored on our servers. Transcribed text derived from voice commands is stored as part of your inspection record. By using the VAL voice feature, you acknowledge and consent to this recording and transcription process. It is your responsibility to ensure that any occupants of a property being inspected are appropriately notified of audio capture as required by applicable law in your jurisdiction.`,
           },
           {
-            title: '4. Data Storage and Security',
-            body: `Your data is stored securely using Supabase infrastructure with row-level security. Inspection photos and evidence are stored locally on your device first, then optionally synced to your account. We use industry-standard encryption in transit and at rest. We retain your data for as long as your account is active.`,
+            title: '4. Location Data',
+            body: `Ledrix uses precise GPS location to anchor inspection evidence to property records and to verify inspection site attendance. Location data is collected only during active inspection sessions when you have granted the app location permission. We do not track your location in the background, outside of active inspection use, or for any purpose unrelated to the inspection in progress. Location coordinates are stored as part of your inspection record and may be included in delivered reports.`,
           },
           {
-            title: '5. Location Data',
-            body: `Ledrix uses precise GPS location to anchor inspection evidence to property records. Location data is collected only during active inspection sessions when you have granted permission. We do not track your location in the background outside of active inspection use.`,
+            title: '5. AI Processing',
+            body: `Ledrix uses artificial intelligence to assist with anomaly detection, structural analysis, voice transcription, and report generation. AI-assisted findings are for informational purposes only and do not replace the professional judgment of a licensed inspector. All AI analysis is performed to assist you — you remain solely responsible for the accuracy of your inspection reports. AI processing is performed via our secure backend gateway and select third-party API providers as described in Section 8.`,
           },
           {
-            title: '6. Camera and Microphone',
-            body: `Camera access is used for capturing structural evidence during inspections. Microphone access is used exclusively for VAL voice-activated commands and push-to-talk inspection logging. We do not record audio outside of explicitly activated voice sessions.`,
+            title: '6. Homeowner and Client Portal Data',
+            body: `When you deliver an inspection to a client through the Ledrix Home App portal, that client receives access to a read-only view of their property's inspection findings, health score, maintenance schedule, and uploaded evidence. Client portal data is tied to the property record you created and is accessible only to the client you designate. Clients do not have access to your inspector account, other inspections, or any data beyond their specific property. We retain homeowner portal data for as long as the associated inspector account is active. If your account is deleted, associated homeowner portal records are removed within 90 days.`,
           },
           {
-            title: '7. Third-Party Services',
-            body: `Ledrix uses Supabase for authentication and data storage, and OpenAI's API for select AI features including receipt scanning. These services have their own privacy policies. We do not share your personal inspection data with these providers beyond what is necessary for the feature to function.`,
+            title: '7. Data Storage, Retention, and Security',
+            body: `Your data is stored securely using Supabase infrastructure with row-level security policies that ensure each user can only access their own data. Inspection photos and evidence are stored locally on your device first, then synced to your account when connectivity is available. We use industry-standard TLS encryption in transit and AES-256 encryption at rest. We retain your personal account data and inspection records for as long as your account remains active. If you delete your account, your personal data and inspection records are permanently removed from our servers within 30 days. Backups are purged on a 90-day rolling cycle.`,
           },
           {
-            title: '8. Your Rights',
-            body: `You may request access to, correction of, or deletion of your personal data at any time by contacting us at ledrixlabs@gmail.com. You may also delete your account from within the app, which will remove your personal data from our servers.`,
+            title: '8. Third-Party Services',
+            body: `Ledrix uses the following third-party service providers to deliver platform functionality:\n\n• Supabase — authentication, database, and file storage\n• OpenAI — AI vision analysis for real-time anomaly detection and image-based features\n• Groq — AI voice transcription (Whisper) and text-based AI assistance\n• Google — address lookup and contractor location services\n\nInspection data shared with these providers is limited strictly to what is necessary for the specific feature to function. We do not share your personal account information or full inspection records with AI providers — only the content necessary for each individual API call (e.g., an image frame for vision analysis or an audio clip for transcription). All third-party providers operate under their own privacy policies and data processing agreements.`,
           },
           {
-            title: '9. Children\'s Privacy',
-            body: `Ledrix is a professional platform intended for licensed inspectors and is not directed at children under 13. We do not knowingly collect personal information from children.`,
+            title: '9. Your Privacy Rights',
+            body: `You have the right to access, correct, or delete your personal data at any time. You may submit a deletion request from within the app under Settings → Account → Delete Account, which will initiate permanent removal of your account and associated data. For manual requests, contact us at ledrixlabs@gmail.com.\n\nCalifornia residents have additional rights under the California Consumer Privacy Act (CCPA), including the right to know what personal information we collect, the right to request deletion, and the right to opt out of the sale of personal information. We do not sell personal information. To exercise your CCPA rights, contact us at the address below.\n\nResidents of other jurisdictions may have similar rights under applicable local law. We will honor all such requests to the extent required by law.`,
           },
           {
-            title: '10. Changes to This Policy',
-            body: `We may update this Privacy Policy from time to time. We will notify you of material changes through the app or via email. Continued use of Ledrix after changes constitutes your acceptance of the updated policy.`,
+            title: '10. Data Breach Notification',
+            body: `In the event of a data breach that affects your personal information, we will notify affected users via email within 72 hours of becoming aware of the breach, to the extent required by applicable law. Notification will describe the nature of the breach, the data affected, steps we are taking to address it, and recommended actions for affected users.`,
           },
           {
-            title: '11. Contact',
-            body: `For privacy-related questions, contact us at ledrixlabs@gmail.com.`,
+            title: '11. Children\'s Privacy',
+            body: `Ledrix is a professional platform intended for licensed inspectors and is not directed at children under 13. We do not knowingly collect personal information from children. If we become aware that a child under 13 has provided us personal information, we will delete it immediately.`,
+          },
+          {
+            title: '12. Changes to This Policy',
+            body: `We may update this Privacy Policy from time to time. We will notify you of material changes through the app or via email at least 14 days before the changes take effect. Continued use of Ledrix after the effective date constitutes your acceptance of the updated policy.`,
+          },
+          {
+            title: '13. Contact',
+            body: `For privacy-related questions, data requests, or concerns, contact us at ledrixlabs@gmail.com.`,
           },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: '#fff' }}>{s.title}</h2>
-            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8 }}>{s.body}</p>
+            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{s.body}</p>
           </div>
         ))}
       </main>

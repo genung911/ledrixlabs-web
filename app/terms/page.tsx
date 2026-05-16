@@ -20,62 +20,78 @@ export default function TermsOfService() {
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Terms of Service</h1>
         <p style={{ color: '#333', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
-          Effective Date: January 1, 2026 · Ledrix Labs
+          Effective Date: January 1, 2026 · Last Updated: May 15, 2026 · Ledrix Labs
         </p>
 
         {[
           {
             title: '1. Acceptance of Terms',
-            body: `By downloading or using the Ledrix application, you agree to be bound by these Terms of Service. If you do not agree, do not use the app. Ledrix is intended for use by licensed professional inspectors only.`,
+            body: `By downloading or using the Ledrix application, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, do not download or use the app. Ledrix is intended for use by licensed professional inspectors only. Use of the platform for non-professional, fraudulent, or unlicensed inspection activity is prohibited.`,
           },
           {
             title: '2. Professional Responsibility',
-            body: `Ledrix is a tool to assist licensed professionals. You are solely responsible for the accuracy, completeness, and legality of all inspection reports you generate using the platform. AI-assisted findings are informational aids only and do not constitute professional determinations. You must independently verify all findings before delivering reports to clients.`,
+            body: `Ledrix is a tool to assist licensed professionals. You are solely responsible for the accuracy, completeness, legality, and professional adequacy of all inspection reports you generate using the platform. AI-assisted findings, anomaly detections, repair cost estimates, and voice-logged observations are informational aids only — they do not constitute professional determinations and do not satisfy your obligation to independently observe, verify, and report on the property condition. You must independently verify all AI-generated findings before delivering reports to clients.`,
           },
           {
-            title: '3. AI Disclaimer',
-            body: `AI-assisted analysis within Ledrix is provided for informational purposes only. Ledrix Labs does not guarantee the accuracy, completeness, or reliability of any AI-generated content. Ledrix Labs and its affiliates are not liable for any damages, losses, or claims arising from reliance on AI-generated findings. All inspection determinations remain the professional responsibility of the licensed inspector.`,
+            title: '3. AI and Automated Analysis Disclaimer',
+            body: `AI-assisted analysis within Ledrix — including real-time anomaly detection, voice transcription, report generation, and repair cost estimation — is provided for informational and efficiency purposes only. Ledrix Labs does not guarantee the accuracy, completeness, or fitness for any particular purpose of any AI-generated content. Ledrix Labs and its affiliates are not liable for any damages, losses, missed defects, incorrect findings, or claims arising from reliance on AI-generated content. All inspection determinations remain the professional responsibility of the licensed inspector using the platform.`,
           },
           {
-            title: '4. License',
-            body: `Ledrix Labs grants you a limited, non-exclusive, non-transferable license to use the Ledrix application for your professional inspection work. You may not copy, modify, distribute, sell, or reverse-engineer any part of the platform.`,
+            title: '4. Voice Recording and Audio Consent',
+            body: `By using the VAL voice command feature, you consent to the recording and transcription of audio captured during explicitly activated push-to-talk sessions. You acknowledge that:\n\n(a) Audio recording occurs only when you actively initiate a voice session within the app.\n(b) You are responsible for compliance with all applicable wiretapping, eavesdropping, and consent laws in your jurisdiction, including obtaining appropriate consent from any occupants present during an inspection.\n(c) Ledrix processes voice audio solely for transcription and immediately discards raw audio — it is not stored on our servers.\n\nLedrix Labs is not liable for any legal claims arising from your failure to obtain required consent from third parties prior to recording.`,
           },
           {
-            title: '5. Account',
-            body: `You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must provide accurate information when creating your account and keep it up to date.`,
+            title: '5. Location Data',
+            body: `By using Ledrix, you grant the app permission to collect precise GPS location data during active inspection sessions. This data is used to anchor evidence to property records and to verify inspection site attendance. You represent that you have authorization to conduct an inspection at any location where you use the Ledrix platform. You are responsible for ensuring your use of GPS-anchored evidence complies with applicable law and your professional obligations.`,
           },
           {
-            title: '6. Client Data',
-            body: `When you deliver inspection data to clients through the Ledrix Home App portal, you represent that you have the right to share that information and that it was collected lawfully during a professional inspection engagement. You remain responsible for obtaining any necessary client consents.`,
+            title: '6. Inspection Reports and PDF Deliverables',
+            body: `Inspection reports and PDF deliverables generated by Ledrix are created based on data you input, photos you capture, and AI analysis of that content. You represent that all data you enter is accurate, lawfully obtained, and relates to an authorized professional inspection engagement. Ledrix Labs does not independently verify the content of any inspection report. You are solely responsible for the accuracy, completeness, and professional adequacy of any report you deliver to a client. You agree not to use Ledrix-generated reports as the sole basis for any insurance claim determination, legal proceeding, or real estate transaction without independent professional verification.`,
           },
           {
-            title: '7. Prohibited Use',
-            body: `You agree not to use Ledrix for any unlawful purpose, to submit false inspection reports, to attempt to gain unauthorized access to any part of the platform, or to use the platform in any way that could damage, disable, or impair the service.`,
+            title: '7. Client Data and the Homeowner Portal',
+            body: `When you deliver inspection data to clients through the Ledrix Home App portal, you represent that: (a) you conducted the inspection under a lawful professional engagement with the property owner or their authorized agent, (b) you have the right to share the information contained in the delivery, and (c) all data was collected lawfully. You remain responsible for obtaining any necessary client consents for data sharing and for the accuracy of all content delivered.`,
           },
           {
-            title: '8. Limitation of Liability',
-            body: `To the maximum extent permitted by law, Ledrix Labs shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the platform, including but not limited to damages arising from missed defects, incorrect AI analysis, or report errors. Our total liability to you shall not exceed the amount you paid for the service in the twelve months preceding the claim.`,
+            title: '8. License',
+            body: `Ledrix Labs grants you a limited, non-exclusive, non-transferable, revocable license to use the Ledrix application for your professional inspection work. You may not copy, modify, distribute, sell, sublicense, reverse-engineer, or create derivative works from any part of the platform. All intellectual property in the platform, including but not limited to the VAL AI system, spatial mapping engine, and evidence chain technology, remains the exclusive property of Ledrix Labs.`,
           },
           {
-            title: '9. Termination',
-            body: `We reserve the right to suspend or terminate your account at any time for violation of these terms. You may delete your account at any time from within the app.`,
+            title: '9. Account',
+            body: `You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must provide accurate information when creating your account and keep it up to date. You may not share your account with other individuals. If you suspect unauthorized access to your account, notify us immediately at ledrixlabs@gmail.com.`,
           },
           {
-            title: '10. Changes to Terms',
-            body: `We may update these Terms of Service from time to time. We will notify you of material changes through the app or via email. Continued use after changes constitutes acceptance.`,
+            title: '10. Prohibited Use',
+            body: `You agree not to use Ledrix to: conduct inspections without a valid professional license in the applicable jurisdiction; submit false, fabricated, or materially misleading inspection findings; use the platform for any unlawful purpose; attempt to gain unauthorized access to any part of the platform or its underlying systems; use the platform in any way that could damage, disable, overburden, or impair the service; or reverse-engineer, scrape, or extract data from the platform for competitive or unauthorized purposes.`,
           },
           {
-            title: '11. Governing Law',
-            body: `These terms are governed by the laws of the United States. Any disputes shall be resolved in the courts of competent jurisdiction.`,
+            title: '11. Limitation of Liability',
+            body: `To the maximum extent permitted by applicable law, Ledrix Labs, its officers, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the platform, including but not limited to damages arising from missed defects, incorrect AI analysis, GPS inaccuracies, report errors, data loss, or reliance on platform-generated content. Our total cumulative liability to you for any claim arising out of or relating to these terms or your use of Ledrix shall not exceed the greater of (a) the total fees you paid to Ledrix Labs in the twelve months preceding the claim or (b) one hundred U.S. dollars ($100).`,
           },
           {
-            title: '12. Contact',
+            title: '12. Data Breach Notification',
+            body: `In the event of a confirmed security breach that compromises your personal data, Ledrix Labs will notify affected users via email within 72 hours of becoming aware of the breach, to the extent required by applicable law. We will provide information about the nature of the breach, data affected, remediation steps taken, and recommended actions. This commitment does not expand our liability beyond the limits set forth in Section 11.`,
+          },
+          {
+            title: '13. Termination',
+            body: `We reserve the right to suspend or terminate your account at any time for material violation of these terms, fraudulent use, or conduct that harms the platform or other users. We will provide notice of termination where reasonably practicable. You may delete your account at any time from within the app under Settings → Account → Delete Account. Upon termination, your license to use the platform immediately ceases.`,
+          },
+          {
+            title: '14. Changes to Terms',
+            body: `We may update these Terms of Service from time to time. We will notify you of material changes through the app or via email at least 14 days before the changes take effect. Continued use of Ledrix after the effective date constitutes your acceptance of the updated terms. If you do not agree to the updated terms, you must discontinue use and may delete your account.`,
+          },
+          {
+            title: '15. Governing Law and Disputes',
+            body: `These terms are governed by the laws of the State of Idaho, United States, without regard to conflict of law principles. Any dispute arising out of or relating to these terms or your use of Ledrix shall be resolved through binding arbitration under the rules of the American Arbitration Association, conducted in Ada County, Idaho. You waive any right to participate in a class action lawsuit or class-wide arbitration against Ledrix Labs. Nothing in this section prevents either party from seeking injunctive relief in a court of competent jurisdiction to prevent irreparable harm.`,
+          },
+          {
+            title: '16. Contact',
             body: `For questions about these terms, contact us at ledrixlabs@gmail.com.`,
           },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: '#fff' }}>{s.title}</h2>
-            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8 }}>{s.body}</p>
+            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{s.body}</p>
           </div>
         ))}
       </main>

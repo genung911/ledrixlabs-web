@@ -114,6 +114,9 @@ export default function Home() {
             See the Vision →
           </a>
         </div>
+        <p style={{ marginTop: 20, fontSize: 11, color: '#333', fontFamily: 'Roboto Mono, monospace', letterSpacing: 1 }}>
+          iOS · <span style={{ color: '#555' }}>ANDROID COMING SOON</span>
+        </p>
 
         {/* Stats */}
         <div style={{
@@ -554,7 +557,7 @@ export default function Home() {
           Download Ledrix today.
         </h2>
         <p style={{ fontSize: 16, color: '#444', marginBottom: 48 }}>
-          Available now for licensed inspectors on iOS.
+          Available now for licensed inspectors on iOS. Android coming soon.
         </p>
         <a
           href="https://apps.apple.com"
