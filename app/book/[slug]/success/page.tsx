@@ -90,6 +90,15 @@ export default function SuccessPage() {
     if (!accepted) { alert('Please check the agreement acceptance box.'); return; }
     setSigning(true);
     try {
+      const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
+      const clientIp = ipRes ? (await ipRes.json().catch(() => ({}))).ip ?? 'unknown' : 'unknown';
+
+      const agreementHash = Array.from(
+        new Uint8Array(
+          await crypto.subtle.digest('SHA-256', new TextEncoder().encode(filledAgreement ?? ''))
+        )
+      ).map(b => b.toString(16).padStart(2, '0')).join('');
+
       await fetch(`${SUPA_URL}/rest/v1/crm_bookings?id=eq.${bookingId}`, {
         method:  'PATCH',
         headers: { ...API_HEADERS, Prefer: 'return=minimal' },
@@ -97,6 +106,8 @@ export default function SuccessPage() {
           agreement_accepted:    true,
           agreement_signed_name: signedName.trim(),
           agreement_accepted_at: new Date().toISOString(),
+          agreement_client_ip:   clientIp,
+          agreement_text_hash:   agreementHash,
         }),
       });
       setSigned(true);
@@ -301,14 +312,14 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width:      '100%',
-  background: '#0a0a0a',
-  border:     `1px solid #1e1e1e`,
+  width:       '100%',
+  background:  '#0a0a0a',
+  border:      `1px solid #1e1e1e`,
   borderRadius: 10,
-  padding:    '12px 14px',
-  color:      '#fff',
-  fontSize:   13,
-  fontWeight: 500,
-  outline:    'none',
-  boxSizing:  'border-box',
+  padding:     '12px 14px',
+  color:       '#fff',
+  fontSize:    16,
+  fontWeight:  500,
+  outline:     'none',
+  boxSizing:   'border-box',
 };

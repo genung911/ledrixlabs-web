@@ -177,7 +177,37 @@ export default function BookingPage() {
         <div style={{ color: '#222', fontSize: 8, fontWeight: 900, letterSpacing: 1.5 }}>POWERED BY LEDRIX</div>
       </div>
 
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 24px 60px' }}>
+      {/* Desktop two-column / mobile single-column */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 60px', display: 'flex', gap: 40, alignItems: 'flex-start' }}>
+
+        {/* Sidebar — inspector info (hidden on small screens via inline media query workaround) */}
+        <div style={{ width: 260, flexShrink: 0, display: 'none' } as React.CSSProperties}
+          className="desktop-sidebar"
+        >
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px 20px' }}>
+            <div style={{ color: ACCENT, fontSize: 8, fontWeight: 900, letterSpacing: 2, marginBottom: 16 }}>INSPECTOR</div>
+            <div style={{ color: '#fff', fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
+              {profile.business_name ?? profile.company_name ?? profile.full_name}
+            </div>
+            {profile.phone && (
+              <div style={{ color: '#555', fontSize: 13, marginBottom: 6 }}>{profile.phone}</div>
+            )}
+            {profile.website && (
+              <a href={profile.website} target="_blank" rel="noopener noreferrer"
+                style={{ color: ACCENT, fontSize: 11, textDecoration: 'none' }}>
+                {profile.website.replace(/^https?:\/\//, '')}
+              </a>
+            )}
+            <div style={{ marginTop: 24, borderTop: `1px solid ${BORDER}`, paddingTop: 20 }}>
+              <div style={{ color: '#333', fontSize: 10, lineHeight: 1.8 }}>
+                All bookings are reviewed within 24 hours. You will be contacted to confirm your appointment date and time.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main form column */}
+        <div style={{ flex: 1, minWidth: 0 }}>
 
         {/* Packages */}
         {packages.length > 0 && (
@@ -323,7 +353,15 @@ export default function BookingPage() {
             {selectedPkg && selectedPkg.price > 0 && ' Payment is processed securely via Stripe.'}
           </div>
         </form>
-      </div>
+        </div> {/* main form column */}
+      </div> {/* two-column layout */}
+
+      {/* Desktop sidebar CSS */}
+      <style>{`
+        @media (min-width: 900px) {
+          .desktop-sidebar { display: block !important; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -338,14 +376,14 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width:           '100%',
-  background:      '#0a0a0a',
-  border:          `1px solid #1e1e1e`,
-  borderRadius:    10,
-  padding:         '12px 14px',
-  color:           '#fff',
-  fontSize:        13,
-  fontWeight:      500,
-  outline:         'none',
-  boxSizing:       'border-box',
+  width:        '100%',
+  background:   '#0a0a0a',
+  border:       `1px solid #1e1e1e`,
+  borderRadius: 10,
+  padding:      '12px 14px',
+  color:        '#fff',
+  fontSize:     16,
+  fontWeight:   500,
+  outline:      'none',
+  boxSizing:    'border-box',
 };
