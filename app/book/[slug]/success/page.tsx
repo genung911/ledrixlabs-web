@@ -70,9 +70,10 @@ export default function SuccessPage() {
         setBooking(b);
         setSigned(b.agreement_accepted);
 
-        // Fetch inspector profile via public booking_profiles view
+        // Fetch inspector profile directly from inspector_profiles — bypasses booking_active filter
+        // so agreement signing works even after the portal is deactivated
         const pRes = await fetch(
-          `${SUPA_URL}/rest/v1/booking_profiles?id=eq.${(b as any).inspector_id}&select=id,full_name,business_name,phone,agreement_template&limit=1`,
+          `${SUPA_URL}/rest/v1/inspector_profiles?id=eq.${(b as any).inspector_id}&select=id,full_name,business_name,phone,agreement_template&limit=1`,
           { headers: API_HEADERS },
         );
         const pData: Profile[] = await pRes.json();
