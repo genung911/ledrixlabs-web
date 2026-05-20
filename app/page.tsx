@@ -125,7 +125,7 @@ export default function Home() {
         }}>
           {[
             { val: 'AI', label: 'Anomaly Detection' },
-            { val: 'VAL', label: 'Voice Activated Logging' },
+            { val: 'MIC', label: 'Voice Logging' },
             { val: 'APP', label: 'Client Home Portal' },
             { val: '4K', label: 'Evidence Capture' },
           ].map(s => (
@@ -181,8 +181,8 @@ export default function Home() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
-                'Dead-reckoning spatial engine tracks your position in real time',
-                'AI detects structural anomalies from your camera feed',
+                'Apple LiDAR maps walls and room geometry automatically — dead-reckoning on any device',
+                'SENTINEL Mode arms ambient AI detection while you work — anomalies surface on their own',
                 'VAL logs findings by voice while your hands stay on the job',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -215,13 +215,13 @@ export default function Home() {
             },
             {
               icon: <ValDeltaSVG size={28} />,
-              title: 'VAL Voice Commands',
-              body: 'Hands-free inspection logging. Speak observations while your hands stay on the tool. VAL tags anomalies by voice during live scans.',
+              title: 'VAL + SENTINEL Mode',
+              body: 'Hands-free voice logging with VAL. Arm SENTINEL Mode for ambient AI monitoring — the camera watches the structure while you work. Anomalies surface automatically.',
             },
             {
               icon: '▦',
-              title: 'Automated Floor Plans',
-              body: 'Dead-reckoning spatial engine builds real-time floor plans as you walk the property — no manual drawing required.',
+              title: 'Precision Floor Plans',
+              body: 'Apple LiDAR scans walls, doors, and room geometry automatically on supported devices. Dead-reckoning fallback keeps any inspector mapping in real time.',
             },
             {
               icon: '◉',
@@ -465,7 +465,7 @@ export default function Home() {
             </h2>
             <p style={{ fontSize: 16, color: '#444', maxWidth: 600, margin: '24px auto 0', lineHeight: 1.7 }}>
               Traditional apps force you to look at a screen instead of the structure.
-              With VAL, your interface is the house itself. You see it, you say it, Ledrix logs it.
+              Your interface is the house itself. You see it, you say it, Ledrix logs it.
             </p>
           </div>
 
@@ -475,12 +475,12 @@ export default function Home() {
               {
                 label: 'ZERO-UI REPORTING',
                 title: 'Say it. Done.',
-                body: 'Instead of tapping Electrical → Panel → Federal Pacific, you say: "VAL, identify critical fire risk: Federal Pacific Stab-Lok panel in garage." The AI handles categorization, the write-up, and severity tagging instantly.',
+                body: 'Instead of tapping Electrical → Panel → Federal Pacific, you say: "Ledrix, identify critical fire risk: Federal Pacific Stab-Lok panel in garage." The AI handles categorization, the write-up, and severity tagging instantly.',
               },
               {
                 label: 'SPATIAL AWARENESS',
                 title: 'It already knows where you are.',
-                body: 'Ledrix uses a dead-reckoning spatial engine to track your position in real time. You don\'t have to tell it you\'re in the master bedroom — it knows from the live floor plan being built as you walk.',
+                body: 'On LiDAR-capable devices, Ledrix uses Apple RoomPlan to scan walls and room geometry with millimeter precision. On any device, the dead-reckoning engine tracks your position as you walk — no manual room entry required.',
               },
               {
                 label: 'INSTANT DELIVERY',
@@ -518,7 +518,7 @@ export default function Home() {
 
             {[
               ['Eyes on the Screen: Constantly checking boxes.', 'Eyes on the Infrastructure: AI-assisted observation.'],
-              ['Manual Data Entry: Tapping through 100+ sections.', 'Natural Language: "VAL, log minor crack in foundation."'],
+              ['Manual Data Entry: Tapping through 100+ sections.', 'Natural Language: "Ledrix, log minor crack in foundation."'],
               ['Late-Night Reporting: 2 hours typing at home.', 'Instant Delivery: Report finished when you leave.'],
               ['Static Images: Photos with no context.', 'GPS-Anchored Evidence: Every photo tied to a 2D map.'],
             ].map(([old, neo], i) => (
