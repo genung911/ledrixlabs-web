@@ -5,21 +5,28 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
-  const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
-  if (!r.ok) return [];
-  return r.json();
+  try {
+    const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
 }
 async function supaPost(table: string, body: object | object[]) {
-  return fetch(`/api/proxy?path=${encodeURIComponent(table)}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  try {
+    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch { return new Response(null, { status: 500 }); }
 }
 async function supaPatch(table: string, filter: string, body: object) {
-  return fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  try {
+    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch { return new Response(null, { status: 500 }); }
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -1076,11 +1083,12 @@ export default function SharePage() {
       .then(async (data: HomeRecord[]) => {
         if (!Array.isArray(data) || data.length === 0) { setNotFound(true); return; }
         const rec = data[0]; setRecord(rec);
-        await Promise.all([loadProjects(), loadReminders()]);
+        await Promise.all([loadProjects(), loadReminders()]).catch(() => {});
         if (!seeded.current) {
           seeded.current = true;
           seedIfEmpty(shareId, rec.anomalies ?? [], rec.specs ?? [])
-            .then(() => Promise.all([loadProjects(), loadReminders()]));
+            .then(() => Promise.all([loadProjects(), loadReminders()]).catch(() => {}))
+            .catch(() => {});
         }
       })
       .catch(() => setNotFound(true))
