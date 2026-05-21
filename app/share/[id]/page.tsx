@@ -3,29 +3,21 @@
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// ─── Supabase ─────────────────────────────────────────────────────────────────
-const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '';
-const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const HEADERS: Record<string,string> = {
-  apikey:         SUPA_ANON,
-  Authorization:  `Bearer ${SUPA_ANON}`,
-  'Content-Type': 'application/json',
-};
-
+// ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
-  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, { headers: HEADERS });
+  const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
   if (!r.ok) return [];
   return r.json();
 }
 async function supaPost(table: string, body: object | object[]) {
-  return fetch(`${SUPA_URL}/rest/v1/${table}`, {
-    method: 'POST', headers: { ...HEADERS, Prefer: 'return=minimal' },
+  return fetch(`/api/proxy?path=${encodeURIComponent(table)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
 async function supaPatch(table: string, filter: string, body: object) {
-  return fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {
-    method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
+  return fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -1078,8 +1070,8 @@ export default function SharePage() {
   }, [shareId]);
 
   useEffect(() => {
-    if (!shareId || !SUPA_URL) { setLoading(false); setNotFound(true); return; }
-    fetch(`${SUPA_URL}/rest/v1/home_records?share_id=eq.${encodeURIComponent(shareId)}&limit=1`, { headers: HEADERS })
+    if (!shareId) { setLoading(false); setNotFound(true); return; }
+    fetch(`/api/proxy?path=${encodeURIComponent(`home_records?share_id=eq.${encodeURIComponent(shareId)}&limit=1`)}`)
       .then(r => r.json())
       .then(async (data: HomeRecord[]) => {
         if (!Array.isArray(data) || data.length === 0) { setNotFound(true); return; }
