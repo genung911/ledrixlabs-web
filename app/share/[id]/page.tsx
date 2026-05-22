@@ -61,7 +61,7 @@ type HomeRecord = {
   zip?: string; year_built?: string; sqft?: string; beds?: string; baths?: string;
   garage?: string; inspector?: string; company?: string; license_number?: string;
   inspection_date?: string; inspection_type?: string;
-  anomalies: Anomaly[]; specs: Spec[]; created_at: string;
+  anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string;
 };
 type Project = {
   id: string; share_id: string; title: string; system?: string; priority?: string;
@@ -973,19 +973,36 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>DOCS</div>
 
-      {/* PDF notice */}
+      {/* PDF notice / link */}
       <div style={{ background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14,
         padding: '16px 18px', marginBottom: 16 }}>
         <div style={{ color: ACCENT, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>
           INSPECTION REPORT PDF
         </div>
         <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>
-          Your full inspection report is a permanent legal document available in the Ledrix Inspector app.
-          It will never change after it is generated — it is your immutable record of this property&apos;s condition at the time of inspection.
+          Your full inspection report is a permanent legal document — an immutable record of this property&apos;s condition at the time of inspection.
+          It never changes after it is generated.
         </p>
-        <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>
-          REQUEST A COPY FROM YOUR INSPECTOR
-        </div>
+        {record.pdf_url ? (
+          <a
+            href={record.pdf_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'block', textAlign: 'center',
+              background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`,
+              color: ACCENT, borderRadius: 10, padding: '12px',
+              fontSize: 10, fontWeight: 900, letterSpacing: 1,
+              fontFamily: 'Roboto Mono, monospace', textDecoration: 'none',
+            }}
+          >
+            VIEW INSPECTION REPORT PDF ↗
+          </a>
+        ) : (
+          <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>
+            PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR
+          </div>
+        )}
       </div>
 
       {/* Inspection record */}
