@@ -22,8 +22,13 @@ export async function GET(req: NextRequest) {
     const r    = await fetch(`${SUPA_URL}/rest/v1/${path}`, { headers: SUPA_HEADERS });
     const data = await r.json();
     return NextResponse.json(data, { status: r.ok ? 200 : r.status });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+  } catch (e: unknown) {
+    const err = e as { cause?: unknown };
+    return NextResponse.json({
+      error: String(e),
+      cause: String(err?.cause ?? ''),
+      url_prefix: SUPA_URL.slice(0, 40),
+    }, { status: 500 });
   }
 }
 
