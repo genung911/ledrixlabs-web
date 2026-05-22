@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '';
+// Strip any trailing /rest/v1 or trailing slash the user may have copied
+const SUPA_URL  = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
+  .replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const SUPA_HEADERS = {
   apikey:         SUPA_ANON,
