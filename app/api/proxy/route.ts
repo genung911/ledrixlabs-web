@@ -67,3 +67,19 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  if (!SUPA_URL || !SUPA_ANON) return missingConfig();
+  try {
+    const path   = req.nextUrl.searchParams.get('path')   ?? '';
+    const filter = req.nextUrl.searchParams.get('filter') ?? '';
+    const url    = filter ? `${SUPA_URL}/rest/v1/${path}?${filter}` : `${SUPA_URL}/rest/v1/${path}`;
+    const r      = await fetch(url, {
+      method: 'DELETE',
+      headers: { ...SUPA_HEADERS, Prefer: 'return=minimal' },
+    });
+    return new NextResponse(null, { status: r.ok ? 204 : r.status });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}

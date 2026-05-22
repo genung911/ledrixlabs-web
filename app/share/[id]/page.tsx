@@ -28,6 +28,13 @@ async function supaPatch(table: string, filter: string, body: object) {
     });
   } catch { return new Response(null, { status: 500 }); }
 }
+async function supaDelete(table: string, filter: string) {
+  try {
+    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
+      method: 'DELETE',
+    });
+  } catch { return new Response(null, { status: 500 }); }
+}
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ACCENT   = '#00F3FF';
@@ -136,13 +143,40 @@ function compressPhoto(file: File): Promise<string> {
   });
 }
 
+// ─── Maintenance reminder seed set ───────────────────────────────────────────
+function buildMaintenanceReminders(shareId: string, specs: Spec[]): object[] {
+  const rem: object[] = [];
+  const mk = (title: string, system: string, days: number, recurrence: string) =>
+    ({ share_id: shareId, title, system, due_date: addDays(days), recurrence, completed: false, seeded: true });
+
+  // Universal — every home
+  rem.push(mk('Test smoke & CO detectors',               'Safety',    90,  '180d'));
+  rem.push(mk('Clean gutters',                            'Exterior',  60,  '180d'));
+  rem.push(mk('Clean dryer vent',                         'Laundry',   180, '365d'));
+  rem.push(mk('Inspect caulking & weatherstripping',      'Exterior',  180, '365d'));
+  rem.push(mk('Test GFCI outlets',                        'Electrical',180, '365d'));
+  rem.push(mk('Inspect roof & attic for leaks',           'Roof',      270, '365d'));
+  rem.push(mk('Replace HVAC air filter',                  'HVAC',      30,  '90d'));
+  rem.push(mk('Schedule HVAC tune-up',                    'HVAC',      180, '365d'));
+
+  // Spec-driven additions
+  const cats = specs.map(s => (s.category ?? '').toLowerCase());
+  if (cats.some(c => c.includes('water heater'))) {
+    rem.push(mk('Flush water heater sediment', 'Water Heater', 180, '365d'));
+    rem.push(mk('Check water heater anode rod', 'Water Heater', 365, '730d'));
+  }
+
+  return rem;
+}
+
 // ─── Seeding ─────────────────────────────────────────────────────────────────
 async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[]) {
   const [existProj, existRem] = await Promise.all([
     supaGet<{id:string}>(`home_projects?share_id=eq.${encodeURIComponent(shareId)}&select=id&limit=1`),
-    supaGet<{id:string}>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&select=id&limit=1`),
+    supaGet<{id:string;title:string}>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&select=id,title&limit=20`),
   ]);
 
+  // Seed projects from findings (once only)
   if (existProj.length === 0 && anomalies.length > 0) {
     const projects = anomalies.map(a => ({
       share_id: shareId,
@@ -160,30 +194,13 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
     await supaPost('home_projects', projects);
   }
 
-  if (existRem.length === 0) {
-    const reminders: object[] = [];
-    anomalies.forEach(a => {
-      const days = a.severity === 'critical' ? 7 : a.severity === 'anomaly' ? 30 : 90;
-      reminders.push({
-        share_id: shareId,
-        title: `Address: ${(a.description ?? 'finding').substring(0, 80)}`,
-        system: a.unit,
-        due_date: addDays(days),
-        recurrence: a.severity === 'cosmetic' ? '90d' : null,
-        completed: false,
-        seeded: true,
-      });
-    });
-    // Spec-based reminders
-    specs.forEach(s => {
-      const cat = (s.category ?? '').toLowerCase();
-      if (cat.includes('hvac') || cat.includes('air')) {
-        reminders.push({ share_id: shareId, title: 'Replace HVAC filter', system: 'HVAC', due_date: addDays(30), recurrence: '90d', completed: false, seeded: true });
-      }
-      if (cat.includes('water heater')) {
-        reminders.push({ share_id: shareId, title: 'Flush water heater sediment', system: 'WATER HEATER', due_date: addDays(180), recurrence: '365d', completed: false, seeded: true });
-      }
-    });
+  // Seed maintenance reminders — migrate old finding-style reminders on first load
+  const hasOldStyle = existRem.some(r => r.title.startsWith('Address:'));
+  if (existRem.length === 0 || hasOldStyle) {
+    if (hasOldStyle) {
+      await supaDelete('home_reminders', `share_id=eq.${encodeURIComponent(shareId)}&seeded=eq.true`);
+    }
+    const reminders = buildMaintenanceReminders(shareId, specs);
     if (reminders.length > 0) await supaPost('home_reminders', reminders);
   }
 }
