@@ -212,6 +212,7 @@ export default function Home() {
               icon: '⬡',
               title: 'AI Anomaly Detection',
               body: 'Real-time structural defect identification as you scan. Every finding tagged, timestamped, and GPS-anchored to the property record.',
+              comingSoon: true,
             },
             {
               icon: <ValDeltaSVG size={28} />,
@@ -222,6 +223,7 @@ export default function Home() {
               icon: '▦',
               title: 'Precision Floor Plans',
               body: 'Apple LiDAR scans walls, doors, and room geometry automatically on supported devices. Dead-reckoning fallback keeps any inspector mapping in real time.',
+              comingSoon: true,
             },
             {
               icon: '◉',
@@ -240,11 +242,27 @@ export default function Home() {
             },
           ].map(f => (
             <div key={f.title} style={{
-              backgroundColor: '#0a0a0a', border: '1px solid #111',
+              backgroundColor: '#0a0a0a',
+              border: f.comingSoon ? '1px solid rgba(0,243,255,0.2)' : '1px solid #111',
               padding: '36px 32px',
+              position: 'relative',
+              overflow: 'hidden',
             }}>
-              <div style={{ fontSize: 28, marginBottom: 16, color: ACCENT }}>{f.icon}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 10, letterSpacing: -0.5 }}>{f.title}</h3>
+              {f.comingSoon && (
+                <div style={{
+                  position: 'absolute', top: 16, right: 16,
+                  backgroundColor: 'rgba(0,243,255,0.08)',
+                  border: '1px solid rgba(0,243,255,0.25)',
+                  color: ACCENT,
+                  fontSize: 9, fontWeight: 700, letterSpacing: 2,
+                  fontFamily: 'Roboto Mono, monospace',
+                  padding: '4px 8px', borderRadius: 4,
+                }}>
+                  COMING SOON
+                </div>
+              )}
+              <div style={{ fontSize: 28, marginBottom: 16, color: f.comingSoon ? ACCENT : ACCENT, opacity: f.comingSoon ? 0.7 : 1 }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 10, letterSpacing: -0.5, color: f.comingSoon ? '#aaa' : '#fff' }}>{f.title}</h3>
               <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{f.body}</p>
             </div>
           ))}
