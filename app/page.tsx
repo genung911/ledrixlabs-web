@@ -228,7 +228,7 @@ export default function Home() {
             {
               icon: '◉',
               title: 'Instant PDF Reports',
-              body: 'Professional inspection reports generated in seconds with GPS-anchored evidence, SHA-256 integrity hashes, and client delivery in one tap.',
+              body: 'Inspector-verified inspection reports generated the moment you walk out — AI drafts, you confirm, GPS-anchored evidence baked in, client delivery in one tap.',
             },
             {
               icon: '⬔',
@@ -237,8 +237,8 @@ export default function Home() {
             },
             {
               icon: '◎',
-              title: 'Evidence Chain',
-              body: 'Every photo, anomaly, and timestamp is cryptographically hashed. Tamper-evident records built for legal and insurance use.',
+              title: 'Auditable AI Trail',
+              body: 'Every AI suggestion is frozen at capture time and paired with the inspector’s verdict — confirm, edit, or reject. EXIF-preserved photos (timestamp, GPS, lens) bound to every finding for defensible documentation.',
             },
           ].map(f => (
             <div key={f.title} style={{
@@ -374,7 +374,7 @@ export default function Home() {
               See exactly what your clients receive.
             </h2>
             <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
-              Every Ledrix inspection delivers two things: a live client home portal and a tamper-evident PDF report.
+              Every Ledrix inspection delivers two things: a live client home portal and an inspector-verified, AI-drafted PDF report.
             </p>
           </div>
 
@@ -452,7 +452,7 @@ export default function Home() {
                   Sample<br />PDF Report
                 </div>
                 <div style={{ color: '#444', fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
-                  Cryptographically signed, GPS-anchored, AI-generated inspection report complete with system scores, repair cost estimates, and a SHA-256 integrity hash.
+                  AI-drafted, inspector-verified, GPS-anchored inspection report complete with system scores, repair cost estimates, and a side-by-side audit trail of every AI suggestion vs. the inspector’s final call.
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>

@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Privacy Policy</h1>
         <p style={{ color: '#333', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
-          Effective Date: January 1, 2026 · Last Updated: May 15, 2026 · Ledrix Labs
+          Effective Date: January 1, 2026 · Last Updated: May 27, 2026 · Ledrix Labs
         </p>
 
         {[
@@ -42,38 +42,42 @@ export default function PrivacyPolicy() {
           },
           {
             title: '5. AI Processing',
-            body: `Ledrix uses artificial intelligence to assist with anomaly detection, structural analysis, voice transcription, and report generation. AI-assisted findings are for informational purposes only and do not replace the professional judgment of a licensed inspector. All AI analysis is performed to assist you — you remain solely responsible for the accuracy of your inspection reports. AI processing is performed via our secure backend gateway and select third-party API providers as described in Section 8.`,
+            body: `Ledrix uses artificial intelligence to assist with anomaly detection, structural analysis, voice transcription, and report generation. AI-assisted findings are for informational purposes only and do not replace the professional judgment of a licensed inspector. All AI analysis is performed to assist you — you remain solely responsible for the accuracy of your inspection reports.\n\nAI processing is performed via our secure backend gateway and select third-party API providers as described in Section 9. When an inspector has configured a local on-premises inference server on their own LAN, structured photo analysis may be processed entirely on that local device with no cloud round-trip; the mobile app probes the local server at session start and falls through to the cloud gateway only if the local server is unreachable.`,
           },
           {
-            title: '6. Homeowner and Client Portal Data',
+            title: '6. Inspector Feedback & Model Improvement',
+            body: `Effective May 27, 2026, the Ledrix app captures structured feedback whenever you act on an AI-suggested finding — confirm, edit, reject, restore, or hard-delete. Each action is written to a local JSON-lines file in your device's app sandbox (Documents/ledrix_feedback_corpus.jsonl). Each row contains: the AI's original output (severity, description, confidence) at the moment of capture; your verdict and any edits you made to the AI's text; a downsampled copy of the evidence photo (1024px wide, JPEG @ 65 quality); a timestamp, anomaly identifier, and inspection identifier; and the prompt version that produced the AI output.\n\nThis data stays on your device by default. You can review the corpus row count in the app at any time (Anomaly Log → Export Feedback). The corpus is only transmitted off-device when you explicitly tap the share/export control, which lets you AirDrop, save, or send the file off-device.\n\nUse of exported feedback for model training. If you choose to send the corpus to Ledrix Labs (via support email, AirDrop to a Ledrix Labs device, or a future opt-in upload feature), we may use it to fine-tune AI models used in future versions of the app. We do not sell, license, or share this data with third parties for any purpose other than improving the Ledrix AI inference pipeline.\n\nOpt-out. You can clear the entire corpus at any time by tapping Anomaly Log → Export Feedback → Clear (long-press), or by uninstalling the app. The corpus is also wiped when you delete your account.\n\nWhat is NOT captured. The corpus does not include voice recordings (raw audio is discarded per Section 3), client contact information, inspection report PDFs, or any photo not associated with an AI-reviewed finding.`,
+          },
+          {
+            title: '7. Homeowner and Client Portal Data',
             body: `When you deliver an inspection to a client through the Ledrix Home App portal, that client receives access to a read-only view of their property's inspection findings, health score, maintenance schedule, and uploaded evidence. Client portal data is tied to the property record you created and is accessible only to the client you designate. Clients do not have access to your inspector account, other inspections, or any data beyond their specific property. We retain homeowner portal data for as long as the associated inspector account is active. If your account is deleted, associated homeowner portal records are removed within 90 days.`,
           },
           {
-            title: '7. Data Storage, Retention, and Security',
+            title: '8. Data Storage, Retention, and Security',
             body: `Your data is stored securely using Supabase infrastructure with row-level security policies that ensure each user can only access their own data. Inspection photos and evidence are stored locally on your device first, then synced to your account when connectivity is available. We use industry-standard TLS encryption in transit and AES-256 encryption at rest. We retain your personal account data and inspection records for as long as your account remains active. If you delete your account, your personal data and inspection records are permanently removed from our servers within 30 days. Backups are purged on a 90-day rolling cycle.`,
           },
           {
-            title: '8. Third-Party Services',
+            title: '9. Third-Party Services',
             body: `Ledrix uses the following third-party service providers to deliver platform functionality:\n\n• Supabase — authentication, database, and file storage\n• OpenAI — AI vision analysis for real-time anomaly detection and image-based features\n• Groq — AI voice transcription (Whisper) and text-based AI assistance\n• Google — address lookup and contractor location services\n\nInspection data shared with these providers is limited strictly to what is necessary for the specific feature to function. We do not share your personal account information or full inspection records with AI providers — only the content necessary for each individual API call (e.g., an image frame for vision analysis or an audio clip for transcription). All third-party providers operate under their own privacy policies and data processing agreements.`,
           },
           {
-            title: '9. Your Privacy Rights',
+            title: '10. Your Privacy Rights',
             body: `You have the right to access, correct, or delete your personal data at any time. You may submit a deletion request from within the app under Settings → Account → Delete Account, which will initiate permanent removal of your account and associated data. For manual requests, contact us at ledrixlabs@gmail.com.\n\nCalifornia residents have additional rights under the California Consumer Privacy Act (CCPA), including the right to know what personal information we collect, the right to request deletion, and the right to opt out of the sale of personal information. We do not sell personal information. To exercise your CCPA rights, contact us at the address below.\n\nResidents of other jurisdictions may have similar rights under applicable local law. We will honor all such requests to the extent required by law.`,
           },
           {
-            title: '10. Data Breach Notification',
+            title: '11. Data Breach Notification',
             body: `In the event of a data breach that affects your personal information, we will notify affected users via email within 72 hours of becoming aware of the breach, to the extent required by applicable law. Notification will describe the nature of the breach, the data affected, steps we are taking to address it, and recommended actions for affected users.`,
           },
           {
-            title: '11. Children\'s Privacy',
+            title: '12. Children\'s Privacy',
             body: `Ledrix is a professional platform intended for licensed inspectors and is not directed at children under 13. We do not knowingly collect personal information from children. If we become aware that a child under 13 has provided us personal information, we will delete it immediately.`,
           },
           {
-            title: '12. Changes to This Policy',
+            title: '13. Changes to This Policy',
             body: `We may update this Privacy Policy from time to time. We will notify you of material changes through the app or via email at least 14 days before the changes take effect. Continued use of Ledrix after the effective date constitutes your acceptance of the updated policy.`,
           },
           {
-            title: '13. Contact',
+            title: '14. Contact',
             body: `For privacy-related questions, data requests, or concerns, contact us at ledrixlabs@gmail.com.`,
           },
         ].map(s => (
