@@ -153,7 +153,7 @@ export default function Home() {
           <div className="ledrix-how-img" style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
             <Image
               src="/site_image.png"
-              alt="Inspector using Ledrix with live floor plan overlay"
+              alt="Inspector using Ledrix to capture cloud-analyzed evidence"
               fill
               style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
             />
@@ -177,13 +177,13 @@ export default function Home() {
               <span style={{ color: ACCENT }}>Ledrix builds the record.</span>
             </h2>
             <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>
-              As you move through the structure, Ledrix maps every room, logs every anomaly, and anchors every photo to a live floor plan — automatically. No tapping. No templates. No late-night write-ups.
+              Capture a photo. Cloud AI returns a structured finding in seconds. You confirm, adjust, or reject — and the report writes itself. No templates. No late-night write-ups.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
-                'Apple LiDAR maps walls and room geometry automatically — dead-reckoning on any device',
-                'SENTINEL Mode arms ambient AI detection while you work — anomalies surface on their own',
-                'VAL logs findings by voice while your hands stay on the job',
+                'Cloud GPT-4o analyzes each inspection photo as you capture it',
+                'Inspector confirms, adjusts, or rejects every AI finding — your judgment is the final word',
+                'PDF report and client portal delivered the moment you walk out',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT, marginTop: 7, flexShrink: 0 }} />
@@ -216,14 +216,8 @@ export default function Home() {
             },
             {
               icon: <ValDeltaSVG size={28} />,
-              title: 'VAL + SENTINEL Mode',
-              body: 'Hands-free voice logging with VAL. Arm SENTINEL Mode for ambient AI monitoring — the camera watches the structure while you work. Anomalies surface automatically.',
-            },
-            {
-              icon: '▦',
-              title: 'Precision Floor Plans',
-              body: 'Apple LiDAR scans walls, doors, and room geometry automatically on supported devices. Dead-reckoning fallback keeps any inspector mapping in real time.',
-              comingSoon: true,
+              title: 'Inspector-Verified HITL',
+              body: 'Every AI finding lands in the Inspect Screen with Confirm, Adjust, and Reject controls. The inspector\'s verdict is the report — AI proposes, the licensed pro decides.',
             },
             {
               icon: '◉',
@@ -285,31 +279,7 @@ export default function Home() {
           display: 'flex', gap: 40, justifyContent: 'center', alignItems: 'flex-start',
           flexWrap: 'wrap',
         }}>
-          {/* Screenshot 1 — Inspection overview + floor plan */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
-            <div style={{
-              borderRadius: 36, overflow: 'hidden',
-              border: '1px solid rgba(0,243,255,0.18)',
-              boxShadow: '0 0 60px rgba(0,243,255,0.08)',
-              width: 240,
-            }}>
-              <Image
-                src="/screenshot_floorplan.png"
-                alt="Ledrix inspection overview with live floor plan"
-                width={240}
-                height={520}
-                style={{ display: 'block', width: '100%', height: 'auto' }}
-              />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Live Floor Plan</div>
-              <div style={{ color: '#444', fontSize: 11, maxWidth: 200, lineHeight: 1.6 }}>
-                Real-time spatial mapping as you walk the property.
-              </div>
-            </div>
-          </div>
-
-          {/* Screenshot 2 — Anomaly detail */}
+          {/* Screenshot 1 — Anomaly detail */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
             <div style={{
               borderRadius: 36, overflow: 'hidden',
@@ -333,29 +303,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Screenshot 3 — Anomaly pinned to floor plan */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
-            <div style={{
-              borderRadius: 36, overflow: 'hidden',
-              border: '1px solid rgba(0,243,255,0.18)',
-              boxShadow: '0 0 60px rgba(0,243,255,0.08)',
-              width: 240,
-            }}>
-              <Image
-                src="/site_image_2.png"
-                alt="Ledrix anomaly pinned to live floor plan"
-                width={240}
-                height={520}
-                style={{ display: 'block', width: '100%', height: 'auto' }}
-              />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>GPS-Anchored Evidence</div>
-              <div style={{ color: '#444', fontSize: 11, maxWidth: 200, lineHeight: 1.6 }}>
-                Every anomaly pinned to an exact location on the live floor plan.
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -496,9 +443,9 @@ export default function Home() {
                 body: 'Instead of tapping Electrical → Panel → Federal Pacific, you say: "Ledrix, identify critical fire risk: Federal Pacific Stab-Lok panel in garage." The AI handles categorization, the write-up, and severity tagging instantly.',
               },
               {
-                label: 'SPATIAL AWARENESS',
-                title: 'It already knows where you are.',
-                body: 'On LiDAR-capable devices, Ledrix uses Apple RoomPlan to scan walls and room geometry with millimeter precision. On any device, the dead-reckoning engine tracks your position as you walk — no manual room entry required.',
+                label: 'INSPECTOR-VERIFIED',
+                title: 'AI proposes. You decide.',
+                body: 'Every finding the cloud returns lands in your Inspect Screen with Confirm, Adjust, and Reject controls. The licensed inspector\'s verdict is what ships in the report — defensible, auditable, and signed by you.',
               },
               {
                 label: 'INSTANT DELIVERY',

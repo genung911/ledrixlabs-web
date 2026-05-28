@@ -58,7 +58,7 @@ export default function TermsOfService() {
           },
           {
             title: '9. License',
-            body: `Ledrix Labs grants you a limited, non-exclusive, non-transferable, revocable license to use the Ledrix application for your professional inspection work. You may not copy, modify, distribute, sell, sublicense, reverse-engineer, or create derivative works from any part of the platform. All intellectual property in the platform, including but not limited to the VAL AI system, spatial mapping engine, and evidence chain technology, remains the exclusive property of Ledrix Labs.`,
+            body: `Ledrix Labs grants you a limited, non-exclusive, non-transferable, revocable license to use the Ledrix application for your professional inspection work. You may not copy, modify, distribute, sell, sublicense, reverse-engineer, or create derivative works from any part of the platform. All intellectual property in the platform, including but not limited to the cloud anomaly-detection pipeline, inspector-verified findings workflow, and evidence chain technology, remains the exclusive property of Ledrix Labs.`,
           },
           {
             title: '10. Account',
