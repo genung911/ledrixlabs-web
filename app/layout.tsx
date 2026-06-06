@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Ledrix Labs — Infrastructure Intelligence',
-  description: 'AI-powered home inspection platform for licensed inspectors. Cloud anomaly detection, inspector-verified findings, instant PDF reports, and client portal delivery.',
+  title: 'Ledrix — The AI Backup for Licensed Inspectors',
+  description: 'Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject. Catch the defect you walked past and deliver the report before you leave the driveway.',
   metadataBase: new URL('https://ledrixlabs.com'),
   openGraph: {
-    title: 'Ledrix Labs — Infrastructure Intelligence',
-    description: 'AI-powered home inspection platform. Before disaster strikes.',
+    title: 'Ledrix — The AI Backup for Licensed Inspectors',
+    description: 'Catch what you walked past. Deliver before you leave. AI-assisted inspection with inspector-verified findings, instant PDF reports, and a client home portal.',
     url: 'https://ledrixlabs.com',
     siteName: 'Ledrix Labs',
     type: 'website',

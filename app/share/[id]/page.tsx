@@ -683,7 +683,7 @@ function NotFound() {
 }
 
 // ─── NavBar ───────────────────────────────────────────────────────────────────
-function NavBar({ address, onShare, copied, active, onBack }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void }) {
+function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void; signedIn?: boolean; onSignOut?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '14px 20px', borderBottom: `1px solid #111`, background: 'rgba(8,8,8,0.97)',
@@ -710,12 +710,20 @@ function NavBar({ address, onShare, copied, active, onBack }: { address: string;
           </div>
         )}
       </div>
-      <button onClick={onShare} style={{
-        background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '33'}`,
-        color: copied ? GREEN : ACCENT, borderRadius: 8, padding: '7px 12px',
-        fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer',
-        fontFamily: 'Roboto Mono, monospace', flexShrink: 0,
-      }}>{copied ? 'COPIED' : 'SHARE'}</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {signedIn && (
+          <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: `${CYAN}14`, border: `1px solid ${CYAN}33`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
+            <span style={{ width: 6, height: 6, borderRadius: 3, background: CYAN, display: 'inline-block' }} />
+            <span style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
+          </button>
+        )}
+        <button onClick={onShare} style={{
+          background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '33'}`,
+          color: copied ? GREEN : ACCENT, borderRadius: 8, padding: '7px 12px',
+          fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer',
+          fontFamily: 'Roboto Mono, monospace',
+        }}>{copied ? 'COPIED' : 'SHARE'}</button>
+      </div>
     </div>
   );
 }
@@ -1376,7 +1384,7 @@ export default function SharePage() {
         button{-webkit-tap-highlight-color:transparent}
       `}</style>
 
-      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} />
+      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} />}

@@ -66,4 +66,7 @@ body {
   .ledrix-comparison-grid {
     min-width: 520px;
   }
+  .ledrix-liveapp-grid {
+    gap: 40px !important;
+  }
 }

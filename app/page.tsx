@@ -78,14 +78,15 @@ export default function Home() {
         </h1>
 
         <h2 style={{ fontSize: 'clamp(28px, 6vw, 72px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: -2, marginBottom: 28, maxWidth: 900 }}>
-          Infrastructure Intelligence.<br />
-          <span style={{ color: ACCENT }}>Before Disaster Strikes.</span>
+          Catch what you walked past.<br />
+          <span style={{ color: ACCENT }}>Deliver before you leave.</span>
         </h2>
 
-        <p style={{ fontSize: 18, color: '#555', maxWidth: 560, lineHeight: 1.7, marginBottom: 48 }}>
-          Ledrix is an AI-powered inspection platform for licensed professionals —
-          combining real-time anomaly detection, voice commands, and automated
-          reporting to catch what eyes miss.
+        <p style={{ fontSize: 18, color: '#555', maxWidth: 580, lineHeight: 1.7, marginBottom: 48 }}>
+          Ledrix is the AI backup for licensed inspectors. Capture a photo and it
+          drafts the finding in seconds — you confirm, adjust, or reject. It surfaces
+          the significant defect you photographed but never logged, and the report
+          writes itself as you walk.
         </p>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -124,10 +125,10 @@ export default function Home() {
           borderTop: '1px solid #111', flexWrap: 'wrap', justifyContent: 'center',
         }}>
           {[
-            { val: 'AI', label: 'Anomaly Detection' },
-            { val: 'MIC', label: 'Voice Logging' },
-            { val: 'APP', label: 'Client Home Portal' },
-            { val: '4K', label: 'Evidence Capture' },
+            { val: 'SEC', label: 'AI Finding Drafts' },
+            { val: 'HITL', label: 'Inspector-Verified' },
+            { val: '1-TAP', label: 'Report Delivery' },
+            { val: 'OFFLINE', label: 'Works Anywhere' },
           ].map(s => (
             <div key={s.val} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 28, fontWeight: 900, color: ACCENT, letterSpacing: -1 }}>{s.val}</div>
@@ -181,8 +182,9 @@ export default function Home() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
-                'Cloud GPT-4o analyzes each inspection photo as you capture it',
+                'Cloud GPT-4o drafts a structured finding the moment you capture the photo',
                 'Inspector confirms, adjusts, or rejects every AI finding — your judgment is the final word',
+                'Surfaces the significant defect you photographed but never logged — a backup, never a replacement',
                 'PDF report and client portal delivered the moment you walk out',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -211,8 +213,7 @@ export default function Home() {
             {
               icon: '⬡',
               title: 'AI Anomaly Detection',
-              body: 'Real-time structural defect identification as you scan. Every finding tagged, timestamped, and GPS-anchored to the property record.',
-              comingSoon: true,
+              body: 'Capture a photo and cloud GPT-4o returns a structured finding in seconds — classified, severity-tagged, and written up. Every result is a proposal the inspector confirms, adjusts, or rejects.',
             },
             {
               icon: <ValDeltaSVG size={28} />,
@@ -237,26 +238,13 @@ export default function Home() {
           ].map(f => (
             <div key={f.title} style={{
               backgroundColor: '#0a0a0a',
-              border: f.comingSoon ? '1px solid rgba(0,243,255,0.2)' : '1px solid #111',
+              border: '1px solid #111',
               padding: '36px 32px',
               position: 'relative',
               overflow: 'hidden',
             }}>
-              {f.comingSoon && (
-                <div style={{
-                  position: 'absolute', top: 16, right: 16,
-                  backgroundColor: 'rgba(0,243,255,0.08)',
-                  border: '1px solid rgba(0,243,255,0.25)',
-                  color: ACCENT,
-                  fontSize: 9, fontWeight: 700, letterSpacing: 2,
-                  fontFamily: 'Roboto Mono, monospace',
-                  padding: '4px 8px', borderRadius: 4,
-                }}>
-                  COMING SOON
-                </div>
-              )}
-              <div style={{ fontSize: 28, marginBottom: 16, color: f.comingSoon ? ACCENT : ACCENT, opacity: f.comingSoon ? 0.7 : 1 }}>{f.icon}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 10, letterSpacing: -0.5, color: f.comingSoon ? '#aaa' : '#fff' }}>{f.title}</h3>
+              <div style={{ fontSize: 28, marginBottom: 16, color: ACCENT }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 10, letterSpacing: -0.5, color: '#fff' }}>{f.title}</h3>
               <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{f.body}</p>
             </div>
           ))}
@@ -275,32 +263,50 @@ export default function Home() {
           </h2>
         </div>
 
-        <div style={{
-          display: 'flex', gap: 40, justifyContent: 'center', alignItems: 'flex-start',
+        <div className="ledrix-liveapp-grid" style={{
+          display: 'flex', gap: 64, justifyContent: 'center', alignItems: 'center',
           flexWrap: 'wrap',
         }}>
-          {/* Screenshot 1 — Anomaly detail */}
+          {/* Phone — Anomaly detail */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
             <div style={{
               borderRadius: 36, overflow: 'hidden',
               border: '1px solid rgba(0,243,255,0.18)',
               boxShadow: '0 0 60px rgba(0,243,255,0.08)',
-              width: 240,
+              width: 250,
             }}>
               <Image
                 src="/screenshot_anomaly.png"
                 alt="Ledrix anomaly detail with AI analysis"
-                width={240}
-                height={520}
+                width={250}
+                height={542}
                 style={{ display: 'block', width: '100%', height: 'auto' }}
               />
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>AI Anomaly Detail</div>
-              <div style={{ color: '#444', fontSize: 11, maxWidth: 200, lineHeight: 1.6 }}>
-                Every finding tagged, classified, and repair-cost estimated automatically.
+              <div style={{ color: '#444', fontSize: 11, maxWidth: 220, lineHeight: 1.6 }}>
+                Every finding tagged, classified, and severity-rated — the inspector confirms it.
               </div>
             </div>
+          </div>
+
+          {/* Value points beside the phone */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 380 }}>
+            {[
+              { k: 'CAPTURE', t: 'Shoot it, see the finding', b: 'Tap the shutter and a structured write-up comes back in seconds — system, severity, and recommended action.' },
+              { k: 'CONFIRM', t: 'You have the final say', b: 'Confirm, adjust, or reject every proposal. Nothing reaches the report until a licensed inspector signs off.' },
+              { k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway. The PDF and the client home portal go out in a single tap.' },
+            ].map(item => (
+              <div key={item.k} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT, marginTop: 8, flexShrink: 0 }} />
+                <div>
+                  <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{item.k}</div>
+                  <div style={{ color: '#fff', fontSize: 17, fontWeight: 800, letterSpacing: -0.5, marginBottom: 8 }}>{item.t}</div>
+                  <div style={{ color: '#555', fontSize: 13, lineHeight: 1.7 }}>{item.b}</div>
+                </div>
+              </div>
+            ))}
           </div>
 
         </div>
@@ -485,25 +491,23 @@ export default function Home() {
               ['Eyes on the Screen: Constantly checking boxes.', 'Eyes on the Infrastructure: AI-assisted observation.'],
               ['Manual Data Entry: Tapping through 100+ sections.', 'Natural Language: "Ledrix, log minor crack in foundation."'],
               ['Late-Night Reporting: 2 hours typing at home.', 'Instant Delivery: Report finished when you leave.'],
-              ['Static Images: Photos with no context.', 'GPS-Anchored Evidence: Every photo tied to a 2D map.'],
-            ].map(([old, neo], i) => (
-              <>
+              ['Static Images: Photos with no context.', 'Anchored Evidence: Every photo carries timestamp, GPS, and lens data.'],
+            ].flatMap(([old, neo], i) => ([
                 <div key={`old-${i}`} style={{
                   padding: '24px 32px', borderRight: '1px solid #161616',
                   borderBottom: i < 3 ? '1px solid #161616' : 'none',
                   backgroundColor: '#080808',
                 }}>
                   <p style={{ fontSize: 13, color: '#444', lineHeight: 1.7 }}>{old}</p>
-                </div>
+                </div>,
                 <div key={`new-${i}`} style={{
                   padding: '24px 32px',
                   borderBottom: i < 3 ? '1px solid #161616' : 'none',
                   backgroundColor: '#00F3FF05',
                 }}>
                   <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.7 }}>{neo}</p>
-                </div>
-              </>
-            ))}
+                </div>,
+            ]))}
           </div>
           </div>
 

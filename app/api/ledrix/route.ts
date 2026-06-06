@@ -11,7 +11,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? '').replace(/\/$/, '');
 const GATEWAY_KEY = process.env.GATEWAY_KEY ?? '';
-const SUPA_URL    = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+// Base project URL (strip any /rest/v1 suffix — same normalization as the proxy),
+// else auth.getUser + the REST fetch build invalid paths.
+const SUPA_URL    = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SERVICE     = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
