@@ -1182,13 +1182,27 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
   useEffect(() => {
     if (!access || insight) return;
     let live = true;
+    const cacheKey = `ledrix_insight_${shareId}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const o = JSON.parse(cached);
+        if (o?.text && Date.now() - o.t < 12 * 3600 * 1000) { setInsight(o.text); return; }
+      }
+    } catch { /* no cache */ }
     (async () => {
       setLoading(true);
       try {
         const { data } = await supabase.auth.getSession();
         const resp = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify({ shareId, mode: 'insight' }) });
         const j = await resp.json().catch(() => ({}));
-        if (live && resp.ok) setInsight(j.text || null);
+        if (!live) return;
+        if (resp.ok && j.text) {
+          setInsight(j.text);
+          try { localStorage.setItem(cacheKey, JSON.stringify({ text: j.text, t: Date.now() })); } catch { /* quota */ }
+        } else if (j.error) {
+          setInsight(j.error);   // surface e.g. the daily-cap message
+        }
       } finally { if (live) setLoading(false); }
     })();
     return () => { live = false; };

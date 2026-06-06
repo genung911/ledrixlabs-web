@@ -8,6 +8,7 @@
 // a per-call token cap bound the cost.
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
 
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? '').replace(/\/$/, '');
 const GATEWAY_KEY = process.env.GATEWAY_KEY ?? '';
@@ -45,6 +46,12 @@ export async function POST(req: NextRequest) {
   const admin = createClient(SUPA_URL, SERVICE);
   const { data: { user }, error: authErr } = await admin.auth.getUser(token);
   if (authErr || !user) return NextResponse.json({ error: 'Sign in to use Ledrix.' }, { status: 401 });
+
+  // Free-beta cap: bound per-user daily AI calls (cost safety).
+  const used = await bumpUsage(admin, user.id);
+  if (used > DAILY_CAP) {
+    return NextResponse.json({ error: `You've used today's free Ledrix questions (${DAILY_CAP}). It resets tomorrow.` }, { status: 429 });
+  }
 
   let payload: { shareId?: string; mode?: 'chat' | 'insight'; messages?: Msg[] };
   try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
