@@ -731,10 +731,11 @@ function Footer() {
 }
 
 // ─── HOME TAB ─────────────────────────────────────────────────────────────────
-function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
+function HomeTab({ record, anomalies, projects, reminders, onTabChange, subscribed, onUnlock }: {
   record: HomeRecord; anomalies: Anomaly[];
   projects: Project[]; reminders: Reminder[];
   onTabChange: (t: Tab) => void;
+  subscribed: boolean; onUnlock: () => void;
 }) {
   const { score, grade, color: scoreColor } = scoreCalc(anomalies);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
@@ -794,6 +795,11 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Ledrix Insight — the AI intelligence layer (paid; locked teaser when not) */}
+      <div style={{ marginTop: 16 }}>
+        <InsightSection subscribed={subscribed} insight={null} onUnlock={onUnlock} />
       </div>
 
       {/* Needs attention — the genuinely useful surface (top safety/deficiency) */}
@@ -1091,6 +1097,120 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
   );
 }
 
+// ─── Ledrix (Phase 1 experience layer) ──────────────────────────────────────
+// Live chat + Insight are the paid tier. Cyan returns here ONLY as the AI accent.
+// PLACEHOLDER pricing — set real numbers before launch.
+const PLAN_BASE_PRICE  = '$4.99';
+const PLAN_BASE_TOKENS = '500K tokens / mo · ~150 questions';
+const PLAN_PAYG        = '$0.01 / 1K tokens';
+
+function PlanCard({ title, price, sub, highlight }: { title: string; price: string; sub: string; highlight?: boolean }) {
+  return (
+    <div style={{ background: CARD, border: `1px solid ${highlight ? CYAN + '55' : BORDER}`, borderRadius: 14, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+        <span style={{ color: highlight ? CYAN : '#e2e8f0', fontSize: 10, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace' }}>{title}</span>
+        <span style={{ color: '#fff', fontSize: 15, fontWeight: 900 }}>{price}</span>
+      </div>
+      <div style={{ color: MED, fontSize: 10, lineHeight: 1.5 }}>{sub}</div>
+    </div>
+  );
+}
+
+function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: BG, borderTop: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0', padding: '20px 18px 28px' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: '#222', margin: '0 auto 18px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+          <ValDeltaSVG size={20} color={CYAN} />
+          <span style={{ color: CYAN, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
+        </div>
+        <div style={{ color: '#fff', fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
+        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>Ask Ledrix anything about your home — what a finding means, repair priorities, costs, what to do next — and get a living AI Insight that stays current with your record. Free members get the record; Ledrix members get the intelligence.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+          <PlanCard title="LEDRIX PLUS" price={`${PLAN_BASE_PRICE}/mo`} sub={PLAN_BASE_TOKENS} highlight />
+          <PlanCard title="PAY AS YOU GO" price={PLAN_PAYG} sub="Only pay for what you ask — no monthly commitment." />
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 18 }}>
+          <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
+          <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
+        </div>
+        <button onClick={() => alert('Stripe checkout connects in Phase 3')} style={{ width: '100%', background: CYAN, color: '#001018', border: 'none', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>SUBSCRIBE TO LEDRIX</button>
+        <button onClick={onClose} style={{ width: '100%', background: 'none', border: 'none', color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: 12, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>MAYBE LATER</button>
+      </div>
+    </div>
+  );
+}
+
+function InsightSection({ subscribed, insight, onUnlock }: { subscribed: boolean; insight?: string | null; onUnlock: () => void }) {
+  return (
+    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${CYAN}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <ValDeltaSVG size={14} color={CYAN} />
+        <span style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
+      </div>
+      {subscribed && insight ? (
+        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65 }}>{insight}</p>
+      ) : (
+        <>
+          <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, filter: 'blur(4.5px)', userSelect: 'none' }}>
+            Your home is in strong overall condition, with a few maintenance items worth scheduling before winter. The water heater is approaching the end of its typical service life, and the panel shows&hellip;
+          </p>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(180deg, rgba(10,10,10,0.25), rgba(10,10,10,0.86))' }}>
+            <button onClick={onUnlock} style={{ background: CYAN, color: '#001018', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>UNLOCK LEDRIX INSIGHT</button>
+            <span style={{ color: MED, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>Live AI analysis of your home</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LedrixPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [msgs, setMsgs]   = useState<{ role: 'ledrix' | 'user'; text: string }[]>([
+    { role: 'ledrix', text: "Hi — I'm Ledrix. Ask me anything about your home: a finding, a repair, what something costs, or what to do next." },
+  ]);
+  const [input, setInput] = useState('');
+  if (!open) return null;
+  const send = () => {
+    const t = input.trim(); if (!t) return;
+    setMsgs(m => [...m, { role: 'user', text: t }, { role: 'ledrix', text: 'Live answers connect in Phase 2 — this is the chat shell.' }]);
+    setInput('');
+  };
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 210, maxWidth: 430, margin: '0 auto', background: BG, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${BORDER}` }}>
+        <ValDeltaSVG size={20} color={CYAN} />
+        <span style={{ color: '#fff', fontSize: 13, fontWeight: 900, flex: 1 }}>Ledrix</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '82%',
+            background: m.role === 'user' ? '#161616' : `${CYAN}10`, border: `1px solid ${m.role === 'user' ? BORDER : CYAN + '2a'}`,
+            borderRadius: 12, padding: '10px 13px', color: m.role === 'user' ? '#e2e8f0' : TEXT, fontSize: 12, lineHeight: 1.55 }}>{m.text}</div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderTop: `1px solid ${BORDER}` }}>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Ask Ledrix about your home…"
+          style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '11px 14px', color: '#fff', fontSize: 13, outline: 'none' }} />
+        <button onClick={send} style={{ width: 44, background: CYAN, color: '#001018', border: 'none', borderRadius: 10, fontWeight: 900, cursor: 'pointer' }}>↑</button>
+      </div>
+    </div>
+  );
+}
+
+function LedrixFab({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} aria-label="Ask Ledrix" style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120,
+      width: 56, height: 56, borderRadius: '50%', background: CYAN, border: 'none', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 22px ${CYAN}40` }}>
+      <ValDeltaSVG size={26} color="#001018" />
+    </button>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function SharePage() {
   const params  = useParams();
@@ -1109,6 +1229,13 @@ export default function SharePage() {
   // history; back returns to wherever you came from (home if the stack is empty).
   const go   = (t: Tab) => { setHist(h => [...h, tab]); setTab(t); };
   const back = () => setHist(h => { const n = [...h]; setTab(n.pop() ?? 'home'); return n; });
+
+  // Ledrix paid tier (Phase 1: subscribed is stubbed false; Phase 2/3 wire it to
+  // Supabase Auth + Stripe). Tapping Ledrix / the Insight gates to the paywall.
+  const [subscribed]              = useState(false);
+  const [subOpen, setSubOpen]     = useState(false);
+  const [ledrixOpen, setLedrixOpen] = useState(false);
+  const openLedrix = () => (subscribed ? setLedrixOpen(true) : setSubOpen(true));
   const seeded = useRef(false);
 
   const loadProjects = useCallback(async () => {
@@ -1190,11 +1317,15 @@ export default function SharePage() {
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} />
 
-      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} />}
+      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} subscribed={subscribed} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
+
+      <LedrixFab onClick={openLedrix} />
+      <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} />
+      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} />
     </div>
   );
 }
