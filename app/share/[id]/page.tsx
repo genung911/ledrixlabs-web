@@ -61,7 +61,7 @@ type HomeRecord = {
   zip?: string; year_built?: string; sqft?: string; beds?: string; baths?: string;
   garage?: string; inspector?: string; company?: string; license_number?: string;
   inspection_date?: string; inspection_type?: string;
-  anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string;
+  anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string; cover_url?: string;
 };
 type Project = {
   id: string; share_id: string; title: string; system?: string; priority?: string;
@@ -202,6 +202,29 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
     }
     const reminders = buildMaintenanceReminders(shareId, specs);
     if (reminders.length > 0) await supaPost('home_reminders', reminders);
+  }
+}
+
+// ─── Icon ─────────────────────────────────────────────────────────────────────
+// Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
+// look — replaces the inconsistent unicode/emoji glyphs.
+type IconName = 'home' | 'findings' | 'projects' | 'reminders' | 'docs';
+function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number; color?: string }) {
+  const common = {
+    width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color,
+    strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  };
+  switch (name) {
+    case 'home':
+      return (<svg {...common}><path d="M3 9.5 12 3l9 6.5" /><path d="M5 10v10h14V10" /><path d="M9.5 20v-6h5v6" /></svg>);
+    case 'findings':
+      return (<svg {...common}><path d="M6 3h12l3.5 6L12 21.5 2.5 9z" /><path d="M2.5 9h19M9 3l-3 6 6 12 6-12-3-6" /></svg>);
+    case 'projects':
+      return (<svg {...common}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>);
+    case 'reminders':
+      return (<svg {...common}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>);
+    case 'docs':
+      return (<svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8M16 17H8M10 9H8" /></svg>);
   }
 }
 
@@ -625,27 +648,17 @@ function NotFound() {
   );
 }
 
-// ─── StatBox ──────────────────────────────────────────────────────────────────
-function StatBox({ value, label, color }: { value: number | string; label: string; color: string }) {
-  return (
-    <div style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
-      <div style={{ color, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{value}</div>
-      <div style={{ color: DIM, fontSize: 7, fontWeight: 900, letterSpacing: 1.5, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
-    </div>
-  );
-}
-
 // ─── TabBar ───────────────────────────────────────────────────────────────────
 function TabBar({ active, onChange, counts }: {
   active: Tab; onChange: (t: Tab) => void;
   counts: { projects: number; reminders: number; findings: number };
 }) {
-  const tabs: [Tab, string, string][] = [
-    ['home', '⌂', 'HOME'],
-    ['findings', '◈', `FINDINGS`],
-    ['projects', '⚒', `PROJECTS`],
-    ['reminders', '⏰', `REMINDERS`],
-    ['docs', '☰', 'DOCS'],
+  const tabs: [Tab, IconName, string][] = [
+    ['home', 'home', 'HOME'],
+    ['findings', 'findings', 'FINDINGS'],
+    ['projects', 'projects', 'PROJECTS'],
+    ['reminders', 'reminders', 'REMINDERS'],
+    ['docs', 'docs', 'DOCS'],
   ];
   const badge = (t: Tab) => {
     if (t === 'findings') return counts.findings;
@@ -672,7 +685,7 @@ function TabBar({ active, onChange, counts }: {
                 borderRadius: 99, minWidth: 14, height: 14, display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: 8, fontWeight: 900, color: '#fff', padding: '0 3px' }}>{b}</div>
             )}
-            <div style={{ fontSize: 16, lineHeight: 1, color: isActive ? ACCENT : DIM, marginBottom: 3 }}>{icon}</div>
+            <div style={{ lineHeight: 1, marginBottom: 3 }}><Icon name={icon} size={20} color={isActive ? ACCENT : DIM} /></div>
             <div style={{ fontSize: 7, fontWeight: 900, letterSpacing: 0.5,
               color: isActive ? ACCENT : DIM, fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
             {isActive && (
@@ -738,60 +751,65 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
   const deficien = anomalies.filter(a => a.severity === 'anomaly');
-  const cosmetic = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly');
   const openProjects = projects.filter(p => p.status !== 'resolved');
   const dueReminders = reminders.filter(r => !r.completed);
 
-  const pillars: [Tab, string, string, string, number | string][] = [
-    ['findings', '◈', 'FINDINGS', anomalies.length > 0 ? CRITICAL : GREEN, anomalies.length],
-    ['projects', '⚒', 'PROJECTS', openProjects.length > 0 ? WARN : GREEN, `${projects.filter(p=>p.status==='resolved').length}/${projects.length}`],
-    ['reminders', '⏰', 'REMINDERS', dueReminders.length > 0 ? ACCENT : GREEN, dueReminders.length],
-    ['docs', '☰', 'DOCS', DIM, '—'],
+  const pillars: [Tab, IconName, string, string, number | string][] = [
+    ['findings', 'findings', 'FINDINGS', anomalies.length > 0 ? CRITICAL : GREEN, anomalies.length],
+    ['projects', 'projects', 'PROJECTS', openProjects.length > 0 ? WARN : GREEN, `${projects.filter(p=>p.status==='resolved').length}/${projects.length}`],
+    ['reminders', 'reminders', 'REMINDERS', dueReminders.length > 0 ? ACCENT : GREEN, dueReminders.length],
+    ['docs', 'docs', 'DOCS', DIM, '—'],
   ];
+  const urgent = critical.concat(deficien).slice(0, 3);
 
   return (
     <div>
-      {/* Hero card */}
+      {/* Hero card — the report cover shot (front-of-house photo), with the same
+          dark scrim + L-Index as the inspector report. Falls back to the gridded
+          gradient when no cover photo was published. */}
       <div style={{ margin: '16px 16px 0', borderRadius: 20, overflow: 'hidden',
-        border: `1px solid #161616`, position: 'relative', height: 200,
+        border: `1px solid #161616`, position: 'relative', height: 232,
         background: 'linear-gradient(135deg,#0a1520 0%,#080e18 50%,#060c14 100%)',
       }}>
-        <div style={{ position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(0,243,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,243,255,0.04) 1px,transparent 1px)',
-          backgroundSize: '28px 28px' }} />
+        {record.cover_url ? (
+          <>
+            <img src={record.cover_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(4,7,11,0.45) 42%, rgba(6,8,12,0.94) 100%)' }} />
+          </>
+        ) : (
+          <div style={{ position: 'absolute', inset: 0,
+            backgroundImage: 'linear-gradient(rgba(0,243,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,243,255,0.04) 1px,transparent 1px)',
+            backgroundSize: '28px 28px' }} />
+        )}
         <div style={{ position: 'absolute', top: 14, right: 14 }}>
           <ScoreRing score={score} grade={grade} color={scoreColor} />
-          <div style={{ textAlign: 'center', color: DIM, fontSize: 7, fontWeight: 900, letterSpacing: 2, marginTop: 2, fontFamily: 'Roboto Mono, monospace' }}>L-INDEX</div>
+          <div style={{ textAlign: 'center', color: '#bbb', fontSize: 7, fontWeight: 900, letterSpacing: 2, marginTop: 2, fontFamily: 'Roboto Mono, monospace' }}>L-INDEX</div>
         </div>
         <div style={{ position: 'absolute', inset: 0, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div style={{ color: ACCENT, fontSize: 7, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>
             LEDRIX HOME RECORD · VERIFIED
           </div>
-          <div style={{ color: '#fff', fontSize: 18, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, maxWidth: '70%' }}>
+          <div style={{ color: '#fff', fontSize: 19, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, maxWidth: '78%', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>
             {record.address ?? 'ADDRESS PENDING'}
           </div>
-          {subAddress && <div style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
-          <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginTop: 8, fontFamily: 'Roboto Mono, monospace' }}>
-            INSPECTED {fmtDate(record.inspection_date).toUpperCase()}
+          {subAddress && <div style={{ color: '#cbd5e1', fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
+          {/* Severity summary folded inline (replaces the separate 4-box stat row) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 9, fontFamily: 'Roboto Mono, monospace', fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>
+            <span style={{ color: '#9aa3ad' }}>INSPECTED {fmtDate(record.inspection_date).toUpperCase()}</span>
+            <span style={{ color: critical.length > 0 ? CRITICAL : '#9aa3ad' }}>{critical.length} SAFETY</span>
+            <span style={{ color: deficien.length > 0 ? WARN : '#9aa3ad' }}>{deficien.length} DEFICIENCY</span>
+            <span style={{ color: '#9aa3ad' }}>{anomalies.length} TOTAL</span>
           </div>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div style={{ display: 'flex', gap: 8, padding: '12px 16px' }}>
-        <StatBox value={critical.length}  label="SAFETY"   color={critical.length  > 0 ? CRITICAL : DIM} />
-        <StatBox value={deficien.length}  label="DEFICIEN." color={deficien.length  > 0 ? WARN    : DIM} />
-        <StatBox value={cosmetic.length}  label="MAINT."   color={cosmetic.length  > 0 ? ACCENT  : DIM} />
-        <StatBox value={anomalies.length} label="TOTAL"    color={TEXT} />
-      </div>
-
-      {/* Priority rail */}
-      {critical.concat(deficien).slice(0, 3).length > 0 && (
-        <div style={{ padding: '0 16px 16px' }}>
+      {/* Needs attention — the genuinely useful surface (top safety/deficiency) */}
+      {urgent.length > 0 && (
+        <div style={{ padding: '16px 16px 4px' }}>
           <div style={{ color: CRITICAL, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>
-            PRIORITY ATTENTION
+            NEEDS ATTENTION
           </div>
-          {critical.concat(deficien).slice(0, 3).map((a, i) => (
+          {urgent.map((a, i) => (
             <div key={i} onClick={() => onTabChange('findings')} style={{
               background: CARD, border: `1px solid ${BORDER}`,
               borderLeft: `3px solid ${SEV_COLOR[a.severity ?? 'cosmetic'] ?? DIM}`,
@@ -804,36 +822,32 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
         </div>
       )}
 
-      {/* Pillar grid */}
-      <div style={{ padding: '0 16px 16px' }}>
-        <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>
-          YOUR HOME APP
-        </div>
+      {/* The four screens (the home dashboard) */}
+      <div style={{ padding: '16px 16px 12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {pillars.map(([tab, icon, label, color, count]) => (
             <button key={tab} onClick={() => onTabChange(tab)} style={{
               background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14,
-              padding: '18px 16px', textAlign: 'left', cursor: 'pointer',
+              padding: '16px 16px', textAlign: 'left', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              <div style={{ fontSize: 20, marginBottom: 8 }}>{icon}</div>
-              <div style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 900, marginBottom: 4 }}>{label}</div>
-              <div style={{ color, fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{count}</div>
+              <Icon name={icon} size={22} color={color} />
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>{label}</span>
+                <span style={{ color, fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{count}</span>
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Property Passport banner */}
-      <div style={{ margin: '0 16px 16px', background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14, padding: '14px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ color: ACCENT, fontSize: 18, lineHeight: 1, flexShrink: 0, marginTop: 2 }}>◈</div>
-          <div>
-            <div style={{ color: ACCENT, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 4 }}>PROPERTY PASSPORT · HOME FAX</div>
-            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65 }}>
-              This record is permanently linked to this property and transfers to every future owner — building a verified history that protects buyers and sellers alike.
-            </p>
-          </div>
-        </div>
+      {/* Property Passport — slimmed to a single confident line */}
+      <div style={{ margin: '0 16px 16px', display: 'flex', alignItems: 'center', gap: 10,
+        background: `${ACCENT}06`, border: `1px solid ${ACCENT}1c`, borderRadius: 12, padding: '12px 14px' }}>
+        <Icon name="docs" size={16} color={ACCENT} />
+        <p style={{ color: TEXT, fontSize: 10.5, lineHeight: 1.55, margin: 0 }}>
+          <span style={{ color: ACCENT, fontWeight: 800 }}>Property Passport.</span> Permanently linked to this home and transfers to every future owner.
+        </p>
       </div>
 
       <Footer />
