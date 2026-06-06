@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { supabase } from '../../../lib/supabaseClient';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
@@ -731,11 +732,11 @@ function Footer() {
 }
 
 // ─── HOME TAB ─────────────────────────────────────────────────────────────────
-function HomeTab({ record, anomalies, projects, reminders, onTabChange, subscribed, onUnlock }: {
+function HomeTab({ record, anomalies, projects, reminders, onTabChange, access, shareId, onUnlock }: {
   record: HomeRecord; anomalies: Anomaly[];
   projects: Project[]; reminders: Reminder[];
   onTabChange: (t: Tab) => void;
-  subscribed: boolean; onUnlock: () => void;
+  access: boolean; shareId: string; onUnlock: () => void;
 }) {
   const { score, grade, color: scoreColor } = scoreCalc(anomalies);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
@@ -799,7 +800,7 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange, subscrib
 
       {/* Ledrix Insight — the AI intelligence layer (paid; locked teaser when not) */}
       <div style={{ marginTop: 16 }}>
-        <InsightSection subscribed={subscribed} insight={null} onUnlock={onUnlock} />
+        <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
       </div>
 
       {/* Needs attention — the genuinely useful surface (top safety/deficiency) */}
@@ -1117,6 +1118,18 @@ function PlanCard({ title, price, sub, highlight }: { title: string; price: stri
 }
 
 function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [email, setEmail] = useState('');
+  const [sent,  setSent]  = useState(false);
+  const [busy,  setBusy]  = useState(false);
+  const [err,   setErr]   = useState('');
+  const sendLink = async () => {
+    const e = email.trim();
+    if (!e || !/.+@.+\..+/.test(e)) { setErr('Enter a valid email.'); return; }
+    setBusy(true); setErr('');
+    const { error } = await supabase.auth.signInWithOtp({ email: e, options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.href : undefined } });
+    setBusy(false);
+    if (error) setErr(error.message); else setSent(true);
+  };
   if (!open) return null;
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -1136,22 +1149,51 @@ function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void 
           <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
           <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
         </div>
-        <button onClick={() => alert('Stripe checkout connects in Phase 3')} style={{ width: '100%', background: CYAN, color: '#001018', border: 'none', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>SUBSCRIBE TO LEDRIX</button>
+        {sent ? (
+          <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
+            <div style={{ color: CYAN, fontSize: 13, fontWeight: 900, marginBottom: 6 }}>Check your email ✉</div>
+            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: '#fff' }}>{email}</b>. Tap it to unlock Ledrix.</p>
+          </div>
+        ) : (
+          <>
+            <input value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && sendLink()} placeholder="you@email.com" type="email"
+              style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: '#fff', fontSize: 14, outline: 'none', marginBottom: 8 }} />
+            {err && <div style={{ color: CRITICAL, fontSize: 10, marginBottom: 8 }}>{err}</div>}
+            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: CYAN, color: '#001018', border: 'none', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
+          </>
+        )}
         <button onClick={onClose} style={{ width: '100%', background: 'none', border: 'none', color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: 12, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>MAYBE LATER</button>
       </div>
     </div>
   );
 }
 
-function InsightSection({ subscribed, insight, onUnlock }: { subscribed: boolean; insight?: string | null; onUnlock: () => void }) {
+function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareId: string; onUnlock: () => void }) {
+  const [insight, setInsight] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!access || insight) return;
+    let live = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const resp = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify({ shareId, mode: 'insight' }) });
+        const j = await resp.json().catch(() => ({}));
+        if (live && resp.ok) setInsight(j.text || null);
+      } finally { if (live) setLoading(false); }
+    })();
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access, shareId]);
   return (
     <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${CYAN}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <ValDeltaSVG size={14} color={CYAN} />
         <span style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
       </div>
-      {subscribed && insight ? (
-        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65 }}>{insight}</p>
+      {access ? (
+        <p style={{ color: loading ? MED : TEXT, fontSize: 12, lineHeight: 1.65 }}>{loading ? 'Analyzing your home…' : (insight ?? 'No insight available yet — ask Ledrix anything below.')}</p>
       ) : (
         <>
           <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, filter: 'blur(4.5px)', userSelect: 'none' }}>
@@ -1167,16 +1209,29 @@ function InsightSection({ subscribed, insight, onUnlock }: { subscribed: boolean
   );
 }
 
-function LedrixPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () => void; shareId: string }) {
   const [msgs, setMsgs]   = useState<{ role: 'ledrix' | 'user'; text: string }[]>([
     { role: 'ledrix', text: "Hi — I'm Ledrix. Ask me anything about your home: a finding, a repair, what something costs, or what to do next." },
   ]);
   const [input, setInput] = useState('');
+  const [busy, setBusy]   = useState(false);
   if (!open) return null;
-  const send = () => {
-    const t = input.trim(); if (!t) return;
-    setMsgs(m => [...m, { role: 'user', text: t }, { role: 'ledrix', text: 'Live answers connect in Phase 2 — this is the chat shell.' }]);
-    setInput('');
+  const send = async () => {
+    const t = input.trim(); if (!t || busy) return;
+    const next = [...msgs, { role: 'user' as const, text: t }];
+    setMsgs(next); setInput(''); setBusy(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const resp = await fetch('/api/ledrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        body: JSON.stringify({ shareId, mode: 'chat', messages: next.map(m => ({ role: m.role === 'ledrix' ? 'assistant' : 'user', content: m.text })) }),
+      });
+      const j = await resp.json().catch(() => ({}));
+      setMsgs(m => [...m, { role: 'ledrix', text: resp.ok ? (j.text || '…') : (j.error || 'Ledrix is unavailable.') }]);
+    } catch {
+      setMsgs(m => [...m, { role: 'ledrix', text: 'Network error — please try again.' }]);
+    } finally { setBusy(false); }
   };
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 210, maxWidth: 430, margin: '0 auto', background: BG, display: 'flex', flexDirection: 'column' }}>
@@ -1195,7 +1250,7 @@ function LedrixPanel({ open, onClose }: { open: boolean; onClose: () => void }) 
       <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderTop: `1px solid ${BORDER}` }}>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Ask Ledrix about your home…"
           style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '11px 14px', color: '#fff', fontSize: 13, outline: 'none' }} />
-        <button onClick={send} style={{ width: 44, background: CYAN, color: '#001018', border: 'none', borderRadius: 10, fontWeight: 900, cursor: 'pointer' }}>↑</button>
+        <button onClick={send} disabled={busy} style={{ width: 44, background: CYAN, color: '#001018', border: 'none', borderRadius: 10, fontWeight: 900, cursor: 'pointer', opacity: busy ? 0.5 : 1 }}>{busy ? '…' : '↑'}</button>
       </div>
     </div>
   );
@@ -1230,12 +1285,18 @@ export default function SharePage() {
   const go   = (t: Tab) => { setHist(h => [...h, tab]); setTab(t); };
   const back = () => setHist(h => { const n = [...h]; setTab(n.pop() ?? 'home'); return n; });
 
-  // Ledrix paid tier (Phase 1: subscribed is stubbed false; Phase 2/3 wire it to
-  // Supabase Auth + Stripe). Tapping Ledrix / the Insight gates to the paywall.
-  const [subscribed]              = useState(false);
-  const [subOpen, setSubOpen]     = useState(false);
+  // Ledrix access via Supabase magic-link auth. Phase 2: signed-in === access
+  // (Stripe subscription gating layers on in Phase 3).
+  const [session, setSession]       = useState<any>(null);
+  const [subOpen, setSubOpen]       = useState(false);
   const [ledrixOpen, setLedrixOpen] = useState(false);
-  const openLedrix = () => (subscribed ? setLedrixOpen(true) : setSubOpen(true));
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  const access = !!session;
+  const openLedrix = () => (access ? setLedrixOpen(true) : setSubOpen(true));
   const seeded = useRef(false);
 
   const loadProjects = useCallback(async () => {
@@ -1317,7 +1378,7 @@ export default function SharePage() {
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} />
 
-      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} subscribed={subscribed} onUnlock={() => setSubOpen(true)} />}
+      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
@@ -1325,7 +1386,7 @@ export default function SharePage() {
 
       <LedrixFab onClick={openLedrix} />
       <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} />
-      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} />
+      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} />
     </div>
   );
 }
