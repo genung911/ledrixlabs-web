@@ -37,11 +37,15 @@ async function supaDelete(table: string, filter: string) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const ACCENT   = '#00F3FF';
-const CRITICAL = '#FF3B3B';
-const WARN     = '#FACC15';
-const GREEN    = '#22C55E';
-const PURPLE   = '#A78BFA';
+// Monochrome-first (Tesla-style): the primary accent is white; color is reserved
+// for MEANING (severity) only. Cyan is the brand spark — logo only.
+const CYAN     = '#00F3FF';   // logo only
+const ACCENT   = '#FAFAFA';   // primary UI accent — monochrome white (was cyan)
+const CRITICAL = '#FF3B3B';   // safety
+const WARN     = '#FACC15';   // deficiency
+const GREEN    = '#22C55E';   // satisfactory / resolved
+const INFO     = '#8893A6';   // calm slate — maintenance + in-progress states
+const PURPLE   = INFO;        // legacy alias → muted (no rainbow)
 const BG       = '#080808';
 const CARD     = '#0a0a0a';
 const CARD2    = '#0d0d0d';
@@ -84,8 +88,8 @@ const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'fu
   'stove', 'microwave', 'garbage disposal', 'plumbing', 'electrical panel', 'panel'];
 
 const STATUS_COLOR: Record<string,string> = {
-  identified: DIM, quoted: WARN, scheduled: ACCENT,
-  in_progress: PURPLE, resolved: GREEN,
+  identified: DIM, quoted: WARN, scheduled: INFO,
+  in_progress: INFO, resolved: GREEN,
 };
 const STATUS_LABEL: Record<string,string> = {
   identified: 'IDENTIFIED', quoted: 'QUOTED', scheduled: 'SCHEDULED',
@@ -95,7 +99,7 @@ const STATUS_NEXT: Record<string,string> = {
   identified: 'quoted', quoted: 'scheduled', scheduled: 'in_progress',
   in_progress: 'resolved', resolved: 'resolved',
 };
-const SEV_COLOR: Record<string,string> = { critical: CRITICAL, anomaly: WARN, cosmetic: ACCENT };
+const SEV_COLOR: Record<string,string> = { critical: CRITICAL, anomaly: WARN, cosmetic: INFO };
 const SEV_LABEL: Record<string,string> = { critical: 'SAFETY', anomaly: 'DEFICIENCY', cosmetic: 'MAINTENANCE' };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -252,7 +256,7 @@ function Logo({ size = 32 }: { size?: number }) {
   return (
     <div style={{ width: size, height: size, borderRadius: r, backgroundColor: '#080808',
       border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <ValDeltaSVG size={Math.round(size * 0.82)} />
+      <ValDeltaSVG size={Math.round(size * 0.82)} color={CYAN} />
     </div>
   );
 }
@@ -781,7 +785,7 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
           {([
             [critical.length, 'SAFETY',     critical.length > 0 ? CRITICAL : DIM],
             [deficien.length, 'DEFICIENCY', deficien.length > 0 ? WARN     : DIM],
-            [maint,           'MAINT.',     maint           > 0 ? ACCENT   : DIM],
+            [maint,           'MAINT.',     maint           > 0 ? INFO     : DIM],
             [anomalies.length,'TOTAL',      TEXT],
           ] as [number, string, string][]).map(([v, l, c]) => (
             <div key={l} style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 6px', textAlign: 'center' }}>
