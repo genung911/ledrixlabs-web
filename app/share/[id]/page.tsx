@@ -228,6 +228,35 @@ function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number
   }
 }
 
+// ─── Logo (the Ledrix delta mark — matches the marketing site) ──────────────────
+function ValDeltaSVG({ size = 28, color = ACCENT }: { size?: number; color?: string }) {
+  const pad = size * 0.10;
+  const W   = size - pad * 2;
+  const H   = W * (Math.sqrt(3) / 2);
+  const ty  = (size - H) / 2;
+  const by  = ty + H;
+  const TX  = size / 2, TY = ty;
+  const BLX = pad,      BLY = by;
+  const BRX = pad + W,  BRY = by;
+  const GL  = BLX + W * 0.30;
+  const GR  = BLX + W * 0.70;
+  const d   = `M ${TX} ${TY} L ${BLX} ${BLY} L ${GL} ${BLY} M ${GR} ${BRY} L ${BRX} ${BRY} L ${TX} ${TY}`;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" style={{ display: 'block' }}>
+      <path d={d} stroke={color} strokeWidth={size * 0.055} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function Logo({ size = 32 }: { size?: number }) {
+  const r = Math.round(size * 0.22);
+  return (
+    <div style={{ width: size, height: size, borderRadius: r, backgroundColor: '#080808',
+      border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <ValDeltaSVG size={Math.round(size * 0.82)} />
+    </div>
+  );
+}
+
 // ─── ScoreRing ────────────────────────────────────────────────────────────────
 function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: string; color: string; size?: number }) {
   const r = size * 0.375; const circ = +(2 * Math.PI * r).toFixed(1);
@@ -648,71 +677,27 @@ function NotFound() {
   );
 }
 
-// ─── TabBar ───────────────────────────────────────────────────────────────────
-function TabBar({ active, onChange, counts }: {
-  active: Tab; onChange: (t: Tab) => void;
-  counts: { projects: number; reminders: number; findings: number };
-}) {
-  const tabs: [Tab, IconName, string][] = [
-    ['home', 'home', 'HOME'],
-    ['findings', 'findings', 'FINDINGS'],
-    ['projects', 'projects', 'PROJECTS'],
-    ['reminders', 'reminders', 'REMINDERS'],
-    ['docs', 'docs', 'DOCS'],
-  ];
-  const badge = (t: Tab) => {
-    if (t === 'findings') return counts.findings;
-    if (t === 'projects') return counts.projects;
-    if (t === 'reminders') return counts.reminders;
-    return 0;
-  };
-  return (
-    <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: 430, background: 'rgba(8,8,8,0.97)', borderTop: `1px solid ${BORDER}`,
-      display: 'flex', zIndex: 100, backdropFilter: 'blur(12px)', paddingBottom: 'env(safe-area-inset-bottom,0)',
-    }}>
-      {tabs.map(([key, icon, label]) => {
-        const isActive = active === key;
-        const b = badge(key);
-        return (
-          <button key={key} onClick={() => onChange(key)} style={{
-            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', padding: '10px 4px 8px',
-            background: 'none', border: 'none', cursor: 'pointer', position: 'relative',
-          }}>
-            {b > 0 && (
-              <div style={{ position: 'absolute', top: 6, right: '22%', background: CRITICAL,
-                borderRadius: 99, minWidth: 14, height: 14, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 8, fontWeight: 900, color: '#fff', padding: '0 3px' }}>{b}</div>
-            )}
-            <div style={{ lineHeight: 1, marginBottom: 3 }}><Icon name={icon} size={20} color={isActive ? ACCENT : DIM} /></div>
-            <div style={{ fontSize: 7, fontWeight: 900, letterSpacing: 0.5,
-              color: isActive ? ACCENT : DIM, fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
-            {isActive && (
-              <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%',
-                height: 2, background: ACCENT, borderRadius: '0 0 2px 2px' }} />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── NavBar ───────────────────────────────────────────────────────────────────
-function NavBar({ address, onShare, copied }: { address: string; onShare: () => void; copied: boolean }) {
+function NavBar({ address, onShare, copied, active, onBack }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '14px 20px', borderBottom: `1px solid #111`, background: 'rgba(8,8,8,0.97)',
       position: 'sticky', top: 0, zIndex: 90, backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)', maxWidth: 430, width: '100%', boxSizing: 'border-box',
     }}>
-      <div>
-        <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: -0.5 }}>
-          <span style={{ color: ACCENT }}>L·</span><span style={{ color: '#fff' }}>X</span>
+      {active === 'home' ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <Logo size={30} />
+          <span style={{ fontSize: 7, fontWeight: 900, letterSpacing: 2, color: DIM, fontFamily: 'Roboto Mono, monospace' }}>HOME RECORD</span>
         </div>
-        <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: 2, color: DIM, marginTop: 1, fontFamily: 'Roboto Mono, monospace' }}>HOME RECORD</div>
-      </div>
+      ) : (
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6,
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          color: ACCENT, fontFamily: 'Roboto Mono, monospace', fontSize: 10, fontWeight: 900, letterSpacing: 1.5 }}>
+          <span style={{ fontSize: 20, lineHeight: 1, marginTop: -2 }}>‹</span>
+          <span>{active.toUpperCase()}</span>
+        </button>
+      )}
       <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
         {address && (
           <div style={{ color: '#aaa', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -734,7 +719,7 @@ function NavBar({ address, onShare, copied }: { address: string; onShare: () => 
 function Footer() {
   return (
     <div style={{ padding: '20px 16px 100px', textAlign: 'center', borderTop: `1px solid ${BORDER}` }}>
-      <div style={{ color: ACCENT, fontSize: 14, fontWeight: 900, letterSpacing: -0.5, marginBottom: 4 }}>L·X</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Logo size={30} /></div>
       <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>LEDRIX SPATIAL OS</div>
       <a href="https://ledrixlabs.com" style={{ color: MED, fontSize: 10, fontWeight: 600, textDecoration: 'none' }}>ledrixlabs.com</a>
     </div>
@@ -751,6 +736,7 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
   const deficien = anomalies.filter(a => a.severity === 'anomaly');
+  const maint    = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly').length;
   const openProjects = projects.filter(p => p.status !== 'resolved');
   const dueReminders = reminders.filter(r => !r.completed);
 
@@ -764,42 +750,45 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange }: {
 
   return (
     <div>
-      {/* Hero card — the report cover shot (front-of-house photo), with the same
-          dark scrim + L-Index as the inspector report. Falls back to the gridded
-          gradient when no cover photo was published. */}
-      <div style={{ margin: '16px 16px 0', borderRadius: 20, overflow: 'hidden',
-        border: `1px solid #161616`, position: 'relative', height: 232,
-        background: 'linear-gradient(135deg,#0a1520 0%,#080e18 50%,#060c14 100%)',
-      }}>
+      {/* Cover photo — clean. Everything is pulled OFF the image into the record
+          header below. Falls back to the gridded gradient when no cover published. */}
+      <div style={{ margin: '16px 16px 0', borderRadius: 16, overflow: 'hidden', border: `1px solid #161616`, height: 188 }}>
         {record.cover_url ? (
-          <>
-            <img src={record.cover_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(4,7,11,0.45) 42%, rgba(6,8,12,0.94) 100%)' }} />
-          </>
+          <img src={record.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
-          <div style={{ position: 'absolute', inset: 0,
+          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#0a1520 0%,#060c14 100%)',
             backgroundImage: 'linear-gradient(rgba(0,243,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,243,255,0.04) 1px,transparent 1px)',
             backgroundSize: '28px 28px' }} />
         )}
-        <div style={{ position: 'absolute', top: 14, right: 14 }}>
-          <ScoreRing score={score} grade={grade} color={scoreColor} />
-          <div style={{ textAlign: 'center', color: '#bbb', fontSize: 7, fontWeight: 900, letterSpacing: 2, marginTop: 2, fontFamily: 'Roboto Mono, monospace' }}>L-INDEX</div>
+      </div>
+
+      {/* Record header — pulled off the photo, Ledrix style: title + L-Index + stats */}
+      <div style={{ padding: '14px 16px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ color: ACCENT, fontSize: 7.5, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>LEDRIX HOME RECORD · VERIFIED</div>
+            <div style={{ color: '#fff', fontSize: 20, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5 }}>{record.address ?? 'ADDRESS PENDING'}</div>
+            {subAddress && <div style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
+            <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginTop: 7, fontFamily: 'Roboto Mono, monospace' }}>INSPECTED {fmtDate(record.inspection_date).toUpperCase()}</div>
+          </div>
+          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+            <ScoreRing score={score} grade={grade} color={scoreColor} />
+            <div style={{ color: DIM, fontSize: 7, fontWeight: 900, letterSpacing: 2, marginTop: 3, fontFamily: 'Roboto Mono, monospace' }}>L-INDEX</div>
+          </div>
         </div>
-        <div style={{ position: 'absolute', inset: 0, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-          <div style={{ color: ACCENT, fontSize: 7, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>
-            LEDRIX HOME RECORD · VERIFIED
-          </div>
-          <div style={{ color: '#fff', fontSize: 19, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, maxWidth: '78%', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>
-            {record.address ?? 'ADDRESS PENDING'}
-          </div>
-          {subAddress && <div style={{ color: '#cbd5e1', fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
-          {/* Severity summary folded inline (replaces the separate 4-box stat row) */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 9, fontFamily: 'Roboto Mono, monospace', fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>
-            <span style={{ color: '#9aa3ad' }}>INSPECTED {fmtDate(record.inspection_date).toUpperCase()}</span>
-            <span style={{ color: critical.length > 0 ? CRITICAL : '#9aa3ad' }}>{critical.length} SAFETY</span>
-            <span style={{ color: deficien.length > 0 ? WARN : '#9aa3ad' }}>{deficien.length} DEFICIENCY</span>
-            <span style={{ color: '#9aa3ad' }}>{anomalies.length} TOTAL</span>
-          </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          {([
+            [critical.length, 'SAFETY',     critical.length > 0 ? CRITICAL : DIM],
+            [deficien.length, 'DEFICIENCY', deficien.length > 0 ? WARN     : DIM],
+            [maint,           'MAINT.',     maint           > 0 ? ACCENT   : DIM],
+            [anomalies.length,'TOTAL',      TEXT],
+          ] as [number, string, string][]).map(([v, l, c]) => (
+            <div key={l} style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 6px', textAlign: 'center' }}>
+              <div style={{ color: c, fontSize: 19, fontWeight: 900, lineHeight: 1 }}>{v}</div>
+              <div style={{ color: DIM, fontSize: 6.5, fontWeight: 900, letterSpacing: 1, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1109,7 +1098,13 @@ export default function SharePage() {
   const [loading,   setLoading]   = useState(true);
   const [notFound,  setNotFound]  = useState(false);
   const [tab,       setTab]       = useState<Tab>('home');
+  const [hist,      setHist]      = useState<Tab[]>([]);
   const [copied,    setCopied]    = useState(false);
+
+  // Tile drill-in navigation (no bottom rail): go pushes the current screen onto
+  // history; back returns to wherever you came from (home if the stack is empty).
+  const go   = (t: Tab) => { setHist(h => [...h, tab]); setTab(t); };
+  const back = () => setHist(h => { const n = [...h]; setTab(n.pop() ?? 'home'); return n; });
   const seeded = useRef(false);
 
   const loadProjects = useCallback(async () => {
@@ -1160,7 +1155,7 @@ export default function SharePage() {
   if (loading) {
     return (
       <div style={{ background: BG, minHeight: '100vh', maxWidth: 430, margin: '0 auto' }}>
-        <NavBar address="" onShare={() => {}} copied={false} />
+        <NavBar address="" onShare={() => {}} copied={false} active="home" onBack={() => {}} />
         <Skeleton />
       </div>
     );
@@ -1168,7 +1163,7 @@ export default function SharePage() {
   if (notFound || !record) {
     return (
       <div style={{ background: BG, minHeight: '100vh', maxWidth: 430, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
-        <NavBar address="" onShare={() => {}} copied={false} />
+        <NavBar address="" onShare={() => {}} copied={false} active="home" onBack={() => {}} />
         <NotFound />
         <Footer />
       </div>
@@ -1177,11 +1172,9 @@ export default function SharePage() {
 
   const anomalies = Array.isArray(record.anomalies) ? record.anomalies : [];
   const specs     = Array.isArray(record.specs)     ? record.specs     : [];
-  const openProjects  = projects.filter(p => p.status !== 'resolved').length;
-  const dueReminders  = reminders.filter(r => !r.completed).length;
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', maxWidth: 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 80 }}>
+    <div style={{ background: BG, minHeight: '100vh', maxWidth: 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -1191,15 +1184,13 @@ export default function SharePage() {
         button{-webkit-tap-highlight-color:transparent}
       `}</style>
 
-      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} />
+      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} />
 
-      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={setTab} />}
+      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
-
-      <TabBar active={tab} onChange={setTab} counts={{ findings: anomalies.length, projects: openProjects, reminders: dueReminders }} />
     </div>
   );
 }
