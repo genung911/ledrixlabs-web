@@ -986,9 +986,22 @@ function RemindersTab({ reminders, onRefresh }: { reminders: Reminder[]; onRefre
 }
 
 // ─── DOCS TAB ─────────────────────────────────────────────────────────────────
+// Appliances & equipment carry make/model in their material string → a manual is
+// one tap away. Material finishes (carpet/drywall/paint) are not "appliances".
+const APPLIANCE_RE = /water heater|heating system|cooling system|hvac|furnace|condenser|air handler|boiler|panel|refrigerator|fridge|range|oven|cooktop|stove|dishwasher|washer|dryer|microwave|disposal|garbage disposal|generator|sump|water softener|water filtration|pool (pump|heater)|spa|softener/i;
+const isAppliance = (s: Spec) => APPLIANCE_RE.test(`${s.category ?? ''} ${s.material ?? ''}`);
+const manualUrl = (s: Spec) => {
+  // First clause of the material is usually "Make Model" — the best manual query.
+  const q = ((s.material ?? '').split(/[,(]/)[0].trim()) || (s.category ?? '');
+  return `https://www.manualslib.com/search.php?q=${encodeURIComponent(`${q} user manual`)}`;
+};
+const yearOf = (s: Spec) => { const m = (s.material ?? '').match(/\b(19|20)\d{2}\b/); return m ? m[0] : null; };
+
 function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
   const [specsOpen, setSpecsOpen] = useState(false);
   const confirmedSpecs = specs.filter(s => s.status === 'confirmed');
+  const appliances     = confirmedSpecs.filter(isAppliance);
+  const materialSpecs  = confirmedSpecs.filter(s => !isAppliance(s));
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
 
   return (
@@ -1069,8 +1082,37 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
         </div>
       </div>
 
+      {/* Appliances & Manuals — every manual + warranty in one place */}
+      {appliances.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>APPLIANCES &amp; MANUALS</div>
+          <p style={{ color: DIM, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
+            Your equipment, captured at inspection — the manual a tap away. Keep these for warranty &amp; service calls.
+          </p>
+          {appliances.map((s, i) => {
+            const yr = yearOf(s);
+            const age = yr ? new Date().getFullYear() - Number(yr) : null;
+            return (
+              <div key={i} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
+                <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 5 }}>{(s.category ?? 'EQUIPMENT').toUpperCase()}</div>
+                <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, marginBottom: yr ? 4 : 12 }}>{s.material}</div>
+                {yr && (
+                  <div style={{ color: MED, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>
+                    Installed ~{yr}{age != null && age >= 0 ? ` · about ${age} yr${age === 1 ? '' : 's'} old` : ''}
+                  </div>
+                )}
+                <a href={manualUrl(s)} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${CYAN}15`, border: `1px solid ${CYAN}44`, color: CYAN, borderRadius: 9, padding: '9px 14px', fontSize: 10, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>
+                  FIND MANUAL ↗
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Material specs */}
-      {confirmedSpecs.length > 0 && (
+      {materialSpecs.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <button onClick={() => setSpecsOpen(o => !o)} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1082,7 +1124,7 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
           </button>
           {specsOpen && (
             <div style={{ paddingTop: 14 }}>
-              {confirmedSpecs.map((s, i) => (
+              {materialSpecs.map((s, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: `1px solid ${BORDER}22` }}>
                   <span style={{ color: DIM, fontSize: 9, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{(s.category ?? '').toUpperCase()}</span>
                   <span style={{ color: TEXT, fontSize: 11, fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>{s.material ?? '—'}</span>
