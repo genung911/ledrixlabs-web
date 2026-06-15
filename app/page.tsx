@@ -212,7 +212,7 @@ export default function Home() {
           {[
             {
               icon: '⬡',
-              title: 'AI Anomaly Detection',
+              title: 'AI Finding Detection',
               body: 'Capture a photo and cloud GPT-4o returns a structured finding in seconds — classified, severity-tagged, and written up. Every result is a proposal the inspector confirms, adjusts, or rejects.',
             },
             {
@@ -228,7 +228,7 @@ export default function Home() {
             {
               icon: '⬔',
               title: 'Home App Delivery',
-              body: 'Clients receive a live home portal with their inspection data, maintenance schedule, anomaly resolution flow, and property records.',
+              body: 'Clients receive a live home portal with their findings, maintenance schedule, and property records. Tap any finding for a location-based cost estimate, tap-to-call local pros, repair videos, and Ask-Ledrix answers.',
             },
             {
               icon: '◎',
@@ -277,14 +277,14 @@ export default function Home() {
             }}>
               <Image
                 src="/screenshot_anomaly.png"
-                alt="Ledrix anomaly detail with AI analysis"
+                alt="Ledrix finding detail with AI analysis"
                 width={250}
                 height={542}
                 style={{ display: 'block', width: '100%', height: 'auto' }}
               />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>AI Anomaly Detail</div>
+              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>AI Finding Detail</div>
               <div style={{ color: '#444', fontSize: 11, maxWidth: 220, lineHeight: 1.6 }}>
                 Every finding tagged, classified, and severity-rated — the inspector confirms it.
               </div>
@@ -364,7 +364,7 @@ export default function Home() {
                   Sample<br />Home Portal
                 </div>
                 <div style={{ color: '#444', fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
-                  The live home intelligence portal your client receives after every inspection — health score, findings, maintenance schedule, and property records. Permanent. Always accessible.
+                  The live home intelligence portal your client receives after every inspection — health score, findings, maintenance schedule, and property records. Tap any finding for a local cost estimate, top-rated pros to call, repair videos, and Ask-Ledrix. Permanent. Always accessible.
                 </div>
               </div>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>
@@ -415,6 +415,33 @@ export default function Home() {
             </a>
 
           </div>
+        </div>
+      </section>
+
+      {/* ── For Homeowners ──────────────────────────────────────────── */}
+      <section id="homeowners" style={{ padding: '100px 24px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
+            FOR HOMEOWNERS
+          </div>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 900, letterSpacing: -2 }}>Your home, understood.</h2>
+          <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, maxWidth: 600, margin: '18px auto 0' }}>
+            Every finding in your report opens into a card that tells you what it means, what it costs near you, and exactly who to call.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 2 }}>
+          {[
+            { icon: '◎', title: 'Know the cost', body: 'Tap a finding for a location-based repair estimate — priced for your area, not a national average.' },
+            { icon: '☎', title: 'Call the right pro', body: 'Top-rated local contractors for that exact trade, sorted by reviews — tap to call, straight from the finding.' },
+            { icon: '▶', title: 'Fix it, or don’t', body: 'Related repair videos for the small stuff — with Ledrix telling you plainly when to call a licensed pro instead.' },
+            { icon: '✦', title: 'Ask Ledrix', body: 'Chat with your home’s AI about any finding — is it urgent, can I DIY it, what should I budget — grounded in your inspection.' },
+          ].map(f => (
+            <div key={f.title} style={{ backgroundColor: '#0a0a0a', border: '1px solid #111', padding: '36px 32px' }}>
+              <div style={{ fontSize: 28, marginBottom: 16, color: ACCENT }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 10, letterSpacing: -0.5, color: '#fff' }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{f.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
