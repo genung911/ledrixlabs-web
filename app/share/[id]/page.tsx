@@ -59,6 +59,7 @@ const TEXT     = '#aaa';
 type Anomaly = {
   id?: string; description?: string; severity?: string; unit?: string;
   location?: string; estimatedCost?: string; recommendation?: string; prosToCall?: string;
+  imageUri?: string;
 };
 type Spec = { category?: string; material?: string; status?: string; };
 type HomeRecord = {
@@ -300,6 +301,10 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
             {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
           {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
         </div>
+        {a.imageUri && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.imageUri} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: `1px solid ${BORDER}`, marginBottom: 8 }} />
+        )}
         <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, margin: 0 }}>{a.description ?? ''}</p>
         <div style={{ marginTop: 6, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP TO OPEN →</div>
       </div>
@@ -400,6 +405,10 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           <span style={{ background: `${color}18`, color, fontSize: 8, fontWeight: 900, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, border: `1px solid ${color}44`, fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: MED, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
+        {a.imageUri && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.imageUri} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14 }} />
+        )}
         <h3 style={{ color: '#e2e8f0', fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
         {a.location && <div style={{ color: DIM, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>{a.location}</div>}
         <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
