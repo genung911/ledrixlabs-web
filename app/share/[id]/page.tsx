@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
@@ -281,36 +281,169 @@ function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: s
   );
 }
 
-// ─── FindingCard ──────────────────────────────────────────────────────────────
-function FindingCard({ a }: { a: Anomaly }) {
+// ─── FindingCard → opens the full homeowner card (price · pros · videos · Ask Ledrix) ──
+function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
   const sev = a.severity ?? 'cosmetic';
   const color = SEV_COLOR[sev] ?? MED;
-  const [expanded, setExpanded] = useState(false);
-  const hasExtra = !!(a.recommendation || a.estimatedCost || a.prosToCall);
+  const [open, setOpen] = useState(false);
   return (
-    <div onClick={() => hasExtra && setExpanded(e => !e)} style={{
-      background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${color}`,
-      borderRadius: 12, padding: '14px 16px', marginBottom: 8, cursor: hasExtra ? 'pointer' : 'default',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1,
-          padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, whiteSpace: 'nowrap',
-          fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
-        <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
-          {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
-        {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
-      </div>
-      <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, margin: 0 }}>{a.description ?? ''}</p>
-      {expanded && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
-          {a.recommendation && <p style={{ color: MED, fontSize: 11, lineHeight: 1.6, marginBottom: 6 }}>{a.recommendation}</p>}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {a.estimatedCost && a.estimatedCost !== 'N/A' && <span style={{ color: WARN, fontSize: 9, fontWeight: 900 }}>EST. {a.estimatedCost}</span>}
-            {a.prosToCall && a.prosToCall !== 'N/A' && <span style={{ color: ACCENT, fontSize: 9, fontWeight: 700 }}>{a.prosToCall}</span>}
-          </div>
+    <>
+      <div onClick={() => setOpen(true)} style={{
+        background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${color}`,
+        borderRadius: 12, padding: '14px 16px', marginBottom: 8, cursor: 'pointer',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1,
+            padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, whiteSpace: 'nowrap',
+            fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
+          <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
+            {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
+          {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
         </div>
-      )}
-      {hasExtra && !expanded && <div style={{ marginTop: 6, color: DIM, fontSize: 9, fontWeight: 700 }}>TAP FOR DETAILS</div>}
+        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, margin: 0 }}>{a.description ?? ''}</p>
+        <div style={{ marginTop: 6, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP TO OPEN →</div>
+      </div>
+      {open && <FindingDetailModal a={a} zip={zip} cityState={cityState} shareId={shareId} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// ─── FindingDetailModal — the homeowner card ───────────────────────────────────
+function CardSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 1.5, marginBottom: 8, fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomaly; zip?: string; cityState?: string; shareId: string; onClose: () => void }) {
+  const sev = a.severity ?? 'cosmetic';
+  const color = SEV_COLOR[sev] ?? MED;
+  const staticCost = a.estimatedCost && a.estimatedCost !== 'N/A' ? a.estimatedCost : null;
+  const [price, setPrice] = useState<string | null>(staticCost);
+  const [priceSrc, setPriceSrc] = useState<'local' | 'static' | null>(staticCost ? 'static' : null);
+  const [priceLoading, setPriceLoading] = useState(false);
+
+  const trade = (a.prosToCall && a.prosToCall !== 'N/A' ? a.prosToCall : a.unit) || 'home repair contractor';
+  const where = zip || cityState || '';
+  const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${a.unit ?? ''} ${(a.description ?? '').slice(0, 60)} how to fix`)}`;
+
+  const [pros, setPros] = useState<{ name: string; rating?: number; reviews?: number; phone?: string; website?: string }[]>([]);
+  const [prosLoading, setProsLoading] = useState(false);
+
+  const [msgs, setMsgs] = useState<{ role: 'user' | 'ledrix'; text: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  // Top-3 local pros (by reviews) — tappable call list, fetched server-side from Places.
+  useEffect(() => {
+    let alive = true;
+    if (!where) return;
+    setProsLoading(true);
+    fetch(`/api/pros?zip=${encodeURIComponent(where)}&trade=${encodeURIComponent(trade)}`)
+      .then(r => r.json())
+      .then(j => { if (alive) setPros(Array.isArray(j.pros) ? j.pros : []); })
+      .catch(() => {})
+      .finally(() => { if (alive) setProsLoading(false); });
+    return () => { alive = false; };
+  }, [where, trade]);
+
+  // Location-aware AI price (signed-in homeowner only — else the static range stands).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!where) return;
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      setPriceLoading(true);
+      try {
+        const r = await fetch('/api/ledrix', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ shareId, mode: 'price', finding: `${a.unit ?? ''}: ${a.description ?? ''}` }),
+        });
+        const j = await r.json();
+        if (alive && r.ok && typeof j.text === 'string' && /\$/.test(j.text)) { setPrice(j.text.trim()); setPriceSrc('local'); }
+      } catch { /* keep static */ } finally { if (alive) setPriceLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [where, shareId]);
+
+  const ask = async () => {
+    const q = input.trim(); if (!q || busy) return;
+    setMsgs(m => [...m, { role: 'user', text: q }]); setInput(''); setBusy(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) { setMsgs(m => [...m, { role: 'ledrix', text: 'Sign in (top-right) to ask Ledrix about this finding.' }]); return; }
+      const seeded = [{ role: 'user' as const, content: `About the finding "${a.unit ?? ''}: ${a.description ?? ''}"${a.location ? ` (${a.location})` : ''} — ${q}` }];
+      const r = await fetch('/api/ledrix', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shareId, mode: 'chat', messages: seeded }),
+      });
+      const j = await r.json();
+      setMsgs(m => [...m, { role: 'ledrix', text: r.ok ? (j.text ?? '…') : (j.error ?? 'Ledrix is unavailable.') }]);
+    } catch { setMsgs(m => [...m, { role: 'ledrix', text: 'Network error.' }]); }
+    finally { setBusy(false); }
+  };
+
+  const cta: CSSProperties = {
+    display: 'inline-block', background: CARD2, border: `1px solid ${BORDER}`, color: '#e2e8f0',
+    fontSize: 12, fontWeight: 700, padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: '18px 18px 0 0', width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', padding: 20, boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ background: `${color}18`, color, fontSize: 8, fontWeight: 900, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, border: `1px solid ${color}44`, fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: MED, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+        <h3 style={{ color: '#e2e8f0', fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
+        {a.location && <div style={{ color: DIM, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>{a.location}</div>}
+        <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
+        {a.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{a.recommendation}</p>}
+
+        <CardSection label="ESTIMATED COST">
+          <div style={{ color: GREEN, fontSize: 22, fontWeight: 900 }}>{price ?? (priceLoading ? '…' : 'Ask Ledrix for an estimate')}</div>
+          {priceSrc && <div style={{ color: DIM, fontSize: 9, fontWeight: 700, marginTop: 2, letterSpacing: 0.5 }}>{priceSrc === 'local' ? `BASED ON ${(cityState || where).toUpperCase()}` : 'TYPICAL RANGE'}</div>}
+        </CardSection>
+
+        <CardSection label="TOP-RATED LOCAL PROS">
+          {pros.length > 0 ? pros.map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 7 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                <div style={{ color: MED, fontSize: 10, marginTop: 1 }}>{p.rating ? `★ ${p.rating}` : ''}{p.reviews ? `  (${p.reviews.toLocaleString()})` : ''}</div>
+              </div>
+              {p.phone && <a href={`tel:${p.phone}`} style={{ ...cta, padding: '8px 12px', color: GREEN, textDecoration: 'none' }}>📞 Call</a>}
+              {p.website && <a href={p.website} target="_blank" rel="noreferrer" style={{ ...cta, padding: '8px 12px' }}>Site</a>}
+            </div>
+          )) : (
+            <div style={{ color: DIM, fontSize: 11 }}>{prosLoading ? 'Finding local pros…' : 'No local pros found for this area yet.'}</div>
+          )}
+        </CardSection>
+
+        <CardSection label="REPAIR VIDEOS">
+          <a href={ytUrl} target="_blank" rel="noreferrer" style={cta}>▶ Watch how-to videos</a>
+          <p style={{ color: '#c9a94e', fontSize: 10.5, lineHeight: 1.5, marginTop: 8, background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.2)', borderRadius: 8, padding: '8px 10px' }}>
+            Videos are a guide for minor upkeep only. For anything structural, electrical, gas, or plumbing — use a licensed pro.
+          </p>
+        </CardSection>
+
+        <CardSection label="ASK LEDRIX ABOUT THIS">
+          {msgs.map((m, i) => (
+            <div key={i} style={{ marginBottom: 8, textAlign: m.role === 'user' ? 'right' : 'left' }}>
+              <span style={{ display: 'inline-block', background: m.role === 'user' ? '#13202a' : '#0d0d0d', border: `1px solid ${BORDER}`, color: m.role === 'user' ? '#cfe' : '#aaa', fontSize: 12, lineHeight: 1.5, padding: '8px 11px', borderRadius: 10, maxWidth: '85%', textAlign: 'left' }}>{m.text}</span>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: ACCENT, color: '#000', border: 'none', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
+          </div>
+        </CardSection>
+      </div>
     </div>
   );
 }
@@ -864,7 +997,7 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange, access, 
 }
 
 // ─── FINDINGS TAB ─────────────────────────────────────────────────────────────
-function FindingsTab({ anomalies }: { anomalies: Anomaly[] }) {
+function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; record: HomeRecord; shareId: string }) {
   const [filter, setFilter] = useState<'all' | 'critical' | 'anomaly' | 'cosmetic'>('all');
   const [search, setSearch] = useState('');
   const [specsOpen, setSpecsOpen] = useState(false);
@@ -910,7 +1043,9 @@ function FindingsTab({ anomalies }: { anomalies: Anomaly[] }) {
             {filter === 'all' ? 'NO FINDINGS LOGGED' : `NO ${filter.toUpperCase()} FINDINGS`}
           </div>
         </div>
-      ) : filtered.map((a, i) => <FindingCard key={i} a={a} />)}
+      ) : filtered.map((a, i) => (
+        <FindingCard key={i} a={a} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={shareId} />
+      ))}
     </div>
   );
 }
@@ -1503,7 +1638,7 @@ export default function SharePage() {
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
-      {tab === 'findings'  && <FindingsTab anomalies={anomalies} />}
+      {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}

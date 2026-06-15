@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `You've used today's free Ledrix questions (${DAILY_CAP}). It resets tomorrow.` }, { status: 429 });
   }
 
-  let payload: { shareId?: string; mode?: 'chat' | 'insight'; messages?: Msg[] };
+  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'price'; messages?: Msg[]; finding?: string };
   try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
-  const { shareId, mode = 'chat', messages = [] } = payload;
+  const { shareId, mode = 'chat', messages = [], finding = '' } = payload;
 
   // 2) Property context — fetched server-side, never trusted from the client.
   let rec: any = null;
@@ -71,17 +71,22 @@ export async function POST(req: NextRequest) {
   // 3) Prompt — homeowner-facing, grounded in THIS property.
   const honesty = 'Be warm, plain-spoken, and practical. Only use the inspection record below — never invent findings. ' +
     'If asked something the record does not cover, say so and suggest verifying with a licensed pro. You are not a substitute for a professional.';
+  const loc = [rec?.zip, rec?.city, rec?.state].filter(Boolean).join(', ') || 'this area';
   const system = mode === 'insight'
     ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: the home's overall condition, the 1-2 things that matter most, and what to plan for. No alarmism.\n\n${ctx}`
+    : mode === 'price'
+    ? `You are a home-repair cost estimator with US ZIP-level pricing knowledge. Using local labor + material rates for ${loc}, estimate the typical cost a homeowner would pay a licensed contractor to repair/remediate the finding. Reply with ONLY a dollar range like "$X–$Y" — no words, no explanation.`
     : `You are Ledrix, the homeowner's friendly home assistant for this property. ${honesty} Keep answers concise.\n\n${ctx}`;
 
   const body = {
     model: 'gpt-4o',
-    max_tokens: mode === 'insight' ? 450 : 600,
+    max_tokens: mode === 'insight' ? 450 : mode === 'price' ? 30 : 600,
     messages: [
       { role: 'system', content: system },
       ...(mode === 'insight'
         ? [{ role: 'user', content: 'Give me a short insight about my home.' }]
+        : mode === 'price'
+        ? [{ role: 'user', content: `Finding: ${String(finding).slice(0, 400)}` }]
         : messages.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }))),
     ],
   };
