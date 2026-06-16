@@ -38,22 +38,24 @@ async function supaDelete(table: string, filter: string) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-// Monochrome-first (Tesla-style): the primary accent is white; color is reserved
-// for MEANING (severity) only. Cyan is the brand spark — logo only.
-const CYAN     = '#00F3FF';   // logo only
-const ACCENT   = '#FAFAFA';   // primary UI accent — monochrome white (was cyan)
+// Cyan + dark-glass — matches the Ledrix inspector app's GradientCard aesthetic.
+// Cyan is the primary UI accent; color is still reserved for MEANING (severity).
+const CYAN     = '#00F3FF';   // brand accent
+const ACCENT   = '#00F3FF';   // primary UI accent — cyan (matches the inspector app)
 const CRITICAL = '#FF3B3B';   // safety
 const WARN     = '#FACC15';   // deficiency
 const GREEN    = '#22C55E';   // satisfactory / resolved
 const INFO     = '#8893A6';   // calm slate — maintenance + in-progress states
 const PURPLE   = INFO;        // legacy alias → muted (no rainbow)
-const BG       = '#080808';
-const CARD     = '#0a0a0a';
-const CARD2    = '#0d0d0d';
-const BORDER   = '#141414';
-const DIM      = '#333';
-const MED      = '#555';
-const TEXT     = '#aaa';
+const BG       = '#070707';
+// Glassy gradient surfaces (the inspector app's GradientCard look): top-left sheen → dark.
+// CARD/CARD2 are only ever used as a CSS `background`, so a gradient string is valid everywhere.
+const CARD     = 'linear-gradient(145deg, rgba(42,50,57,0.55), rgba(13,17,20,0.66))';
+const CARD2    = 'linear-gradient(145deg, rgba(50,60,67,0.42), rgba(16,20,24,0.60))';
+const BORDER   = 'rgba(255,255,255,0.08)';
+const DIM      = '#3a4a4e';
+const MED      = '#5f7378';
+const TEXT     = '#b6c4c7';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Anomaly = {
@@ -650,7 +652,7 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
     ? `OFF-SITE · ${geoDistance}m away` : 'LOCATION UNAVAILABLE';
 
   const inputStyle = {
-    width: '100%', background: '#111', border: `1px solid ${BORDER}`,
+    width: '100%', background: '#0c0f10', border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '10px 12px', color: '#e2e8f0',
     fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif',
     boxSizing: 'border-box' as const,
@@ -661,7 +663,7 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#0d0d0d', border: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0',
+        background: '#0a0c0e', border: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0',
         padding: 24, width: '100%', maxWidth: 430, maxHeight: '90vh', overflowY: 'auto',
       }}>
         <div style={{ color: PURPLE, fontSize: 9, fontWeight: 900, letterSpacing: 3,
@@ -828,7 +830,7 @@ function NotFound() {
 function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void; signedIn?: boolean; onSignOut?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 20px', borderBottom: `1px solid #111`, background: 'rgba(8,8,8,0.97)',
+      padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(7,7,7,0.9)',
       position: 'sticky', top: 0, zIndex: 90, backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)', maxWidth: 430, width: '100%', boxSizing: 'border-box',
     }}>
@@ -908,7 +910,7 @@ function HomeTab({ record, anomalies, projects, reminders, onTabChange, access, 
     <div>
       {/* Cover photo — clean. Everything is pulled OFF the image into the record
           header below. Falls back to the gridded gradient when no cover published. */}
-      <div style={{ margin: '16px 16px 0', borderRadius: 16, overflow: 'hidden', border: `1px solid #161616`, height: 188 }}>
+      <div style={{ margin: '16px 16px 0', borderRadius: 16, overflow: 'hidden', border: `1px solid rgba(0,243,255,0.16)`, height: 188 }}>
         {record.cover_url ? (
           <img src={record.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (

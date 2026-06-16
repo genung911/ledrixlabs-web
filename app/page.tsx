@@ -83,10 +83,9 @@ export default function Home() {
         </h2>
 
         <p style={{ fontSize: 18, color: '#555', maxWidth: 580, lineHeight: 1.7, marginBottom: 48 }}>
-          Ledrix is the AI backup for licensed inspectors. Capture a photo and it
-          drafts the finding in seconds — you confirm, adjust, or reject. It surfaces
-          the significant defect you photographed but never logged, and the report
-          writes itself as you walk.
+          Finish the report before you leave the driveway. Catch the defect you
+          walked past. And hand every client a home they finally understand — not a
+          40-page PDF they’ll never open. Ledrix is the edge that wins the next referral.
         </p>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -125,10 +124,10 @@ export default function Home() {
           borderTop: '1px solid #111', flexWrap: 'wrap', justifyContent: 'center',
         }}>
           {[
-            { val: 'SEC', label: 'AI Finding Drafts' },
-            { val: 'HITL', label: 'Inspector-Verified' },
-            { val: '1-TAP', label: 'Report Delivery' },
-            { val: 'OFFLINE', label: 'Works Anywhere' },
+            { val: 'ZERO', label: 'Late-Night Write-Ups' },
+            { val: '1-TAP', label: 'Client Delivery' },
+            { val: 'PROOF', label: 'On Every Finding' },
+            { val: 'LIVE', label: 'Client Home Portal' },
           ].map(s => (
             <div key={s.val} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 28, fontWeight: 900, color: ACCENT, letterSpacing: -1 }}>{s.val}</div>
@@ -171,21 +170,21 @@ export default function Home() {
             background: '#080808',
           }}>
             <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 20 }}>
-              HOW IT WORKS
+              FOR INSPECTORS
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 52px)', fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 24 }}>
               Walk the property.<br />
-              <span style={{ color: ACCENT }}>Ledrix builds the record.</span>
+              <span style={{ color: ACCENT }}>Leave with it finished.</span>
             </h2>
             <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>
-              Capture a photo. Cloud AI returns a structured finding in seconds. You confirm, adjust, or reject — and the report writes itself. No templates. No late-night write-ups.
+              Inspect the way you always have. The findings, the write-ups, and the full report assemble themselves as you go — so you walk out finished instead of facing two hours of typing at the kitchen table.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
-                'Cloud GPT-4o drafts a structured finding the moment you capture the photo',
-                'Inspector confirms, adjusts, or rejects every AI finding — your judgment is the final word',
-                'Surfaces the significant defect you photographed but never logged — a backup, never a replacement',
-                'PDF report and client portal delivered the moment you walk out',
+                'Walk out finished — the report writes itself as you inspect',
+                'Never miss a defect: a second set of eyes flags what you photographed but didn’t log',
+                'Your judgment is the final word — nothing ships until you confirm it',
+                'Protect your license: every finding backed by timestamped, GPS-anchored proof',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT, marginTop: 7, flexShrink: 0 }} />
@@ -212,28 +211,28 @@ export default function Home() {
           {[
             {
               icon: '⬡',
-              title: 'AI Finding Detection',
-              body: 'Capture a photo and cloud GPT-4o returns a structured finding in seconds — classified, severity-tagged, and written up. Every result is a proposal the inspector confirms, adjusts, or rejects.',
+              title: 'Never Miss a Defect',
+              body: 'A second set of eyes on every photo. The deficiency you walked past gets surfaced before it turns into a callback — or a claim against your license.',
             },
             {
               icon: <ValDeltaSVG size={28} />,
-              title: 'Inspector-Verified HITL',
-              body: 'Every AI finding lands in the Inspect Screen with Confirm, Adjust, and Reject controls. The inspector\'s verdict is the report — AI proposes, the licensed pro decides.',
+              title: 'Your License, Protected',
+              body: 'Nothing reaches the report until you confirm it. Your judgment is the final word on every finding — defensible, auditable, and signed by you.',
             },
             {
               icon: '◉',
-              title: 'Instant PDF Reports',
-              body: 'Inspector-verified inspection reports generated the moment you walk out — AI drafts, you confirm, GPS-anchored evidence baked in, client delivery in one tap.',
+              title: 'Home by Dinner',
+              body: 'The report is finished when you walk out. No late-night write-ups — finalize on the driveway and deliver the PDF and client portal in one tap.',
             },
             {
               icon: '⬔',
-              title: 'Home App Delivery',
-              body: 'Clients receive a live home portal with their findings, maintenance schedule, and property records. Tap any finding for a location-based cost estimate, tap-to-call local pros, repair videos, and Ask-Ledrix answers.',
+              title: 'Clients Who Get It',
+              body: 'Your client gets a living home portal — findings in plain language, a maintenance schedule, and property records. Tap any finding for a local cost estimate, pros to call, repair videos, and answers from Ask Ledrix.',
             },
             {
               icon: '◎',
-              title: 'Auditable AI Trail',
-              body: 'Every AI suggestion is frozen at capture time and paired with the inspector’s verdict — confirm, edit, or reject. EXIF-preserved photos (timestamp, GPS, lens) bound to every finding for defensible documentation.',
+              title: 'Proof on Every Finding',
+              body: 'Every finding is bound to timestamped, GPS-tagged photos — defensible documentation that protects you if a call is ever questioned.',
             },
           ].map(f => (
             <div key={f.title} style={{
@@ -284,9 +283,9 @@ export default function Home() {
               />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>AI Finding Detail</div>
+              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Findings, Explained</div>
               <div style={{ color: '#444', fontSize: 11, maxWidth: 220, lineHeight: 1.6 }}>
-                Every finding tagged, classified, and severity-rated — the inspector confirms it.
+                Each finding written up in plain language, priced, and client-ready — you confirm it.
               </div>
             </div>
           </div>
@@ -294,7 +293,7 @@ export default function Home() {
           {/* Value points beside the phone */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 380 }}>
             {[
-              { k: 'CAPTURE', t: 'Shoot it, see the finding', b: 'Tap the shutter and a structured write-up comes back in seconds — system, severity, and recommended action.' },
+              { k: 'CAPTURE', t: 'Point, shoot, logged', b: 'Snap the photo — the write-up comes back done: system, severity, and recommended action. No typing.' },
               { k: 'CONFIRM', t: 'You have the final say', b: 'Confirm, adjust, or reject every proposal. Nothing reaches the report until a licensed inspector signs off.' },
               { k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway. The PDF and the client home portal go out in a single tap.' },
             ].map(item => (
@@ -327,7 +326,7 @@ export default function Home() {
               See exactly what your clients receive.
             </h2>
             <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
-              Every Ledrix inspection delivers two things: a live client home portal and an inspector-verified, AI-drafted PDF report.
+              Every Ledrix inspection delivers two things your clients love: a living home portal they’ll actually use, and a clean, professional PDF report.
             </p>
           </div>
 
@@ -405,7 +404,7 @@ export default function Home() {
                   Sample<br />PDF Report
                 </div>
                 <div style={{ color: '#444', fontSize: 13, lineHeight: 1.7, maxWidth: 360 }}>
-                  AI-drafted, inspector-verified, GPS-anchored inspection report complete with system scores, repair cost estimates, and a side-by-side audit trail of every AI suggestion vs. the inspector’s final call.
+                  A clean, professional inspection report — system scores, repair cost estimates, and every finding backed by GPS-anchored photo proof. Verified and signed by your inspector.
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>
@@ -434,7 +433,7 @@ export default function Home() {
             { icon: '◎', title: 'Know the cost', body: 'Tap a finding for a location-based repair estimate — priced for your area, not a national average.' },
             { icon: '☎', title: 'Call the right pro', body: 'Top-rated local contractors for that exact trade, sorted by reviews — tap to call, straight from the finding.' },
             { icon: '▶', title: 'Fix it, or don’t', body: 'Related repair videos for the small stuff — with Ledrix telling you plainly when to call a licensed pro instead.' },
-            { icon: '✦', title: 'Ask Ledrix', body: 'Chat with your home’s AI about any finding — is it urgent, can I DIY it, what should I budget — grounded in your inspection.' },
+            { icon: '✦', title: 'Ask Ledrix', body: 'Ask anything about a finding — is it urgent, can I DIY it, what should I budget — answered straight from your inspection.' },
           ].map(f => (
             <div key={f.title} style={{ backgroundColor: '#0a0a0a', border: '1px solid #111', padding: '36px 32px' }}>
               <div style={{ fontSize: 28, marginBottom: 16, color: ACCENT }}>{f.icon}</div>
@@ -462,8 +461,9 @@ export default function Home() {
               <span style={{ color: ACCENT }}>tap-and-scroll era.</span>
             </h2>
             <p style={{ fontSize: 16, color: '#444', maxWidth: 600, margin: '24px auto 0', lineHeight: 1.7 }}>
-              Traditional apps force you to look at a screen instead of the structure.
-              Your interface is the house itself. You see it, you say it, Ledrix logs it.
+              Traditional apps keep your eyes on a checklist instead of the house.
+              Ledrix keeps your focus where it belongs — and turns what you observe
+              into a finished, client-ready report.
             </p>
           </div>
 
@@ -471,19 +471,19 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, marginBottom: 80 }}>
             {[
               {
-                label: 'ZERO-UI REPORTING',
-                title: 'Say it. Done.',
-                body: 'Instead of tapping Electrical → Panel → Federal Pacific, you say: "Ledrix, identify critical fire risk: Federal Pacific Stab-Lok panel in garage." The AI handles categorization, the write-up, and severity tagging instantly.',
+                label: 'EYES ON THE HOUSE',
+                title: 'Inspect, don’t type.',
+                body: 'Stop tapping through a hundred menu screens. Talk through the house the way you’d explain it to a client, and Ledrix captures it — so your attention stays on the structure, where it belongs.',
               },
               {
-                label: 'INSPECTOR-VERIFIED',
-                title: 'AI proposes. You decide.',
-                body: 'Every finding the cloud returns lands in your Inspect Screen with Confirm, Adjust, and Reject controls. The licensed inspector\'s verdict is what ships in the report — defensible, auditable, and signed by you.',
+                label: 'YOUR CALL, ALWAYS',
+                title: 'Signed by you.',
+                body: 'Every finding is yours to confirm, adjust, or reject. What ships is the licensed inspector’s verdict — defensible, auditable, and signed by you.',
               },
               {
                 label: 'INSTANT DELIVERY',
                 title: 'Report done when you leave.',
-                body: 'No late-night typing. No manual write-ups at home. When the inspection ends, the report is finished — GPS-anchored evidence, AI-generated findings, and client delivery in one tap.',
+                body: 'No late-night typing. No write-ups at the kitchen table. When the inspection ends, the report is finished and the client’s home portal is live — delivered in one tap.',
               },
             ].map(p => (
               <div key={p.label} style={{ backgroundColor: '#0a0a0a', border: '1px solid #111', padding: '40px 32px' }}>
@@ -515,8 +515,8 @@ export default function Home() {
             </div>
 
             {[
-              ['Eyes on the Screen: Constantly checking boxes.', 'Eyes on the Infrastructure: AI-assisted observation.'],
-              ['Manual Data Entry: Tapping through 100+ sections.', 'Natural Language: "Ledrix, log minor crack in foundation."'],
+              ['Eyes on the Screen: Constantly checking boxes.', 'Eyes on the House: your attention stays on the structure.'],
+              ['Manual Data Entry: Tapping through 100+ sections.', 'Talk It Through: describe what you see and keep moving.'],
               ['Late-Night Reporting: 2 hours typing at home.', 'Instant Delivery: Report finished when you leave.'],
               ['Static Images: Photos with no context.', 'Anchored Evidence: Every photo carries timestamp, GPS, and lens data.'],
             ].flatMap(([old, neo], i) => ([
