@@ -137,6 +137,23 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Purpose-built positioning ───────────────────────────────── */}
+      <section style={{ padding: '72px 24px', textAlign: 'center', borderTop: '1px solid #0d0d0d',
+        background: 'radial-gradient(ellipse 70% 80% at 50% 50%, #00F3FF07 0%, transparent 70%)' }}>
+        <div style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 18 }}>
+          LEDRIX INTELLIGENCE
+        </div>
+        <h2 style={{ fontSize: 'clamp(26px, 4.5vw, 48px)', fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 780, margin: '0 auto' }}>
+          Not general AI.<br />
+          <span style={{ color: ACCENT }}>Intelligence built for homes.</span>
+        </h2>
+        <p style={{ fontSize: 15, color: '#555', maxWidth: 600, margin: '22px auto 0', lineHeight: 1.7 }}>
+          Ledrix isn’t a chatbot that dabbles in everything. It’s purpose-built for one thing —
+          the systems, defects, and standards of the homes you inspect. That focus is exactly why
+          it catches what general tools walk right past.
+        </p>
+      </section>
+
       {/* ── Inspector Feature Image ─────────────────────────────────── */}
       <section style={{
         borderTop: '1px solid #0d0d0d',
