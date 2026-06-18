@@ -1629,6 +1629,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 }) {
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const setBusyRef = (ref: string, on: boolean) => setBusy(s => { const n = new Set(s); if (on) n.add(ref); else n.delete(ref); return n; });
 
   const byRef = new Map(repairs.map(r => [r.anomaly_ref ?? '', r]));
@@ -1663,6 +1664,14 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
   const copyText = async () => {
     try { await navigator.clipboard.writeText(buildRepairText(record, included)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   };
+  // The public, no-login hand-off link the buyer sends the seller/agent.
+  const shareLink = async () => {
+    const url = `${window.location.origin}/share/${shareId}/repairs`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Repair Request', url });
+      else { await navigator.clipboard.writeText(url); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }
+    } catch {}
+  };
 
   if (!signedIn) {
     return (
@@ -1681,9 +1690,12 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
       </p>
 
       {included.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '44'}`, color: copied ? GREEN : ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
-          <button onClick={() => window.print()} style={{ flex: 1, background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
+        <div style={{ marginBottom: 14 }}>
+          <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : `${ACCENT}1e`, border: `1px solid ${linkCopied ? GREEN + '55' : ACCENT + '55'}`, color: linkCopied ? GREEN : ACCENT, borderRadius: 9, padding: '11px', fontSize: 9.5, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '44'}`, color: copied ? GREEN : ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
+            <button onClick={() => window.print()} style={{ flex: 1, background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
+          </div>
         </div>
       )}
 
