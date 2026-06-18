@@ -1555,6 +1555,16 @@ function repairRefOf(a: Anomaly, i: number): string { return a.id || `a${i}`; }
 function repairFp(a: Anomaly): string { return `${a.id ?? ''}:${a.severity ?? ''}:${(a.description ?? '').slice(0, 40)}`; }
 function repairText(r: RepairRow): string { return (r.edited_text && r.edited_text.trim()) || r.generated_text || ''; }
 
+// Plain-text handoff document — copy/paste into an email, form, or text.
+function buildRepairText(record: HomeRecord, items: RepairRow[]): string {
+  const head = `REPAIR REQUEST\n${record.address ?? ''}${record.inspection_date ? ` · Inspected ${record.inspection_date}` : ''}\n`;
+  const body = items.map((r, i) => {
+    const ctx = [r.item, r.location].filter(Boolean).join(' · ');
+    return `${i + 1}. ${repairText(r)}${ctx ? `\n   (${ctx})` : ''}`;
+  }).join('\n\n');
+  return `${head}\n${body}\n\nThis is a buyer-prepared repair request based on the inspection findings. It is not a legal form or legal advice.\nPrepared with Ledrix · ledrixlabs.com`;
+}
+
 async function draftRepairRequest(a: Anomaly): Promise<{ item: string; remedy: string; request: string } | null> {
   try {
     const { data } = await supabase.auth.getSession();
@@ -1614,10 +1624,11 @@ function AddFindingRow({ a, busy, onAdd }: { a: Anomaly; busy: boolean; onAdd: (
   );
 }
 
-function RepairsTab({ anomalies, shareId, repairs, onRefresh, signedIn }: {
-  anomalies: Anomaly[]; shareId: string; repairs: RepairRow[]; onRefresh: () => Promise<void> | void; signedIn: boolean;
+function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }: {
+  anomalies: Anomaly[]; shareId: string; repairs: RepairRow[]; record: HomeRecord; onRefresh: () => Promise<void> | void; signedIn: boolean;
 }) {
   const [busy, setBusy] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState(false);
   const setBusyRef = (ref: string, on: boolean) => setBusy(s => { const n = new Set(s); if (on) n.add(ref); else n.delete(ref); return n; });
 
   const byRef = new Map(repairs.map(r => [r.anomaly_ref ?? '', r]));
@@ -1649,6 +1660,9 @@ function RepairsTab({ anomalies, shareId, repairs, onRefresh, signedIn }: {
     await supaPatch('home_repairs', `id=eq.${encodeURIComponent(r.id)}`, { edited_text: v || null, updated_at: new Date().toISOString() });
     await onRefresh();
   };
+  const copyText = async () => {
+    try { await navigator.clipboard.writeText(buildRepairText(record, included)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+  };
 
   if (!signedIn) {
     return (
@@ -1665,6 +1679,13 @@ function RepairsTab({ anomalies, shareId, repairs, onRefresh, signedIn }: {
       <p style={{ color: MED, fontSize: 10.5, lineHeight: 1.6, marginBottom: 16 }}>
         Your list to give the seller — <b style={{ color: TEXT }}>you decide</b> what to ask to be repaired. Ledrix drafts neutral wording; edit anything. This is a draft, not legal advice.
       </p>
+
+      {included.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '44'}`, color: copied ? GREEN : ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
+          <button onClick={() => window.print()} style={{ flex: 1, background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
+        </div>
+      )}
 
       {included.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '20px 0 26px', color: DIM }}>
@@ -1688,6 +1709,29 @@ function RepairsTab({ anomalies, shareId, repairs, onRefresh, signedIn }: {
         <AddFindingRow key={ref} a={a} busy={busy.has(ref)} onAdd={() => addOne(a, ref)} />
       ))}
       <div style={{ height: 28 }} />
+
+      {/* Print/PDF document — off-screen on screen; @media print reveals only this. */}
+      <div id="repair-print" style={{ position: 'fixed', left: -10000, top: 0, width: 640, background: '#fff', color: '#111', padding: 32, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Repair Request</div>
+        <div style={{ fontSize: 12.5, color: '#444', marginTop: 4 }}>
+          {record.address ?? ''}{record.inspection_date ? ` · Inspected ${record.inspection_date}` : ''}
+        </div>
+        <div style={{ borderTop: '2px solid #111', margin: '14px 0 18px' }} />
+        <ol style={{ paddingLeft: 20, margin: 0 }}>
+          {included.map(r => (
+            <li key={r.id} style={{ marginBottom: 14, fontSize: 13, lineHeight: 1.5 }}>
+              {repairText(r)}
+              {(r.item || r.location) && (
+                <div style={{ fontSize: 11, color: '#777', marginTop: 3 }}>{[r.item, r.location].filter(Boolean).join(' · ')}</div>
+              )}
+            </li>
+          ))}
+        </ol>
+        <p style={{ fontSize: 10.5, color: '#666', marginTop: 22, lineHeight: 1.5 }}>
+          This is a buyer-prepared repair request based on the inspection findings. It is not a legal form or legal advice.
+        </p>
+        <div style={{ fontSize: 10.5, color: '#999', marginTop: 8 }}>Prepared with Ledrix · ledrixlabs.com</div>
+      </div>
     </div>
   );
 }
@@ -1806,13 +1850,18 @@ export default function SharePage() {
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
         input::placeholder{color:#222}
         button{-webkit-tap-highlight-color:transparent}
+        @media print {
+          body * { visibility: hidden !important; }
+          #repair-print, #repair-print * { visibility: visible !important; }
+          #repair-print { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; padding: 24px !important; }
+        }
       `}</style>
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
-      {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} onRefresh={loadRepairs} signedIn={access} />}
+      {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
