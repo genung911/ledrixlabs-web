@@ -52,14 +52,11 @@ export async function POST(req: NextRequest) {
       footerTemplate: FOOTER_TEMPLATE,
       margin: { top: '0.85in', bottom: '1in', left: '0.85in', right: '0.85in' },
     });
-    return new NextResponse(Buffer.from(pdf), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="ledrix-report.pdf"',
-        'Cache-Control': 'no-store',
-      },
-    });
+    // base64 JSON — far more reliable to consume in React Native than a binary body.
+    return NextResponse.json(
+      { pdf: Buffer.from(pdf).toString('base64') },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (e: unknown) {
     const detail = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: 'render failed', detail }, { status: 500 });
