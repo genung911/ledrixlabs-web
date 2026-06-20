@@ -18,7 +18,7 @@ const SECRET = process.env.RENDER_PDF_SECRET ?? '';
 // pageNumber / totalPages spans automatically. Note: header/footer templates do NOT inherit
 // page CSS, so styles are inlined and font-size must be explicit (default is 0).
 const FOOTER_TEMPLATE = `
-  <div style="font-size:8px;color:#64748b;width:100%;margin:0 0.85in;font-family:Helvetica,Arial,sans-serif;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
+  <div style="font-size:8px;color:#64748b;width:100%;margin:0 0.4in;font-family:Helvetica,Arial,sans-serif;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
     <span>LEDRIX SPATIAL OS &middot; CONFIDENTIAL INSPECTION DOCUMENT</span>
     <span>PAGE <span class="pageNumber"></span> OF <span class="totalPages"></span></span>
   </div>`;
@@ -45,12 +45,12 @@ export async function POST(req: NextRequest) {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 45000 });
     const pdf = await page.pdf({
-      format: 'letter',
+      format: 'Letter',
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: '<span></span>',      // header content lives in the HTML; reserve none here
       footerTemplate: FOOTER_TEMPLATE,
-      margin: { top: '0.85in', bottom: '1in', left: '0.85in', right: '0.85in' },
+      margin: { top: '0.4in', bottom: '0.6in', left: '0.4in', right: '0.4in' },
     });
     // base64 JSON — far more reliable to consume in React Native than a binary body.
     return NextResponse.json(
