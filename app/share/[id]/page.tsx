@@ -993,6 +993,10 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
             </div>
           ))}
         </div>
+
+        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: ACCENT, color: '#04141a', border: 'none', borderRadius: 12, padding: 15, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          📄 VIEW FULL REPORT
+        </button>
       </div>
 
       {/* Ledrix Insight — the AI intelligence layer (paid; locked teaser when not) */}
@@ -1998,7 +2002,7 @@ export default function SharePage() {
   const specs     = Array.isArray(record.specs)     ? record.specs     : [];
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', maxWidth: 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
+    <div style={{ background: BG, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
