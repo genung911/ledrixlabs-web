@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import chromium from '@sparticuz/chromium';
+import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
+
+// chromium-min ships NO binary — it streams a matching Chromium pack at runtime (cached in /tmp),
+// which includes the shared libs (libnss3.so etc.). This sidesteps Vercel's unreliable bundling
+// of the full @sparticuz/chromium package, which shipped the browser without its libraries.
+const CHROMIUM_PACK = 'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar';
 
 // Server-side PDF rendering with real Chromium — the inspection report needs true 1" margins
 // and a footer (CONFIDENTIAL + page X of Y) pinned to the bottom of EVERY page, which iOS's
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     browser = await puppeteer.launch({
       args: chromium.args,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(CHROMIUM_PACK),
       headless: true,
     });
     const page = await browser.newPage();
