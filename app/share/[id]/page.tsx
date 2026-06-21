@@ -1258,15 +1258,19 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
 }
 // Renders the app's published report HTML inline via a same-origin srcDoc iframe (isolated styles),
 // auto-sizing to its content so it reads as one continuous page, not a scroll-in-scroll.
-function FullReportFrame({ doc }: { doc: string }) {
-  const ref = useRef<HTMLIFrameElement>(null);
+function FullReportFrame({ doc, frameRef, onSections }: { doc: string; frameRef: { current: HTMLIFrameElement | null }; onSections: (ids: string[]) => void }) {
   const fit = () => {
-    const f = ref.current;
-    try { const h = f?.contentWindow?.document?.documentElement?.scrollHeight; if (f && h) f.style.height = (h + 16) + 'px'; } catch {}
+    const f = frameRef.current;
+    try {
+      const cw = f?.contentWindow;
+      if (!f || !cw) return;
+      f.style.height = (cw.document.documentElement.scrollHeight + 16) + 'px';
+      onSections(Array.from(cw.document.querySelectorAll('[id^="sec-"]')).map(e => (e as HTMLElement).id));
+    } catch { /* cross-origin guard — srcDoc is same-origin so this is just defensive */ }
   };
   return (
     <div style={{ maxWidth: 900, margin: '8px auto 0' }}>
-      <iframe ref={ref} srcDoc={doc} onLoad={fit} title="Full Inspection Report"
+      <iframe ref={frameRef} srcDoc={doc} onLoad={fit} title="Full Inspection Report"
         style={{ width: '100%', border: 'none', display: 'block', minHeight: 600, background: '#fff' }} />
     </div>
   );
@@ -1306,9 +1310,49 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   }, [reportUrl]);
   const reportReady = typeof doc === 'string' && doc !== 'none';
 
+  // Live ToC sidebar: the report HTML carries sec-* anchors; we render it in a same-origin srcDoc
+  // iframe, so the left rail can scroll the parent page to any section. onSections reports which
+  // anchors actually exist so the rail only lists real sections.
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [secIds, setSecIds] = useState<string[]>([]);
+  const REPORT_TOC: { id: string; label: string }[] = [
+    { id: 'sec-profile',     label: 'Home Profile' },
+    { id: 'sec-coverage',    label: 'Systems Coverage' },
+    { id: 'sec-summary',     label: 'Executive Summary' },
+    { id: 'sec-systems',     label: 'Systems Assessment' },
+    { id: 'sec-findings',    label: 'Findings & Recommendations' },
+    { id: 'sec-limitations', label: 'Scope & Limitations' },
+    { id: 'sec-homeapp',     label: 'Your Home App' },
+    { id: 'sec-evidence',    label: 'Photo Documentation' },
+    { id: 'sec-sop',         label: 'Standards of Practice' },
+    { id: 'sec-cert',        label: 'Certification' },
+  ];
+  const toc = REPORT_TOC.filter(t => secIds.length === 0 || secIds.includes(t.id));
+  // Auto-height iframe doesn't scroll itself — scroll the PARENT to the section's absolute Y.
+  const jumpIn = (id: string) => {
+    const f = frameRef.current;
+    const d = f?.contentWindow?.document;
+    const el = d?.getElementById(id);
+    if (!f || !d || !el) return;
+    const frameTop = f.getBoundingClientRect().top + window.scrollY;
+    const elTop = el.getBoundingClientRect().top - d.body.getBoundingClientRect().top;
+    window.scrollTo({ top: frameTop + elTop - 8, behavior: 'smooth' });
+  };
+
   return (
     <div className="rpt">
-      {!reportReady && <aside className="rpt-side">
+      <aside className="rpt-side">{reportReady ? (
+        <>
+          <div style={{ padding: '15px 18px 9px', fontSize: 10, fontWeight: 800, letterSpacing: 2, color: C.accent, fontFamily: 'Roboto Mono, monospace' }}>CONTENTS</div>
+          {toc.map((t, i) => (
+            <button key={t.id} onClick={() => jumpIn(t.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '12px 18px', color: C.ink, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: 'Roboto Mono, monospace', color: C.accent, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
+              <span style={{ flex: 1 }}>{t.label}</span>
+            </button>
+          ))}
+        </>
+      ) : (<>
         <button onClick={() => jump('rpt-overview')}
           style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.accent, fontSize: 14, fontWeight: 800, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
           <span>📋</span><span style={{ flex: 1 }}>Inspection Details</span>
@@ -1321,7 +1365,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             <span style={{ background: C.accent, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 22, height: 22, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px', flexShrink: 0 }}>{sec.items.length}</span>
           </button>
         ))}
-      </aside>}
+      </>)}</aside>
 
       <div className="rpt-main" style={{ color: C.ink }}>
         <div style={{ position: 'relative', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 24, background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.6)), url(${record.cover_url}) center/cover` : '#0f172a' }}>
@@ -1355,7 +1399,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
           {view === 'summary' ? (
             <ReportSummary anomalies={anomalies} C={C} />
           ) : reportReady ? (
-            <FullReportFrame doc={doc as string} />
+            <FullReportFrame doc={doc as string} frameRef={frameRef} onSections={setSecIds} />
           ) : doc === null ? (
             <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '64px 0' }}>Loading the full report…</div>
           ) : (
