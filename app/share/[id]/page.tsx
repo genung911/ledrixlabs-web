@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
@@ -1258,20 +1258,22 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
 }
 // Renders the app's published report HTML inline via a same-origin srcDoc iframe (isolated styles),
 // auto-sizing to its content so it reads as one continuous page, not a scroll-in-scroll.
-function FullReportFrame({ doc, frameRef, onSections }: { doc: string; frameRef: { current: HTMLIFrameElement | null }; onSections: (ids: string[]) => void }) {
+function FullReportFrame({ doc, frameRef, onSections, title = 'Inspection Report' }: { doc: string; frameRef?: { current: HTMLIFrameElement | null }; onSections?: (ids: string[]) => void; title?: string }) {
+  const innerRef = useRef<HTMLIFrameElement>(null);
+  const ref = frameRef ?? innerRef;
   const fit = () => {
-    const f = frameRef.current;
+    const f = ref.current;
     try {
       const cw = f?.contentWindow;
       if (!f || !cw) return;
       f.style.height = (cw.document.documentElement.scrollHeight + 16) + 'px';
-      onSections(Array.from(cw.document.querySelectorAll('[id^="sec-"]')).map(e => (e as HTMLElement).id));
+      onSections?.(Array.from(cw.document.querySelectorAll('[id^="sec-"]')).map(e => (e as HTMLElement).id));
     } catch { /* cross-origin guard — srcDoc is same-origin so this is just defensive */ }
   };
   return (
-    <div style={{ maxWidth: 900, margin: '8px auto 0' }}>
-      <iframe ref={frameRef} srcDoc={doc} onLoad={fit} title="Full Inspection Report"
-        style={{ width: '100%', border: 'none', display: 'block', minHeight: 600, background: '#fff' }} />
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <iframe ref={ref} srcDoc={doc} onLoad={fit} title={title}
+        style={{ width: '100%', border: 'none', display: 'block', minHeight: 200, background: '#fff' }} />
     </div>
   );
 }
@@ -1339,6 +1341,20 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
     window.scrollTo({ top: frameTop + elTop - 8, behavior: 'smooth' });
   };
 
+  // Cover-first: split the report into [cover page] and [everything after] (parsed from the same
+  // HTML — no duplication) so the What Matters panel can sit BETWEEN them. Falls back to one frame.
+  const split = useMemo(() => {
+    if (!reportReady || typeof doc !== 'string') return null;
+    try {
+      const d = new DOMParser().parseFromString(doc, 'text/html');
+      const pages = Array.from(d.querySelectorAll('.page'));
+      if (pages.length < 2) return null;
+      const head = d.head.innerHTML;
+      const wrap = (inner: string) => `<!doctype html><html><head>${head}</head><body>${inner}</body></html>`;
+      return { cover: wrap(pages[0].outerHTML), body: wrap(pages.slice(1).map(p => p.outerHTML).join('')) };
+    } catch { return null; }
+  }, [doc, reportReady]);
+
   return (
     <div className="rpt">
       <aside className="rpt-side">{reportReady ? (
@@ -1397,15 +1413,25 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
-          <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
           {view === 'summary' ? (
-            <ReportSummary anomalies={anomalies} C={C} />
+            <>
+              <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
+              <ReportSummary anomalies={anomalies} C={C} />
+            </>
           ) : reportReady ? (
-            <FullReportFrame doc={doc as string} frameRef={frameRef} onSections={setSecIds} />
+            <>
+              {split && <FullReportFrame doc={split.cover} title="Report Cover" />}
+              <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
+              <FullReportFrame doc={split ? split.body : (doc as string)} frameRef={frameRef} onSections={setSecIds} />
+            </>
           ) : doc === null ? (
-            <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '64px 0' }}>Loading the full report…</div>
+            <>
+              <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
+              <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '64px 0' }}>Loading the full report…</div>
+            </>
           ) : (
             <>
+              <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
               <section id="rpt-overview" style={{ scrollMarginTop: 56, paddingTop: 24 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Inspection Details</h1>
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: C.sub, fontSize: 13, marginBottom: 10 }}>
