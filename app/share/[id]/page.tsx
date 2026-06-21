@@ -1216,7 +1216,47 @@ function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
     </div>
   );
 }
-function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRecord }) {
+// "What Matters" — the free triage: Safety + Immediate items, plain-language, with the Ledrix Insight
+// upsell anchored right here (the homeowner just saw the brain work). Built from inspector-CONFIRMED
+// findings only — Ledrix surfaces + explains, it doesn't invent.
+function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; onOpen: () => void }) {
+  const matters = anomalies.filter(a => isSafetyFinding(a) || a.severity === 'critical')
+    .sort((x, y) => (isSafetyFinding(y) ? 1 : 0) - (isSafetyFinding(x) ? 1 : 0) || prioRank(x.severity) - prioRank(y.severity));
+  const rest = anomalies.length - matters.length;
+  return (
+    <section style={{ paddingTop: 24 }}>
+      <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>⚠</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>What Matters</span>
+          <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>— {matters.length} thing{matters.length !== 1 ? 's' : ''} Ledrix flagged</span>
+        </div>
+        {matters.length === 0 ? (
+          <div style={{ color: '#16a34a', fontSize: 14, fontWeight: 600 }}>✓ No safety or immediate-attention items — nothing urgent.</div>
+        ) : matters.map((a, i) => {
+          const safety = isSafetyFinding(a);
+          const desc = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
+          return (
+            <div key={a.id ?? i} style={{ display: 'flex', gap: 12, padding: '9px 0', borderTop: i ? '1px solid #fde3c4' : 'none' }}>
+              <span style={{ flexShrink: 0, color: safety ? '#dc2626' : '#d97706', fontWeight: 800, fontSize: 10, letterSpacing: 0.5, paddingTop: 3, width: 64 }}>{safety ? '⚠ SAFETY' : 'IMMEDIATE'}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit ?? 'Finding'}</div>
+                <div style={{ color: '#4b5563', fontSize: 13, lineHeight: 1.5 }}>{desc.slice(0, 170)}{desc.length > 170 ? '…' : ''}</div>
+                {(a.estimatedCost || a.prosToCall) ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{[a.estimatedCost, a.prosToCall].filter(Boolean).join(' · ')}</div> : null}
+              </div>
+            </div>
+          );
+        })}
+        {rest > 0 ? <div style={{ color: C.sub, fontSize: 13, marginTop: 12, fontWeight: 600 }}>✓ {rest} more item{rest !== 1 ? 's' : ''} below — all Repair / Maintenance, not urgent.</div> : null}
+        <button onClick={onOpen} style={{ marginTop: 16, width: '100%', background: 'linear-gradient(135deg,#0e7490,#0891b2)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 16px', cursor: 'pointer', textAlign: 'left' }}>
+          <div style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>🔓 Ask Ledrix about your home<span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.95 }}>Unlock Insight →</span></div>
+          <div style={{ fontSize: 11.5, opacity: 0.9, marginTop: 4, lineHeight: 1.45 }}>“Will the furnace make it another winter?” · cost projections · maintenance plan · ask anything</div>
+        </button>
+      </div>
+    </section>
+  );
+}
+function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; record: HomeRecord; onTabChange: (t: Tab) => void }) {
   const [view, setView] = useState<'full' | 'summary'>('full');
   const C: RC = { ink: '#1f2937', sub: '#6b7280', line: '#e5e7eb', accent: '#0e7490' };
   const groups = new Map<string, Anomaly[]>();
@@ -1279,6 +1319,7 @@ function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRe
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
+          <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
           <section id="rpt-overview" style={{ scrollMarginTop: 56, paddingTop: 24 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Inspection Details</h1>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: C.sub, fontSize: 13, marginBottom: 10 }}>
@@ -2082,7 +2123,7 @@ export default function SharePage() {
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
-      {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} />}
+      {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
