@@ -1174,6 +1174,22 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
   );
 }
 function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRecord }) {
+  // The Full Report IS the published PDF — cover, home profile, systems, exec summary, every finding
+  // with photos, limitations, evidence, SOP, certification. The web only syncs a slice of that data,
+  // so embed the real PDF instead of reconstructing a subset. The system-grouped view below is a
+  // fallback shown only when no PDF has been published for this inspection yet.
+  if (record.pdf_url) {
+    return (
+      <div style={{ background: '#3a3f45', minHeight: 'calc(100vh - 52px)' }}>
+        <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 18px', position: 'sticky', top: 0, zIndex: 4 }}>
+          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {record.address ?? 'Inspection Report'}</span>
+          <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', flexShrink: 0, background: '#0e7490', color: '#fff', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, textDecoration: 'none' }}>⤓ Download PDF</a>
+        </div>
+        <iframe src={record.pdf_url} title="Inspection Report" style={{ width: '100%', height: 'calc(100vh - 100px)', border: 'none', display: 'block' }} />
+        <noscript />
+      </div>
+    );
+  }
   const C: RC = { ink: '#1f2937', sub: '#6b7280', line: '#e5e7eb', accent: '#0e7490' };
   const groups = new Map<string, Anomaly[]>();
   for (const a of anomalies) {
