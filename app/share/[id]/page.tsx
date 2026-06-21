@@ -1256,6 +1256,21 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
     </section>
   );
 }
+// Renders the app's published report HTML inline via a same-origin srcDoc iframe (isolated styles),
+// auto-sizing to its content so it reads as one continuous page, not a scroll-in-scroll.
+function FullReportFrame({ doc }: { doc: string }) {
+  const ref = useRef<HTMLIFrameElement>(null);
+  const fit = () => {
+    const f = ref.current;
+    try { const h = f?.contentWindow?.document?.documentElement?.scrollHeight; if (f && h) f.style.height = (h + 16) + 'px'; } catch {}
+  };
+  return (
+    <div style={{ maxWidth: 900, margin: '8px auto 0' }}>
+      <iframe ref={ref} srcDoc={doc} onLoad={fit} title="Full Inspection Report"
+        style={{ width: '100%', border: 'none', display: 'block', minHeight: 600, background: '#fff' }} />
+    </div>
+  );
+}
 function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; record: HomeRecord; onTabChange: (t: Tab) => void }) {
   const [view, setView] = useState<'full' | 'summary'>('full');
   const C: RC = { ink: '#1f2937', sub: '#6b7280', line: '#e5e7eb', accent: '#0e7490' };
@@ -1274,9 +1289,26 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   const sub = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const sop = SOP_SCOPE[(record.sop_mode ?? 'INTERNACHI').toUpperCase()] ?? SOP_SCOPE.INTERNACHI;
 
+  // Path A: the Full Report is the app's REAL report HTML (the exact thing that becomes the PDF),
+  // published to storage. Fetch it; if present, render the complete report + hide the reconstructed
+  // sidebar. If not published yet, fall back to the system-grouped reconstruction below.
+  const [doc, setDoc] = useState<string | null | 'none'>(null);
+  const reportUrl = record.share_id
+    ? `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '')}/storage/v1/object/public/inspection-pdfs/${encodeURIComponent(record.share_id)}/report.html`
+    : '';
+  useEffect(() => {
+    if (!reportUrl) { setDoc('none'); return; }
+    let alive = true;
+    fetch(reportUrl).then(r => (r.ok ? r.text() : Promise.reject(r.status)))
+      .then(t => { if (alive) setDoc(t && t.length > 300 ? t : 'none'); })
+      .catch(() => { if (alive) setDoc('none'); });
+    return () => { alive = false; };
+  }, [reportUrl]);
+  const reportReady = typeof doc === 'string' && doc !== 'none';
+
   return (
     <div className="rpt">
-      <aside className="rpt-side">
+      {!reportReady && <aside className="rpt-side">
         <button onClick={() => jump('rpt-overview')}
           style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.accent, fontSize: 14, fontWeight: 800, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
           <span>📋</span><span style={{ flex: 1 }}>Inspection Details</span>
@@ -1289,7 +1321,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             <span style={{ background: C.accent, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 22, height: 22, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px', flexShrink: 0 }}>{sec.items.length}</span>
           </button>
         ))}
-      </aside>
+      </aside>}
 
       <div className="rpt-main" style={{ color: C.ink }}>
         <div style={{ position: 'relative', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 24, background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.6)), url(${record.cover_url}) center/cover` : '#0f172a' }}>
@@ -1320,32 +1352,40 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
           <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
-          <section id="rpt-overview" style={{ scrollMarginTop: 56, paddingTop: 24 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Inspection Details</h1>
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: C.sub, fontSize: 13, marginBottom: 10 }}>
-              {record.year_built ? <span>Built {record.year_built}</span> : null}
-              {record.sqft ? <span>{record.sqft} sqft</span> : null}
-              {record.beds ? <span>{record.beds} bd</span> : null}
-              {record.baths ? <span>{record.baths} ba</span> : null}
-              {record.inspection_type ? <span>{record.inspection_type}</span> : null}
-            </div>
-            <div style={{ borderTop: `2px solid ${C.accent}`, paddingTop: 14, color: '#4b5563', fontSize: 13.5, lineHeight: 1.65 }}>
-              This inspection was performed in general accordance with <strong>{sop.name}</strong> — {sop.text}. It covered {sections.length > 0 ? <>the following system{sections.length !== 1 ? 's' : ''}: <strong>{sections.map(s => s.system).join(', ')}</strong></> : 'the home’s systems'}. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented. Conditions can change after the inspection date — download the full PDF for the complete report.
-            </div>
-          </section>
           {view === 'summary' ? (
             <ReportSummary anomalies={anomalies} C={C} />
-          ) : sections.length === 0 ? (
-            <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
-          ) : sections.map((sec, i) => (
-            <section key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
-              <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 12px', borderBottom: `2px solid ${C.accent}`, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>{i + 1} · {sec.system}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 12, color: C.sub, fontWeight: 600 }}>{sec.items.length} finding{sec.items.length !== 1 ? 's' : ''}</span>
-              </h2>
-              {sec.items.map((a, j) => <ReportRow key={a.id ?? j} a={a} C={C} />)}
-            </section>
-          ))}
+          ) : reportReady ? (
+            <FullReportFrame doc={doc as string} />
+          ) : doc === null ? (
+            <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '64px 0' }}>Loading the full report…</div>
+          ) : (
+            <>
+              <section id="rpt-overview" style={{ scrollMarginTop: 56, paddingTop: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Inspection Details</h1>
+                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: C.sub, fontSize: 13, marginBottom: 10 }}>
+                  {record.year_built ? <span>Built {record.year_built}</span> : null}
+                  {record.sqft ? <span>{record.sqft} sqft</span> : null}
+                  {record.beds ? <span>{record.beds} bd</span> : null}
+                  {record.baths ? <span>{record.baths} ba</span> : null}
+                  {record.inspection_type ? <span>{record.inspection_type}</span> : null}
+                </div>
+                <div style={{ borderTop: `2px solid ${C.accent}`, paddingTop: 14, color: '#4b5563', fontSize: 13.5, lineHeight: 1.65 }}>
+                  This inspection was performed in general accordance with <strong>{sop.name}</strong> — {sop.text}. It covered {sections.length > 0 ? <>the following system{sections.length !== 1 ? 's' : ''}: <strong>{sections.map(s => s.system).join(', ')}</strong></> : 'the home’s systems'}. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented. Conditions can change after the inspection date — download the full PDF for the complete report.
+                </div>
+              </section>
+              {sections.length === 0 ? (
+                <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
+              ) : sections.map((sec, i) => (
+                <section key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
+                  <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 12px', borderBottom: `2px solid ${C.accent}`, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>{i + 1} · {sec.system}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 12, color: C.sub, fontWeight: 600 }}>{sec.items.length} finding{sec.items.length !== 1 ? 's' : ''}</span>
+                  </h2>
+                  {sec.items.map((a, j) => <ReportRow key={a.id ?? j} a={a} C={C} />)}
+                </section>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
