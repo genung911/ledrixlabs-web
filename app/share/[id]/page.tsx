@@ -93,7 +93,7 @@ type RepairRow = {
   created_at?: string; updated_at?: string;
 };
 
-type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs';
+type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace',
@@ -114,6 +114,39 @@ const STATUS_NEXT: Record<string,string> = {
 };
 const SEV_COLOR: Record<string,string> = { critical: CRITICAL, anomaly: WARN, cosmetic: INFO };
 const SEV_LABEL: Record<string,string> = { critical: 'SAFETY', anomaly: 'DEFICIENCY', cosmetic: 'MAINTENANCE' };
+
+// ── Report tab: derive a SYSTEM from a finding's unit/location/description ──────
+// The share payload has unit + severity but no canonical system/component, so the
+// system is keyword-derived here (mirrors the PDF report's section grouping).
+const REPORT_SYS: [RegExp, string][] = [
+  [/roof|shingle|flashing|gutter|chimney|soffit|fascia|downspout/i, 'Roofing'],
+  [/attic|insulation/i, 'Attic & Insulation'],
+  [/exterior|siding|grade|drainage|deck|porch|driveway|stucco|\bbrick\b|landscap/i, 'Exterior'],
+  [/foundation|crawl|basement|slab|structural|framing|footing/i, 'Foundation & Structure'],
+  [/hvac|furnace|heat|cool|air.?condition|\bac\b|thermostat|\bduct|condenser|evaporator/i, 'HVAC'],
+  [/fireplace|wood stove|\bflue\b/i, 'Fireplace'],
+  [/plumb|water heater|drain|supply line|sump|faucet|toilet|\btpr\b|gas line|sewer|septic|p-?trap/i, 'Plumbing'],
+  [/electric|panel|outlet|breaker|wiring|gfci|afci|receptacle|fixture|service drop|conductor/i, 'Electrical'],
+  [/kitchen|dishwasher|\brange\b|disposal|cooktop|\boven\b/i, 'Kitchen'],
+  [/bath|shower|\btub\b|vanity|lavatory/i, 'Bathrooms'],
+  [/interior|floor|ceiling|drywall|window|\bdoor\b|stair|\bwall\b|\bpaint\b/i, 'Interior'],
+  [/garage/i, 'Garage'],
+];
+const REPORT_SYS_ORDER = ['Roofing','Attic & Insulation','Exterior','Foundation & Structure','HVAC','Fireplace','Plumbing','Electrical','Kitchen','Bathrooms','Interior','Garage','General'];
+function reportSystem(a: Anomaly): string {
+  const t = `${a.unit ?? ''} ${a.location ?? ''} ${a.description ?? ''}`;
+  for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
+  return 'General';
+}
+// PRIORITY axis (matches the PDF report). Accepts both current + legacy severity ids.
+const PRIO_LABEL: Record<string,string> = { critical: 'IMMEDIATE', deficiency: 'REPAIR', anomaly: 'REPAIR', maintenance: 'MAINTENANCE', cosmetic: 'MAINTENANCE', characteristic: 'NOTE', spec: 'NOTE' };
+const PRIO_COLOR: Record<string,string> = { critical: CRITICAL, deficiency: WARN, anomaly: WARN, maintenance: INFO, cosmetic: INFO, characteristic: GREEN, spec: GREEN };
+const prioRank = (s?: string): number => (({ critical: 0, deficiency: 1, anomaly: 1, maintenance: 2, cosmetic: 2, characteristic: 3, spec: 4 } as Record<string,number>)[s ?? 'deficiency'] ?? 9);
+// SAFETY: orthogonal flag (no defectType in the payload, so derive from severity + keywords).
+function isSafetyFinding(a: Anomaly): boolean {
+  if (a.severity === 'critical') return true;
+  return /gas leak|carbon monoxide|smoke detector|electric|panel|wiring|gfci|exposed|stair|\brail|guard|fall|\bfire\b|active leak|mold|microbial|structural|trip hazard|scald/i.test(`${a.unit ?? ''} ${a.description ?? ''}`);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmtDate(iso?: string | null): string {
@@ -909,6 +942,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
   const includedRepairs = repairs.filter(r => r.status === 'included').length;
   const pillars: [Tab, IconName, string, string, number | string][] = [
+    ['report', 'docs', 'FULL REPORT', ACCENT, anomalies.length],
     ['findings', 'findings', 'FINDINGS', anomalies.length > 0 ? CRITICAL : GREEN, anomalies.length],
     ['repairs', 'projects', 'REPAIR REQUEST', includedRepairs > 0 ? CYAN : DIM, includedRepairs],
     ['projects', 'projects', 'PROJECTS', openProjects.length > 0 ? WARN : GREEN, `${projects.filter(p=>p.status==='resolved').length}/${projects.length}`],
@@ -1106,6 +1140,96 @@ function ProjectsTab({ projects, shareId, address, onRefresh }: { projects: Proj
           <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: GREEN, fontFamily: 'Roboto Mono, monospace' }}>ALL PROJECTS RESOLVED</div>
         </div>
       ) : shown.map(p => <ProjectCard key={p.id} p={p} shareId={shareId} address={address} onUpdate={onRefresh} />)}
+    </div>
+  );
+}
+
+// ─── REPORT TAB ──────────────────────────────────────────────────────────────
+// Spectora-style: findings grouped into SYSTEM sections with a sticky, clickable
+// table of contents. Additive — does not touch the other tabs.
+function ReportStat({ n, label, color }: { n: number; label: string; color: string }) {
+  return (
+    <div style={{ background: `${color}14`, border: `1px solid ${color}33`, borderRadius: 8, padding: '6px 12px', textAlign: 'center', minWidth: 58 }}>
+      <div style={{ color, fontSize: 17, fontWeight: 900 }}>{n}</div>
+      <div style={{ color: MED, fontSize: 7, fontWeight: 900, letterSpacing: 1, marginTop: 1 }}>{label}</div>
+    </div>
+  );
+}
+function ReportRow({ a }: { a: Anomaly }) {
+  const color = PRIO_COLOR[a.severity ?? 'deficiency'] ?? WARN;
+  const label = PRIO_LABEL[a.severity ?? 'deficiency'] ?? 'REPAIR';
+  const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8, display: 'flex', gap: 12 }}>
+      {a.imageUri ? <img src={a.imageUri} alt="" style={{ width: 84, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+          <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1, padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, fontFamily: 'Roboto Mono, monospace' }}>{label}</span>
+          {isSafetyFinding(a) ? <span style={{ background: `${CRITICAL}18`, color: CRITICAL, fontSize: 7, fontWeight: 900, letterSpacing: 1, padding: '3px 8px', borderRadius: 99, border: `1px solid ${CRITICAL}44`, fontFamily: 'Roboto Mono, monospace' }}>⚠ SAFETY</span> : null}
+          {a.location ? <span style={{ color: MED, fontSize: 10, fontWeight: 700 }}>{a.location}</span> : null}
+        </div>
+        {a.unit ? <div style={{ color: TEXT, fontSize: 12.5, fontWeight: 700 }}>{a.unit}</div> : null}
+        {desc ? <div style={{ color: MED, fontSize: 12, lineHeight: 1.5, marginTop: 2 }}>{desc}</div> : null}
+        {a.recommendation ? <div style={{ color: ACCENT, fontSize: 11, lineHeight: 1.5, marginTop: 4 }}>→ {a.recommendation}</div> : null}
+      </div>
+    </div>
+  );
+}
+function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRecord }) {
+  const groups = new Map<string, Anomaly[]>();
+  for (const a of anomalies) {
+    const s = reportSystem(a);
+    if (!groups.has(s)) groups.set(s, []);
+    groups.get(s)!.push(a);
+  }
+  const sections = REPORT_SYS_ORDER.filter(s => groups.has(s)).map(s => ({
+    system: s,
+    items: groups.get(s)!.slice().sort((x, y) => prioRank(x.severity) - prioRank(y.severity)),
+  }));
+  const slug = (s: string) => 'sys-' + s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const jump = (s: string) => document.getElementById(slug(s))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const safety    = anomalies.filter(isSafetyFinding).length;
+  const immediate = anomalies.filter(a => a.severity === 'critical').length;
+  const repair    = anomalies.filter(a => a.severity === 'deficiency' || a.severity === 'anomaly').length;
+
+  return (
+    <div style={{ padding: '0 16px 90px' }}>
+      <div style={{ marginTop: 16, marginBottom: 14 }}>
+        <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>INSPECTION REPORT</div>
+        <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginTop: 4 }}>{record.address ?? 'Property'}</div>
+        <div style={{ color: MED, fontSize: 12, marginTop: 2 }}>
+          {[record.city, record.state, record.zip].filter(Boolean).join(', ')}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          {safety    > 0 ? <ReportStat n={safety}    label="⚠ SAFETY"  color={CRITICAL} /> : null}
+          {immediate > 0 ? <ReportStat n={immediate} label="IMMEDIATE" color={CRITICAL} /> : null}
+          {repair    > 0 ? <ReportStat n={repair}    label="REPAIR"    color={WARN} /> : null}
+          <ReportStat n={anomalies.length} label="TOTAL" color={ACCENT} />
+        </div>
+      </div>
+
+      {sections.length > 1 ? (
+        <div style={{ position: 'sticky', top: 0, zIndex: 5, background: BG, paddingTop: 8, paddingBottom: 10, borderBottom: `1px solid ${BORDER}`, display: 'flex', gap: 6, overflowX: 'auto' }}>
+          {sections.map(sec => (
+            <button key={sec.system} onClick={() => jump(sec.system)}
+              style={{ flexShrink: 0, background: CARD2, border: `1px solid ${BORDER}`, borderRadius: 99, padding: '6px 12px', color: TEXT, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {sec.system} <span style={{ color: MED, marginLeft: 2 }}>{sec.items.length}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {sections.length === 0 ? (
+        <div style={{ color: MED, fontSize: 13, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
+      ) : sections.map(sec => (
+        <div key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 58, marginTop: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: `2px solid ${ACCENT}`, paddingBottom: 6, marginBottom: 10 }}>
+            <span style={{ color: '#fff', fontSize: 15, fontWeight: 900, letterSpacing: 0.5 }}>{sec.system}</span>
+            <span style={{ marginLeft: 'auto', color: MED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>{sec.items.length} FINDING{sec.items.length !== 1 ? 'S' : ''}</span>
+          </div>
+          {sec.items.map((a, i) => <ReportRow key={a.id ?? i} a={a} />)}
+        </div>
+      ))}
     </div>
   );
 }
@@ -1873,6 +1997,7 @@ export default function SharePage() {
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
+      {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
