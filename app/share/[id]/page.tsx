@@ -1368,6 +1368,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
       </>)}</aside>
 
       <div className="rpt-main" style={{ color: C.ink }}>
+        {!reportReady && (
         <div style={{ position: 'relative', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 24, background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.6)), url(${record.cover_url}) center/cover` : '#0f172a' }}>
           <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, lineHeight: 1.1 }}>{record.address ?? 'Property'}</div>
           <div style={{ color: '#e5e7eb', fontSize: 15, marginTop: 2 }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
@@ -1382,6 +1383,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             </div>
           ) : null}
         </div>
+        )}
 
         <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', position: 'sticky', top: 0, zIndex: 4 }}>
           {(['full', 'summary'] as const).map(v => (
