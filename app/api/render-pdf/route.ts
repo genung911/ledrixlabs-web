@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import chromium from '@sparticuz/chromium-min';
 import puppeteer from 'puppeteer-core';
 
-// chromium-min ships NO binary — it streams a matching Chromium pack at runtime (cached in /tmp),
-// which includes the shared libs (libnss3.so etc.). This sidesteps Vercel's unreliable bundling
-// of the full @sparticuz/chromium package, which shipped the browser without its libraries.
-const CHROMIUM_PACK = 'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar';
-
-// Server-side PDF rendering with real Chromium — the inspection report needs true 1" margins
-// and a footer (CONFIDENTIAL + page X of Y) pinned to the bottom of EVERY page, which iOS's
-// expo-print engine cannot do. The app POSTs its report HTML here and gets a proper PDF back.
-//
-// Runs on the Vercel Node runtime (NOT edge — Chromium needs a real Node env). @sparticuz/chromium
-// ships a Lambda/Vercel-sized Chromium binary that puppeteer-core drives.
+// Server-side PDF rendering via a HOSTED Chrome (browserless or any Chrome-over-WebSocket).
+// We do NOT launch Chromium inside the Vercel function — bundling @sparticuz/chromium on Vercel
+// reliably fails on shared libraries (libnss3.so). Instead Puppeteer CONNECTS to a remote browser
+// at BROWSERLESS_WS_ENDPOINT, which is real Chrome and renders the report's HTML to a proper PDF
+// with true margins + a footer (CONFIDENTIAL + page X of Y) on every page.
 export const runtime = 'nodejs';
-export const maxDuration = 60;          // Chromium cold start + render; needs Vercel Pro for >10s
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 const SECRET = process.env.RENDER_PDF_SECRET ?? '';
+// Full WebSocket connect URL from your browser provider, e.g.
+//   wss://production-sfo.browserless.io/?token=YOUR_TOKEN
+const BROWSER_WS = process.env.BROWSERLESS_WS_ENDPOINT ?? '';
 
-// Footer lives in the bottom page margin and repeats on every page. Puppeteer fills the
-// pageNumber / totalPages spans automatically. Note: header/footer templates do NOT inherit
-// page CSS, so styles are inlined and font-size must be explicit (default is 0).
+// Footer lives in the bottom page margin and repeats on every page; Puppeteer fills pageNumber /
+// totalPages. Header/footer templates don't inherit page CSS, so styles are inlined + font-size
+// explicit (default is 0).
 const FOOTER_TEMPLATE = `
   <div style="font-size:8px;color:#64748b;width:100%;margin:0 0.4in;font-family:Helvetica,Arial,sans-serif;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
     <span>LEDRIX SPATIAL OS &middot; CONFIDENTIAL INSPECTION DOCUMENT</span>
@@ -32,6 +28,9 @@ export async function POST(req: NextRequest) {
   if (SECRET && req.headers.get('x-render-key') !== SECRET) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
+  if (!BROWSER_WS) {
+    return NextResponse.json({ error: 'BROWSERLESS_WS_ENDPOINT not configured' }, { status: 500 });
+  }
 
   let html: unknown;
   try { ({ html } = await req.json()); }
@@ -40,13 +39,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'missing html' }, { status: 400 });
   }
 
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+  let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
   try {
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath(CHROMIUM_PACK),
-      headless: true,
-    });
+    browser = await puppeteer.connect({ browserWSEndpoint: BROWSER_WS });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 45000 });
     const pdf = await page.pdf({
