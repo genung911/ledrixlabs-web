@@ -68,7 +68,7 @@ type HomeRecord = {
   id: string; share_id: string; address?: string; city?: string; state?: string;
   zip?: string; year_built?: string; sqft?: string; beds?: string; baths?: string;
   garage?: string; inspector?: string; company?: string; license_number?: string;
-  inspection_date?: string; inspection_type?: string;
+  inspection_date?: string; inspection_type?: string; sop_mode?: string;
   anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string; cover_url?: string;
 };
 type Project = {
@@ -133,6 +133,17 @@ const REPORT_SYS: [RegExp, string][] = [
   [/garage/i, 'Garage'],
 ];
 const REPORT_SYS_ORDER = ['Roofing','Attic & Insulation','Exterior','Foundation & Structure','HVAC','Fireplace','Plumbing','Electrical','Kitchen','Bathrooms','Interior','Garage','General'];
+const REPORT_ICON: Record<string,string> = {
+  'Roofing': '🏠', 'Attic & Insulation': '🧱', 'Exterior': '🏡', 'Foundation & Structure': '🏗️',
+  'HVAC': '❄️', 'Fireplace': '🔥', 'Plumbing': '🚰', 'Electrical': '⚡', 'Kitchen': '🍽️',
+  'Bathrooms': '🚿', 'Interior': '🛋️', 'Garage': '🚗', 'General': '📋',
+};
+// Scope statement keyed by the chosen SOP (synced as home_records.sop_mode).
+const SOP_SCOPE: Record<string,{ name: string; text: string }> = {
+  INTERNACHI: { name: 'the InterNACHI® Standards of Practice', text: 'a visual examination of the readily accessible systems and components of the home' },
+  ASHI:       { name: 'the ASHI® Standards of Practice',       text: 'a visual examination of the readily accessible installed systems and components of the home' },
+  CUSTOM:     { name: "the inspector's Standards of Practice",  text: 'a visual examination of the systems and components within the agreed scope of work' },
+};
 function reportSystem(a: Anomaly): string {
   const t = `${a.unit ?? ''} ${a.location ?? ''} ${a.description ?? ''}`;
   for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
@@ -1173,23 +1184,40 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
     </div>
   );
 }
-function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRecord }) {
-  // The Full Report IS the published PDF — cover, home profile, systems, exec summary, every finding
-  // with photos, limitations, evidence, SOP, certification. The web only syncs a slice of that data,
-  // so embed the real PDF instead of reconstructing a subset. The system-grouped view below is a
-  // fallback shown only when no PDF has been published for this inspection yet.
-  if (record.pdf_url) {
-    return (
-      <div style={{ background: '#3a3f45', minHeight: 'calc(100vh - 52px)' }}>
-        <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 18px', position: 'sticky', top: 0, zIndex: 4 }}>
-          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {record.address ?? 'Inspection Report'}</span>
-          <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', flexShrink: 0, background: '#0e7490', color: '#fff', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, textDecoration: 'none' }}>⤓ Download PDF</a>
-        </div>
-        <iframe src={record.pdf_url} title="Inspection Report" style={{ width: '100%', height: 'calc(100vh - 100px)', border: 'none', display: 'block' }} />
-        <noscript />
-      </div>
-    );
+// Condensed summary: findings grouped by priority tier, one compact line each.
+function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
+  if (anomalies.length === 0) return <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>;
+  const TIERS: { label: string; color: string }[] = [
+    { label: 'IMMEDIATE', color: '#dc2626' },
+    { label: 'REPAIR', color: '#d97706' },
+    { label: 'MAINTENANCE', color: '#6b7280' },
+    { label: 'NOTE', color: '#9ca3af' },
+  ];
+  const byLabel = new Map<string, Anomaly[]>();
+  for (const a of anomalies) {
+    const l = PRIO_LABEL[a.severity ?? 'deficiency'] ?? 'REPAIR';
+    if (!byLabel.has(l)) byLabel.set(l, []);
+    byLabel.get(l)!.push(a);
   }
+  return (
+    <div>
+      {TIERS.filter(t => byLabel.has(t.label)).map(t => (
+        <section key={t.label} style={{ paddingTop: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: t.color, margin: '0 0 8px', borderBottom: `2px solid ${t.color}`, paddingBottom: 6 }}>{t.label} <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>({byLabel.get(t.label)!.length})</span></h2>
+          {byLabel.get(t.label)!.map((a, j) => (
+            <div key={a.id ?? j} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: `1px solid ${C.line}` }}>
+              <span style={{ width: 14, flexShrink: 0, color: '#dc2626', fontSize: 12 }}>{isSafetyFinding(a) ? '⚠' : ''}</span>
+              <span style={{ fontWeight: 700, color: C.ink, fontSize: 13, minWidth: 110, flexShrink: 0 }}>{reportSystem(a)}</span>
+              <span style={{ color: '#4b5563', fontSize: 13, flex: 1 }}>{a.unit ? `${a.unit} — ` : ''}{(a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim().slice(0, 130)}</span>
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRecord }) {
+  const [view, setView] = useState<'full' | 'summary'>('full');
   const C: RC = { ink: '#1f2937', sub: '#6b7280', line: '#e5e7eb', accent: '#0e7490' };
   const groups = new Map<string, Anomaly[]>();
   for (const a of anomalies) {
@@ -1204,6 +1232,7 @@ function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRe
   const slug = (s: string) => 'rpt-' + s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const sub = [record.city, record.state, record.zip].filter(Boolean).join(', ');
+  const sop = SOP_SCOPE[(record.sop_mode ?? 'INTERNACHI').toUpperCase()] ?? SOP_SCOPE.INTERNACHI;
 
   return (
     <div className="rpt">
@@ -1215,6 +1244,7 @@ function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRe
         {sections.map(sec => (
           <button key={sec.system} onClick={() => jump(slug(sec.system))}
             style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.ink, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
+            <span style={{ width: 18, textAlign: 'center', flexShrink: 0 }}>{REPORT_ICON[sec.system] ?? '•'}</span>
             <span style={{ flex: 1 }}>{sec.system}</span>
             <span style={{ background: C.accent, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 22, height: 22, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px', flexShrink: 0 }}>{sec.items.length}</span>
           </button>
@@ -1237,10 +1267,15 @@ function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRe
           ) : null}
         </div>
 
-        <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 18px', position: 'sticky', top: 0, zIndex: 4 }}>
-          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>📄 Full Report</span>
+        <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', position: 'sticky', top: 0, zIndex: 4 }}>
+          {(['full', 'summary'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ background: view === v ? C.accent : 'transparent', color: '#fff', border: view === v ? 'none' : '1px solid rgba(255,255,255,0.25)', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, cursor: 'pointer' }}>
+              {v === 'full' ? 'Full Report' : 'Summary'}
+            </button>
+          ))}
           <span style={{ marginLeft: 'auto' }} />
-          {record.pdf_url ? <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ background: C.accent, color: '#fff', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, textDecoration: 'none' }}>⤓ PDF</a> : null}
+          {record.pdf_url ? <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, textDecoration: 'none' }}>⤓ PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
@@ -1253,11 +1288,13 @@ function ReportTab({ anomalies, record }: { anomalies: Anomaly[]; record: HomeRe
               {record.baths ? <span>{record.baths} ba</span> : null}
               {record.inspection_type ? <span>{record.inspection_type}</span> : null}
             </div>
-            <div style={{ borderTop: `2px solid ${C.accent}`, paddingTop: 14, color: '#4b5563', fontSize: 13.5, lineHeight: 1.6 }}>
-              This is a <strong>visual</strong> inspection reflecting the condition of the home and its systems at the time of the inspection. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented across <strong>{sections.length}</strong> system{sections.length !== 1 ? 's' : ''}. Use the menu to jump to any section, or download the full PDF.
+            <div style={{ borderTop: `2px solid ${C.accent}`, paddingTop: 14, color: '#4b5563', fontSize: 13.5, lineHeight: 1.65 }}>
+              This inspection was performed in general accordance with <strong>{sop.name}</strong> — {sop.text}. It covered {sections.length > 0 ? <>the following system{sections.length !== 1 ? 's' : ''}: <strong>{sections.map(s => s.system).join(', ')}</strong></> : 'the home’s systems'}. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented. Conditions can change after the inspection date — download the full PDF for the complete report.
             </div>
           </section>
-          {sections.length === 0 ? (
+          {view === 'summary' ? (
+            <ReportSummary anomalies={anomalies} C={C} />
+          ) : sections.length === 0 ? (
             <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
           ) : sections.map((sec, i) => (
             <section key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
