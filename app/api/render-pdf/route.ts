@@ -43,7 +43,14 @@ export async function POST(req: NextRequest) {
   try {
     browser = await puppeteer.connect({ browserWSEndpoint: BROWSER_WS });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 45000 });
+    // domcontentloaded is instant; networkidle0 hangs forever when a report has several images.
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // Then wait for images to load — but NEVER hang on slow/broken ones (cap at 8s).
+    await page.evaluate(() => Promise.race([
+      Promise.all(Array.from(document.images).map(img =>
+        img.complete ? null : new Promise(res => { img.addEventListener('load', res); img.addEventListener('error', res); }))),
+      new Promise(res => setTimeout(res, 8000)),
+    ]));
     const pdf = await page.pdf({
       format: 'Letter',
       printBackground: true,
