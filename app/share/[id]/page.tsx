@@ -1005,7 +1005,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
           ))}
         </div>
 
-        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: ACCENT, color: '#04141a', border: 'none', borderRadius: 12, padding: 15, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: 'rgba(0,243,255,0.12)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 16, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,243,255,0.25)' }}>
           📄 VIEW FULL REPORT
         </button>
       </div>
@@ -1775,7 +1775,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
             Your home is in strong overall condition, with a few maintenance items worth scheduling before winter. The water heater is approaching the end of its typical service life, and the panel shows&hellip;
           </p>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(180deg, rgba(10,10,10,0.25), rgba(10,10,10,0.86))' }}>
-            <button onClick={onUnlock} style={{ background: CYAN, color: '#001018', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>UNLOCK LEDRIX INSIGHT</button>
+            <button onClick={onUnlock} style={{ background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 10, padding: '11px 18px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(0,243,255,0.3)' }}>UNLOCK LEDRIX INSIGHT</button>
             <span style={{ color: MED, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>Live AI analysis of your home</span>
           </div>
         </>
@@ -1892,11 +1892,16 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
 }
 
 function LedrixFab({ onClick }: { onClick: () => void }) {
+  // VAL orb — dark glass core, cyan Δ, layered cyan halo (matches the inspector app's
+  // capture-rail orb). Glow, not a solid fill.
   return (
     <button onClick={onClick} aria-label="Ask Ledrix" style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120,
-      width: 56, height: 56, borderRadius: '50%', background: CYAN, border: 'none', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 22px ${CYAN}40` }}>
-      <ValDeltaSVG size={26} color="#001018" />
+      width: 62, height: 62, borderRadius: '50%',
+      background: 'radial-gradient(circle at 50% 36%, rgba(0,243,255,0.20), rgba(8,12,14,0.92) 70%)',
+      border: `1.5px solid ${CYAN}`, cursor: 'pointer',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: `0 0 0 1px rgba(0,243,255,0.22), 0 0 22px ${CYAN}70, 0 0 52px ${CYAN}30, inset 0 0 18px rgba(0,243,255,0.12)` }}>
+      <ValDeltaSVG size={28} color={CYAN} />
     </button>
   );
 }
