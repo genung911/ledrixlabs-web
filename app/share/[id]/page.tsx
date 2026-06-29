@@ -145,7 +145,13 @@ const SOP_SCOPE: Record<string,{ name: string; text: string }> = {
   CUSTOM:     { name: "the inspector's Standards of Practice",  text: 'a visual examination of the systems and components within the agreed scope of work' },
 };
 function reportSystem(a: Anomaly): string {
-  const t = `${a.unit ?? ''} ${a.location ?? ''} ${a.description ?? ''}`;
+  // Trust the app's classification (`unit`) FIRST. The description often mentions
+  // "insulation" about something else — refrigerant-line insulation on an AC unit,
+  // or conductor insulation in a panel — which otherwise false-matches the
+  // Attic & Insulation pattern (checked before HVAC/Electrical) and misfiles it.
+  const unit = (a.unit ?? '').trim();
+  if (unit) { for (const [re, name] of REPORT_SYS) if (re.test(unit)) return name; }
+  const t = `${a.location ?? ''} ${a.description ?? ''}`;
   for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
   return 'General';
 }
