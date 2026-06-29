@@ -1365,6 +1365,22 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
 
   return (
     <div className="rpt">
+      {!reportReady && (
+      <div className="rpt-hero" style={{ position: 'relative', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '28px 28px 24px', background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.72) 100%), url(${record.cover_url}) center/cover` : 'linear-gradient(160deg,#1e293b,#0f172a)' }}>
+        <div style={{ color: '#fff', fontSize: 30, fontWeight: 800, lineHeight: 1.08, letterSpacing: -0.5 }}>{record.address ?? 'Property'}</div>
+        <div style={{ color: '#e5e7eb', fontSize: 15, marginTop: 4 }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
+        {(record.inspector || record.company) ? (
+          <div style={{ position: 'absolute', right: 24, bottom: 24, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(6px)', borderRadius: 999, padding: '8px 18px 8px 10px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 18px rgba(0,0,0,0.28)' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 19, background: C.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>{(record.inspector ?? 'I').slice(0, 1).toUpperCase()}</div>
+            <div>
+              <div style={{ fontSize: 8, color: C.sub, letterSpacing: 1, fontWeight: 800 }}>INSPECTOR</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>{record.inspector ?? '—'}</div>
+              {record.company ? <div style={{ fontSize: 11, color: C.sub }}>{record.company}</div> : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+      )}
       <aside className="rpt-side">{reportReady ? (
         <>
           <div style={{ padding: '15px 18px 9px', fontSize: 10, fontWeight: 800, letterSpacing: 2, color: C.accent, fontFamily: 'Roboto Mono, monospace' }}>CONTENTS</div>
@@ -1392,32 +1408,15 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
       </>)}</aside>
 
       <div className="rpt-main" style={{ color: C.ink }}>
-        {!reportReady && (
-        <div style={{ position: 'relative', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 24, background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.6)), url(${record.cover_url}) center/cover` : '#0f172a' }}>
-          <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, lineHeight: 1.1 }}>{record.address ?? 'Property'}</div>
-          <div style={{ color: '#e5e7eb', fontSize: 15, marginTop: 2 }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
-          {(record.inspector || record.company) ? (
-            <div style={{ position: 'absolute', right: 20, bottom: 20, background: '#fff', borderRadius: 999, padding: '8px 18px 8px 10px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 2px 12px rgba(0,0,0,0.25)' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 19, background: C.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>{(record.inspector ?? 'I').slice(0, 1).toUpperCase()}</div>
-              <div>
-                <div style={{ fontSize: 8, color: C.sub, letterSpacing: 1, fontWeight: 800 }}>INSPECTOR</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>{record.inspector ?? '—'}</div>
-                {record.company ? <div style={{ fontSize: 11, color: C.sub }}>{record.company}</div> : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        )}
-
-        <div style={{ background: '#374151', display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', position: 'sticky', top: 0, zIndex: 4 }}>
+        <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #eef0f3', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', position: 'sticky', top: 0, zIndex: 4 }}>
           {(['full', 'summary'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              style={{ background: view === v ? C.accent : 'transparent', color: '#fff', border: view === v ? 'none' : '1px solid rgba(255,255,255,0.25)', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, cursor: 'pointer' }}>
+              style={{ background: view === v ? C.accent : '#f1f5f9', color: view === v ? '#fff' : C.sub, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 16px', borderRadius: 8, cursor: 'pointer', boxShadow: view === v ? `0 2px 10px ${C.accent}40` : 'none' }}>
               {v === 'full' ? 'Full Report' : 'Summary'}
             </button>
           ))}
           <span style={{ marginLeft: 'auto' }} />
-          {record.pdf_url ? <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 800, padding: '7px 14px', borderRadius: 6, textDecoration: 'none' }}>⤓ PDF</a> : null}
+          {record.pdf_url ? <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ background: '#f1f5f9', color: C.ink, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 14px', borderRadius: 8, textDecoration: 'none' }}>⤓ PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
@@ -2229,12 +2228,13 @@ export default function SharePage() {
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
         input::placeholder{color:#222}
         button{-webkit-tap-highlight-color:transparent}
-        .rpt{display:flex;align-items:flex-start;background:#fff;min-height:100vh}
-        .rpt-side{width:250px;flex-shrink:0;position:sticky;top:0;max-height:100vh;overflow-y:auto;background:#fff}
-        .rpt-main{flex:1;min-width:0}
+        .rpt{display:grid;grid-template-columns:250px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"side hero" "side main";background:#fff;min-height:100vh}
+        .rpt-hero{grid-area:hero}
+        .rpt-side{grid-area:side;width:250px;flex-shrink:0;position:sticky;top:0;max-height:100vh;overflow-y:auto;background:#fff;display:flex;flex-direction:column;border-right:1px solid #eef0f3}
+        .rpt-main{grid-area:main;min-width:0}
         @media (max-width:860px){
-          .rpt{flex-direction:column}
-          .rpt-side{position:static;width:100%;max-height:none;overflow-x:auto;overflow-y:hidden;flex-direction:row;border-bottom:1px solid #e5e7eb}
+          .rpt{grid-template-columns:1fr;grid-template-rows:none;grid-template-areas:"hero" "side" "main"}
+          .rpt-side{position:static;width:100%;max-height:none;overflow-x:auto;overflow-y:hidden;flex-direction:row;border-right:none;border-bottom:1px solid #e5e7eb}
           .rpt-side>button{width:auto!important;border-bottom:none!important;border-right:1px solid #e5e7eb}
         }
         @media print {
