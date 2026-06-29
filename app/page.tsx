@@ -169,7 +169,7 @@ export default function Home() {
           {/* Left — image */}
           <div className="ledrix-how-img" style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
             <Image
-              src="/site_image.png"
+              src="/screenshots/site_image.png"
               alt="Inspector using Ledrix to capture cloud-analyzed evidence"
               fill
               style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
@@ -284,11 +284,11 @@ export default function Home() {
           flexWrap: 'wrap',
         }}>
           {[
-            { src: '/IMG_5118.jpg', w: 1284, h: 2637, k: 'MANAGE', t: 'Your day, organized', b: 'Every job, what needs you, and the next inspection — one tap from the field.' },
-            { src: '/IMG_5121.jpg', w: 1284, h: 2673, k: 'COVER', t: 'Nothing slips the SOP', b: 'Every system and room tracked against the standard, with live coverage as you walk.' },
-            { src: '/IMG_5123.PNG', w: 1284, h: 2778, k: 'CAPTURE', t: 'Point, shoot, logged', b: 'Snap the photo — the write-up comes back done: system, severity, action. No typing.' },
-            { src: '/screenshot_anomaly.png', w: 250, h: 542, k: 'CONFIRM', t: 'You have the final say', b: 'Each finding written in plain language and priced — you confirm, adjust, or reject.' },
-            { src: '/IMG_5122.PNG', w: 1284, h: 2778, k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway — the PDF and client home portal go out in a single tap.' },
+            { src: '/screenshots/IMG_5118.jpg', w: 1284, h: 2637, k: 'MANAGE', t: 'Your day, organized', b: 'Every job, what needs you, and the next inspection — one tap from the field.' },
+            { src: '/screenshots/IMG_5121.jpg', w: 1284, h: 2673, k: 'COVER', t: 'Nothing slips the SOP', b: 'Every system and room tracked against the standard, with live coverage as you walk.' },
+            { src: '/screenshots/IMG_5123.PNG', w: 1284, h: 2778, k: 'CAPTURE', t: 'Point, shoot, logged', b: 'Snap the photo — the write-up comes back done: system, severity, action. No typing.' },
+            { src: '/screenshots/IMG_5553.PNG', w: 1284, h: 2778, k: 'CONFIRM', t: 'You have the final say', b: 'Each finding written in plain language and priced — you confirm, adjust, or reject.' },
+            { src: '/screenshots/IMG_5122.PNG', w: 1284, h: 2778, k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway — the PDF and client home portal go out in a single tap.' },
           ].map(p => (
             <div key={p.k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: 184, flex: '0 0 auto' }}>
               <div style={{
