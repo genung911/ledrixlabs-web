@@ -1085,6 +1085,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; record: HomeRecord; shareId: string }) {
   const [filter, setFilter] = useState<'all' | 'critical' | 'anomaly' | 'cosmetic'>('all');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'priority' | 'system' | 'room'>('priority');
   const [specsOpen, setSpecsOpen] = useState(false);
 
   const critical = anomalies.filter(a => a.severity === 'critical');
@@ -1099,6 +1100,22 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
     }
     return true;
   });
+
+  // Sort: priority = flat, worst-first. system/room = grouped by that field, each
+  // group sorted by priority within (so "both" — focus a trade, worst items first).
+  const byPriority = (x: Anomaly, y: Anomaly) => prioRank(x.severity) - prioRank(y.severity);
+  const flatSorted = filtered.slice().sort(byPriority);
+  const groups = sort === 'priority' ? null : (() => {
+    const m = new Map<string, Anomaly[]>();
+    for (const a of filtered) {
+      const k = ((sort === 'system' ? a.unit : a.location) || '').trim() || (sort === 'system' ? 'Other' : 'Unspecified');
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(a);
+    }
+    return Array.from(m.entries())
+      .map(([key, items]) => ({ key, items: items.slice().sort(byPriority) }))
+      .sort((a, b) => prioRank(a.items[0]?.severity) - prioRank(b.items[0]?.severity));
+  })();
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -1121,6 +1138,17 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
           fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
         }} />
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 2 }}>
+        <span style={{ color: DIM, fontSize: 9, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace', flexShrink: 0 }}>SORT</span>
+        {(['priority', 'system', 'room'] as const).map(key => (
+          <button key={key} onClick={() => setSort(key)} style={{
+            background: sort === key ? `${ACCENT}20` : CARD, border: `1px solid ${sort === key ? ACCENT + '55' : BORDER}`,
+            color: sort === key ? ACCENT : DIM, borderRadius: 99, padding: '6px 14px', fontSize: 9,
+            fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace',
+            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, textTransform: 'capitalize',
+          }}>{key}</button>
+        ))}
+      </div>
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
@@ -1128,9 +1156,23 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
             {filter === 'all' ? 'NO FINDINGS LOGGED' : `NO ${filter.toUpperCase()} FINDINGS`}
           </div>
         </div>
-      ) : filtered.map((a, i) => (
-        <FindingCard key={i} a={a} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={shareId} />
-      ))}
+      ) : sort === 'priority' ? (
+        flatSorted.map((a, i) => (
+          <FindingCard key={a.id ?? i} a={a} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={shareId} />
+        ))
+      ) : (
+        (groups ?? []).map(g => (
+          <div key={g.key} style={{ marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 2px 8px' }}>
+              <span style={{ color: ACCENT, fontSize: 10, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace', textTransform: sort === 'system' ? 'uppercase' : 'none' }}>{g.key}</span>
+              <span style={{ color: DIM, fontSize: 10, fontWeight: 700 }}>({g.items.length})</span>
+            </div>
+            {g.items.map((a, i) => (
+              <FindingCard key={a.id ?? `${g.key}-${i}`} a={a} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={shareId} />
+            ))}
+          </div>
+        ))
+      )}
     </div>
   );
 }
