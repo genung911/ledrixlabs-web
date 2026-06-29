@@ -338,7 +338,7 @@ export default function Home() {
 
             {/* Home Portal tile */}
             <a
-              href="/sample-home-app.html"
+              href="/share/insp_1782765943637"
               target="_blank"
               className="ledrix-sample-tile"
               style={{
@@ -371,7 +371,7 @@ export default function Home() {
                 </div>
               </div>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, marginTop: 40 }}>
-                <span style={{ color: ACCENT, fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>OPEN SAMPLE</span>
+                <span style={{ color: ACCENT, fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>OPEN LIVE PORTAL</span>
                 <span style={{ color: ACCENT, fontSize: 18, lineHeight: 1 }}>→</span>
               </div>
             </a>
@@ -432,7 +432,12 @@ export default function Home() {
             Every finding in your report opens into a card that tells you what it means, what it costs near you, and exactly who to call.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 2 }}>
+        <div className="ledrix-homeowner-grid" style={{ display: 'flex', gap: 48, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* The live home portal a buyer receives */}
+          <div style={{ flex: '0 0 auto', width: 252, borderRadius: 34, overflow: 'hidden', border: '1px solid rgba(0,243,255,0.18)', boxShadow: '0 0 64px rgba(0,243,255,0.10)' }}>
+            <Image src="/screenshots/IMG_5564.PNG" alt="The live Ledrix home portal a buyer receives" width={1284} height={2778} style={{ display: 'block', width: '100%', height: 'auto' }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 2, flex: '1 1 440px', maxWidth: 520 }}>
           {[
             { icon: '◎', title: 'Know the cost', body: 'Tap a finding for a location-based repair estimate — priced for your area, not a national average.' },
             { icon: '☎', title: 'Call the right pro', body: 'Top-rated local contractors for that exact trade, sorted by reviews — tap to call, straight from the finding.' },
@@ -445,6 +450,7 @@ export default function Home() {
               <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{f.body}</p>
             </div>
           ))}
+          </div>
         </div>
       </section>
 
