@@ -328,7 +328,8 @@ function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: s
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={BORDER} strokeWidth={size * 0.1} />
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={size * 0.1}
         strokeDasharray={circ} strokeDashoffset={dashOff}
-        strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`} />
+        strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ filter: `drop-shadow(0 0 ${(size * 0.06).toFixed(1)}px ${color})` }} />
       <text x={cx} y={cy - 4} textAnchor="middle" fontSize={size * 0.24} fontWeight="900"
         fill={color} fontFamily="Inter,system-ui,sans-serif">{score}</text>
       <text x={cx} y={cy + 10} textAnchor="middle" fontSize={size * 0.13} fontWeight="900"
@@ -504,7 +505,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: ACCENT, color: '#000', border: 'none', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
+            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.45)', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', boxShadow: '0 0 14px rgba(0,243,255,0.25)', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
           </div>
         </CardSection>
       </div>
@@ -977,11 +978,11 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       </div>
 
       {/* Record header — pulled off the photo, Ledrix style: title + L-Index + stats */}
-      <div style={{ padding: '14px 16px 0' }}>
+      <div style={{ padding: '20px 18px 0' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ color: ACCENT, fontSize: 7.5, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>LEDRIX HOME RECORD · VERIFIED</div>
-            <div style={{ color: '#fff', fontSize: 20, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5 }}>{record.address ?? 'ADDRESS PENDING'}</div>
+            <div style={{ color: '#fff', fontSize: 24, fontWeight: 900, lineHeight: 1.12, letterSpacing: -0.8 }}>{record.address ?? 'ADDRESS PENDING'}</div>
             {subAddress && <div style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
             <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginTop: 7, fontFamily: 'Roboto Mono, monospace' }}>INSPECTED {fmtDate(record.inspection_date).toUpperCase()}</div>
           </div>
@@ -991,21 +992,24 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
           {([
             [critical.length, 'SAFETY',     critical.length > 0 ? CRITICAL : DIM],
             [deficien.length, 'DEFICIENCY', deficien.length > 0 ? WARN     : DIM],
             [maint,           'MAINT.',     maint           > 0 ? INFO     : DIM],
             [anomalies.length,'TOTAL',      TEXT],
-          ] as [number, string, string][]).map(([v, l, c]) => (
-            <div key={l} style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 6px', textAlign: 'center' }}>
-              <div style={{ color: c, fontSize: 19, fontWeight: 900, lineHeight: 1 }}>{v}</div>
-              <div style={{ color: DIM, fontSize: 6.5, fontWeight: 900, letterSpacing: 1, marginTop: 4, fontFamily: 'Roboto Mono, monospace' }}>{l}</div>
+          ] as [number, string, string][]).map(([v, l, c]) => {
+            const lit = v > 0 && c !== DIM && c !== TEXT;   // active severity → glow in its color
+            return (
+            <div key={l} style={{ flex: 1, background: CARD, border: `1px solid ${lit ? c + '55' : BORDER}`, borderRadius: 12, padding: '13px 6px', textAlign: 'center', boxShadow: lit ? `0 0 18px ${c}22` : 'none' }}>
+              <div style={{ color: c, fontSize: 20, fontWeight: 900, lineHeight: 1, textShadow: lit ? `0 0 14px ${c}` : 'none' }}>{v}</div>
+              <div style={{ color: DIM, fontSize: 6.5, fontWeight: 900, letterSpacing: 1, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{l}</div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
-        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: 'rgba(0,243,255,0.12)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 16, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,243,255,0.25)' }}>
+        <button onClick={() => onTabChange('report')} style={{ marginTop: 18, width: '100%', background: 'rgba(0,243,255,0.12)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 16, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,243,255,0.25)' }}>
           📄 VIEW FULL REPORT
         </button>
       </div>
@@ -1037,19 +1041,23 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       {/* The four screens (the home dashboard) */}
       <div style={{ padding: '16px 16px 12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {pillars.map(([tab, icon, label, color, count]) => (
+          {pillars.map(([tab, icon, label, color, count]) => {
+            const lit = Number(count) > 0;
+            return (
             <button key={tab} onClick={() => onTabChange(tab)} style={{
-              background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14,
-              padding: '16px 16px', textAlign: 'left', cursor: 'pointer',
+              background: CARD, border: `1px solid ${lit ? color + '40' : BORDER}`, borderRadius: 14,
+              padding: '18px 16px', textAlign: 'left', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', gap: 10,
+              boxShadow: lit ? `0 0 20px ${color}1f` : 'none',
             }}>
               <Icon name={icon} size={22} color={color} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>{label}</span>
-                <span style={{ color, fontSize: 18, fontWeight: 900, lineHeight: 1 }}>{count}</span>
+                <span style={{ color, fontSize: 18, fontWeight: 900, lineHeight: 1, textShadow: lit ? `0 0 12px ${color}` : 'none' }}>{count}</span>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -1720,7 +1728,7 @@ function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void 
             <input value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && sendLink()} placeholder="you@email.com" type="email"
               style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: '#fff', fontSize: 14, outline: 'none', marginBottom: 8 }} />
             {err && <div style={{ color: CRITICAL, fontSize: 10, marginBottom: 8 }}>{err}</div>}
-            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: CYAN, color: '#001018', border: 'none', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
+            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(0,243,255,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
           </>
         )}
         <button onClick={onClose} style={{ width: '100%', background: 'none', border: 'none', color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: 12, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>MAYBE LATER</button>
@@ -1885,7 +1893,7 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
           placeholder={recording ? 'Listening…' : 'Ask Ledrix about your home…'} enterKeyHint="send"
           style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', color: '#fff', fontSize: 16, outline: 'none', minWidth: 0 }} />
         <button onClick={() => send()} disabled={busy || !input.trim()} style={{ flexShrink: 0, height: 44, padding: '0 16px',
-          background: CYAN, color: '#001018', border: 'none', borderRadius: 10, fontWeight: 900, fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', opacity: (busy || !input.trim()) ? 0.45 : 1 }}>SEND</button>
+          background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 10, fontWeight: 900, fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 14px rgba(0,243,255,0.28)', opacity: (busy || !input.trim()) ? 0.45 : 1 }}>SEND</button>
       </div>
     </div>
   );
