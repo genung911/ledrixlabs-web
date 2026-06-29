@@ -280,51 +280,38 @@ export default function Home() {
         </div>
 
         <div className="ledrix-liveapp-grid" style={{
-          display: 'flex', gap: 64, justifyContent: 'center', alignItems: 'center',
+          display: 'flex', gap: 28, justifyContent: 'center', alignItems: 'flex-start',
           flexWrap: 'wrap',
         }}>
-          {/* Phone — Anomaly detail */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flex: '0 0 auto' }}>
-            <div style={{
-              borderRadius: 36, overflow: 'hidden',
-              border: '1px solid rgba(0,243,255,0.18)',
-              boxShadow: '0 0 60px rgba(0,243,255,0.08)',
-              width: 250,
-            }}>
-              <Image
-                src="/screenshot_anomaly.png"
-                alt="Ledrix finding detail with AI analysis"
-                width={250}
-                height={542}
-                style={{ display: 'block', width: '100%', height: 'auto' }}
-              />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#fff', fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Findings, Explained</div>
-              <div style={{ color: '#444', fontSize: 11, maxWidth: 220, lineHeight: 1.6 }}>
-                Each finding written up in plain language, priced, and client-ready — you confirm it.
+          {[
+            { src: '/IMG_5118.jpg', w: 1284, h: 2637, k: 'MANAGE', t: 'Your day, organized', b: 'Every job, what needs you, and the next inspection — one tap from the field.' },
+            { src: '/IMG_5121.jpg', w: 1284, h: 2673, k: 'COVER', t: 'Nothing slips the SOP', b: 'Every system and room tracked against the standard, with live coverage as you walk.' },
+            { src: '/IMG_5123.PNG', w: 1284, h: 2778, k: 'CAPTURE', t: 'Point, shoot, logged', b: 'Snap the photo — the write-up comes back done: system, severity, action. No typing.' },
+            { src: '/screenshot_anomaly.png', w: 250, h: 542, k: 'CONFIRM', t: 'You have the final say', b: 'Each finding written in plain language and priced — you confirm, adjust, or reject.' },
+            { src: '/IMG_5122.PNG', w: 1284, h: 2778, k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway — the PDF and client home portal go out in a single tap.' },
+          ].map(p => (
+            <div key={p.k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: 184, flex: '0 0 auto' }}>
+              <div style={{
+                borderRadius: 28, overflow: 'hidden',
+                border: '1px solid rgba(0,243,255,0.18)',
+                boxShadow: '0 0 48px rgba(0,243,255,0.07)',
+                width: 184,
+              }}>
+                <Image
+                  src={p.src}
+                  alt={`Ledrix — ${p.t}`}
+                  width={p.w}
+                  height={p.h}
+                  style={{ display: 'block', width: '100%', height: 'auto' }}
+                />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 7 }}>{p.k}</div>
+                <div style={{ color: '#fff', fontSize: 14, fontWeight: 800, letterSpacing: -0.3, marginBottom: 6 }}>{p.t}</div>
+                <div style={{ color: '#555', fontSize: 12, maxWidth: 184, lineHeight: 1.6 }}>{p.b}</div>
               </div>
             </div>
-          </div>
-
-          {/* Value points beside the phone */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 380 }}>
-            {[
-              { k: 'CAPTURE', t: 'Point, shoot, logged', b: 'Snap the photo — the write-up comes back done: system, severity, and recommended action. No typing.' },
-              { k: 'CONFIRM', t: 'You have the final say', b: 'Confirm, adjust, or reject every proposal. Nothing reaches the report until a licensed inspector signs off.' },
-              { k: 'DELIVER', t: 'Done when you leave', b: 'Finalize on the driveway. The PDF and the client home portal go out in a single tap.' },
-            ].map(item => (
-              <div key={item.k} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: ACCENT, marginTop: 8, flexShrink: 0 }} />
-                <div>
-                  <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{item.k}</div>
-                  <div style={{ color: '#fff', fontSize: 17, fontWeight: 800, letterSpacing: -0.5, marginBottom: 8 }}>{item.t}</div>
-                  <div style={{ color: '#555', fontSize: 13, lineHeight: 1.7 }}>{item.b}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
+          ))}
         </div>
       </section>
 
