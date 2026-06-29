@@ -1177,12 +1177,12 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
   const label = PRIO_LABEL[a.severity ?? 'deficiency'] ?? 'REPAIR';
   const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
   return (
-    <div style={{ background: '#fff', border: `1px solid ${C.line}`, borderLeft: `4px solid ${color}`, borderRadius: 8, padding: 14, marginBottom: 10, display: 'flex', gap: 14 }}>
-      {a.imageUri ? <img src={a.imageUri} alt="" style={{ width: 96, height: 72, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} /> : null}
+    <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `4px solid ${color}`, borderRadius: 12, padding: 16, marginBottom: 12, display: 'flex', gap: 14, boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
+      {a.imageUri ? <img src={a.imageUri} alt="" style={{ width: 104, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 5 }}>
-          <span style={{ background: `${color}1a`, color, fontSize: 10, fontWeight: 800, letterSpacing: 0.5, padding: '3px 9px', borderRadius: 5 }}>{label}</span>
-          {isSafetyFinding(a) ? <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 5 }}>⚠ SAFETY</span> : null}
+          <span style={{ background: `${color}14`, color, border: `1px solid ${color}33`, fontSize: 10, fontWeight: 800, letterSpacing: 0.5, padding: '3px 9px', borderRadius: 6 }}>{label}</span>
+          {isSafetyFinding(a) ? <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 6 }}>⚠ SAFETY</span> : null}
           {a.location ? <span style={{ color: C.sub, fontSize: 12 }}>{a.location}</span> : null}
         </div>
         {a.unit ? <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit}</div> : null}
@@ -1233,7 +1233,7 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
   const rest = anomalies.length - matters.length;
   return (
     <section style={{ paddingTop: 24 }}>
-      <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 18 }}>
+      <div style={{ background: 'linear-gradient(160deg,#fffaf2,#fff7ed)', border: '1px solid #fde4c8', borderRadius: 14, padding: 20, boxShadow: '0 2px 14px rgba(180,120,40,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: 18 }}>⚠</span>
           <span style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>What Matters</span>
@@ -1256,7 +1256,7 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
           );
         })}
         {rest > 0 ? <div style={{ color: C.sub, fontSize: 13, marginTop: 12, fontWeight: 600 }}>✓ {rest} more item{rest !== 1 ? 's' : ''} below — all Repair / Maintenance, not urgent.</div> : null}
-        <button onClick={onOpen} style={{ marginTop: 16, width: '100%', background: 'linear-gradient(135deg,#0e7490,#0891b2)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 16px', cursor: 'pointer', textAlign: 'left' }}>
+        <button onClick={onOpen} style={{ marginTop: 18, width: '100%', background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', border: 'none', borderRadius: 12, padding: '15px 18px', cursor: 'pointer', textAlign: 'left', boxShadow: '0 6px 20px rgba(8,145,178,0.22)' }}>
           <div style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>🔓 Ask Ledrix about your home<span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.95 }}>Unlock Insight →</span></div>
           <div style={{ fontSize: 11.5, opacity: 0.9, marginTop: 4, lineHeight: 1.45 }}>“Will the furnace make it another winter?” · cost projections · maintenance plan · ask anything</div>
         </button>
@@ -1383,7 +1383,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
       )}
       <aside className="rpt-side">{reportReady ? (
         <>
-          <div style={{ padding: '15px 18px 9px', fontSize: 10, fontWeight: 800, letterSpacing: 2, color: C.accent, fontFamily: 'Roboto Mono, monospace' }}>CONTENTS</div>
+          <div style={{ padding: '20px 18px 12px', fontSize: 10, fontWeight: 800, letterSpacing: 2.5, color: C.accent, fontFamily: 'Roboto Mono, monospace' }}>CONTENTS</div>
           {toc.map((t, i) => (
             <button key={t.id} onClick={() => jumpIn(t.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '12px 18px', color: C.ink, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
