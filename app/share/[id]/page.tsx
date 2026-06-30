@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
@@ -1874,6 +1875,7 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
   const [input, setInput] = useState('');
   const [busy, setBusy]   = useState(false);
   const [recording, setRecording] = useState(false);
+  const [vizStream, setVizStream] = useState<MediaStream | null>(null);   // shared with the equalizer
   const [vp, setVp]       = useState<{ h: number; top: number } | null>(null);
   const mediaRef  = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -1917,12 +1919,14 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
     if (recording) { mediaRef.current?.stop(); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setVizStream(stream);   // feed the live equalizer off the same mic stream
       const mr = new MediaRecorder(stream);
       chunksRef.current = [];
       mr.ondataavailable = e => { if (e.data.size) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setRecording(false);
+        setVizStream(null);
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         if (!blob.size) return;
         setBusy(true);
@@ -1957,6 +1961,12 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
         ))}
         {busy && <div style={{ alignSelf: 'flex-start', color: MED, fontSize: 11, fontFamily: 'Roboto Mono, monospace' }}>Ledrix is thinking…</div>}
       </div>
+      {recording && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 16px', borderTop: `1px solid ${BORDER}`, background: BG, flexShrink: 0 }}>
+          <ValVoiceVisualizer active={recording} stream={vizStream} color={CYAN} height={42} bars={7} />
+          <span style={{ color: CYAN, fontSize: 10, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LISTENING</span>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, flexShrink: 0, alignItems: 'flex-end' }}>
         <button onClick={toggleMic} aria-label="Voice" style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 10,
           background: recording ? CRITICAL : CARD, border: `1px solid ${recording ? CRITICAL : BORDER}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
