@@ -51,39 +51,6 @@ async function notify(r: { name: string; company: string; email: string }) {
   await Promise.allSettled(tasks);
 }
 
-// GET /api/demo-request — config check (booleans only, no secrets). Lets us verify
-// which integrations the *deployed* function actually sees its env vars for.
-export async function GET(req: NextRequest) {
-  // ?ping=slack — fire the *stored* webhook and return Slack's actual response,
-  // so we can see exactly why a ping is (or isn't) landing.
-  if (req.nextUrl.searchParams.get('ping') === 'slack') {
-    const url = process.env.SLACK_WEBHOOK_URL;
-    if (!url) return NextResponse.json({ note: 'SLACK_WEBHOOK_URL not set' });
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: ':wrench: Ledrix webhook test ping' }),
-      });
-      return NextResponse.json({ slackStatus: r.status, slackBody: (await r.text().catch(() => '')).slice(0, 200) });
-    } catch (e) {
-      return NextResponse.json({ slackError: String(e) });
-    }
-  }
-  const url = process.env.SLACK_WEBHOOK_URL ?? '';
-  // Safe fingerprint of the stored webhook: team + webhook IDs only, NOT the secret
-  // token. Lets us see WHICH workspace/webhook Vercel is actually firing into.
-  const m = url.match(/services\/(T[A-Z0-9]+)\/(B[A-Z0-9]+)\//);
-  return NextResponse.json({
-    supabase: Boolean(SUPA_URL && SUPA_ANON),
-    slack: Boolean(url),
-    slackTeam: m?.[1] ?? null,
-    slackWebhook: m?.[2] ?? null,
-    slackUrlLength: url.length,
-    email: Boolean(process.env.RESEND_API_KEY && process.env.DEMO_NOTIFY_EMAIL && process.env.DEMO_FROM_EMAIL),
-  });
-}
-
 export async function POST(req: NextRequest) {
   if (!SUPA_URL || !SUPA_ANON) {
     return NextResponse.json({ error: 'Server is not configured.' }, { status: 500 });
