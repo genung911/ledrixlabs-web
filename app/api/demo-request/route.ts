@@ -70,9 +70,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ slackError: String(e) });
     }
   }
+  const url = process.env.SLACK_WEBHOOK_URL ?? '';
+  // Safe fingerprint of the stored webhook: team + webhook IDs only, NOT the secret
+  // token. Lets us see WHICH workspace/webhook Vercel is actually firing into.
+  const m = url.match(/services\/(T[A-Z0-9]+)\/(B[A-Z0-9]+)\//);
   return NextResponse.json({
     supabase: Boolean(SUPA_URL && SUPA_ANON),
-    slack: Boolean(process.env.SLACK_WEBHOOK_URL),
+    slack: Boolean(url),
+    slackTeam: m?.[1] ?? null,
+    slackWebhook: m?.[2] ?? null,
+    slackUrlLength: url.length,
     email: Boolean(process.env.RESEND_API_KEY && process.env.DEMO_NOTIFY_EMAIL && process.env.DEMO_FROM_EMAIL),
   });
 }
