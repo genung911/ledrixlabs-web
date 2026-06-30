@@ -1,36 +1,99 @@
-// LedrixDelta — the SINGLE canonical Ledrix brand mark. An open-base delta with the
-// signature gap at the bottom-center, drawn as one continuous stroke so the apex and
-// base corners are clean joins (only the gap ends are rounded). Used everywhere —
-// landing, home portal, homepage — so the mark never drifts again.
+'use client';
+
+// LedrixDelta — the SINGLE canonical Ledrix brand mark. A calligraphic open-base
+// delta: the left wall is thin, the right wall + base are thicker (typographic
+// contrast), with our signature gap in the base — drawn off-center toward the
+// thin side. Used everywhere (landing, home portal, homepage) so the mark never
+// drifts.
 //
-// Line thickness scales with the mark via `strokeRatio` (default 0.06), so the stroke
-// stays proportional at any size. Change it here once to restyle every delta.
+// Because the walls have *different* weights, this is a FILLED outline (each edge
+// offset inward by its own thickness), not a uniform stroke. All the look lives in
+// the TUNABLES below — iterate the design by changing those ratios in this one file.
+
+import { useId } from 'react';
+
+type P = [number, number];
+
 export function LedrixDelta({
   size = 22,
   color = '#00F3FF',
-  strokeRatio = 0.06,
   className,
 }: {
   size?: number;
   color?: string;
-  strokeRatio?: number;
   className?: string;
 }) {
-  const pad = size * 0.1;
-  const W = size - pad * 2;
+  const uid = useId().replace(/:/g, '');
+  const S = size;
+
+  // ── TUNABLES (ratios of size) — the whole design is here ──
+  const PAD = 0.1; // outer breathing room
+  const W_LEFT = 0.045; // left wall thickness (thin)
+  const W_RIGHT = 0.09; // right wall thickness (thick)
+  const W_BASE = 0.09; // base thickness (thick)
+  const GAP_FROM = 0.24; // base-gap start, as a fraction of base width (off-center, left)
+  const GAP_TO = 0.5; // base-gap end
+
+  // ── Outer triangle (equilateral, padded) ──
+  const pad = S * PAD;
+  const W = S - pad * 2;
   const H = W * (Math.sqrt(3) / 2);
-  const ty = (size - H) / 2;
+  const ty = (S - H) / 2;
   const by = ty + H;
-  const TX = size / 2;
-  const BLX = pad;
-  const BRX = pad + W;
-  const GL = BLX + W * 0.3; // base gap — left edge
-  const GR = BLX + W * 0.7; // base gap — right edge
-  const d = `M ${GL} ${by} L ${BLX} ${by} L ${TX} ${ty} L ${BRX} ${by} L ${GR} ${by}`;
+  const A: P = [S / 2, ty]; // apex
+  const L: P = [pad, by]; // bottom-left
+  const R: P = [pad + W, by]; // bottom-right
+  const G: P = [(A[0] + L[0] + R[0]) / 3, (A[1] + L[1] + R[1]) / 3]; // centroid
+
+  // Offset an edge (P1→P2) inward (toward the centroid) by t → a point + direction.
+  const offset = (P1: P, P2: P, t: number): { p: P; d: P } => {
+    const ex = P2[0] - P1[0];
+    const ey = P2[1] - P1[1];
+    const len = Math.hypot(ex, ey) || 1;
+    const ux = ex / len;
+    const uy = ey / len;
+    let nx = -uy;
+    let ny = ux;
+    if ((G[0] - P1[0]) * nx + (G[1] - P1[1]) * ny < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    return { p: [P1[0] + nx * t, P1[1] + ny * t], d: [ux, uy] };
+  };
+
+  const det = (a: P, b: P) => a[0] * b[1] - a[1] * b[0];
+  const intersect = (l1: { p: P; d: P }, l2: { p: P; d: P }): P => {
+    const denom = det(l1.d, l2.d) || 1e-6;
+    const diff: P = [l2.p[0] - l1.p[0], l2.p[1] - l1.p[1]];
+    const s = det(diff, l2.d) / denom;
+    return [l1.p[0] + l1.d[0] * s, l1.p[1] + l1.d[1] * s];
+  };
+
+  const eAL = offset(A, L, S * W_LEFT);
+  const eAR = offset(A, R, S * W_RIGHT);
+  const eLR = offset(L, R, S * W_BASE);
+  const Ai = intersect(eAL, eAR); // inner apex
+  const Li = intersect(eAL, eLR); // inner bottom-left
+  const Ri = intersect(eAR, eLR); // inner bottom-right
+
+  const f = (p: P) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
+  // Outer loop + inner loop; evenodd fills the band between them (the outline).
+  const d = `M ${f(A)} L ${f(R)} L ${f(L)} Z M ${f(Ai)} L ${f(Li)} L ${f(Ri)} Z`;
+
+  // Off-center base gap — a masked-out slice across the base band.
+  const gx0 = pad + W * GAP_FROM;
+  const gx1 = pad + W * GAP_TO;
+  const maskId = `ld${uid}`;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" className={className} style={{ display: 'block' }} aria-hidden>
-      <path d={d} stroke={color} strokeWidth={size * strokeRatio} strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} fill="none" className={className} style={{ display: 'block' }} aria-hidden>
+      <defs>
+        <mask id={maskId}>
+          <rect x="0" y="0" width={S} height={S} fill="white" />
+          <rect x={gx0} y={by - S * W_BASE - 1} width={gx1 - gx0} height={S * W_BASE + 3} fill="black" />
+        </mask>
+      </defs>
+      <path d={d} fill={color} fillRule="evenodd" mask={`url(#${maskId})`} />
     </svg>
   );
 }
