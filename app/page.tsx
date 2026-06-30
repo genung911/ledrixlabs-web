@@ -65,8 +65,8 @@ export default function Home() {
         </h2>
 
         <p style={{ fontSize: 18, color: '#555', maxWidth: 580, lineHeight: 1.7, marginBottom: 48 }}>
-          Finish the report before you leave the driveway. Catch the defect you
-          walked past. And hand every client a home they finally understand — not a
+          Finish the report before you leave the driveway. Catch the defect a long
+          day overlooks. And hand every client a home they finally understand — not a
           40-page PDF they’ll never open. Ledrix is the edge that wins the next referral.
         </p>
 
@@ -211,7 +211,7 @@ export default function Home() {
             {
               icon: '⬡',
               title: 'Never Miss a Defect',
-              body: 'A second set of eyes on every photo. The deficiency you walked past gets surfaced before it turns into a callback — or a claim against your license.',
+              body: 'A second set of eyes on every photo. The deficiency you’d have missed gets surfaced before it turns into a callback — or a claim against your license.',
             },
             {
               icon: <ValDeltaSVG size={28} />,

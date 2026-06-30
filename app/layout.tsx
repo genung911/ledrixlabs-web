@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Ledrix — The AI Backup for Licensed Inspectors',
-  description: 'Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject. Catch the defect you walked past and deliver the report before you leave the driveway.',
+  description: 'Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject. Catch the defect a long day overlooks and deliver the report before you leave the driveway.',
   metadataBase: new URL('https://ledrixlabs.com'),
   openGraph: {
     title: 'Ledrix — The AI Backup for Licensed Inspectors',
