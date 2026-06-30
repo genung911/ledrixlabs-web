@@ -15,10 +15,12 @@ type Props = {
 };
 
 const base =
-  'group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold uppercase tracking-wider transition-transform duration-300 hover:scale-[1.03] active:scale-95';
+  'group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.03] active:scale-95';
 
 const styles = {
-  primary: 'bg-accent text-[#04121a]',
+  // Dark-glass pill, cyan rim + cyan text + cyan glow — the VAL orb as a button.
+  primary:
+    'border border-accent/55 bg-[linear-gradient(180deg,rgba(20,46,54,0.5),rgba(6,10,12,0.9))] text-accent backdrop-blur shadow-[0_0_22px_rgba(0,243,255,0.28)] hover:border-accent/80 hover:shadow-[0_0_34px_rgba(0,243,255,0.5)]',
   ghost: 'border border-white/15 text-white/80 backdrop-blur hover:border-accent/40 hover:text-white',
 } as const;
 
@@ -26,7 +28,7 @@ export function GlowButton({ children, href, onClick, type = 'button', variant =
   const inner = (
     <>
       {variant === 'primary' && (
-        <span className="absolute inset-0 -z-10 rounded-full bg-accent opacity-60 blur-xl transition-opacity duration-300 group-hover:opacity-90" />
+        <span className="absolute inset-0 -z-10 rounded-full bg-accent opacity-25 blur-2xl transition-opacity duration-300 group-hover:opacity-40" />
       )}
       {children}
     </>
