@@ -71,19 +71,30 @@ export function HowItWorks() {
               {/* hover glow wash */}
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
-              {/* screenshot — uniform frame; photo fills, UI screens contain (no crop) */}
-              <div className="relative mb-5 h-[22rem] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#0e1416] to-[#06090a]">
-                <Image
-                  src={s.img}
-                  alt={s.title}
-                  fill
-                  className={[
-                    'transition-transform duration-500 group-hover:scale-[1.03]',
-                    s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain p-2',
-                  ].join(' ')}
-                  sizes="(max-width:768px) 100vw, 33vw"
-                />
-                <div className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]" />
+              {/* screenshot — uniform dark stage; the app screen sits in a phone bezel,
+                  the photo + delivery screen fill the framed stage */}
+              <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#0e1416] to-[#06090a]">
+                {s.featured ? (
+                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_12px_40px_-12px_rgba(0,0,0,0.85)] ring-1 ring-accent/20">
+                    {/* dynamic island */}
+                    <div className="absolute left-1/2 top-1.5 z-10 h-3.5 w-12 -translate-x-1/2 rounded-full bg-black" />
+                    <Image src={s.img} alt={s.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="220px" />
+                  </div>
+                ) : (
+                  <>
+                    <Image
+                      src={s.img}
+                      alt={s.title}
+                      fill
+                      className={[
+                        'transition-transform duration-500 group-hover:scale-[1.03]',
+                        s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain p-2',
+                      ].join(' ')}
+                      sizes="(max-width:768px) 100vw, 33vw"
+                    />
+                    <div className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]" />
+                  </>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
