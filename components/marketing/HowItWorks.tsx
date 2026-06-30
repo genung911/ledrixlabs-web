@@ -68,7 +68,7 @@ export function HowItWorks() {
 
               {/* screenshot header — cropped to the top of the screen */}
               <div className="relative mb-5 h-32 overflow-hidden rounded-xl border border-white/10">
-                <Image src={s.img} alt="" fill className="object-cover object-top transition-transform duration-500 group-hover:scale-105" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw" />
+                <Image src={s.img} alt="" fill className="object-cover object-[50%_30%] transition-transform duration-500 group-hover:scale-105" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b] via-transparent to-transparent" />
               </div>
 

@@ -13,6 +13,7 @@ export function ContactCTA() {
   const [form, setForm] = useState({ name: '', company: '', email: '' });
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -21,10 +22,21 @@ export function ContactCTA() {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
+    setError(null);
     try {
-      // TODO: POST `form` to your demo-request endpoint / CRM.
-      await new Promise((r) => setTimeout(r, 600));
+      const resp = await fetch('/api/demo-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (!resp.ok) {
+        const j = await resp.json().catch(() => ({}));
+        setError(j.error ?? 'Something went wrong — please try again.');
+        return;
+      }
       setSent(true);
+    } catch {
+      setError('Network error — please try again.');
     } finally {
       setBusy(false);
     }
@@ -61,6 +73,7 @@ export function ContactCTA() {
               <Field label="Company" value={form.company} onChange={set('company')} autoComplete="organization" required />
               <Field label="Work email" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
 
+              {error && <p className="text-center text-sm text-safety" role="alert">{error}</p>}
               <div className="mt-3 flex justify-center">
                 <GlowButton type="submit" variant="primary">
                   {busy ? 'Sending…' : 'Request a demo'}

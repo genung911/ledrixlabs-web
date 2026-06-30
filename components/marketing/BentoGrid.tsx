@@ -72,7 +72,7 @@ export function BentoGrid() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">{t.body}</p>
                 {t.img && (
                   <div className="relative mt-6 h-44 overflow-hidden rounded-xl border border-white/10">
-                    <Image src={t.img} alt="" fill className="object-cover object-top" sizes="(max-width:768px) 100vw, 66vw" />
+                    <Image src={t.img} alt="" fill className="object-cover object-[50%_38%]" sizes="(max-width:768px) 100vw, 66vw" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b]/50 to-transparent" />
                   </div>
                 )}
