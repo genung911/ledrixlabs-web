@@ -3,16 +3,18 @@
 // §3 — bento grid of the things that actually matter, with hover micro-interactions
 // (lift, border glow, accent wash). Honest, feature-grounded claims — no fabricated
 // accuracy stats and no "monitoring device" framing.
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
 
-type Tile = { className: string; kicker?: string; stat?: string; title: string; body: string };
+type Tile = { className: string; kicker?: string; stat?: string; title: string; body: string; img?: string };
 
 const TILES: Tile[] = [
   {
     className: 'md:col-span-2 md:row-span-2',
     kicker: 'In the field',
+    img: '/screenshots/IMG_5555.PNG',
     title: 'The finding, drafted the moment you shoot.',
     body: 'Every capture becomes a structured finding — system, location, priority, and the spec behind it — while you’re still standing in front of it. No evening typing up the report.',
   },
@@ -68,6 +70,12 @@ export function BentoGrid() {
               <div className="relative mt-6">
                 <h3 className="text-lg font-bold text-white">{t.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">{t.body}</p>
+                {t.img && (
+                  <div className="relative mt-6 h-44 overflow-hidden rounded-xl border border-white/10">
+                    <Image src={t.img} alt="" fill className="object-cover object-top" sizes="(max-width:768px) 100vw, 66vw" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b]/50 to-transparent" />
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

@@ -2,6 +2,7 @@
 
 // §2 — the inspection pipeline, as a staggered 4-step reveal. Capture → Draft →
 // Confirm → Deliver. (Human-in-the-loop: Ledrix proposes, the inspector confirms.)
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
@@ -9,6 +10,7 @@ import { SectionHeading } from './ui/SectionHeading';
 const STEPS = [
   {
     n: '01',
+    img: '/screenshots/IMG_5123.PNG',
     title: 'Capture',
     body: 'Point your camera. Ledrix Vision reads the structure the way you do — roof to crawlspace.',
     icon: (
@@ -17,18 +19,21 @@ const STEPS = [
   },
   {
     n: '02',
+    img: '/screenshots/IMG_5554.PNG',
     title: 'Draft',
     body: 'Ledrix Intelligence drafts the finding the instant you shoot — system, priority, and the spec behind it.',
     icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3Z" />,
   },
   {
     n: '03',
+    img: '/screenshots/IMG_5553.PNG',
     title: 'Confirm',
     body: 'You stay the source of truth — Confirm, Adjust, or Reject every finding, by tap or by voice.',
     icon: <path d="M20 6 9 17l-5-5" />,
   },
   {
     n: '04',
+    img: '/screenshots/IMG_5122.PNG',
     title: 'Deliver',
     body: 'It compiles into a clean, legal PDF and a client home portal — before you leave the driveway.',
     icon: <path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4Z M9 13l2 2 4-4" />,
@@ -60,6 +65,12 @@ export function HowItWorks() {
             >
               {/* hover glow wash */}
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+              {/* screenshot header — cropped to the top of the screen */}
+              <div className="relative mb-5 h-32 overflow-hidden rounded-xl border border-white/10">
+                <Image src={s.img} alt="" fill className="object-cover object-top transition-transform duration-500 group-hover:scale-105" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b] via-transparent to-transparent" />
+              </div>
 
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold tracking-widest text-accent/70">{s.n}</span>

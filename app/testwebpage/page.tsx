@@ -1,4 +1,5 @@
 import { Hero } from '@/components/marketing/Hero';
+import { ProductShowcase } from '@/components/marketing/ProductShowcase';
 import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
 import { ContactCTA } from '@/components/marketing/ContactCTA';
@@ -8,6 +9,7 @@ export default function TestWebpage() {
   return (
     <>
       <Hero />
+      <ProductShowcase />
       <HowItWorks />
       <BentoGrid />
       <ContactCTA />
