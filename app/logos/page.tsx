@@ -103,6 +103,35 @@ function DeltaSolid({ size = 48, color = CYAN }: { size?: number; color?: string
   );
 }
 
+// VAL mark = the Ledrix delta + arcs (so VAL reads distinct from the bare Ledrix Δ).
+// The delta sits centered at 64%; arcs are drawn around it in the 100-unit overlay.
+function ValMark({ size, color, variant }: { size: number; color: string; variant: 'radiate' | 'ring' | 'listen' }) {
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LedrixDelta size={size * 0.64} color={color} />
+      </div>
+      <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ position: 'absolute', inset: 0 }}>
+        {variant === 'radiate' && (
+          <>
+            <path d="M40 22 Q50 13.5 60 22" stroke={color} strokeWidth="3.4" strokeLinecap="round" />
+            <path d="M33 15.5 Q50 4 67 15.5" stroke={color} strokeWidth="3.4" strokeLinecap="round" />
+          </>
+        )}
+        {variant === 'ring' && <circle cx="50" cy="50" r="43" stroke={color} strokeWidth="2.4" />}
+        {variant === 'listen' && (
+          <>
+            <path d="M29 37 Q21 50 29 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+            <path d="M20 30 Q9 50 20 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+            <path d="M71 37 Q79 50 71 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+            <path d="M80 30 Q91 50 80 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
+
 type Variant = { name: string; note: string; render: (s: number, c: string) => React.ReactNode };
 
 const VARIANTS: Variant[] = [
@@ -158,6 +187,31 @@ export default function LogosPage() {
           <Board label="On dark · white" sub="Mono on dark (favicons, watermarks)." bg="#0a0a0a" fg="#ffffff" />
           <Board label="On light · ink" sub="Mono on white (print, the report PDF)." bg="#f4f4f5" fg="#0b0b0b" />
         </div>
+
+        <section className="mt-12 rounded-2xl p-6" style={{ background: '#0a0a0a' }}>
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-accent/80">VAL marks — delta + arcs</h2>
+          <p className="mt-1 text-xs text-slate-500">Bare Δ = Ledrix; Δ + arcs = VAL. Cyan, at orb sizes on dark.</p>
+          <div className="mt-6 flex flex-col gap-3">
+            {([
+              { name: 'Reference · bare Ledrix Δ', render: (s: number) => <LedrixDelta size={s} color={CYAN} /> },
+              { name: 'V1 · Radiating arcs (voice)', render: (s: number) => <ValMark size={s} color={CYAN} variant="radiate" /> },
+              { name: 'V2 · Orbital ring (presence)', render: (s: number) => <ValMark size={s} color={CYAN} variant="ring" /> },
+              { name: 'V3 · Listening arcs (flanking)', render: (s: number) => <ValMark size={s} color={CYAN} variant="listen" /> },
+            ] as { name: string; render: (s: number) => React.ReactNode }[]).map((v) => (
+              <div key={v.name} className="flex items-center gap-4 rounded-xl border border-white/[0.08] px-4 py-3">
+                <div className="w-56 shrink-0 text-[13px] font-bold text-white">{v.name}</div>
+                <div className="flex flex-1 items-center justify-around gap-3">
+                  {[58, 40, 26].map((s) => (
+                    <div key={s} className="flex flex-col items-center gap-1">
+                      {v.render(s)}
+                      <span className="text-[9px] text-slate-500">{s}px</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="mt-14">
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7/css/materialdesignicons.min.css" />
