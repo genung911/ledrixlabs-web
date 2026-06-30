@@ -27,9 +27,9 @@ export function Hero() {
             variants={fadeUp}
             className="max-w-4xl text-5xl font-bold leading-[1.04] tracking-tight [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
-            Catch what you{' '}
+            Inspect the house, not the{' '}
             <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(0,243,255,0.25)]">
-              walked past
+              template
             </span>
             .
           </motion.h1>
