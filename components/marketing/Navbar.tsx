@@ -30,7 +30,7 @@ export function Navbar() {
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="#top" className="group flex items-center gap-2.5">
-          <LedrixDelta size={22} className="drop-shadow-[0_0_8px_#00F3FF] transition-transform duration-300 group-hover:scale-110" />
+          <LedrixDelta size={22} sheen className="transition-transform duration-300 group-hover:scale-110" />
           <span className="text-base font-bold tracking-tight text-white">Ledrix</span>
         </a>
 

@@ -17,10 +17,14 @@ type P = [number, number];
 export function LedrixDelta({
   size = 22,
   color = '#00F3FF',
+  sheen = false,
   className,
 }: {
   size?: number;
   color?: string;
+  /** Premium logo finish: top-lit cyan gradient fill + glow. Leave off for small
+   *  functional icons (e.g. the VAL orb), which want a flat `color`. */
+  sheen?: boolean;
   className?: string;
 }) {
   const uid = useId().replace(/:/g, '');
@@ -84,16 +88,37 @@ export function LedrixDelta({
   const gx0 = pad + W * GAP_FROM;
   const gx1 = pad + W * GAP_TO;
   const maskId = `ld${uid}`;
+  const sheenId = `lds${uid}`;
 
   return (
-    <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} fill="none" className={className} style={{ display: 'block' }} aria-hidden>
+    <svg
+      width={S}
+      height={S}
+      viewBox={`0 0 ${S} ${S}`}
+      fill="none"
+      className={className}
+      style={{ display: 'block', ...(sheen ? { filter: `drop-shadow(0 0 ${(S * 0.1).toFixed(1)}px rgba(0,243,255,0.55))` } : null) }}
+      aria-hidden
+    >
       <defs>
         <mask id={maskId}>
           <rect x="0" y="0" width={S} height={S} fill="white" />
           <rect x={gx0} y={by - S * W_BASE - 1} width={gx1 - gx0} height={S * W_BASE + 3} fill="black" />
         </mask>
+        {sheen && (
+          <linearGradient id={sheenId} x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0" stopColor="#C9FCFF" />
+            <stop offset="0.45" stopColor="#00F3FF" />
+            <stop offset="1" stopColor="#00A7C4" />
+          </linearGradient>
+        )}
       </defs>
-      <path d={d} fill={color} fillRule="evenodd" mask={`url(#${maskId})`} />
+      <path d={d} fill={sheen ? `url(#${sheenId})` : color} fillRule="evenodd" mask={`url(#${maskId})`} />
     </svg>
   );
 }
+
+// ─── The three official treatments of the mark ───────────────────────────────
+//   Cyan (brand, on dark)  →  <LedrixDelta sheen />            top-lit cyan gradient + glow
+//   White (mono, on dark)  →  <LedrixDelta color="#ffffff" />  favicons, watermarks, photos
+//   Ink   (mono, on light) →  <LedrixDelta color="#070707" />  print, the report PDF, light UI

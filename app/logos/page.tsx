@@ -65,7 +65,7 @@ function DeltaSolid({ size = 48, color = CYAN }: { size?: number; color?: string
 type Variant = { name: string; note: string; render: (s: number, c: string) => React.ReactNode };
 
 const VARIANTS: Variant[] = [
-  { name: 'A · Calligraphic + off-center gap', note: 'Current mark. Variable weight (thin left, thick right), gap offset. Stays crisp at tiny sizes.', render: (s, c) => <LedrixDelta size={s} color={c} /> },
+  { name: 'A · Calligraphic + off-center gap', note: 'Chosen mark. Variable weight (thin left, thick right), gap offset. Cyan shows the sheen finish; white/ink are the mono treatments.', render: (s, c) => <LedrixDelta size={s} color={c} sheen={c === CYAN} /> },
   { name: 'B · Uniform outline + centered gap', note: 'The simplest — single even stroke, gap centered.', render: (s, c) => <DeltaUniform size={s} color={c} /> },
   { name: 'C · Concentric nested', note: 'The #6 / #7 family — triangle-in-triangle. Strong large, muddy small.', render: (s, c) => <DeltaConcentric size={s} color={c} /> },
   { name: 'D · Solid + base notch', note: 'Filled, heaviest presence — reads even at the smallest sizes.', render: (s, c) => <DeltaSolid size={s} color={c} /> },
