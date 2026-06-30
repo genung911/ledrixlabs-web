@@ -53,7 +53,23 @@ async function notify(r: { name: string; company: string; email: string }) {
 
 // GET /api/demo-request — config check (booleans only, no secrets). Lets us verify
 // which integrations the *deployed* function actually sees its env vars for.
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // ?ping=slack — fire the *stored* webhook and return Slack's actual response,
+  // so we can see exactly why a ping is (or isn't) landing.
+  if (req.nextUrl.searchParams.get('ping') === 'slack') {
+    const url = process.env.SLACK_WEBHOOK_URL;
+    if (!url) return NextResponse.json({ note: 'SLACK_WEBHOOK_URL not set' });
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: ':wrench: Ledrix webhook test ping' }),
+      });
+      return NextResponse.json({ slackStatus: r.status, slackBody: (await r.text().catch(() => '')).slice(0, 200) });
+    } catch (e) {
+      return NextResponse.json({ slackError: String(e) });
+    }
+  }
   return NextResponse.json({
     supabase: Boolean(SUPA_URL && SUPA_ANON),
     slack: Boolean(process.env.SLACK_WEBHOOK_URL),
