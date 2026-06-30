@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
+import ValOrbVoice from '@/components/ValOrbVoice';
 
 // Standalone shell for the premium landing preview. Kept out of search until it
 // graduates to the real homepage.
@@ -15,6 +16,9 @@ export default function TestWebpageLayout({ children }: { children: React.ReactN
       <Navbar />
       <main>{children}</main>
       <Footer />
+      <div className="fixed bottom-6 right-6 z-50">
+        <ValOrbVoice size={60} />
+      </div>
     </div>
   );
 }
