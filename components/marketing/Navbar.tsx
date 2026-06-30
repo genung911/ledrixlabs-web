@@ -4,6 +4,7 @@
 // delta mark + wordmark, anchor links, and the primary CTA.
 import { useEffect, useState } from 'react';
 import { GlowButton } from './ui/GlowButton';
+import { LedrixDelta } from './ui/LedrixDelta';
 
 const LINKS = [
   { href: '#how', label: 'How it works' },
@@ -29,9 +30,7 @@ export function Navbar() {
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="#top" className="group flex items-center gap-2.5">
-          <svg width="22" height="22" viewBox="0 0 24 24" className="text-accent drop-shadow-[0_0_8px_#00F3FF] transition-transform duration-300 group-hover:scale-110">
-            <path d="M12 3 21 20H3L12 3Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          </svg>
+          <LedrixDelta size={22} className="drop-shadow-[0_0_8px_#00F3FF] transition-transform duration-300 group-hover:scale-110" />
           <span className="text-base font-bold tracking-tight text-white">Ledrix</span>
         </a>
 
