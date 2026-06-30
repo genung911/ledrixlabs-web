@@ -152,7 +152,7 @@ export default function Home() {
           <div className="ledrix-how-img" style={{ position: 'relative', minHeight: 480, overflow: 'hidden' }}>
             <Image
               src="/screenshots/site_image.png"
-              alt="Inspector using Ledrix to capture cloud-analyzed evidence"
+              alt="Inspector using Ledrix to capture and analyze evidence"
               fill
               style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
             />

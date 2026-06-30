@@ -26,7 +26,7 @@ const TILES: Tile[] = [
     className: 'md:col-span-2',
     kicker: 'Everywhere',
     title: 'Every device, one brain.',
-    body: 'iOS and Android, old phones and new — cloud-first, so the whole field runs the same Ledrix Intelligence.',
+    body: 'iOS and Android, old phones and new — every device runs the same Ledrix Intelligence.',
   },
 ];
 
