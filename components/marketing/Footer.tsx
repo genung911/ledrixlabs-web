@@ -1,0 +1,26 @@
+// Footer — minimal: mark + wordmark, tagline, and a hairline-separated baseline.
+export function Footer() {
+  const year = new Date().getFullYear();
+  return (
+    <footer className="border-t border-white/[0.08] bg-ink py-12 text-slate-500">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 sm:flex-row sm:justify-between">
+        <div className="flex items-center gap-2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" className="text-accent">
+            <path d="M12 3 21 20H3L12 3Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          </svg>
+          <span className="text-sm font-bold text-white">Ledrix</span>
+          <span className="text-sm text-slate-600">— the AI backup for licensed inspectors.</span>
+        </div>
+
+        <div className="flex items-center gap-6 text-xs">
+          <a href="#how" className="transition-colors hover:text-white">How it works</a>
+          <a href="#features" className="transition-colors hover:text-white">Why Ledrix</a>
+          <a href="#demo" className="transition-colors hover:text-white">Request a demo</a>
+        </div>
+      </div>
+      <div className="mx-auto mt-8 max-w-6xl px-6 text-center text-xs text-slate-700 sm:text-left">
+        © {year} Ledrix Labs. All rights reserved.
+      </div>
+    </footer>
+  );
+}
