@@ -11,6 +11,46 @@ const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Best-effort notification on a new request — a Slack webhook and/or a Resend
+// email, each gated on its own env vars. Never throws: a failed ping must not
+// fail the submit.
+async function notify(r: { name: string; company: string; email: string }) {
+  const tasks: Promise<unknown>[] = [];
+
+  const slack = process.env.SLACK_WEBHOOK_URL;
+  if (slack) {
+    tasks.push(
+      fetch(slack, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `:mailbox_with_mail: *New Ledrix demo request*\n*${r.name}* — ${r.company}\n${r.email}`,
+        }),
+      }).catch(() => {}),
+    );
+  }
+
+  const key = process.env.RESEND_API_KEY;
+  const to = process.env.DEMO_NOTIFY_EMAIL;
+  const from = process.env.DEMO_FROM_EMAIL;
+  if (key && to && from) {
+    tasks.push(
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from,
+          to,
+          subject: `New demo request — ${r.company}`,
+          text: `${r.name} (${r.company})\n${r.email}\n\nvia ledrixlabs.com`,
+        }),
+      }).catch(() => {}),
+    );
+  }
+
+  await Promise.allSettled(tasks);
+}
+
 export async function POST(req: NextRequest) {
   if (!SUPA_URL || !SUPA_ANON) {
     return NextResponse.json({ error: 'Server is not configured.' }, { status: 500 });
@@ -54,6 +94,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await notify({ name, company, email });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: 'Network error — please try again.', detail: String(e) }, { status: 500 });
