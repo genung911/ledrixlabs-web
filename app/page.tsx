@@ -15,7 +15,7 @@ function ValDeltaSVG({ size = 28, color = ACCENT }: { size?: number; color?: str
   const BRX = pad + W,  BRY = by;
   const GL  = BLX + W * 0.30;
   const GR  = BLX + W * 0.70;
-  const d   = `M ${TX} ${TY} L ${BLX} ${BLY} L ${GL} ${BLY} M ${GR} ${BRY} L ${BRX} ${BRY} L ${TX} ${TY}`;
+  const d   = `M ${GL} ${BLY} L ${BLX} ${BLY} L ${TX} ${TY} L ${BRX} ${BRY} L ${GR} ${BRY}`;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" style={{ display: 'block' }}>
       <path d={d} stroke={color} strokeWidth={size * 0.055} strokeLinecap="round" strokeLinejoin="round" />
