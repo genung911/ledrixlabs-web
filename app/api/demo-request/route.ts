@@ -51,6 +51,16 @@ async function notify(r: { name: string; company: string; email: string }) {
   await Promise.allSettled(tasks);
 }
 
+// GET /api/demo-request — config check (booleans only, no secrets). Lets us verify
+// which integrations the *deployed* function actually sees its env vars for.
+export async function GET() {
+  return NextResponse.json({
+    supabase: Boolean(SUPA_URL && SUPA_ANON),
+    slack: Boolean(process.env.SLACK_WEBHOOK_URL),
+    email: Boolean(process.env.RESEND_API_KEY && process.env.DEMO_NOTIFY_EMAIL && process.env.DEMO_FROM_EMAIL),
+  });
+}
+
 export async function POST(req: NextRequest) {
   if (!SUPA_URL || !SUPA_ANON) {
     return NextResponse.json({ error: 'Server is not configured.' }, { status: 500 });
