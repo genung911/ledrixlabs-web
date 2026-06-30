@@ -112,8 +112,29 @@ const STATUS_NEXT: Record<string,string> = {
   identified: 'quoted', quoted: 'scheduled', scheduled: 'in_progress',
   in_progress: 'resolved', resolved: 'resolved',
 };
-const SEV_COLOR: Record<string,string> = { critical: CRITICAL, anomaly: WARN, cosmetic: INFO };
-const SEV_LABEL: Record<string,string> = { critical: 'SAFETY', anomaly: 'DEFICIENCY', cosmetic: 'MAINTENANCE' };
+// ── Unified priority taxonomy (matches the app). Safety is an overlay flag — a true
+// hazard shows red "SAFETY" regardless of its repair tier; otherwise the severity tier
+// maps 1:1. `color` = dark (Home App); `report` = darker for the light/print report.
+const PRIO = {
+  safety: { label: 'SAFETY',          color: '#FF3B3B', report: '#DC2626', rank: 0 },
+  major:  { label: 'MAJOR REPAIR',    color: '#F97316', report: '#EA580C', rank: 1 },
+  minor:  { label: 'MINOR REPAIR',    color: '#EAB308', report: '#CA8A04', rank: 2 },
+  maint:  { label: 'MAINT & IMPROVE', color: '#64748B', report: '#475569', rank: 3 },
+  wear:   { label: 'TYPICAL WEAR',    color: '#38BDF8', report: '#0284C7', rank: 4 },
+  good:   { label: 'GOOD',            color: '#22C55E', report: '#16A34A', rank: 5 },
+} as const;
+type PrioKey = keyof typeof PRIO;
+const PRIO_ORDER: PrioKey[] = ['safety', 'major', 'minor', 'maint', 'wear', 'good'];
+const PRIO_SHORT: Record<PrioKey, string> = { safety: 'Safety', major: 'Major', minor: 'Minor', maint: 'Maint', wear: 'Wear', good: 'Good' };
+const SEV_TO_PRIO: Record<string, PrioKey> = {
+  critical: 'major', deficiency: 'minor', anomaly: 'minor',
+  maintenance: 'maint', cosmetic: 'maint', characteristic: 'wear', spec: 'good',
+};
+const prioKeyOf = (s?: string): PrioKey => SEV_TO_PRIO[(s ?? 'deficiency').toLowerCase()] ?? 'minor';
+// Legacy string-keyed lookups, derived from PRIO (no safety overlay — for callers that
+// only have a severity string). Finding displays use priorityOf(a) for the safety overlay.
+const SEV_COLOR: Record<string,string> = { critical: PRIO.major.color, deficiency: PRIO.minor.color, anomaly: PRIO.minor.color, maintenance: PRIO.maint.color, cosmetic: PRIO.maint.color, characteristic: PRIO.wear.color, spec: PRIO.good.color };
+const SEV_LABEL: Record<string,string> = { critical: PRIO.major.label, deficiency: PRIO.minor.label, anomaly: PRIO.minor.label, maintenance: PRIO.maint.label, cosmetic: PRIO.maint.label, characteristic: PRIO.wear.label, spec: PRIO.good.label };
 
 // ── Report tab: derive a SYSTEM from a finding's unit/location/description ──────
 // The share payload has unit + severity but no canonical system/component, so the
@@ -155,14 +176,19 @@ function reportSystem(a: Anomaly): string {
   for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
   return 'General';
 }
-// PRIORITY axis (matches the PDF report). Accepts both current + legacy severity ids.
-const PRIO_LABEL: Record<string,string> = { critical: 'IMMEDIATE', deficiency: 'REPAIR', anomaly: 'REPAIR', maintenance: 'MAINTENANCE', cosmetic: 'MAINTENANCE', characteristic: 'NOTE', spec: 'NOTE' };
-const PRIO_COLOR: Record<string,string> = { critical: CRITICAL, deficiency: WARN, anomaly: WARN, maintenance: INFO, cosmetic: INFO, characteristic: GREEN, spec: GREEN };
-const prioRank = (s?: string): number => (({ critical: 0, deficiency: 1, anomaly: 1, maintenance: 2, cosmetic: 2, characteristic: 3, spec: 4 } as Record<string,number>)[s ?? 'deficiency'] ?? 9);
-// SAFETY: orthogonal flag (no defectType in the payload, so derive from severity + keywords).
+// Tier label/color/rank (no safety overlay), derived from PRIO — for string-keyed callers.
+const PRIO_LABEL: Record<string,string> = SEV_LABEL;
+const PRIO_COLOR: Record<string,string> = SEV_COLOR;
+const prioRank = (s?: string): number => PRIO[prioKeyOf(s)].rank;
+// SAFETY: a true HAZARD (danger to people) — overrides the tier to the top "Safety"
+// level. Property-damage items (water intrusion, structural, roof) stay Major Repair.
+// (The app's real safety flag isn't in the share payload yet, so we derive it here.)
 function isSafetyFinding(a: Anomaly): boolean {
-  if (a.severity === 'critical') return true;
-  return /gas leak|carbon monoxide|smoke detector|electric|panel|wiring|gfci|exposed|stair|\brail|guard|fall|\bfire\b|active leak|mold|microbial|structural|trip hazard|scald/i.test(`${a.unit ?? ''} ${a.description ?? ''}`);
+  return /smoke detector|carbon monoxide|gas leak|open (wire|conductor)|exposed (wire|conductor|electrical)|knob.?and.?tube|\bmold\b|microbial|asbestos|\bradon\b|trip hazard|missing (handrail|guardrail|rail|guard)|\bhandrail|guardrail|won'?t (lock|latch|close)|not (locking|latching|securing)|scald|fire hazard/i.test(`${a.unit ?? ''} ${a.location ?? ''} ${a.description ?? ''}`);
+}
+function priorityOf(a: Anomaly): { key: PrioKey; label: string; color: string; report: string; rank: number } {
+  const key: PrioKey = isSafetyFinding(a) ? 'safety' : prioKeyOf(a.severity);
+  return { key, ...PRIO[key] };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -346,8 +372,8 @@ function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: s
 
 // ─── FindingCard → opens the full homeowner card (price · pros · videos · Ask Ledrix) ──
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
-  const sev = a.severity ?? 'cosmetic';
-  const color = SEV_COLOR[sev] ?? MED;
+  const p = priorityOf(a);
+  const color = p.color;
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -358,7 +384,7 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1,
             padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, whiteSpace: 'nowrap',
-            fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
+            fontFamily: 'Roboto Mono, monospace' }}>{p.label}</span>
           <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
             {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
           {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
@@ -955,6 +981,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const critical = anomalies.filter(a => a.severity === 'critical');
   const deficien = anomalies.filter(a => a.severity === 'anomaly');
   const maint    = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly').length;
+  const prioCount = anomalies.reduce((m, a) => { const k = priorityOf(a).key; m[k] = (m[k] ?? 0) + 1; return m; }, {} as Record<PrioKey, number>);
   const openProjects = projects.filter(p => p.status !== 'resolved');
   const dueReminders = reminders.filter(r => !r.completed);
 
@@ -1000,9 +1027,9 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
         <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
           {([
-            [critical.length, 'SAFETY',     critical.length > 0 ? CRITICAL : DIM],
-            [deficien.length, 'DEFICIENCY', deficien.length > 0 ? WARN     : DIM],
-            [maint,           'MAINT.',     maint           > 0 ? INFO     : DIM],
+            [prioCount.safety ?? 0, 'SAFETY', (prioCount.safety ?? 0) > 0 ? PRIO.safety.color : DIM],
+            [prioCount.major ?? 0,  'MAJOR',  (prioCount.major ?? 0)  > 0 ? PRIO.major.color  : DIM],
+            [prioCount.minor ?? 0,  'MINOR',  (prioCount.minor ?? 0)  > 0 ? PRIO.minor.color  : DIM],
             [anomalies.length,'TOTAL',      TEXT],
           ] as [number, string, string][]).map(([v, l, c]) => {
             const lit = v > 0 && c !== DIM && c !== TEXT;   // active severity → glow in its color
@@ -1083,17 +1110,15 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
 // ─── FINDINGS TAB ─────────────────────────────────────────────────────────────
 function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; record: HomeRecord; shareId: string }) {
-  const [filter, setFilter] = useState<'all' | 'critical' | 'anomaly' | 'cosmetic'>('all');
+  const [filter, setFilter] = useState<'all' | PrioKey>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'priority' | 'system' | 'room'>('priority');
   const [specsOpen, setSpecsOpen] = useState(false);
 
-  const critical = anomalies.filter(a => a.severity === 'critical');
-  const deficien = anomalies.filter(a => a.severity === 'anomaly');
-  const cosmetic = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly');
+  const prioCount = anomalies.reduce((m, a) => { const k = priorityOf(a).key; m[k] = (m[k] ?? 0) + 1; return m; }, {} as Record<PrioKey, number>);
 
   const filtered = anomalies.filter(a => {
-    if (filter !== 'all' && a.severity !== filter) return false;
+    if (filter !== 'all' && priorityOf(a).key !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
       return (a.unit ?? '').toLowerCase().includes(q) || (a.description ?? '').toLowerCase().includes(q) || (a.location ?? '').toLowerCase().includes(q);
@@ -1103,7 +1128,7 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
 
   // Sort: priority = flat, worst-first. system/room = grouped by that field, each
   // group sorted by priority within (so "both" — focus a trade, worst items first).
-  const byPriority = (x: Anomaly, y: Anomaly) => prioRank(x.severity) - prioRank(y.severity);
+  const byPriority = (x: Anomaly, y: Anomaly) => priorityOf(x).rank - priorityOf(y).rank;
   const flatSorted = filtered.slice().sort(byPriority);
   const groups = sort === 'priority' ? null : (() => {
     const m = new Map<string, Anomaly[]>();
@@ -1114,14 +1139,16 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
     }
     return Array.from(m.entries())
       .map(([key, items]) => ({ key, items: items.slice().sort(byPriority) }))
-      .sort((a, b) => prioRank(a.items[0]?.severity) - prioRank(b.items[0]?.severity));
+      .sort((a, b) => (a.items[0] ? priorityOf(a.items[0]).rank : 9) - (b.items[0] ? priorityOf(b.items[0]).rank : 9));
   })();
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>FINDINGS</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
-        {([['all','All',anomalies.length,TEXT],['critical','Safety',critical.length,CRITICAL],['anomaly','Deficiency',deficien.length,WARN],['cosmetic','Maint.',cosmetic.length,ACCENT]] as [typeof filter,string,number,string][]).map(([key,label,count,c]) => (
+        {(([['all', 'All', anomalies.length, TEXT]] as ['all' | PrioKey, string, number, string][])
+          .concat(PRIO_ORDER.filter(k => (prioCount[k] ?? 0) > 0).map(k => [k, PRIO_SHORT[k], prioCount[k], PRIO[k].color]))
+        ).map(([key, label, count, c]) => (
           <button key={key} onClick={() => setFilter(key)} style={{
             background: filter === key ? `${c}20` : CARD, border: `1px solid ${filter === key ? c+'55' : BORDER}`,
             color: filter === key ? c : DIM, borderRadius: 99, padding: '6px 14px', fontSize: 9,
@@ -1221,8 +1248,9 @@ function ProjectsTab({ projects, shareId, address, onRefresh }: { projects: Proj
 // White, Spectora-style web report: left-sidebar system ToC (with counts) + hero + sections.
 type RC = { ink: string; sub: string; line: string; accent: string };
 function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
-  const color = PRIO_COLOR[a.severity ?? 'deficiency'] ?? '#d97706';
-  const label = PRIO_LABEL[a.severity ?? 'deficiency'] ?? 'REPAIR';
+  const p = priorityOf(a);
+  const color = p.report;
+  const label = p.label;
   const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
   return (
     <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `4px solid ${color}`, borderRadius: 12, padding: 16, marginBottom: 12, display: 'flex', gap: 14, boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
@@ -1243,24 +1271,20 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
 // Condensed summary: findings grouped by priority tier, one compact line each.
 function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
   if (anomalies.length === 0) return <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>;
-  const TIERS: { label: string; color: string }[] = [
-    { label: 'IMMEDIATE', color: '#dc2626' },
-    { label: 'REPAIR', color: '#d97706' },
-    { label: 'MAINTENANCE', color: '#6b7280' },
-    { label: 'NOTE', color: '#9ca3af' },
-  ];
-  const byLabel = new Map<string, Anomaly[]>();
+  const byKey = new Map<PrioKey, Anomaly[]>();
   for (const a of anomalies) {
-    const l = PRIO_LABEL[a.severity ?? 'deficiency'] ?? 'REPAIR';
-    if (!byLabel.has(l)) byLabel.set(l, []);
-    byLabel.get(l)!.push(a);
+    const k = priorityOf(a).key;
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k)!.push(a);
   }
   return (
     <div>
-      {TIERS.filter(t => byLabel.has(t.label)).map(t => (
-        <section key={t.label} style={{ paddingTop: 24 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: t.color, margin: '0 0 8px', borderBottom: `2px solid ${t.color}`, paddingBottom: 6 }}>{t.label} <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>({byLabel.get(t.label)!.length})</span></h2>
-          {byLabel.get(t.label)!.map((a, j) => (
+      {PRIO_ORDER.filter(k => byKey.has(k)).map(k => {
+        const color = PRIO[k].report;
+        return (
+        <section key={k} style={{ paddingTop: 24 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color, margin: '0 0 8px', borderBottom: `2px solid ${color}`, paddingBottom: 6 }}>{PRIO[k].label} <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>({byKey.get(k)!.length})</span></h2>
+          {byKey.get(k)!.map((a, j) => (
             <div key={a.id ?? j} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: `1px solid ${C.line}` }}>
               <span style={{ width: 14, flexShrink: 0, color: '#dc2626', fontSize: 12 }}>{isSafetyFinding(a) ? '⚠' : ''}</span>
               <span style={{ fontWeight: 700, color: C.ink, fontSize: 13, minWidth: 110, flexShrink: 0 }}>{reportSystem(a)}</span>
@@ -1268,7 +1292,8 @@ function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
             </div>
           ))}
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1294,7 +1319,7 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
           const desc = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
           return (
             <div key={a.id ?? i} style={{ display: 'flex', gap: 12, padding: '9px 0', borderTop: i ? '1px solid #fde3c4' : 'none' }}>
-              <span style={{ flexShrink: 0, color: safety ? '#dc2626' : '#d97706', fontWeight: 800, fontSize: 10, letterSpacing: 0.5, paddingTop: 3, width: 64 }}>{safety ? '⚠ SAFETY' : 'IMMEDIATE'}</span>
+              <span style={{ flexShrink: 0, color: safety ? PRIO.safety.report : PRIO.major.report, fontWeight: 800, fontSize: 10, letterSpacing: 0.3, paddingTop: 3, width: 88 }}>{safety ? '⚠ SAFETY' : PRIO.major.label}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit ?? 'Finding'}</div>
                 <div style={{ color: '#4b5563', fontSize: 13, lineHeight: 1.5 }}>{desc.slice(0, 170)}{desc.length > 170 ? '…' : ''}</div>
