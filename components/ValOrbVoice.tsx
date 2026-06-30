@@ -40,15 +40,20 @@ function playChime() {
   }
 }
 
-export default function ValOrbVoice({ size = 66 }: { size?: number }) {
-  const [listening, setListening] = useState(false);
+// Controlled mode: the parent owns the listening state + the mic stream (e.g. the
+// home portal, which records + transcribes itself). Omit `controlled` for the
+// self-managed demo orb.
+type Controlled = { listening: boolean; onToggle: () => void; stream?: MediaStream | null };
+
+export default function ValOrbVoice({ size = 66, controlled }: { size?: number; controlled?: Controlled }) {
+  const [selfListening, setSelfListening] = useState(false);
+  const listening = controlled ? controlled.listening : selfListening;
   const reduce = useReducedMotion();
 
   const toggle = () => {
-    setListening((on) => {
-      if (!on) playChime(); // chime only on tap-to-start
-      return !on;
-    });
+    if (!listening) playChime(); // chime only on tap-to-start
+    if (controlled) controlled.onToggle();
+    else setSelfListening((on) => !on);
   };
 
   return (
@@ -96,7 +101,7 @@ export default function ValOrbVoice({ size = 66 }: { size?: number }) {
             transition={{ duration: 0.22 }}
             style={{ display: 'flex', alignItems: 'center' }}
           >
-            <ValVoiceVisualizer active bars={7} color={CYAN} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
+            <ValVoiceVisualizer active={controlled ? !!controlled.stream : true} stream={controlled?.stream ?? undefined} bars={7} color={CYAN} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
           </motion.div>
         ) : (
           <motion.div

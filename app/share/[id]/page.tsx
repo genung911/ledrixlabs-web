@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { supabase } from '../../../lib/supabaseClient';
 import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
+import ValOrbVoice from '@/components/ValOrbVoice';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
@@ -1851,7 +1852,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
   );
 }
 
-function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () => void; shareId: string }) {
+function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose: () => void; shareId: string; seed?: string | null }) {
   const [msgs, setMsgs]   = useState<{ role: 'ledrix' | 'user'; text: string }[]>([
     { role: 'ledrix', text: "Hi — I'm Ledrix. Ask me anything about your home: a finding, a repair, what something costs, or what to do next." },
   ]);
@@ -1878,6 +1879,13 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [msgs, busy]);
 
+  // Auto-send a transcript handed in from the FAB voice orb (option a) when the panel opens.
+  const sendRef = useRef<(t?: string) => void>(() => {});
+  const seedSent = useRef<string | null>(null);
+  useEffect(() => {
+    if (open && seed && seedSent.current !== seed) { seedSent.current = seed; sendRef.current(seed); }
+  }, [open, seed]);
+
   if (!open) return null;
 
   const send = async (text?: string) => {
@@ -1897,6 +1905,7 @@ function LedrixPanel({ open, onClose, shareId }: { open: boolean; onClose: () =>
       setMsgs(m => [...m, { role: 'ledrix', text: 'Network error — please try again.' }]);
     } finally { setBusy(false); }
   };
+  sendRef.current = send;
 
   const toggleMic = async () => {
     if (recording) { mediaRef.current?.stop(); return; }
@@ -2216,6 +2225,41 @@ export default function SharePage() {
   const openLedrix = () => (access ? setLedrixOpen(true) : setSubOpen(true));
   const seeded = useRef(false);
 
+  // VAL (option a) — the FAB orb morphs + records, then transcribes and opens the chat
+  // with the message auto-sent. The orb reads `valStream` for its live waveform.
+  const [valListening, setValListening] = useState(false);
+  const [valStream, setValStream] = useState<MediaStream | null>(null);
+  const [valSeed, setValSeed] = useState<string | null>(null);
+  const valRec = useRef<MediaRecorder | null>(null);
+  const valChunks = useRef<Blob[]>([]);
+  const handleVal = async () => {
+    if (!access) { setSubOpen(true); return; }
+    if (valListening) { valRec.current?.stop(); return; }   // → onstop transcribes
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      valChunks.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size) valChunks.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setValListening(false); setValStream(null);
+        const blob = new Blob(valChunks.current, { type: 'audio/webm' });
+        if (!blob.size) return;
+        try {
+          const { data } = await supabase.auth.getSession();
+          const fd = new FormData();
+          fd.append('audio', blob, 'voice.webm');
+          const resp = await fetch('/api/transcribe', { method: 'POST', headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: fd });
+          const j = await resp.json().catch(() => ({}));
+          if (resp.ok && j.text) { setValSeed(String(j.text)); setLedrixOpen(true); }
+        } catch { /* transcribe failed — non-fatal */ }
+      };
+      mr.start();
+      valRec.current = mr;
+      setValStream(stream); setValListening(true);
+    } catch { /* mic denied / unsupported */ }
+  };
+
   const loadProjects = useCallback(async () => {
     if (!shareId) return;
     const data = await supaGet<Project>(`home_projects?share_id=eq.${encodeURIComponent(shareId)}&order=created_at.asc`);
@@ -2323,9 +2367,11 @@ export default function SharePage() {
       {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
 
-      <LedrixFab onClick={openLedrix} />
+      <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
+        <ValOrbVoice size={62} controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
+      </div>
       <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} />
-      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} />
+      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
     </div>
   );
 }
