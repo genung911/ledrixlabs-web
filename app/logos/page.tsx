@@ -3,6 +3,7 @@
 // Logo lab — throwaway comparison of delta directions at multiple sizes on dark +
 // light, so we can pick a shape. The winner gets applied to components/LedrixDelta.tsx.
 import { LedrixDelta } from '@/components/LedrixDelta';
+import ValOrbVoice from '@/components/ValOrbVoice';
 
 const CYAN = '#00F3FF';
 
@@ -211,6 +212,12 @@ export default function LogosPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mt-12 flex flex-col items-center gap-3 rounded-2xl p-10" style={{ background: '#070707' }}>
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-accent/80">VAL orb — live</h2>
+          <p className="text-center text-xs text-slate-500">Tap to talk. The orb chimes, opens the mic, and spreads into the waveform — it lights up as you speak. Tap again to collapse.</p>
+          <div className="py-4"><ValOrbVoice size={72} /></div>
         </section>
 
         <section className="mt-14">
