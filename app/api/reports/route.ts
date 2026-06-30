@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
   .empty{color:#5b6470;margin-top:24px} footer{margin-top:40px;font-size:11px;color:#9aa3ad;text-align:center}
 </style></head><body><div class="wrap">
   <header>
-    <div class="brand">LEDRIX · INSPECTION REPORT</div>
+    <div class="brand" style="display:inline-flex;align-items:center;gap:7px"><svg width="17" height="17" viewBox="0 0 100 100" fill="none" style="display:block"><mask id="rdl"><rect width="100" height="100" fill="#fff"/><rect x="29.2" y="74.64" width="20.8" height="12" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#0b0b0b" fill-rule="evenodd" mask="url(#rdl)"/></svg><span>LEDRIX · INSPECTION REPORT</span></div>
     <h1>${esc(inspection.address ?? 'Property')}</h1>
     <div class="sub">${[inspection.inspection_type, inspection.year_built && `Built ${inspection.year_built}`, inspection.sqft && `${inspection.sqft} sq ft`].filter(Boolean).map(esc).join(' · ')}</div>
   </header>
