@@ -26,13 +26,15 @@ export function systemForUnit(unit?: string | null): string {
   return 'GENERAL';
 }
 
-// Severity vocabulary mirrors the app's closed 5-tier set (SeverityConfig.ts).
+// Unified priority taxonomy (mirrors the app's SeverityConfig + the Home App scale).
+// Safety is a separate flag (is_safety), not a tier — critical is Major Repair here.
+// Light/print colors (deeper shades) since this renders the published report HTML.
 export const SEVERITY_META: Record<string, { label: string; color: string; rank: number }> = {
-  critical:       { label: 'Safety Hazard',  color: '#FF3B3B', rank: 0 },
-  deficiency:     { label: 'Deficiency',     color: '#FACC15', rank: 1 },
-  maintenance:    { label: 'Maintenance',    color: '#00A3B8', rank: 2 },
-  characteristic: { label: 'Characteristic', color: '#7a8a90', rank: 3 },
-  spec:           { label: 'Information',     color: '#7a8a90', rank: 4 },
+  critical:       { label: 'Major Repair',    color: '#EA580C', rank: 0 },
+  deficiency:     { label: 'Minor Repair',    color: '#CA8A04', rank: 1 },
+  maintenance:    { label: 'Maint & Improve', color: '#475569', rank: 2 },
+  characteristic: { label: 'Typical Wear',    color: '#0284C7', rank: 3 },
+  spec:           { label: 'Good',            color: '#16A34A', rank: 4 },
 };
 
 export function severityMeta(sev?: string) {

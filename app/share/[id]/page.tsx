@@ -61,7 +61,7 @@ const TEXT     = '#b6c4c7';
 type Anomaly = {
   id?: string; description?: string; severity?: string; unit?: string;
   location?: string; estimatedCost?: string; recommendation?: string; prosToCall?: string;
-  imageUri?: string;
+  imageUri?: string; isSafety?: boolean;   // real synced Safety flag (app's isSafetyConcern)
 };
 type Spec = { category?: string; material?: string; status?: string; };
 type HomeRecord = {
@@ -182,8 +182,11 @@ const PRIO_COLOR: Record<string,string> = SEV_COLOR;
 const prioRank = (s?: string): number => PRIO[prioKeyOf(s)].rank;
 // SAFETY: a true HAZARD (danger to people) — overrides the tier to the top "Safety"
 // level. Property-damage items (water intrusion, structural, roof) stay Major Repair.
-// (The app's real safety flag isn't in the share payload yet, so we derive it here.)
+// Prefer the REAL synced flag (the app's isSafetyConcern, derived from the AI
+// defectType); fall back to keyword derivation only for legacy records published
+// before is_safety existed.
 function isSafetyFinding(a: Anomaly): boolean {
+  if (typeof a.isSafety === 'boolean') return a.isSafety;
   return /smoke detector|carbon monoxide|gas leak|open (wire|conductor)|exposed (wire|conductor|electrical)|knob.?and.?tube|\bmold\b|microbial|asbestos|\bradon\b|trip hazard|missing (handrail|guardrail|rail|guard)|\bhandrail|guardrail|won'?t (lock|latch|close)|not (locking|latching|securing)|scald|fire hazard/i.test(`${a.unit ?? ''} ${a.location ?? ''} ${a.description ?? ''}`);
 }
 function priorityOf(a: Anomaly): { key: PrioKey; label: string; color: string; report: string; rank: number } {
