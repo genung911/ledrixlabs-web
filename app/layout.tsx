@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://ledrixlabs.com'),
   openGraph: {
     title: 'Ledrix — The AI Backup for Licensed Inspectors',
-    description: 'Catch what you walked past. Deliver before you leave. AI-assisted inspection with inspector-verified findings, instant PDF reports, and a client home portal.',
+    description: 'Inspect the house, not the template. Deliver before you leave. AI-assisted inspection with inspector-verified findings, instant PDF reports, and a client home portal.',
     url: 'https://ledrixlabs.com',
     siteName: 'Ledrix Labs',
     type: 'website',

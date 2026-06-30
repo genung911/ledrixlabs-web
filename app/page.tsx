@@ -60,7 +60,7 @@ export default function Home() {
         </h1>
 
         <h2 style={{ fontSize: 'clamp(28px, 6vw, 72px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: -2, marginBottom: 28, maxWidth: 900 }}>
-          Catch what you walked past.<br />
+          Inspect the house, not the template.<br />
           <span style={{ color: ACCENT }}>Deliver before you leave.</span>
         </h2>
 
