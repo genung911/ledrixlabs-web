@@ -6,6 +6,47 @@ import { LedrixDelta } from '@/components/LedrixDelta';
 
 const CYAN = '#00F3FF';
 
+// App icons in use — auto-collected from the inspector app (MaterialCommunityIcons,
+// which map 1:1 to Material Design Icons). Snapshot; re-grep the app to refresh.
+const APP_ICONS = [
+  'account-circle-outline', 'account-cog-outline', 'account-group-outline', 'account-hard-hat', 'account-multiple-outline',
+  'account-off-outline', 'account-outline', 'account-plus-outline', 'account-remove-outline', 'account-search-outline',
+  'account-tie-outline', 'account-voice', 'air-conditioner', 'alert-circle', 'alert-circle-outline', 'alert-decagram',
+  'alert-decagram-outline', 'alert-octagon', 'alert-octagon-outline', 'alert-outline', 'arrow-down', 'arrow-expand',
+  'arrow-left', 'arrow-right', 'arrow-up', 'auto-fix', 'backup-restore', 'badge-account-outline', 'bell-alert-outline',
+  'book-check-outline', 'book-plus', 'briefcase-outline', 'cable-data', 'calendar-arrow-right', 'calendar-blank-outline',
+  'calendar-check', 'calendar-check-outline', 'calendar-month-outline', 'calendar-outline', 'calendar-plus', 'call-merge',
+  'camera-burst', 'camera-enhance-outline', 'camera-flip-outline', 'camera-iris', 'camera-outline', 'camera-plus',
+  'camera-plus-outline', 'card-account-details-outline', 'cash-remove', 'cellphone-link', 'chat-outline', 'check-all',
+  'check-bold', 'check-circle', 'check-circle-outline', 'check-decagram', 'check-decagram-outline',
+  'checkbox-blank-circle-outline', 'checkbox-marked-circle', 'chevron-down', 'chevron-left', 'chevron-right', 'chevron-up',
+  'city-variant-outline', 'clipboard-alert-outline', 'clipboard-check-outline', 'clipboard-list-outline',
+  'clipboard-plus-outline', 'clipboard-search-outline', 'clock-alert-outline', 'clock-check-outline', 'clock-outline',
+  'clock-time-four-outline', 'close-circle', 'close-circle-outline', 'close-thick', 'cloud-check-outline',
+  'cloud-download-outline', 'cloud-off-outline', 'cloud-sync-outline', 'cloud-upload-outline', 'cog-outline',
+  'comment-question-outline', 'content-save-check', 'content-save-outline', 'credit-card-outline', 'database-check',
+  'delete-outline', 'delete-sweep-outline', 'dots-horizontal', 'dots-vertical', 'electric-switch', 'email-outline',
+  'engine-outline', 'export-variant', 'eye-off-outline', 'eye-outline', 'file-alert-outline', 'file-chart-outline',
+  'file-cog-outline', 'file-document-outline', 'file-export-outline', 'file-pdf-box', 'file-search-outline',
+  'file-send-outline', 'file-sign', 'flag-variant', 'flag-variant-outline', 'flask-outline', 'folder-image',
+  'format-list-bulleted', 'garage-variant', 'hammer-wrench', 'hand-wave-outline', 'hard-hat', 'help-circle-outline',
+  'home-account', 'home-automation', 'home-city-outline', 'home-group', 'home-import-outline', 'home-minus-outline',
+  'home-outline', 'home-roof', 'home-search-outline', 'home-variant', 'home-variant-outline', 'hot-tub',
+  'image-multiple-outline', 'image-off-outline', 'image-outline', 'image-plus', 'image-search-outline',
+  'information-outline', 'layers-triple', 'lightning-bolt', 'lightning-bolt-circle', 'lightning-bolt-outline',
+  'link-variant', 'lock-check-outline', 'lock-outline', 'map-marker-check', 'map-marker-outline', 'map-marker-radius',
+  'map-marker-radius-outline', 'map-search-outline', 'message-text', 'message-text-outline', 'microphone-outline',
+  'navigation-variant-outline', 'note-plus-outline', 'note-text-outline', 'office-building', 'pencil-outline',
+  'pencil-plus-outline', 'pencil-ruler', 'phone-alert-outline', 'phone-outline', 'play-circle', 'play-circle-outline',
+  'plus-box-outline', 'plus-circle-outline', 'robot-off-outline', 'robot-outline', 'scale-balance', 'send-check-outline',
+  'send-outline', 'shape-outline', 'shape-plus', 'share-outline', 'shield-alert-outline', 'shield-check',
+  'shield-check-outline', 'shield-home', 'shield-lock-outline', 'smoke-detector-alert', 'solar-panel', 'solar-power',
+  'source-branch', 'star-outline', 'tag-multiple-outline', 'tag-outline', 'text-recognition', 'thermometer-water',
+  'timer-outline', 'trash-can-outline', 'tray-arrow-up', 'tumble-dryer', 'upload-outline', 'vector-combine',
+  'vector-link', 'view-dashboard-outline', 'view-grid-outline', 'washing-machine', 'water-alert', 'water-boiler',
+  'water-check', 'water-pump', 'wrench-outline',
+];
+
 // One continuous base-gap triangle outline at a given padding (size control).
 function triPath(S: number, padR: number, gapFrom: number, gapTo: number) {
   const pad = S * padR;
@@ -117,6 +158,20 @@ export default function LogosPage() {
           <Board label="On dark · white" sub="Mono on dark (favicons, watermarks)." bg="#0a0a0a" fg="#ffffff" />
           <Board label="On light · ink" sub="Mono on white (print, the report PDF)." bg="#f4f4f5" fg="#0b0b0b" />
         </div>
+
+        <section className="mt-14">
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7/css/materialdesignicons.min.css" />
+          <h2 className="text-lg font-bold">App icons <span className="text-sm font-normal text-slate-500">({APP_ICONS.length} · MaterialCommunityIcons)</span></h2>
+          <p className="mt-1 text-xs text-slate-500">Auto-collected from the inspector app. Names map 1:1 to Material Design Icons.</p>
+          <div className="mt-5 grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))' }}>
+            {APP_ICONS.map((n) => (
+              <div key={n} className="flex flex-col items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5">
+                <i className={`mdi mdi-${n}`} style={{ fontSize: 24, lineHeight: 1, color: CYAN }} aria-hidden />
+                <span className="break-all text-center text-[8px] leading-tight text-slate-500">{n}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <p className="mt-8 text-xs text-slate-500">
           Tell me a letter (A–D) — or mix-and-match (e.g. “B shape but off-center gap like A”).
