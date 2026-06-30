@@ -1,5 +1,5 @@
 // Footer — minimal: mark + wordmark, tagline, and a hairline-separated baseline.
-import { LedrixDelta } from './ui/LedrixDelta';
+import { LedrixDelta } from '@/components/LedrixDelta';
 
 export function Footer() {
   const year = new Date().getFullYear();

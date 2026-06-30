@@ -4,7 +4,7 @@
 // delta mark + wordmark, anchor links, and the primary CTA.
 import { useEffect, useState } from 'react';
 import { GlowButton } from './ui/GlowButton';
-import { LedrixDelta } from './ui/LedrixDelta';
+import { LedrixDelta } from '@/components/LedrixDelta';
 
 const LINKS = [
   { href: '#how', label: 'How it works' },

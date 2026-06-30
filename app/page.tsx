@@ -1,27 +1,9 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 
 const ACCENT = '#00F3FF';
-
-function ValDeltaSVG({ size = 28, color = ACCENT }: { size?: number; color?: string }) {
-  const pad = size * 0.10;
-  const W   = size - pad * 2;
-  const H   = W * (Math.sqrt(3) / 2);
-  const ty  = (size - H) / 2;
-  const by  = ty + H;
-  const TX  = size / 2, TY = ty;
-  const BLX = pad,      BLY = by;
-  const BRX = pad + W,  BRY = by;
-  const GL  = BLX + W * 0.30;
-  const GR  = BLX + W * 0.70;
-  const d   = `M ${GL} ${BLY} L ${BLX} ${BLY} L ${TX} ${TY} L ${BRX} ${BRY} L ${GR} ${BRY}`;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" style={{ display: 'block' }}>
-      <path d={d} stroke={color} strokeWidth={size * 0.055} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function Logo({ size = 36 }: { size?: number }) {
   const r = Math.round(size * 0.22);
