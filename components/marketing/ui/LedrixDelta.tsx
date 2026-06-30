@@ -20,7 +20,9 @@ export function LedrixDelta({
   const BRX = pad + W;
   const GL = BLX + W * 0.3; // base gap — left edge
   const GR = BLX + W * 0.7; // base gap — right edge
-  const d = `M ${TX} ${ty} L ${BLX} ${by} L ${GL} ${by} M ${GR} ${by} L ${BRX} ${by} L ${TX} ${ty}`;
+  // One continuous stroke so the apex + base corners are real joins (not two
+  // overlapping round caps). Only the base-gap ends are open/rounded.
+  const d = `M ${GL} ${by} L ${BLX} ${by} L ${TX} ${ty} L ${BRX} ${by} L ${GR} ${by}`;
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" className={className} aria-hidden>
