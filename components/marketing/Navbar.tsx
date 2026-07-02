@@ -7,9 +7,10 @@ import { GlowButton } from './ui/GlowButton';
 import { LedrixDelta } from '@/components/LedrixDelta';
 
 const LINKS = [
-  { href: '#how', label: 'How it works' },
-  { href: '#features', label: 'Why Ledrix' },
-  { href: '#demo', label: 'Contact' },
+  { href: '/#how', label: 'How it works' },
+  { href: '/#features', label: 'Why Ledrix' },
+  { href: '/about', label: 'About' },
+  { href: '/#demo', label: 'Contact' },
 ];
 
 export function Navbar() {
@@ -29,7 +30,7 @@ export function Navbar() {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <a href="#top" className="group flex items-center gap-2.5">
+        <a href="/" className="group flex items-center gap-2.5">
           <LedrixDelta size={22} sheen className="transition-transform duration-300 group-hover:scale-110" />
           <span className="text-base font-bold tracking-tight text-white">Ledrix</span>
         </a>
@@ -42,7 +43,7 @@ export function Navbar() {
           ))}
         </div>
 
-        <GlowButton href="#demo" variant="primary" className="!px-5 !py-2.5 !text-xs">
+        <GlowButton href="/#demo" variant="primary" className="!px-5 !py-2.5 !text-xs">
           Request a demo
         </GlowButton>
       </nav>

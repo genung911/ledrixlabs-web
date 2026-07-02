@@ -13,9 +13,10 @@ export function Footer() {
         </div>
 
         <div className="flex items-center gap-6 text-xs">
-          <a href="#how" className="transition-colors hover:text-white">How it works</a>
-          <a href="#features" className="transition-colors hover:text-white">Why Ledrix</a>
-          <a href="#demo" className="transition-colors hover:text-white">Request a demo</a>
+          <a href="/#how" className="transition-colors hover:text-white">How it works</a>
+          <a href="/#features" className="transition-colors hover:text-white">Why Ledrix</a>
+          <a href="/about" className="transition-colors hover:text-white">About</a>
+          <a href="/#demo" className="transition-colors hover:text-white">Request a demo</a>
         </div>
       </div>
       <div className="mx-auto mt-8 max-w-6xl px-6 text-center text-xs text-slate-700 sm:text-left">
