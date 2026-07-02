@@ -2,7 +2,6 @@ import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import ValOrbVoice from '@/components/ValOrbVoice';
 import { Hero } from '@/components/marketing/Hero';
-import { ProductShowcase } from '@/components/marketing/ProductShowcase';
 import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
 import { VisionManifesto } from '@/components/marketing/VisionManifesto';
@@ -16,7 +15,6 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <ProductShowcase />
         <HowItWorks />
         <BentoGrid />
         <VisionManifesto />
