@@ -5,6 +5,7 @@
 // centered, large type on a soft accent glow — matches the Hero's voice and motion.
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
+import { LedrixEye } from '@/components/LedrixEye';
 
 export function VisionManifesto() {
   return (
@@ -19,6 +20,11 @@ export function VisionManifesto() {
         viewport={{ once: true, amount: 0.3 }}
         className="mx-auto flex max-w-3xl flex-col items-center px-6 text-center"
       >
+        {/* Ledrix Vision eye — the mark for this "eyes, amplified" beat */}
+        <motion.div variants={fadeUp} className="mb-8 drop-shadow-[0_0_28px_rgba(0,243,255,0.4)]">
+          <LedrixEye size={112} />
+        </motion.div>
+
         <motion.span
           variants={fadeUp}
           className="mb-7 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent/90 backdrop-blur"
