@@ -20,7 +20,7 @@ const BROWSER_WS = process.env.BROWSERLESS_WS_ENDPOINT ?? '';
 // explicit (default is 0).
 const FOOTER_TEMPLATE = `
   <div style="font-size:8px;color:#64748b;width:100%;margin:0 0.4in;font-family:Helvetica,Arial,sans-serif;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
-    <span>LEDRIX SPATIAL OS &middot; CONFIDENTIAL INSPECTION DOCUMENT</span>
+    <span>LEDRIX INTELLIGENCE &middot; CONFIDENTIAL INSPECTION DOCUMENT</span>
     <span>PAGE <span class="pageNumber"></span> OF <span class="totalPages"></span></span>
   </div>`;
 

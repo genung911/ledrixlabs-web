@@ -26,7 +26,7 @@ export default function PrivacyPolicy() {
         {[
           {
             title: '1. Information We Collect',
-            body: `We collect information you provide directly, including your name, email address, and professional license number when you create an account. During inspections, Ledrix collects photos and videos of the property being inspected, GPS location data anchored to property records, audio recordings made during explicitly activated voice command sessions, device sensor data (accelerometer, gyroscope, barometer) used during in-app spatial survey operations, and inspection notes and findings you create. We also collect standard usage data such as app version, device type, and crash reports to improve the platform.`,
+            body: `We collect information you provide directly, including your name, email address, and professional license number when you create an account. During inspections, Ledrix collects photos and videos of the property being inspected, GPS location data anchored to property records, audio recordings made during explicitly activated voice command sessions, and inspection notes and findings you create. We also collect standard usage data such as app version, device type, and crash reports to improve the platform.`,
           },
           {
             title: '2. How We Use Your Information',

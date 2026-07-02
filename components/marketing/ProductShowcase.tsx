@@ -30,20 +30,17 @@ export function ProductShowcase() {
           <div className="pointer-events-none absolute left-1/2 top-1/4 -z-10 h-72 w-[36rem] max-w-full -translate-x-1/2 rounded-full bg-accent/15 blur-[120px]" />
 
           <div className="flex items-end justify-center">
-            <Phone
-              src="/screenshots/IMG_5123.PNG"
-              alt="Capturing a finding in the field with Ledrix"
-              className="hidden w-[190px] -rotate-[8deg] translate-y-8 opacity-95 sm:block lg:w-[210px]"
-            />
+            {/* Confirm (hero) + the client home portal. The old left "LIVE capture" phone was pulled
+                with Body Cam — swap in a clean capture screenshot here if the trio is wanted back. */}
             <Phone
               src="/screenshots/IMG_5553.PNG"
               alt="Confirming an AI-drafted finding"
-              className="relative z-20 -mx-6 w-[230px] sm:-mx-8 lg:w-[260px]"
+              className="relative z-20 w-[230px] -rotate-[5deg] lg:w-[260px]"
             />
             <Phone
               src="/screenshots/IMG_5564.PNG"
-              alt="The live client home portal"
-              className="hidden w-[190px] rotate-[8deg] translate-y-8 opacity-95 sm:block lg:w-[210px]"
+              alt="The client home portal"
+              className="w-[210px] rotate-[5deg] -ml-6 translate-y-6 opacity-95 sm:-ml-8 lg:w-[230px]"
             />
           </div>
         </motion.div>
