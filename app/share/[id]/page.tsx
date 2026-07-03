@@ -840,7 +840,7 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
 }
 
 // ─── ReminderCard ─────────────────────────────────────────────────────────────
-function ReminderCard({ r, onUpdate }: { r: Reminder; onUpdate: () => void }) {
+function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate: () => void; access: boolean; onUnlock: () => void }) {
   const [saving, setSaving] = useState(false);
   const today = new Date().toISOString().split('T')[0];
   const overdue = r.due_date && r.due_date < today;
@@ -848,7 +848,9 @@ function ReminderCard({ r, onUpdate }: { r: Reminder; onUpdate: () => void }) {
   const dotColor = r.completed ? GREEN : overdue ? CRITICAL : soon ? WARN : ACCENT;
 
   const complete = async (e: React.MouseEvent) => {
-    e.stopPropagation(); setSaving(true);
+    e.stopPropagation();
+    if (!access) { onUnlock(); return; }
+    setSaving(true);
     // Record the completion to the permanent service history (Carfax) before advancing the schedule.
     await supaPost('home_maintenance_log', [{ share_id: r.share_id, title: r.title, system: r.system ?? null, kind: 'service', source: 'task', reminder_id: r.id, done_date: today }]).catch(() => {});
     let update: object = { completed: true };
@@ -1629,7 +1631,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
 }
 
 // ─── LogServiceForm — quick manual entry into the service history (Carfax) ───────
-function LogServiceForm({ shareId, onSaved }: { shareId: string; onSaved: () => void }) {
+function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: string; onSaved: () => void; access: boolean; onUnlock: () => void }) {
   const [open, setOpen]     = useState(false);
   const [title, setTitle]   = useState('');
   const [system, setSystem] = useState('');
@@ -1644,7 +1646,7 @@ function LogServiceForm({ shareId, onSaved }: { shareId: string; onSaved: () => 
     setTitle(''); setSystem(''); setNote(''); setSaving(false); setOpen(false); onSaved();
   };
   if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 13, padding: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ Log a service or improvement</button>
+    <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 13, padding: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ Log a service or improvement</button>
   );
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 16, boxShadow: '0 1px 2px rgba(16,24,28,0.04)' }}>
@@ -1666,7 +1668,7 @@ function LogServiceForm({ shareId, onSaved }: { shareId: string; onSaved: () => 
 }
 
 // ─── MAINTENANCE TAB — spec-driven schedule + the Carfax service history ────────
-function RemindersTab({ reminders, log, shareId, onRefresh }: { reminders: Reminder[]; log: MaintenanceLog[]; shareId: string; onRefresh: () => void }) {
+function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: { reminders: Reminder[]; log: MaintenanceLog[]; shareId: string; onRefresh: () => void; access: boolean; onUnlock: () => void }) {
   const [showCompleted, setShowCompleted] = useState(false);
   const pending   = reminders.filter(r => !r.completed);
   const completed = reminders.filter(r => r.completed);
@@ -1675,7 +1677,7 @@ function RemindersTab({ reminders, log, shareId, onRefresh }: { reminders: Remin
 
   return (
     <div style={{ padding: '18px 18px 28px' }}>
-      <LogServiceForm shareId={shareId} onSaved={onRefresh} />
+      <LogServiceForm shareId={shareId} onSaved={onRefresh} access={access} onUnlock={onUnlock} />
 
       {/* Upcoming schedule — built from THIS home's specs (Stage 3a) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 12px' }}>
@@ -1689,7 +1691,7 @@ function RemindersTab({ reminders, log, shareId, onRefresh }: { reminders: Remin
       ) : shown.sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
         return (a.due_date ?? '9999') < (b.due_date ?? '9999') ? -1 : 1;
-      }).map(r => <ReminderCard key={r.id} r={r} onUpdate={onRefresh} />)}
+      }).map(r => <ReminderCard key={r.id} r={r} onUpdate={onRefresh} access={access} onUnlock={onUnlock} />)}
 
       {/* Service history — the living Carfax timeline */}
       {log.length > 0 && (
@@ -2380,6 +2382,12 @@ export default function SharePage() {
   const [valListening, setValListening] = useState(false);
   const [valStream, setValStream] = useState<MediaStream | null>(null);
   const [valSeed, setValSeed] = useState<string | null>(null);
+  const [valLog, setValLog] = useState<any>(null);   // voice-parsed "log this work" pending confirm
+  const confirmVoiceLog = async () => {
+    if (!valLog) return;
+    await supaPost('home_maintenance_log', [{ share_id: shareId, title: valLog.title, system: valLog.system ?? null, kind: valLog.kind ?? 'improvement', source: 'voice', done_date: new Date().toISOString().split('T')[0] }]).catch(() => {});
+    setValLog(null); loadLog();
+  };
   const valRec = useRef<MediaRecorder | null>(null);
   const valChunks = useRef<Blob[]>([]);
   const handleVal = async () => {
@@ -2401,7 +2409,17 @@ export default function SharePage() {
           fd.append('audio', blob, 'voice.webm');
           const resp = await fetch('/api/transcribe', { method: 'POST', headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: fd });
           const j = await resp.json().catch(() => ({}));
-          if (resp.ok && j.text) { setValSeed(String(j.text)); setLedrixOpen(true); }
+          if (resp.ok && j.text) {
+            const spoken = String(j.text);
+            // Is it a "we had X done" statement? Parse it; if so, confirm + log to the Carfax. Else → chat.
+            try {
+              const { data: sess } = await supabase.auth.getSession();
+              const lr = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token ?? ''}` }, body: JSON.stringify({ mode: 'logparse', question: spoken, shareId }) });
+              const lj = await lr.json().catch(() => ({}));
+              if (lr.ok && lj.log?.isLog && lj.log?.title) { setValLog({ ...lj.log, transcript: spoken }); return; }
+            } catch { /* fall through to chat */ }
+            setValSeed(spoken); setLedrixOpen(true);
+          }
         } catch { /* transcribe failed — non-fatal */ }
       };
       mr.start();
@@ -2520,12 +2538,26 @@ export default function SharePage() {
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
-      {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} />}
+      {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} access={access} onUnlock={() => setSubOpen(true)} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
 
       <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
         <ValOrbVoice size={62} controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
       </div>
+      {valLog && (
+        <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '20px 20px 0 0', padding: '22px 20px 28px' }}>
+            <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>Log to your home record?</div>
+            <div style={{ fontSize: 19, fontWeight: 700, color: TEXT }}>{valLog.title}</div>
+            <div style={{ fontSize: 13, color: MED, marginTop: 4 }}>{[valLog.system, 'today'].filter(Boolean).join(' · ')}</div>
+            <div style={{ fontSize: 12.5, color: MED, marginTop: 12, fontStyle: 'italic' }}>“{valLog.transcript}”</div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button onClick={() => { const t = valLog.transcript; setValLog(null); setValSeed(t); setLedrixOpen(true); }} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 11, padding: 13, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>It’s a question</button>
+              <button onClick={confirmVoiceLog} style={{ flex: 2, background: ACCENT, color: '#fff', border: 'none', borderRadius: 11, padding: 13, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Log it</button>
+            </div>
+          </div>
+        </div>
+      )}
       <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} />
       <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
     </div>
