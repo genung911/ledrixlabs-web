@@ -44,22 +44,22 @@ async function supaDelete(table: string, filter: string) {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 // Cyan + dark-glass — matches the Ledrix inspector app's GradientCard aesthetic.
 // Cyan is the primary UI accent; color is still reserved for MEANING (severity).
-const CYAN     = '#00F3FF';   // brand accent
-const ACCENT   = '#00F3FF';   // primary UI accent — cyan (matches the inspector app)
-const CRITICAL = '#FF3B3B';   // safety
-const WARN     = '#FACC15';   // deficiency
-const GREEN    = '#22C55E';   // satisfactory / resolved
-const INFO     = '#8893A6';   // calm slate — maintenance + in-progress states
+// Stage 2: light theme. Accent is a readable teal (neon #00F3FF is reserved for dark surfaces/hero).
+const CYAN     = '#0B8FA6';   // readable teal accent on light
+const ACCENT   = '#0B8FA6';   // primary UI accent
+const CRITICAL = '#DC2626';   // safety (readable on light)
+const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
+const GREEN    = '#16A34A';   // satisfactory / resolved
+const INFO     = '#5B7183';   // slate — maintenance + in-progress
 const PURPLE   = INFO;        // legacy alias → muted (no rainbow)
-const BG       = '#070707';
-// Glassy gradient surfaces (the inspector app's GradientCard look): top-left sheen → dark.
-// CARD/CARD2 are only ever used as a CSS `background`, so a gradient string is valid everywhere.
-const CARD     = 'linear-gradient(145deg, rgba(42,50,57,0.55), rgba(13,17,20,0.66))';
-const CARD2    = 'linear-gradient(145deg, rgba(50,60,67,0.42), rgba(16,20,24,0.60))';
-const BORDER   = 'rgba(255,255,255,0.08)';
-const DIM      = '#3a4a4e';
-const MED      = '#5f7378';
-const TEXT     = '#b6c4c7';
+const BG       = '#F5F6F3';   // light paper
+// Surfaces: clean white cards on the paper ground.
+const CARD     = '#FFFFFF';
+const CARD2    = '#FBFCFB';
+const BORDER   = 'rgba(16,24,28,0.10)';
+const DIM      = '#97A4A8';   // faint muted (was dark) — light secondary
+const MED      = '#64757B';   // muted body/secondary
+const TEXT     = '#16242A';   // dark ink text
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Anomaly = {
@@ -374,7 +374,7 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
           <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1,
             padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, whiteSpace: 'nowrap',
             fontFamily: 'Roboto Mono, monospace' }}>{p.label}</span>
-          <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
+          <span style={{ color: TEXT, fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
             {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
           {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
         </div>
@@ -471,7 +471,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
   };
 
   const cta: CSSProperties = {
-    display: 'inline-block', background: CARD2, border: `1px solid ${BORDER}`, color: '#e2e8f0',
+    display: 'inline-block', background: CARD2, border: `1px solid ${BORDER}`, color: TEXT,
     fontSize: 12, fontWeight: 700, padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
   };
 
@@ -486,7 +486,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           // eslint-disable-next-line @next/next/no-img-element
           <img src={a.imageUri} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14 }} />
         )}
-        <h3 style={{ color: '#e2e8f0', fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
+        <h3 style={{ color: TEXT, fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
         {a.location && <div style={{ color: DIM, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>{a.location}</div>}
         <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
         {a.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{a.recommendation}</p>}
@@ -500,7 +500,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           {pros.length > 0 ? pros.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 7 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                 <div style={{ color: MED, fontSize: 10, marginTop: 1 }}>{p.rating ? `★ ${p.rating}` : ''}{p.reviews ? `  (${p.reviews.toLocaleString()})` : ''}</div>
               </div>
               {p.phone && <a href={`tel:${p.phone}`} style={{ ...cta, padding: '8px 12px', color: GREEN, textDecoration: 'none' }}>📞 Call</a>}
@@ -525,7 +525,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
             </div>
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: TEXT, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
             <button onClick={ask} disabled={busy || !input.trim()} style={{ background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.45)', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', boxShadow: '0 0 14px rgba(0,243,255,0.25)', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
           </div>
         </CardSection>
@@ -574,7 +574,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
                 whiteSpace: 'nowrap' }}>{STATUS_LABEL[p.status] ?? p.status.toUpperCase()}</span>
               {p.system && <span style={{ color: DIM, fontSize: 8, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{p.system.toUpperCase()}</span>}
             </div>
-            <div style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{p.title}</div>
+            <div style={{ color: TEXT, fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{p.title}</div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             {p.budget_estimate && p.budget_estimate !== 'N/A' && (
@@ -727,8 +727,8 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
     ? `OFF-SITE · ${geoDistance}m away` : 'LOCATION UNAVAILABLE';
 
   const inputStyle = {
-    width: '100%', background: '#0c0f10', border: `1px solid ${BORDER}`,
-    borderRadius: 8, padding: '10px 12px', color: '#e2e8f0',
+    width: '100%', background: CARD, border: `1px solid ${BORDER}`,
+    borderRadius: 8, padding: '10px 12px', color: TEXT,
     fontSize: 12, outline: 'none', fontFamily: 'Inter, sans-serif',
     boxSizing: 'border-box' as const,
   };
@@ -738,12 +738,12 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#0a0c0e', border: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0',
+        background: CARD, border: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0',
         padding: 24, width: '100%', maxWidth: 430, maxHeight: '90vh', overflowY: 'auto',
       }}>
         <div style={{ color: PURPLE, fontSize: 9, fontWeight: 900, letterSpacing: 3,
           fontFamily: 'Roboto Mono, monospace', marginBottom: 4 }}>REPLACE APPLIANCE</div>
-        <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 900, marginBottom: 16 }}>
+        <div style={{ color: TEXT, fontSize: 14, fontWeight: 900, marginBottom: 16 }}>
           {project.system ?? project.title}
         </div>
 
@@ -905,7 +905,7 @@ function NotFound() {
 function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void; signedIn?: boolean; onSignOut?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(7,7,7,0.9)',
+      padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(246,247,244,0.9)',
       position: 'sticky', top: 0, zIndex: 90, backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)', maxWidth: 430, width: '100%', boxSizing: 'border-box',
     }}>
@@ -1153,7 +1153,7 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 12 }}>⌕</span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search findings…" style={{
           width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-          padding: '10px 12px 10px 30px', color: '#e2e8f0', fontSize: 12, outline: 'none',
+          padding: '10px 12px 10px 30px', color: TEXT, fontSize: 12, outline: 'none',
           fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
         }} />
       </div>
@@ -1652,7 +1652,7 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
         <div style={{ color: ACCENT, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>INSPECTOR</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 900, marginBottom: 3 }}>{record.inspector ?? '—'}</div>
+            <div style={{ color: TEXT, fontSize: 14, fontWeight: 900, marginBottom: 3 }}>{record.inspector ?? '—'}</div>
             {record.company && <div style={{ color: MED, fontSize: 10, fontWeight: 700, marginBottom: 2 }}>{record.company}</div>}
             {record.license_number && <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>LIC #{record.license_number}</div>}
           </div>
@@ -1772,7 +1772,7 @@ function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void 
           <ValDeltaSVG size={20} color={CYAN} />
           <span style={{ color: CYAN, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
         </div>
-        <div style={{ color: '#fff', fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
+        <div style={{ color: TEXT, fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
         <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>Ask Ledrix anything about your home — what a finding means, repair priorities, costs, what to do next — and get a living AI Insight that stays current with your record. Free members get the record; Ledrix members get the intelligence.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
           <PlanCard title="LEDRIX PLUS" price={`${PLAN_BASE_PRICE}/mo`} sub={PLAN_BASE_TOKENS} highlight />
@@ -1785,12 +1785,12 @@ function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void 
         {sent ? (
           <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
             <div style={{ color: CYAN, fontSize: 13, fontWeight: 900, marginBottom: 6 }}>Check your email ✉</div>
-            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: '#fff' }}>{email}</b>. Tap it to unlock Ledrix.</p>
+            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: ACCENT }}>{email}</b>. Tap it to unlock Ledrix.</p>
           </div>
         ) : (
           <>
             <input value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && sendLink()} placeholder="you@email.com" type="email"
-              style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: '#fff', fontSize: 14, outline: 'none', marginBottom: 8 }} />
+              style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: TEXT, fontSize: 14, outline: 'none', marginBottom: 8 }} />
             {err && <div style={{ color: CRITICAL, fontSize: 10, marginBottom: 8 }}>{err}</div>}
             <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(0,243,255,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
           </>
@@ -1946,7 +1946,7 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
       width: '100%', maxWidth: 430, height: vp ? vp.h : '100dvh', zIndex: 210, background: BG, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
         <ValDeltaSVG size={20} color={CYAN} />
-        <span style={{ color: '#fff', fontSize: 13, fontWeight: 900, flex: 1 }}>Ledrix</span>
+        <span style={{ color: TEXT, fontSize: 13, fontWeight: 900, flex: 1 }}>Ledrix</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
       </div>
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1972,7 +1972,7 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
         </button>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send(); }}
           placeholder={recording ? 'Listening…' : 'Ask Ledrix about your home…'} enterKeyHint="send"
-          style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', color: '#fff', fontSize: 16, outline: 'none', minWidth: 0 }} />
+          style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', color: TEXT, fontSize: 16, outline: 'none', minWidth: 0 }} />
         <button onClick={() => send()} disabled={busy || !input.trim()} style={{ flexShrink: 0, height: 44, padding: '0 16px',
           background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 10, fontWeight: 900, fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 14px rgba(0,243,255,0.28)', opacity: (busy || !input.trim()) ? 0.45 : 1 }}>SEND</button>
       </div>
