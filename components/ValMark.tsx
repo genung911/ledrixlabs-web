@@ -10,10 +10,10 @@ export function ValMark({ size = 40, color = '#00F3FF' }: { size?: number; color
         <LedrixDelta size={size * 0.64} color={color} />
       </div>
       <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ position: 'absolute', inset: 0 }} aria-hidden>
-        <path d="M29 37 Q21 50 29 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
-        <path d="M20 30 Q9 50 20 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
-        <path d="M71 37 Q79 50 71 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
-        <path d="M80 30 Q91 50 80 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M26 37 Q18 50 26 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M17 30 Q6 50 17 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M74 37 Q82 50 74 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M83 30 Q94 50 83 70" stroke={color} strokeWidth="2.8" strokeLinecap="round" />
       </svg>
     </div>
   );
