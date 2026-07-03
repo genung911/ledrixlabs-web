@@ -6,6 +6,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import ValOrbVoice from '@/components/ValOrbVoice';
+import { ValMark } from '@/components/ValMark';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
@@ -958,136 +959,139 @@ function Footer() {
 }
 
 // ─── HOME TAB ─────────────────────────────────────────────────────────────────
-function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange, access, shareId, onUnlock }: {
+function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange, access, shareId, onUnlock, onAsk }: {
   record: HomeRecord; anomalies: Anomaly[];
   projects: Project[]; reminders: Reminder[]; repairs: RepairRow[];
   onTabChange: (t: Tab) => void;
-  access: boolean; shareId: string; onUnlock: () => void;
+  access: boolean; shareId: string; onUnlock: () => void; onAsk: () => void;
 }) {
-  const { score, grade, color: scoreColor } = scoreCalc(anomalies);
+  const { score } = scoreCalc(anomalies);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
   const deficien = anomalies.filter(a => a.severity === 'anomaly');
-  const maint    = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly').length;
   const prioCount = anomalies.reduce((m, a) => { const k = priorityOf(a).key; m[k] = (m[k] ?? 0) + 1; return m; }, {} as Record<PrioKey, number>);
-  const openProjects = projects.filter(p => p.status !== 'resolved');
   const dueReminders = reminders.filter(r => !r.completed);
-
   const includedRepairs = repairs.filter(r => r.status === 'included').length;
-  const pillars: [Tab, IconName, string, string, number | string][] = [
-    ['report', 'docs', 'FULL REPORT', ACCENT, anomalies.length],
-    ['findings', 'findings', 'FINDINGS', anomalies.length > 0 ? CRITICAL : GREEN, anomalies.length],
-    ['repairs', 'projects', 'REPAIR REQUEST', includedRepairs > 0 ? CYAN : DIM, includedRepairs],
-    ['projects', 'projects', 'PROJECTS', openProjects.length > 0 ? WARN : GREEN, `${projects.filter(p=>p.status==='resolved').length}/${projects.length}`],
-    ['reminders', 'reminders', 'REMINDERS', dueReminders.length > 0 ? ACCENT : GREEN, dueReminders.length],
-    ['docs', 'docs', 'DOCS', DIM, '—'],
-  ];
   const urgent = critical.concat(deficien).slice(0, 3);
 
+  // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
+  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', cyan: '#0B8FA6', bright: '#22E3FF' };
+  const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
+  const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
+  const cover = record.cover_url;
+  const stats: [number | string, string, string][] = [
+    [score, 'HEALTH', P.cyan],
+    [prioCount.safety ?? 0, 'SAFETY', (prioCount.safety ?? 0) > 0 ? PRIO.safety.report : P.faint],
+    [prioCount.major ?? 0,  'MAJOR',  (prioCount.major ?? 0)  > 0 ? PRIO.major.report  : P.faint],
+    [anomalies.length,      'FINDINGS', P.text],
+  ];
+  const pillars: [Tab, IconName, string, number | string][] = [
+    ['report', 'docs', 'Full report', anomalies.length],
+    ['findings', 'findings', 'Findings', anomalies.length],
+    ['repairs', 'projects', 'Repair request', includedRepairs],
+    ['projects', 'projects', 'Projects', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
+    ['reminders', 'reminders', 'Maintenance', dueReminders.length],
+    ['docs', 'docs', 'Docs', '—'],
+  ];
+
   return (
-    <div>
-      {/* Cover photo — clean. Everything is pulled OFF the image into the record
-          header below. Falls back to the gridded gradient when no cover published. */}
-      <div style={{ margin: '16px 16px 0', borderRadius: 16, overflow: 'hidden', border: `1px solid rgba(0,243,255,0.16)`, height: 188 }}>
-        {record.cover_url ? (
-          <img src={record.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#0a1520 0%,#060c14 100%)',
-            backgroundImage: 'linear-gradient(rgba(0,243,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,243,255,0.04) 1px,transparent 1px)',
-            backgroundSize: '28px 28px' }} />
-        )}
-      </div>
-
-      {/* Record header — pulled off the photo, Ledrix style: title + L-Index + stats */}
-      <div style={{ padding: '20px 18px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ color: ACCENT, fontSize: 7.5, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>LEDRIX HOME RECORD · VERIFIED</div>
-            <div style={{ color: '#fff', fontSize: 24, fontWeight: 900, lineHeight: 1.12, letterSpacing: -0.8 }}>{record.address ?? 'ADDRESS PENDING'}</div>
-            {subAddress && <div style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{subAddress}</div>}
-            <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginTop: 7, fontFamily: 'Roboto Mono, monospace' }}>INSPECTED {fmtDate(record.inspection_date).toUpperCase()}</div>
-          </div>
-          <div style={{ flexShrink: 0, textAlign: 'center' }}>
-            <ScoreRing score={score} grade={grade} color={scoreColor} />
-            <div style={{ color: DIM, fontSize: 7, fontWeight: 900, letterSpacing: 2, marginTop: 3, fontFamily: 'Roboto Mono, monospace' }}>L-INDEX</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
-          {([
-            [prioCount.safety ?? 0, 'SAFETY', (prioCount.safety ?? 0) > 0 ? PRIO.safety.color : DIM],
-            [prioCount.major ?? 0,  'MAJOR',  (prioCount.major ?? 0)  > 0 ? PRIO.major.color  : DIM],
-            [prioCount.minor ?? 0,  'MINOR',  (prioCount.minor ?? 0)  > 0 ? PRIO.minor.color  : DIM],
-            [anomalies.length,'TOTAL',      TEXT],
-          ] as [number, string, string][]).map(([v, l, c]) => {
-            const lit = v > 0 && c !== DIM && c !== TEXT;   // active severity → glow in its color
-            return (
-            <div key={l} style={{ flex: 1, background: CARD, border: `1px solid ${lit ? c + '55' : BORDER}`, borderRadius: 12, padding: '13px 6px', textAlign: 'center', boxShadow: lit ? `0 0 18px ${c}22` : 'none' }}>
-              <div style={{ color: c, fontSize: 20, fontWeight: 900, lineHeight: 1, textShadow: lit ? `0 0 14px ${c}` : 'none' }}>{v}</div>
-              <div style={{ color: DIM, fontSize: 6.5, fontWeight: 900, letterSpacing: 1, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{l}</div>
+    <div style={{ background: P.paper, minHeight: '100%', color: P.text, fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif' }}>
+      {/* ── DARK HERO — cover photo, address, health ring ── */}
+      <div style={{ position: 'relative', color: '#fff', overflow: 'hidden',
+        background: cover
+          ? `linear-gradient(180deg, rgba(10,14,16,0.30) 0%, rgba(10,14,16,0.32) 44%, rgba(8,12,14,0.86) 100%), url(${cover}) center/cover`
+          : 'radial-gradient(120% 90% at 78% 8%, rgba(34,227,255,0.16), transparent 55%), linear-gradient(168deg,#1B2C34,#0E1518 62%,#0A1013)' }}>
+        <div style={{ padding: '30px 20px 26px' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: P.bright, fontWeight: 600, textTransform: 'uppercase' }}>Your Home Record · Verified</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.01em' }}>{record.address ?? 'Address pending'}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11.5, color: 'rgba(255,255,255,0.74)', marginTop: 10, letterSpacing: '0.03em' }}>{subAddress ? subAddress + '  ·  ' : ''}Inspected {fmtDate(record.inspection_date)}</div>
             </div>
-            );
-          })}
-        </div>
-
-        <button onClick={() => onTabChange('report')} style={{ marginTop: 18, width: '100%', background: 'rgba(0,243,255,0.12)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 16, fontSize: 13, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,243,255,0.25)' }}>
-          📄 VIEW FULL REPORT
-        </button>
-      </div>
-
-      {/* Ledrix Insight — the AI intelligence layer (paid; locked teaser when not) */}
-      <div style={{ marginTop: 16 }}>
-        <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
-      </div>
-
-      {/* Needs attention — the genuinely useful surface (top safety/deficiency) */}
-      {urgent.length > 0 && (
-        <div style={{ padding: '16px 16px 4px' }}>
-          <div style={{ color: CRITICAL, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>
-            NEEDS ATTENTION
+            <div style={{ flexShrink: 0, width: 92, height: 92, borderRadius: '50%', display: 'grid', placeItems: 'center', boxShadow: '0 0 34px rgba(34,227,255,0.18)',
+              background: `conic-gradient(${P.bright} ${Math.max(0, Math.min(100, score))}%, rgba(255,255,255,0.14) 0)` }}>
+              <div style={{ width: 74, height: 74, borderRadius: '50%', background: P.ink, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 700, lineHeight: 1 }}>{score}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 7.5, letterSpacing: '0.18em', color: P.bright, marginTop: 2 }}>HEALTH</div>
+                </div>
+              </div>
+            </div>
           </div>
-          {urgent.map((a, i) => (
-            <div key={i} onClick={() => onTabChange('findings')} style={{
-              background: CARD, border: `1px solid ${BORDER}`,
-              borderLeft: `3px solid ${SEV_COLOR[a.severity ?? 'cosmetic'] ?? DIM}`,
-              borderRadius: 10, padding: '10px 14px', marginBottom: 6, cursor: 'pointer',
-            }}>
-              <div style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 700 }}>{a.unit?.toUpperCase() ?? 'COMPONENT'}</div>
-              <div style={{ color: MED, fontSize: 10, lineHeight: 1.5, marginTop: 2 }}>{(a.description ?? '').substring(0, 80)}{(a.description?.length ?? 0) > 80 ? '…' : ''}</div>
+        </div>
+      </div>
+
+      {/* ── LIGHT BODY ── */}
+      <div style={{ padding: '22px 18px 6px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 9 }}>
+          {stats.map(([v, l, c]) => (
+            <div key={l} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 13, padding: '13px 6px', textAlign: 'center', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+              <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 700, lineHeight: 1, color: c }}>{v}</div>
+              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.12em', color: P.muted, marginTop: 6 }}>{l}</div>
             </div>
           ))}
         </div>
-      )}
+        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: P.ink, color: '#fff', border: 'none', borderRadius: 13, padding: 15, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+          View full report <span style={{ color: P.bright }}>→</span>
+        </button>
+      </div>
 
-      {/* The four screens (the home dashboard) */}
-      <div style={{ padding: '16px 16px 12px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {pillars.map(([tab, icon, label, color, count]) => {
-            const lit = Number(count) > 0;
-            return (
-            <button key={tab} onClick={() => onTabChange(tab)} style={{
-              background: CARD, border: `1px solid ${lit ? color + '40' : BORDER}`, borderRadius: 14,
-              padding: '18px 16px', textAlign: 'left', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', gap: 10,
-              boxShadow: lit ? `0 0 20px ${color}1f` : 'none',
-            }}>
-              <Icon name={icon} size={22} color={color} />
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>{label}</span>
-                <span style={{ color, fontSize: 18, fontWeight: 900, lineHeight: 1, textShadow: lit ? `0 0 12px ${color}` : 'none' }}>{count}</span>
-              </div>
-            </button>
-            );
-          })}
+      {/* Ask Ledrix — dark premium card with the VAL orb (opens the assistant) */}
+      <div style={{ margin: '14px 18px 0' }}>
+        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 18, padding: '20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 62, height: 62, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
+            background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.4), 0 0 26px rgba(34,227,255,0.35)' }}>
+            <ValMark size={40} color="#22E3FF" />
+          </button>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>Ask Ledrix about your home</div>
+            <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: 13, lineHeight: 1.5, marginTop: 4 }}>Is it urgent? Can I DIY it? What should I budget? Get answers drawn straight from your home.</div>
+          </div>
         </div>
       </div>
 
-      {/* Property Passport — slimmed to a single confident line */}
-      <div style={{ margin: '0 16px 16px', display: 'flex', alignItems: 'center', gap: 10,
-        background: `${ACCENT}06`, border: `1px solid ${ACCENT}1c`, borderRadius: 12, padding: '12px 14px' }}>
-        <Icon name="docs" size={16} color={ACCENT} />
-        <p style={{ color: TEXT, fontSize: 10.5, lineHeight: 1.55, margin: 0 }}>
-          <span style={{ color: ACCENT, fontWeight: 800 }}>Property Passport.</span> Permanently linked to this home and transfers to every future owner.
+      {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}
+      <div style={{ margin: '14px 18px 0' }}>
+        <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
+      </div>
+
+      {/* Needs attention — top safety/major, light cards */}
+      {urgent.length > 0 && (
+        <div style={{ padding: '18px 18px 2px' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: PRIO.major.report, fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Needs attention</div>
+          {urgent.map((a, i) => {
+            const pr = priorityOf(a);
+            return (
+            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `3px solid ${pr.report}`, borderRadius: 12, padding: '12px 15px', marginBottom: 8, cursor: 'pointer', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+              <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.06em', color: pr.report, fontWeight: 700, textTransform: 'uppercase' }}>{pr.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
+              <div style={{ color: '#33454B', fontSize: 13, lineHeight: 1.5, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
+            </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Section tiles */}
+      <div style={{ padding: '16px 18px 10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {pillars.map(([tab, icon, label, count]) => (
+            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 15, padding: '17px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 11, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+              <Icon name={icon} size={20} color={P.cyan} />
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{label}</span>
+                <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.cyan }}>{count}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* The Carfax line */}
+      <div style={{ margin: '4px 18px 20px', display: 'flex', alignItems: 'center', gap: 11, background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 13, padding: '13px 15px' }}>
+        <Icon name="docs" size={16} color={P.cyan} />
+        <p style={{ color: '#2A4247', fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
+          <b style={{ color: P.cyan }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
         </p>
       </div>
 
@@ -2359,7 +2363,7 @@ export default function SharePage() {
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
 
-      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} />}
+      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
