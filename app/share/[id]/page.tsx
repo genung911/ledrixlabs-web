@@ -1858,12 +1858,28 @@ const manualUrl = (s: Spec) => {
 };
 const yearOf = (s: Spec) => { const m = (s.material ?? '').match(/\b(19|20)\d{2}\b/); return m ? m[0] : null; };
 
-function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
-  const [specsOpen, setSpecsOpen] = useState(false);
-  const confirmedSpecs = specs.filter(s => s.status === 'confirmed');
-  const appliances     = confirmedSpecs.filter(isAppliance);
-  const materialSpecs  = confirmedSpecs.filter(s => !isAppliance(s));
+function DocsTab({ record }: { record: HomeRecord }) {
+  const shareId = record.share_id;
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
+  const [docs, setDocs] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const loadDocs = useCallback(async () => {
+    setDocs(await supaGet<any>(`home_documents?share_id=eq.${encodeURIComponent(shareId)}&order=created_at.desc`));
+  }, [shareId]);
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return; e.target.value = '';
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', f); fd.append('shareId', shareId);
+      const r = await fetch('/api/docs', { method: 'POST', body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.url) { await supaPost('home_documents', [{ share_id: shareId, name: j.name, url: j.url, path: j.path, kind: 'other', size: j.size }]); await loadDocs(); }
+    } catch { /* noop */ }
+    setUploading(false);
+  };
+  const removeDoc = async (d: any) => { await supaDelete('home_documents', `id=eq.${d.id}`); await loadDocs(); };
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
@@ -1943,58 +1959,28 @@ function DocsTab({ record, specs }: { record: HomeRecord; specs: Spec[] }) {
         </div>
       </div>
 
-      {/* Appliances & Manuals — every manual + warranty in one place */}
-      {appliances.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>APPLIANCES &amp; MANUALS</div>
-          <p style={{ color: DIM, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
-            Your equipment, captured at inspection — the manual a tap away. Keep these for warranty &amp; service calls.
-          </p>
-          {appliances.map((s, i) => {
-            const yr = yearOf(s);
-            const age = yr ? new Date().getFullYear() - Number(yr) : null;
-            return (
-              <div key={i} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
-                <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 5 }}>{(s.category ?? 'EQUIPMENT').toUpperCase()}</div>
-                <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, marginBottom: yr ? 4 : 12 }}>{s.material}</div>
-                {yr && (
-                  <div style={{ color: MED, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>
-                    Installed ~{yr}{age != null && age >= 0 ? ` · about ${age} yr${age === 1 ? '' : 's'} old` : ''}
-                  </div>
-                )}
-                <a href={manualUrl(s)} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${CYAN}15`, border: `1px solid ${CYAN}44`, color: CYAN, borderRadius: 9, padding: '9px 14px', fontSize: 10, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>
-                  FIND MANUAL ↗
-                </a>
-              </div>
-            );
-          })}
+      {/* Your documents — manuals, receipts, warranties, uploads */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <span style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>YOUR DOCUMENTS</span>
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '8px 12px', fontSize: 9, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
         </div>
-      )}
-
-      {/* Material specs */}
-      {materialSpecs.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <button onClick={() => setSpecsOpen(o => !o)} style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 14px',
-            borderBottom: `1px solid ${BORDER}`,
-          }}>
-            <span style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>MATERIAL SPECS</span>
-            <span style={{ color: DIM, fontSize: 14 }}>{specsOpen ? '−' : '+'}</span>
-          </button>
-          {specsOpen && (
-            <div style={{ paddingTop: 14 }}>
-              {materialSpecs.map((s, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: `1px solid ${BORDER}22` }}>
-                  <span style={{ color: DIM, fontSize: 9, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{(s.category ?? '').toUpperCase()}</span>
-                  <span style={{ color: TEXT, fontSize: 11, fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>{s.material ?? '—'}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.heic" style={{ display: 'none' }} />
+        <p style={{ color: DIM, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
+          Appliance manuals, receipts, warranties — anything about your home. Kept with the record and passed to every future owner.
+        </p>
+        {docs.length === 0 ? (
+          <div style={{ background: CARD, border: `1px dashed ${BORDER}`, borderRadius: 12, padding: '20px 16px', textAlign: 'center', color: DIM, fontSize: 11, lineHeight: 1.6 }}>
+            No documents yet. Tap Upload to add a manual, receipt, or warranty.
+          </div>
+        ) : docs.map(d => (
+          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
+            <Icon name="docs" size={18} color={ACCENT} />
+            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
+            <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>
+          </div>
+        ))}
+      </div>
 
       {/* Disclaimer */}
       <div style={{ padding: '12px 16px', background: `${WARN}08`, border: `1px solid ${WARN}22`, borderRadius: 10, marginBottom: 8 }}>
@@ -2687,7 +2673,7 @@ export default function SharePage() {
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} access={access} onUnlock={() => setSubOpen(true)} />}
-      {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
+      {tab === 'docs'      && <DocsTab record={record} />}
       {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
       <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
