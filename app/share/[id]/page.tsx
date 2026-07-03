@@ -392,10 +392,31 @@ function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: s
 }
 
 // ─── FindingCard → opens the full homeowner card (price · pros · videos · Ask Ledrix) ──
+// Resolve an anomaly's photo to a loadable URL: absolute stays as-is; a private evidence
+// storage path routes through the /api/photo signing proxy; a never-uploaded file:// → none.
+function photoUrl(uri?: string | null): string | null {
+  if (!uri) return null;
+  if (/^https?:\/\//.test(uri)) return uri;
+  if (uri.startsWith('file')) return null;
+  return `/api/photo?path=${encodeURIComponent(uri)}`;
+}
+
+// Fullscreen image viewer — tap anywhere or ✕ to close.
+function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  return (
+    <div onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.93)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+      <button aria-label="Close" style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', right: 16, width: 40, height: 40, borderRadius: 20, border: 'none', background: 'rgba(255,255,255,0.16)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer' }}>✕</button>
+    </div>
+  );
+}
+
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
   const p = priorityOf(a);
   const color = p.color;
   const [open, setOpen] = useState(false);
+  const img = photoUrl(a.imageUri);
   return (
     <>
       <div onClick={() => setOpen(true)} style={{
@@ -410,9 +431,9 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
             {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
           {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
         </div>
-        {a.imageUri && (
+        {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={a.imageUri} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: `1px solid ${BORDER}`, marginBottom: 8 }} />
+          <img src={img} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: `1px solid ${BORDER}`, marginBottom: 8 }} />
         )}
         <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, margin: 0 }}>{a.description ?? ''}</p>
         <div style={{ marginTop: 6, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP TO OPEN →</div>
@@ -438,6 +459,8 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
   const [price, setPrice] = useState<string | null>(staticCost);
   const [priceSrc, setPriceSrc] = useState<'local' | 'static' | null>(staticCost ? 'static' : null);
   const [priceLoading, setPriceLoading] = useState(false);
+  const [zoom, setZoom] = useState<string | null>(null);
+  const img = photoUrl(a.imageUri);
 
   const trade = (a.prosToCall && a.prosToCall !== 'N/A' ? a.prosToCall : a.unit) || 'home repair contractor';
   const where = zip || cityState || '';
@@ -514,10 +537,11 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           <span style={{ background: `${color}18`, color, fontSize: 8, fontWeight: 900, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, border: `1px solid ${color}44`, fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: MED, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
-        {a.imageUri && (
+        {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={a.imageUri} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14 }} />
+          <img src={img} onClick={() => setZoom(img)} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14, cursor: 'zoom-in' }} />
         )}
+        {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
         <h3 style={{ color: TEXT, fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
         {a.location && <div style={{ color: DIM, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>{a.location}</div>}
         <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
@@ -1445,7 +1469,7 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
   const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
   return (
     <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `4px solid ${color}`, borderRadius: 12, padding: 16, marginBottom: 12, display: 'flex', gap: 14, boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
-      {a.imageUri ? <img src={a.imageUri} alt="" style={{ width: 104, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
+      {photoUrl(a.imageUri) ? <img src={photoUrl(a.imageUri)!} alt="" style={{ width: 104, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 5 }}>
           <span style={{ background: `${color}14`, color, border: `1px solid ${color}33`, fontSize: 10, fontWeight: 800, letterSpacing: 0.5, padding: '3px 9px', borderRadius: 6 }}>{label}</span>
