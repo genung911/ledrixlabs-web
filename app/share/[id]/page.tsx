@@ -1069,12 +1069,6 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
   const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
   const cover = record.cover_url;
-  const stats: [number | string, string, string][] = [
-    [score, 'HEALTH', P.cyan],
-    [prioCount.safety ?? 0, 'SAFETY', (prioCount.safety ?? 0) > 0 ? PRIO.safety.report : P.faint],
-    [prioCount.major ?? 0,  'MAJOR',  (prioCount.major ?? 0)  > 0 ? PRIO.major.report  : P.faint],
-    [anomalies.length,      'FINDINGS', P.text],
-  ];
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Full report', anomalies.length],
     ['findings', 'findings', 'Findings', anomalies.length],
@@ -1113,15 +1107,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
       {/* ── LIGHT BODY ── */}
       <div style={{ padding: '22px 18px 6px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 9 }}>
-          {stats.map(([v, l, c]) => (
-            <div key={l} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 13, padding: '13px 6px', textAlign: 'center', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
-              <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 700, lineHeight: 1, color: c }}>{v}</div>
-              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.12em', color: P.muted, marginTop: 6 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => onTabChange('report')} style={{ marginTop: 14, width: '100%', background: P.ink, color: '#fff', border: 'none', borderRadius: 13, padding: 15, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+        <button onClick={() => onTabChange('report')} style={{ width: '100%', background: P.ink, color: '#fff', border: 'none', borderRadius: 13, padding: 15, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
           View full report <span style={{ color: P.bright }}>→</span>
         </button>
       </div>
