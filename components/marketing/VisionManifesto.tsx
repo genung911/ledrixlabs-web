@@ -7,10 +7,12 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { LedrixEye } from '@/components/LedrixEye';
 import { GlowButton } from './ui/GlowButton';
+import { GridBackground } from './ui/GridBackground';
 
 export function VisionManifesto() {
   return (
     <section id="vision" className="relative isolate overflow-hidden bg-ink pb-28 pt-36 text-white sm:pb-36 sm:pt-44">
+      <GridBackground />
       {/* soft accent glow behind the statement */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[28rem] w-[44rem] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-[140px]" />
 

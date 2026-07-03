@@ -3,14 +3,11 @@
 // Hero — bold typography over the animated grid, staggered reveal, glowing CTAs.
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
-import { GridBackground } from './ui/GridBackground';
 import { GlowButton } from './ui/GlowButton';
 
 export function Hero() {
   return (
     <section className="relative isolate flex min-h-[92svh] items-center overflow-hidden bg-ink text-white">
-      <GridBackground />
-
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-6 text-center">
         <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center">
           {/* eyebrow */}

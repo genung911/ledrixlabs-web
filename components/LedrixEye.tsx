@@ -14,20 +14,20 @@ export function LedrixEye({ size = 96, color = '#00F3FF', className = '' }: { si
       <circle cx={52} cy={40} r={9.5} strokeWidth={2.4} strokeDasharray="40 16" {...common} />
       {/* pupil */}
       <circle cx={52} cy={40} r={4.6} fill={color} />
-      {/* circuit traces + nodes — left inner corner */}
-      <line x1={34} y1={33} x2={26} y2={33} {...trace} />
-      <line x1={26} y1={33} x2={21} y2={28} {...trace} />
-      <circle cx={19.5} cy={27} r={2.3} fill={color} />
-      <line x1={34} y1={47} x2={26} y2={47} {...trace} />
-      <line x1={26} y1={47} x2={21} y2={52} {...trace} />
-      <circle cx={19.5} cy={53} r={2.3} fill={color} />
+      {/* circuit traces + nodes — left inner corner (pulled inside the almond so nothing protrudes) */}
+      <line x1={34} y1={34} x2={29} y2={34} {...trace} />
+      <line x1={29} y1={34} x2={25} y2={32} {...trace} />
+      <circle cx={24} cy={31} r={2.3} fill={color} />
+      <line x1={34} y1={46} x2={29} y2={46} {...trace} />
+      <line x1={29} y1={46} x2={25} y2={48} {...trace} />
+      <circle cx={24} cy={49} r={2.3} fill={color} />
       {/* circuit traces + nodes — right inner corner (mirror) */}
-      <line x1={70} y1={33} x2={78} y2={33} {...trace} />
-      <line x1={78} y1={33} x2={83} y2={28} {...trace} />
-      <circle cx={84.5} cy={27} r={2.3} fill={color} />
-      <line x1={70} y1={47} x2={78} y2={47} {...trace} />
-      <line x1={78} y1={47} x2={83} y2={52} {...trace} />
-      <circle cx={84.5} cy={53} r={2.3} fill={color} />
+      <line x1={70} y1={34} x2={75} y2={34} {...trace} />
+      <line x1={75} y1={34} x2={79} y2={32} {...trace} />
+      <circle cx={80} cy={31} r={2.3} fill={color} />
+      <line x1={70} y1={46} x2={75} y2={46} {...trace} />
+      <line x1={75} y1={46} x2={79} y2={48} {...trace} />
+      <circle cx={80} cy={49} r={2.3} fill={color} />
     </svg>
   );
 }
