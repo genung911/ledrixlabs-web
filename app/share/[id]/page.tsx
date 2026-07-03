@@ -992,6 +992,60 @@ function Footer() {
 }
 
 // ─── HOME TAB ─────────────────────────────────────────────────────────────────
+// ─── PhotoAnalyze — homeowner snaps a photo, Ledrix analyzes it (premium) ────────
+function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock: () => void; shareId: string }) {
+  const [busy, setBusy]       = useState(false);
+  const [result, setResult]   = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [err, setErr]         = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pick = () => { if (!access) { onUnlock(); return; } fileRef.current?.click(); };
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    e.target.value = '';
+    setErr(null); setResult(null); setBusy(true);
+    try {
+      const img = await compressPhoto(f);
+      setPreview(img);
+      const { data } = await supabase.auth.getSession();
+      const resp = await fetch('/api/ledrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        body: JSON.stringify({ mode: 'analyze', image: img, shareId }),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (resp.ok && j.text) setResult(String(j.text));
+      else setErr(j.error || 'Ledrix couldn’t analyze that photo.');
+    } catch { setErr('Couldn’t read that photo.'); }
+    setBusy(false);
+  };
+  const close = () => { setResult(null); setErr(null); setPreview(null); };
+
+  return (
+    <>
+      <button onClick={pick} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 15, fontSize: 14, fontWeight: 700, color: TEXT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+        <span style={{ fontSize: 17 }}>📷</span> Analyze a photo with Ledrix
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: 'none' }} />
+      {(busy || result || err) && (
+        <div onClick={() => { if (!busy) close(); }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '20px 20px 0 0', padding: '20px 20px 28px', maxHeight: '86vh', overflowY: 'auto' }}>
+            <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Ledrix · Photo analysis</div>
+            {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14 }} />}
+            {busy
+              ? <div style={{ color: MED, fontSize: 14, padding: '8px 0' }}>Ledrix is looking at your photo…</div>
+              : err
+              ? <div style={{ color: CRITICAL, fontSize: 14 }}>{err}</div>
+              : <div style={{ color: TEXT, fontSize: 15, lineHeight: 1.6 }}>{result}</div>}
+            {!busy && <button onClick={close} style={{ marginTop: 16, width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Done</button>}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange, access, shareId, onUnlock, onAsk }: {
   record: HomeRecord; anomalies: Anomaly[];
   projects: Project[]; reminders: Reminder[]; repairs: RepairRow[];
@@ -1081,6 +1135,11 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
             <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: 13, lineHeight: 1.5, marginTop: 4 }}>Is it urgent? Can I DIY it? What should I budget? Get answers drawn straight from your home.</div>
           </div>
         </div>
+      </div>
+
+      {/* Analyze a photo — homeowner vision (premium) */}
+      <div style={{ margin: '10px 18px 0' }}>
+        <PhotoAnalyze access={access} onUnlock={onUnlock} shareId={shareId} />
       </div>
 
       {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}

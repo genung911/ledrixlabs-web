@@ -53,9 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `You've used today's free Ledrix questions (${DAILY_CAP}). It resets tomorrow.` }, { status: 429 });
   }
 
-  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'price'; messages?: Msg[]; finding?: string };
+  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'price' | 'analyze'; messages?: Msg[]; finding?: string; image?: string; question?: string };
   try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
-  const { shareId, mode = 'chat', messages = [], finding = '' } = payload;
+  const { shareId, mode = 'chat', messages = [], finding = '', image = '', question = '' } = payload;
+  if (mode === 'analyze' && !/^data:image\/|^https?:\/\//.test(image)) return NextResponse.json({ error: 'No photo to analyze.' }, { status: 400 });
 
   // 2) Property context — fetched server-side, never trusted from the client.
   let rec: any = null;
@@ -76,19 +77,23 @@ export async function POST(req: NextRequest) {
     ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: the home's overall condition, the 1-2 things that matter most, and what to plan for. No alarmism.\n\n${ctx}`
     : mode === 'price'
     ? `You are a home-repair cost estimator with US ZIP-level pricing knowledge. Using local labor + material rates for ${loc}, estimate the typical cost a homeowner would pay a licensed contractor to repair/remediate the finding. Reply with ONLY a dollar range like "$X–$Y" — no words, no explanation.`
+    : mode === 'analyze'
+    ? `You are Ledrix, the homeowner's home assistant for this property. ${honesty} The homeowner has photographed something in or around their home. In plain language: say what it is, assess its condition from what's visible, flag any safety or maintenance concern, and give one practical next step. Be honest about what you can't tell from a photo, and recommend a licensed pro when it warrants one. 3-5 sentences, never alarmist.\n\n${ctx}`
     : `You are Ledrix, the homeowner's friendly home assistant for this property. ${honesty} Keep answers concise.\n\n${ctx}`;
+
+  const userMsgs: any[] =
+    mode === 'insight' ? [{ role: 'user', content: 'Give me a short insight about my home.' }]
+    : mode === 'price' ? [{ role: 'user', content: `Finding: ${String(finding).slice(0, 400)}` }]
+    : mode === 'analyze' ? [{ role: 'user', content: [
+        { type: 'text', text: (question || 'What is this, and is it something I should worry about?').slice(0, 500) },
+        { type: 'image_url', image_url: { url: image } },
+      ] }]
+    : messages.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
 
   const body = {
     model: 'gpt-4o',
-    max_tokens: mode === 'insight' ? 450 : mode === 'price' ? 30 : 600,
-    messages: [
-      { role: 'system', content: system },
-      ...(mode === 'insight'
-        ? [{ role: 'user', content: 'Give me a short insight about my home.' }]
-        : mode === 'price'
-        ? [{ role: 'user', content: `Finding: ${String(finding).slice(0, 400)}` }]
-        : messages.slice(-12).map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }))),
-    ],
+    max_tokens: mode === 'insight' ? 450 : mode === 'price' ? 30 : mode === 'analyze' ? 400 : 600,
+    messages: [{ role: 'system', content: system }, ...userMsgs],
   };
 
   // 4) Forward to the gateway.
