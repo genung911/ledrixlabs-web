@@ -96,6 +96,13 @@ type RepairRow = {
   status: string; source_fp?: string; sort_order?: number;
   created_at?: string; updated_at?: string;
 };
+// The home's permanent service history (home_maintenance_log) — the Carfax spine:
+// the inspection is the baseline; every logged service/repair/improvement accrues here.
+type MaintenanceLog = {
+  id: string; share_id: string; title: string; system?: string;
+  kind?: string; note?: string; photo_url?: string; done_date: string;
+  source?: string; reminder_id?: string; created_at?: string;
+};
 
 type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report';
 
@@ -842,6 +849,8 @@ function ReminderCard({ r, onUpdate }: { r: Reminder; onUpdate: () => void }) {
 
   const complete = async (e: React.MouseEvent) => {
     e.stopPropagation(); setSaving(true);
+    // Record the completion to the permanent service history (Carfax) before advancing the schedule.
+    await supaPost('home_maintenance_log', [{ share_id: r.share_id, title: r.title, system: r.system ?? null, kind: 'service', source: 'task', reminder_id: r.id, done_date: today }]).catch(() => {});
     let update: object = { completed: true };
     if (r.recurrence) {
       const days = parseInt(r.recurrence);
@@ -865,7 +874,7 @@ function ReminderCard({ r, onUpdate }: { r: Reminder; onUpdate: () => void }) {
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor,
           flexShrink: 0, marginTop: 4 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: r.completed ? MED : '#e2e8f0', fontSize: 12, fontWeight: 700,
+          <div style={{ color: r.completed ? MED : TEXT, fontSize: 14, fontWeight: 700,
             lineHeight: 1.4, textDecoration: r.completed ? 'line-through' : 'none',
             marginBottom: 4 }}>{r.title}</div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1560,34 +1569,87 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   );
 }
 
-// ─── REMINDERS TAB ───────────────────────────────────────────────────────────
-function RemindersTab({ reminders, onRefresh }: { reminders: Reminder[]; onRefresh: () => void }) {
+// ─── LogServiceForm — quick manual entry into the service history (Carfax) ───────
+function LogServiceForm({ shareId, onSaved }: { shareId: string; onSaved: () => void }) {
+  const [open, setOpen]     = useState(false);
+  const [title, setTitle]   = useState('');
+  const [system, setSystem] = useState('');
+  const [date, setDate]     = useState(new Date().toISOString().split('T')[0]);
+  const [note, setNote]     = useState('');
+  const [saving, setSaving] = useState(false);
+  const inp: React.CSSProperties = { width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '11px 13px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+  const save = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    await supaPost('home_maintenance_log', [{ share_id: shareId, title: title.trim(), system: system.trim() || null, kind: 'service', note: note.trim() || null, done_date: date, source: 'manual' }]).catch(() => {});
+    setTitle(''); setSystem(''); setNote(''); setSaving(false); setOpen(false); onSaved();
+  };
+  if (!open) return (
+    <button onClick={() => setOpen(true)} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 13, padding: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ Log a service or improvement</button>
+  );
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 16, boxShadow: '0 1px 2px rgba(16,24,28,0.04)' }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 12 }}>Log a service or improvement</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What was done? e.g. New roof installed" style={inp} />
+        <div style={{ display: 'flex', gap: 9 }}>
+          <input value={system} onChange={e => setSystem(e.target.value)} placeholder="System (Roof, HVAC…)" style={{ ...inp, flex: 1 }} />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inp, flex: 1 }} />
+        </div>
+        <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note — contractor, cost, warranty (optional)" style={inp} />
+        <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
+          <button onClick={() => setOpen(false)} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={save} disabled={saving || !title.trim()} style={{ flex: 2, background: ACCENT, color: '#fff', border: 'none', borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: title.trim() ? 1 : 0.5 }}>{saving ? 'Saving…' : 'Add to home record'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAINTENANCE TAB — spec-driven schedule + the Carfax service history ────────
+function RemindersTab({ reminders, log, shareId, onRefresh }: { reminders: Reminder[]; log: MaintenanceLog[]; shareId: string; onRefresh: () => void }) {
   const [showCompleted, setShowCompleted] = useState(false);
   const pending   = reminders.filter(r => !r.completed);
   const completed = reminders.filter(r => r.completed);
   const shown     = showCompleted ? reminders : pending;
+  const MONO = 'Roboto Mono, monospace';
 
   return (
-    <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>REMINDERS</div>
+    <div style={{ padding: '18px 18px 28px' }}>
+      <LogServiceForm shareId={shareId} onSaved={onRefresh} />
+
+      {/* Upcoming schedule — built from THIS home's specs (Stage 3a) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 12px' }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 700, textTransform: 'uppercase' }}>Upcoming maintenance</div>
         {completed.length > 0 && (
-          <button onClick={() => setShowCompleted(v => !v)} style={{
-            background: 'none', border: `1px solid ${BORDER}`, color: DIM, borderRadius: 8,
-            padding: '5px 12px', fontSize: 8, fontWeight: 900, letterSpacing: 1, cursor: 'pointer',
-            fontFamily: 'Roboto Mono, monospace',
-          }}>{showCompleted ? 'HIDE DONE' : `+${completed.length} DONE`}</button>
+          <button onClick={() => setShowCompleted(v => !v)} style={{ background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 8, padding: '5px 12px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>{showCompleted ? 'Hide done' : `+${completed.length} done`}</button>
         )}
       </div>
       {shown.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
-          <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
-          <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: GREEN, fontFamily: 'Roboto Mono, monospace' }}>ALL CAUGHT UP</div>
-        </div>
+        <div style={{ textAlign: 'center', padding: '26px 0', color: MED, fontSize: 14 }}>All caught up.</div>
       ) : shown.sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
         return (a.due_date ?? '9999') < (b.due_date ?? '9999') ? -1 : 1;
       }).map(r => <ReminderCard key={r.id} r={r} onUpdate={onRefresh} />)}
+
+      {/* Service history — the living Carfax timeline */}
+      {log.length > 0 && (
+        <div style={{ marginTop: 28 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Service history · {log.length}</div>
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '4px 16px', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+            {log.map((e, i) => (
+              <div key={e.id} style={{ display: 'flex', gap: 12, padding: '13px 0', borderBottom: i < log.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, flexShrink: 0, width: 66, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(e.done_date)}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT }}>{e.title}</div>
+                  {(e.system || e.note) && <div style={{ fontSize: 12, color: MED, marginTop: 2 }}>{[e.system, e.note].filter(Boolean).join(' · ')}</div>}
+                </div>
+                {e.source === 'voice' && <div style={{ fontFamily: MONO, fontSize: 8, color: MED, flexShrink: 0, alignSelf: 'center' }}>VOICE</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2228,6 +2290,7 @@ export default function SharePage() {
   const [projects,  setProjects]  = useState<Project[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [repairs,   setRepairs]   = useState<RepairRow[]>([]);
+  const [log,       setLog]       = useState<MaintenanceLog[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [notFound,  setNotFound]  = useState(false);
   const [tab,       setTab]       = useState<Tab>('home');
@@ -2300,6 +2363,12 @@ export default function SharePage() {
     setReminders(data);
   }, [shareId]);
 
+  const loadLog = useCallback(async () => {
+    if (!shareId) return;
+    const data = await supaGet<MaintenanceLog>(`home_maintenance_log?share_id=eq.${encodeURIComponent(shareId)}&order=done_date.desc`);
+    setLog(data);
+  }, [shareId]);
+
   const loadRepairs = useCallback(async () => {
     if (!shareId) return;
     const data = await supaGet<RepairRow>(`home_repairs?share_id=eq.${encodeURIComponent(shareId)}&order=sort_order.asc`);
@@ -2313,7 +2382,7 @@ export default function SharePage() {
       .then(async (data: HomeRecord[]) => {
         if (!Array.isArray(data) || data.length === 0) { setNotFound(true); return; }
         const rec = data[0]; setRecord(rec);
-        await Promise.all([loadProjects(), loadReminders(), loadRepairs()]).catch(() => {});
+        await Promise.all([loadProjects(), loadReminders(), loadRepairs(), loadLog()]).catch(() => {});
         if (!seeded.current) {
           seeded.current = true;
           seedIfEmpty(shareId, rec.anomalies ?? [], rec.specs ?? [])
@@ -2323,7 +2392,7 @@ export default function SharePage() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-  }, [shareId, loadProjects, loadReminders, loadRepairs]);
+  }, [shareId, loadProjects, loadReminders, loadRepairs, loadLog]);
 
   useEffect(() => {
     if (record?.address) document.title = `${record.address} — Ledrix Home Record`;
@@ -2392,7 +2461,7 @@ export default function SharePage() {
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
-      {tab === 'reminders' && <RemindersTab reminders={reminders} onRefresh={loadReminders} />}
+      {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
 
       <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
