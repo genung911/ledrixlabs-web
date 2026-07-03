@@ -244,27 +244,49 @@ function compressPhoto(file: File): Promise<string> {
 }
 
 // ─── Maintenance reminder seed set ───────────────────────────────────────────
-function buildMaintenanceReminders(shareId: string, specs: Spec[]): object[] {
+function buildMaintenanceReminders(shareId: string, specs: Spec[], anomalies: Anomaly[] = []): object[] {
   const rem: object[] = [];
   const mk = (title: string, system: string, days: number, recurrence: string) =>
     ({ share_id: shareId, title, system, due_date: addDays(days), recurrence, completed: false, seeded: true });
 
-  // Universal — every home
-  rem.push(mk('Test smoke & CO detectors',               'Safety',    90,  '180d'));
-  rem.push(mk('Clean gutters',                            'Exterior',  60,  '180d'));
-  rem.push(mk('Clean dryer vent',                         'Laundry',   180, '365d'));
-  rem.push(mk('Inspect caulking & weatherstripping',      'Exterior',  180, '365d'));
-  rem.push(mk('Test GFCI outlets',                        'Electrical',180, '365d'));
-  rem.push(mk('Inspect roof & attic for leaks',           'Roof',      270, '365d'));
-  rem.push(mk('Replace HVAC air filter',                  'HVAC',      30,  '90d'));
-  rem.push(mk('Schedule HVAC tune-up',                    'HVAC',      180, '365d'));
+  // Presence detection — build the schedule ONLY from what the report actually recorded, so a home with
+  // no gutters never gets a "clean gutters" task, a tankless heater never gets a "flush", etc. Draw on the
+  // confirmed specs + the systems the findings touched.
+  const corpus = [
+    ...specs.filter(s => s.status === 'confirmed').map(s => `${s.category ?? ''} ${s.material ?? ''}`),
+    ...anomalies.map(a => `${a.unit ?? ''} ${a.location ?? ''}`),
+  ].join(' | ').toLowerCase();
+  const has = (...kw: string[]) => kw.some(k => corpus.includes(k));
 
-  // Spec-driven additions
-  const cats = specs.map(s => (s.category ?? '').toLowerCase());
-  if (cats.some(c => c.includes('water heater'))) {
-    rem.push(mk('Flush water heater sediment', 'Water Heater', 180, '365d'));
-    rem.push(mk('Check water heater anode rod', 'Water Heater', 365, '730d'));
+  // Universal — every home, regardless of specs
+  rem.push(mk('Test smoke & CO detectors',                'Safety',     90,  '180d'));
+  rem.push(mk('Test GFCI outlets',                        'Electrical', 180, '365d'));
+  rem.push(mk('Inspect exterior caulking & weatherstrip', 'Exterior',   180, '365d'));
+
+  // HVAC — only with heating/cooling equipment; pull the filter size if the report captured it
+  if (has('furnace', 'hvac', 'heat pump', 'air handler', 'air condition', 'a/c', 'central air', 'mini split', 'mini-split', 'condenser')) {
+    const m = corpus.match(/(\d{1,2})\s*[x×]\s*(\d{1,2})\s*[x×]\s*(\d{1,2})/);
+    const size = m ? ` (${m[1]}×${m[2]}×${m[3]})` : '';
+    rem.push(mk(`Replace HVAC air filter${size}`, 'HVAC', 30, '90d'));
+    rem.push(mk('Schedule an HVAC tune-up',        'HVAC', 180, '365d'));
   }
+
+  // Water heater — only if present; tankless gets a descale, not a flush
+  if (has('water heater', 'hot water')) {
+    if (has('tankless', 'on-demand', 'on demand')) rem.push(mk('Descale the tankless water heater', 'Water Heater', 365, '365d'));
+    else { rem.push(mk('Flush water heater sediment', 'Water Heater', 180, '365d')); rem.push(mk('Check the water heater anode rod', 'Water Heater', 365, '730d')); }
+  }
+
+  // Everything below is conditional on the home actually having it
+  if (has('gutter', 'downspout'))                                          rem.push(mk('Clean gutters & downspouts', 'Exterior', 60,  '180d'));
+  if (has('roof', 'shingle', 'asphalt', 'metal roof', 'tile roof', 'flat roof')) rem.push(mk('Inspect the roof for damage', 'Roof', 270, '365d'));
+  if (has('dryer', 'laundry'))                                             rem.push(mk('Clean the dryer vent',       'Laundry',  180, '365d'));
+  if (has('deck'))                                                         rem.push(mk('Reseal or restain the deck', 'Exterior', 300, '730d'));
+  if (has('fireplace', 'chimney', 'wood stove', 'wood-burning'))           rem.push(mk('Chimney sweep & inspection', 'Fireplace',300, '365d'));
+  if (has('sump'))                                                         rem.push(mk('Test the sump pump',         'Basement', 120, '180d'));
+  if (has('septic'))                                                       rem.push(mk('Pump the septic tank',       'Plumbing', 900, '1095d'));
+  if (has('irrigation', 'sprinkler'))                                      rem.push(mk('Winterize the irrigation',   'Exterior', 210, '365d'));
+  if (has('pool', 'spa', 'hot tub'))                                       rem.push(mk('Service the pool / spa',     'Exterior', 60,  '90d'));
 
   return rem;
 }
@@ -294,13 +316,15 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
     await supaPost('home_projects', projects);
   }
 
-  // Seed maintenance reminders — migrate old finding-style reminders on first load
-  const hasOldStyle = existRem.some(r => r.title.startsWith('Address:'));
-  if (existRem.length === 0 || hasOldStyle) {
-    if (hasOldStyle) {
-      await supaDelete('home_reminders', `share_id=eq.${encodeURIComponent(shareId)}&seeded=eq.true`);
-    }
-    const reminders = buildMaintenanceReminders(shareId, specs);
+  // Seed maintenance reminders — migrate legacy sets (old finding-style, and the pre-conditional v1
+  // universal set that always added gutters/roof/HVAC) so existing homes get the spec-conditional schedule.
+  const isLegacy = existRem.some(r =>
+    r.title.startsWith('Address:') ||
+    r.title === 'Clean gutters' || r.title === 'Inspect roof & attic for leaks' ||
+    r.title === 'Replace HVAC air filter' || r.title === 'Inspect caulking & weatherstripping');
+  if (existRem.length === 0 || isLegacy) {
+    if (isLegacy) await supaDelete('home_reminders', `share_id=eq.${encodeURIComponent(shareId)}&seeded=eq.true`);
+    const reminders = buildMaintenanceReminders(shareId, specs, anomalies);
     if (reminders.length > 0) await supaPost('home_reminders', reminders);
   }
 }
