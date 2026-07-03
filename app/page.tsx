@@ -14,10 +14,10 @@ export default function Home() {
     <div id="top" className="min-h-screen bg-ink font-sans text-white antialiased">
       <Navbar />
       <main>
-        <Hero />
+        <VisionManifesto />
         <HowItWorks />
         <BentoGrid />
-        <VisionManifesto />
+        <Hero />
         <ContactCTA />
       </main>
       <Footer />

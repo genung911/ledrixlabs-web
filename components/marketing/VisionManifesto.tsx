@@ -9,7 +9,7 @@ import { LedrixEye } from '@/components/LedrixEye';
 
 export function VisionManifesto() {
   return (
-    <section id="vision" className="relative isolate overflow-hidden border-t border-white/5 bg-ink py-28 text-white sm:py-36">
+    <section id="vision" className="relative isolate overflow-hidden bg-ink pb-28 pt-36 text-white sm:pb-36 sm:pt-44">
       {/* soft accent glow behind the statement */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[28rem] w-[44rem] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-[140px]" />
 
