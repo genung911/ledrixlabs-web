@@ -4,6 +4,7 @@ import ValOrbVoice from '@/components/ValOrbVoice';
 import { Hero } from '@/components/marketing/Hero';
 import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
+import { SampleDeliverables } from '@/components/marketing/SampleDeliverables';
 import { VisionManifesto } from '@/components/marketing/VisionManifesto';
 import { ContactCTA } from '@/components/marketing/ContactCTA';
 
@@ -17,6 +18,7 @@ export default function Home() {
         <VisionManifesto />
         <HowItWorks />
         <BentoGrid />
+        <SampleDeliverables />
         <Hero />
         <ContactCTA />
       </main>
