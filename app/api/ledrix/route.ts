@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
+import { isEntitled } from '../../../lib/entitlement';
 
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? '').replace(/\/$/, '');
 const GATEWAY_KEY = process.env.GATEWAY_KEY ?? '';
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
   const admin = createClient(SUPA_URL, SERVICE);
   const { data: { user }, error: authErr } = await admin.auth.getUser(token);
   if (authErr || !user) return NextResponse.json({ error: 'Sign in to use Ledrix.' }, { status: 401 });
+
+  // Premium gate — dormant until Stripe is configured + BILLING_ENABLED=1 (then requires a subscription).
+  if (!(await isEntitled(user.id))) return NextResponse.json({ error: 'Subscribe to unlock Ledrix.' }, { status: 402 });
 
   // Free-beta cap: bound per-user daily AI calls (cost safety).
   const used = await bumpUsage(admin, user.id);

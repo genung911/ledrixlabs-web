@@ -1897,7 +1897,7 @@ function PlanCard({ title, price, sub, highlight }: { title: string; price: stri
   );
 }
 
-function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolean; onClose: () => void; signedIn?: boolean; onSubscribe?: () => void }) {
   const [email, setEmail] = useState('');
   const [sent,  setSent]  = useState(false);
   const [busy,  setBusy]  = useState(false);
@@ -1929,7 +1929,9 @@ function SubscribeSheet({ open, onClose }: { open: boolean; onClose: () => void 
           <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
           <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
         </div>
-        {sent ? (
+        {signedIn ? (
+          <button onClick={onSubscribe} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Subscribe — {PLAN_BASE_PRICE}/mo</button>
+        ) : sent ? (
           <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
             <div style={{ color: CYAN, fontSize: 13, fontWeight: 900, marginBottom: 6 }}>Check your email ✉</div>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: ACCENT }}>{email}</b>. Tap it to unlock Ledrix.</p>
@@ -2363,9 +2365,11 @@ export default function SharePage() {
   const go   = (t: Tab) => { setHist(h => [...h, tab]); setTab(t); };
   const back = () => setHist(h => { const n = [...h]; setTab(n.pop() ?? 'home'); return n; });
 
-  // Ledrix access via Supabase magic-link auth. Phase 2: signed-in === access
-  // (Stripe subscription gating layers on in Phase 3).
+  // Ledrix premium access. Sign-in is always required; a Stripe subscription is required ONLY when
+  // billing is switched on (NEXT_PUBLIC_BILLING_ENABLED=1). Until then this is DORMANT: signed-in === access.
+  const BILLING_ON = process.env.NEXT_PUBLIC_BILLING_ENABLED === '1';
   const [session, setSession]       = useState<any>(null);
+  const [subscribed, setSubscribed] = useState(false);
   const [subOpen, setSubOpen]       = useState(false);
   const [ledrixOpen, setLedrixOpen] = useState(false);
   useEffect(() => {
@@ -2373,7 +2377,20 @@ export default function SharePage() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
-  const access = !!session;
+  useEffect(() => {
+    if (!BILLING_ON || !session?.user?.id) { setSubscribed(false); return; }
+    supabase.from('home_subscriptions').select('status').eq('user_id', session.user.id).maybeSingle()
+      .then(({ data }: any) => setSubscribed(!!data && ['active', 'trialing', 'past_due'].includes(String(data.status))));
+  }, [BILLING_ON, session]);
+  const access = !!session && (!BILLING_ON || subscribed);
+  const startCheckout = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const r = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify({ returnTo: typeof window !== 'undefined' ? window.location.pathname : '/' }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.url) window.location.href = j.url;
+    } catch { /* noop */ }
+  };
   const openLedrix = () => (access ? setLedrixOpen(true) : setSubOpen(true));
   const seeded = useRef(false);
 
@@ -2558,7 +2575,7 @@ export default function SharePage() {
           </div>
         </div>
       )}
-      <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} />
+      <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} signedIn={!!session} onSubscribe={startCheckout} />
       <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
     </div>
   );
