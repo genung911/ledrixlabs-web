@@ -6,6 +6,7 @@
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { LedrixEye } from '@/components/LedrixEye';
+import { GlowButton } from './ui/GlowButton';
 
 export function VisionManifesto() {
   return (
@@ -52,6 +53,19 @@ export function VisionManifesto() {
           that time back — you look, you talk, you confirm, and the documentation writes itself. Inspection
           stops being data entry and becomes what it always was: expert judgment about a home.
         </motion.p>
+
+        {/* CTAs — this section is the page opener, so it drives action above the fold */}
+        <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+          <GlowButton href="#demo" variant="primary">
+            Request a demo
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:translate-x-0.5">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </GlowButton>
+          <GlowButton href="#how" variant="ghost">
+            See how it works
+          </GlowButton>
+        </motion.div>
       </motion.div>
     </section>
   );
