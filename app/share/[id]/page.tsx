@@ -303,7 +303,7 @@ function buildMaintenanceReminders(shareId: string, specs: Spec[], anomalies: An
 async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[]) {
   const [existProj, existRem] = await Promise.all([
     supaGet<{id:string}>(`home_projects?share_id=eq.${encodeURIComponent(shareId)}&select=id&limit=1`),
-    supaGet<{id:string;title:string}>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&select=id,title&limit=20`),
+    supaGet<{id:string;title:string}>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&select=id,title&limit=200`),
   ]);
 
   // Seed projects from findings (once only)
@@ -324,17 +324,19 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
     await supaPost('home_projects', projects);
   }
 
-  // Seed maintenance reminders — migrate legacy sets (old finding-style, and the pre-conditional v1
-  // universal set that always added gutters/roof/HVAC) so existing homes get the spec-conditional schedule.
+  // Reconcile the spec-conditional schedule against the CURRENT specs: migrate legacy sets, then add any
+  // implied task that isn't already present. This is what makes it a LIVING schedule — a spec added after
+  // the first seed (e.g. a dryer vent added later) now gets its maintenance task, with no duplicates and
+  // nothing removed that's already there.
   const isLegacy = existRem.some(r =>
     r.title.startsWith('Address:') ||
     r.title === 'Clean gutters' || r.title === 'Inspect roof & attic for leaks' ||
     r.title === 'Replace HVAC air filter' || r.title === 'Inspect caulking & weatherstripping');
-  if (existRem.length === 0 || isLegacy) {
-    if (isLegacy) await supaDelete('home_reminders', `share_id=eq.${encodeURIComponent(shareId)}&seeded=eq.true`);
-    const reminders = buildMaintenanceReminders(shareId, specs, anomalies);
-    if (reminders.length > 0) await supaPost('home_reminders', reminders);
-  }
+  if (isLegacy) await supaDelete('home_reminders', `share_id=eq.${encodeURIComponent(shareId)}&seeded=eq.true`);
+  const implied = buildMaintenanceReminders(shareId, specs, anomalies);
+  const have = new Set((isLegacy ? [] : existRem).map(r => r.title));
+  const missing = implied.filter(r => !have.has((r as { title: string }).title));
+  if (missing.length > 0) await supaPost('home_reminders', missing);
 }
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
