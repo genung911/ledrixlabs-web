@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '10. Your Privacy Rights',
-            body: `You have the right to access, correct, or delete your personal data at any time. You may submit a deletion request from within the app under Settings → Account → Delete Account, which will initiate permanent removal of your account and associated data. For manual requests, contact us at ledrixlabs@gmail.com.\n\nCalifornia residents have additional rights under the California Consumer Privacy Act (CCPA), including the right to know what personal information we collect, the right to request deletion, and the right to opt out of the sale of personal information. We do not sell personal information. Our optional Ethix program (see the Ethix section) shares only de-identified, aggregate data that a homeowner explicitly opts into and may revoke at any time; it does not involve the sale of personal information as defined by the CCPA. You can decline simply by not opting in. To exercise your CCPA rights, contact us at the address below.\n\nResidents of other jurisdictions may have similar rights under applicable local law. We will honor all such requests to the extent required by law.`,
+            body: `You have the right to access, correct, or delete your personal data at any time. You may submit a deletion request from within the app under Settings → Account → Delete Account, which will initiate permanent removal of your account and associated data. For manual requests, contact us at kelly@ledrixlabs.com.\n\nCalifornia residents have additional rights under the California Consumer Privacy Act (CCPA), including the right to know what personal information we collect, the right to request deletion, and the right to opt out of the sale of personal information. We do not sell personal information. Our optional Ethix program (see the Ethix section) shares only de-identified, aggregate data that a homeowner explicitly opts into and may revoke at any time; it does not involve the sale of personal information as defined by the CCPA. You can decline simply by not opting in. To exercise your CCPA rights, contact us at the address below.\n\nResidents of other jurisdictions may have similar rights under applicable local law. We will honor all such requests to the extent required by law.`,
           },
           {
             title: '11. Data Breach Notification',
@@ -82,7 +82,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '15. Contact',
-            body: `For privacy-related questions, data requests, or concerns, contact us at ledrixlabs@gmail.com.`,
+            body: `For privacy-related questions, data requests, or concerns, contact us at kelly@ledrixlabs.com.`,
           },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 40 }}>

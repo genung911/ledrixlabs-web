@@ -62,7 +62,7 @@ export default function TermsOfService() {
           },
           {
             title: '10. Account',
-            body: `You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must provide accurate information when creating your account and keep it up to date. You may not share your account with other individuals. If you suspect unauthorized access to your account, notify us immediately at ledrixlabs@gmail.com.`,
+            body: `You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must provide accurate information when creating your account and keep it up to date. You may not share your account with other individuals. If you suspect unauthorized access to your account, notify us immediately at kelly@ledrixlabs.com.`,
           },
           {
             title: '11. Prohibited Use',
@@ -94,7 +94,7 @@ export default function TermsOfService() {
           },
           {
             title: '18. Contact',
-            body: `For questions about these terms, contact us at ledrixlabs@gmail.com.`,
+            body: `For questions about these terms, contact us at kelly@ledrixlabs.com.`,
           },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 40 }}>
