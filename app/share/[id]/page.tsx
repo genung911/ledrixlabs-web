@@ -1894,6 +1894,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const [docs, setDocs] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [openCat, setOpenCat] = useState<null | 'reports' | 'manual' | 'document'>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const loadDocs = useCallback(async () => {
     setDocs(await supaGet<any>(`home_documents?share_id=eq.${encodeURIComponent(shareId)}&order=created_at.desc`));
@@ -1901,12 +1902,13 @@ function DocsTab({ record }: { record: HomeRecord }) {
   useEffect(() => { loadDocs(); }, [loadDocs]);
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return; e.target.value = '';
+    const kind = openCat === 'manual' ? 'manual' : 'document';
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('file', f); fd.append('shareId', shareId);
       const r = await fetch('/api/docs', { method: 'POST', body: fd });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.url) { await supaPost('home_documents', [{ share_id: shareId, name: j.name, url: j.url, path: j.path, kind: 'other', size: j.size }]); await loadDocs(); }
+      if (r.ok && j.url) { await supaPost('home_documents', [{ share_id: shareId, name: j.name, url: j.url, path: j.path, kind, size: j.size }]); await loadDocs(); }
     } catch { /* noop */ }
     setUploading(false);
   };
