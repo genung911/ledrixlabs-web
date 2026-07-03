@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 
-const SAMPLE_PORTAL_ID = 'insp_1782765943637';   // the inspection whose live Home Portal is featured
+const SAMPLE_PORTAL_ID = 'insp_1782944826780';   // the inspection whose live Home Portal is featured
 
 export function SampleDeliverables() {
   return (
