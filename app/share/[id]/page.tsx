@@ -1912,41 +1912,62 @@ function DocsTab({ record }: { record: HomeRecord }) {
   };
   const removeDoc = async (d: any) => { await supaDelete('home_documents', `id=eq.${d.id}`); await loadDocs(); };
 
+  const manuals   = docs.filter(d => d.kind === 'manual');
+  const documents = docs.filter(d => d.kind !== 'manual' && d.kind !== 'report');
+  const hasReport = !!record.pdf_url;
+
+  // ── Category detail — open a tile to list + manage its items ──
+  if (openCat) {
+    const label = openCat === 'reports' ? 'Inspection Reports' : openCat === 'manual' ? 'Manuals' : 'Documents';
+    const items = openCat === 'manual' ? manuals : openCat === 'document' ? documents : [];
+    return (
+      <div style={{ padding: '16px 16px 0' }}>
+        <button onClick={() => setOpenCat(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', padding: '2px 0', marginBottom: 12, fontFamily: 'Roboto Mono, monospace' }}>← DOCS</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ color: ACCENT, fontSize: 12, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{label.toUpperCase()}</div>
+          {openCat !== 'reports' && (
+            <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '8px 12px', fontSize: 9, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
+          )}
+        </div>
+        <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.heic" style={{ display: 'none' }} />
+        {openCat === 'reports' ? (
+          <div style={{ background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14, padding: '16px 18px' }}>
+            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>Your full inspection report — a permanent record of this property&apos;s condition at the time of inspection.</p>
+            {record.pdf_url ? (
+              <a href={record.pdf_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 10, padding: 12, fontSize: 10, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW INSPECTION REPORT PDF ↗</a>
+            ) : (
+              <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR</div>
+            )}
+          </div>
+        ) : items.length === 0 ? (
+          <div style={{ background: CARD, border: `1px dashed ${BORDER}`, borderRadius: 12, padding: '22px 16px', textAlign: 'center', color: DIM, fontSize: 11, lineHeight: 1.6 }}>
+            {openCat === 'manual' ? 'No manuals yet. Tap Upload to add an appliance or system manual.' : 'No documents yet. Tap Upload to add a receipt, warranty, or any house file.'}
+          </div>
+        ) : items.map(d => (
+          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
+            <Icon name="docs" size={18} color={ACCENT} />
+            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
+            <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>DOCS</div>
 
-      {/* PDF notice / link */}
-      <div style={{ background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14,
-        padding: '16px 18px', marginBottom: 16 }}>
-        <div style={{ color: ACCENT, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 6 }}>
-          INSPECTION REPORT PDF
-        </div>
-        <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>
-          Your full inspection report is a permanent legal document — an immutable record of this property&apos;s condition at the time of inspection.
-          It never changes after it is generated.
-        </p>
-        {record.pdf_url ? (
-          <a
-            href={record.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'block', textAlign: 'center',
-              background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`,
-              color: ACCENT, borderRadius: 10, padding: '12px',
-              fontSize: 10, fontWeight: 900, letterSpacing: 1,
-              fontFamily: 'Roboto Mono, monospace', textDecoration: 'none',
-            }}
-          >
-            VIEW INSPECTION REPORT PDF ↗
-          </a>
-        ) : (
-          <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>
-            PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR
-          </div>
-        )}
-      </div>
+      {/* Category tiles — open one to view its items */}
+      {([['reports', 'Inspection Reports', hasReport ? 1 : 0], ['manual', 'Manuals', manuals.length], ['document', 'Documents', documents.length]] as ['reports' | 'manual' | 'document', string, number][]).map(([cat, label, count]) => (
+        <button key={label} onClick={() => setOpenCat(cat)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px', marginBottom: 10, cursor: 'pointer', textAlign: 'left' }}>
+          <Icon name="docs" size={20} color={ACCENT} />
+          <span style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 14, fontWeight: 700 }}>{label}</span>
+          <span style={{ color: DIM, fontSize: 12, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{count}</span>
+          <span style={{ color: ACCENT, fontSize: 16, lineHeight: 1 }}>›</span>
+        </button>
+      ))}
+      <div style={{ height: 6 }} />
 
       {/* Inspection record */}
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px', marginBottom: 16 }}>
@@ -1990,28 +2011,6 @@ function DocsTab({ record }: { record: HomeRecord }) {
         </div>
       </div>
 
-      {/* Your documents — manuals, receipts, warranties, uploads */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>YOUR DOCUMENTS</span>
-          <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '8px 12px', fontSize: 9, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
-        </div>
-        <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.heic" style={{ display: 'none' }} />
-        <p style={{ color: DIM, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
-          Appliance manuals, receipts, warranties — anything about your home. Kept with the record and passed to every future owner.
-        </p>
-        {docs.length === 0 ? (
-          <div style={{ background: CARD, border: `1px dashed ${BORDER}`, borderRadius: 12, padding: '20px 16px', textAlign: 'center', color: DIM, fontSize: 11, lineHeight: 1.6 }}>
-            No documents yet. Tap Upload to add a manual, receipt, or warranty.
-          </div>
-        ) : docs.map(d => (
-          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
-            <Icon name="docs" size={18} color={ACCENT} />
-            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
-            <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>
-          </div>
-        ))}
-      </div>
 
       {/* Disclaimer */}
       <div style={{ padding: '12px 16px', background: `${WARN}08`, border: `1px solid ${WARN}22`, borderRadius: 10, marginBottom: 8 }}>
