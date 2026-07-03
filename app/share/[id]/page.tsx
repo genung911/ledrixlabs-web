@@ -7,6 +7,7 @@ import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import ValOrbVoice from '@/components/ValOrbVoice';
 import { ValMark } from '@/components/ValMark';
+import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 async function supaGet<T>(path: string): Promise<T[]> {
@@ -104,7 +105,7 @@ type MaintenanceLog = {
   source?: string; reminder_id?: string; created_at?: string;
 };
 
-type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report';
+type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace',
@@ -1189,7 +1190,125 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         </p>
       </div>
 
+      {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
+      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(135deg, #0B2A30, #06181C)', border: '1px solid rgba(11,143,166,0.4)', borderRadius: 16, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13, boxShadow: '0 3px 14px rgba(6,24,28,0.18)' }}>
+        <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 12, background: 'rgba(0,243,255,0.10)', border: '1px solid rgba(0,243,255,0.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22E3FF', fontSize: 18, fontWeight: 800 }}>◇</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ color: '#EAF7F9', fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>Ethix</span>
+            <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 8, letterSpacing: '0.14em', color: '#22E3FF', border: '1px solid rgba(0,243,255,0.32)', borderRadius: 5, padding: '2px 6px' }}>YOUR DATA, YOUR CALL</span>
+          </div>
+          <p style={{ color: '#9FC2C8', fontSize: 12, lineHeight: 1.5, margin: '4px 0 0' }}>Your home data is yours. Opt in, choose what&apos;s shared, keep what it earns — and it&apos;s never personal.</p>
+        </div>
+        <span style={{ color: '#22E3FF', fontSize: 20, flexShrink: 0 }}>›</span>
+      </div>
+
       <Footer />
+    </div>
+  );
+}
+
+// ─── ETHIX TAB — the user-owned data program (opt-in, category control, $0 dashboard) ──
+function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void }) {
+  const [consent, setConsent] = useState<{ opted_in: boolean; categories: string[]; earned_cents: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const MONO = 'Roboto Mono, monospace';
+
+  const token = async () => (await supabase.auth.getSession()).data.session?.access_token ?? '';
+
+  const load = useCallback(async () => {
+    if (!access) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const r = await fetch('/api/ethix', { headers: { Authorization: `Bearer ${await token()}` } });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.consent) setConsent(j.consent);
+    } catch { /* noop */ }
+    setLoading(false);
+  }, [access]);
+  useEffect(() => { load(); }, [load]);
+
+  const optedIn = !!consent?.opted_in;
+  const cats = new Set(consent?.categories ?? []);
+
+  const save = async (opted_in: boolean, categories: string[]) => {
+    if (!access) { onUnlock(); return; }
+    setConsent({ opted_in, categories, earned_cents: consent?.earned_cents ?? 0 });   // optimistic
+    setSaving(true);
+    try {
+      const r = await fetch('/api/ethix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await token()}` }, body: JSON.stringify({ opted_in, categories }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.consent) setConsent(j.consent);
+    } catch { /* noop */ }
+    setSaving(false);
+  };
+
+  const toggleCat = (k: string) => {
+    const next = new Set(cats);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    save(true, Array.from(next));
+  };
+
+  return (
+    <div style={{ padding: '18px 18px 40px' }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Ethix · your data, your call</div>
+      <h2 style={{ color: TEXT, fontSize: 22, fontWeight: 800, letterSpacing: -0.4, margin: '0 0 8px' }}>Your data is yours.</h2>
+      <p style={{ color: MED, fontSize: 13.5, lineHeight: 1.6, margin: '0 0 18px' }}>Opt in to share only anonymized, aggregate signals about your home — never anything personal — and keep what it earns. Ledrix already makes its money on your subscription, so this isn&apos;t ours to profit from. <a href="/ethix" target="_blank" rel="noopener" style={{ color: ACCENT, fontWeight: 700 }}>How Ethix works ›</a></p>
+
+      {!access ? (
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 18, textAlign: 'center' }}>
+          <p style={{ color: MED, fontSize: 14, lineHeight: 1.6, margin: '0 0 14px' }}>Sign in to set your Ethix preferences. It&apos;s tied to your account, so only you can change it.</p>
+          <button onClick={onUnlock} style={{ background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: '12px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Sign in</button>
+        </div>
+      ) : loading ? (
+        <div style={{ color: MED, fontSize: 14, padding: '20px 0' }}>Loading your preferences…</div>
+      ) : (
+        <>
+          <div style={{ background: CARD, border: `1px solid ${optedIn ? 'rgba(11,143,166,0.4)' : BORDER}`, borderRadius: 15, padding: 16, display: 'flex', alignItems: 'center', gap: 13, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>Share anonymized home data</div>
+              <div style={{ color: MED, fontSize: 12.5, marginTop: 3 }}>{optedIn ? 'On — you’re sharing the categories below.' : 'Off — nothing is shared.'}</div>
+            </div>
+            <button onClick={() => optedIn ? save(false, []) : save(true, ETHIX_CATEGORY_KEYS)} aria-pressed={optedIn}
+              style={{ flexShrink: 0, width: 52, height: 30, borderRadius: 15, border: 'none', cursor: 'pointer', background: optedIn ? ACCENT : '#CBD5D8', position: 'relative', transition: 'background 0.15s' }}>
+              <span style={{ position: 'absolute', top: 3, left: optedIn ? 25 : 3, width: 24, height: 24, borderRadius: '50%', background: '#fff', transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+            </button>
+          </div>
+
+          {optedIn && (
+            <>
+              <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 700, textTransform: 'uppercase', margin: '22px 0 10px' }}>What you share</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                {ETHIX_CATEGORIES.map(c => {
+                  const on = cats.has(c.key);
+                  return (
+                    <div key={c.key} onClick={() => toggleCat(c.key)} style={{ background: CARD, border: `1px solid ${on ? 'rgba(11,143,166,0.4)' : BORDER}`, borderRadius: 13, padding: 14, cursor: 'pointer', display: 'flex', gap: 12 }}>
+                      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on ? ACCENT : '#CBD5D8'}`, background: on ? ACCENT : 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, marginTop: 1 }}>{on ? '✓' : ''}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{c.label}</div>
+                        <div style={{ color: MED, fontSize: 12, lineHeight: 1.5, marginTop: 3 }}><b style={{ color: GREEN, fontWeight: 700 }}>Shared:</b> {c.shares}</div>
+                        <div style={{ color: DIM, fontSize: 12, lineHeight: 1.5, marginTop: 2 }}><b style={{ fontWeight: 700 }}>Never:</b> {c.never}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 14, padding: 16, marginTop: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#2A4247', fontSize: 13, fontWeight: 700 }}>Earned so far</span>
+                  <span style={{ color: ACCENT, fontSize: 24, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>$0.00</span>
+                </div>
+                <p style={{ color: '#3C575C', fontSize: 12, lineHeight: 1.55, margin: '8px 0 0' }}>Nothing is being sold yet — we&apos;re building this carefully. Your choice is saved, and we&apos;ll ask you again before a single dollar ever changes hands. You&apos;ll see every cent.</p>
+              </div>
+
+              <button onClick={() => save(false, [])} style={{ width: '100%', marginTop: 14, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 12, padding: 13, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Turn off &amp; stop sharing</button>
+            </>
+          )}
+        </>
+      )}
+      {saving && <div style={{ color: DIM, fontSize: 11, textAlign: 'center', marginTop: 12 }}>Saving…</div>}
     </div>
   );
 }
@@ -2557,6 +2676,7 @@ export default function SharePage() {
       {tab === 'projects'  && <ProjectsTab projects={projects} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} access={access} onUnlock={() => setSubOpen(true)} />}
       {tab === 'docs'      && <DocsTab record={record} specs={specs} />}
+      {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
       <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
         <ValOrbVoice size={62} controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />

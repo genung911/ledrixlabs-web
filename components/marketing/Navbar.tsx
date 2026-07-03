@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/#how', label: 'How it works' },
   { href: '/#features', label: 'Why Ledrix' },
   { href: '/about', label: 'About' },
+  { href: '/ethix', label: 'Ethix' },
   { href: '/#demo', label: 'Contact' },
 ];
 

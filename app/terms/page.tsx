@@ -81,15 +81,19 @@ export default function TermsOfService() {
             body: `We reserve the right to suspend or terminate your account at any time for material violation of these terms, fraudulent use, or conduct that harms the platform or other users. We will provide notice of termination where reasonably practicable. You may delete your account at any time from within the app under Settings → Account → Delete Account. Upon termination, your license to use the platform immediately ceases.`,
           },
           {
-            title: '15. Changes to Terms',
+            title: '15. Ethix — Optional Data-Sharing Program',
+            body: `Ethix is an optional, opt-in program under which a homeowner using the Home App may choose to share anonymized, aggregate, non-personal signals about their home, and (in a future phase) receive a share of any proceeds those signals generate. Participation is off by default, requires the homeowner's explicit opt-in, is limited to the categories the homeowner selects, and may be revoked at any time. Ethix never shares personal or identifying information (including address, names, photos, precise location, serial numbers, costs, or free-text notes). Ledrix Labs does not profit from Ethix beyond, at most, a fully-disclosed cost-recovery fee; proceeds flow to participating homeowners. No data is sold under Ethix until the program is activated and the homeowner reconfirms consent. Full details are in our Privacy Policy.`,
+          },
+          {
+            title: '16. Changes to Terms',
             body: `We may update these Terms of Service from time to time. We will notify you of material changes through the app or via email at least 14 days before the changes take effect. Continued use of Ledrix after the effective date constitutes your acceptance of the updated terms. If you do not agree to the updated terms, you must discontinue use and may delete your account.`,
           },
           {
-            title: '16. Governing Law and Disputes',
+            title: '17. Governing Law and Disputes',
             body: `These terms are governed by the laws of the State of Idaho, United States, without regard to conflict of law principles. Any dispute arising out of or relating to these terms or your use of Ledrix shall be resolved through binding arbitration under the rules of the American Arbitration Association, conducted in Ada County, Idaho. You waive any right to participate in a class action lawsuit or class-wide arbitration against Ledrix Labs. Nothing in this section prevents either party from seeking injunctive relief in a court of competent jurisdiction to prevent irreparable harm.`,
           },
           {
-            title: '17. Contact',
+            title: '18. Contact',
             body: `For questions about these terms, contact us at ledrixlabs@gmail.com.`,
           },
         ].map(s => (

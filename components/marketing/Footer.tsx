@@ -16,6 +16,7 @@ export function Footer() {
           <a href="/#how" className="transition-colors hover:text-white">How it works</a>
           <a href="/#features" className="transition-colors hover:text-white">Why Ledrix</a>
           <a href="/about" className="transition-colors hover:text-white">About</a>
+          <a href="/ethix" className="transition-colors hover:text-white">Ethix</a>
           <a href="/#demo" className="transition-colors hover:text-white">Request a demo</a>
         </div>
       </div>
