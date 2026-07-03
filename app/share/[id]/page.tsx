@@ -1070,7 +1070,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
   const cover = record.cover_url;
   const pillars: [Tab, IconName, string, number | string][] = [
-    ['report', 'docs', 'Full report', anomalies.length],
+    ['report', 'docs', 'Current report', ''],
     ['findings', 'findings', 'Findings', anomalies.length],
     ['repairs', 'projects', 'Repair request', includedRepairs],
     ['projects', 'projects', 'Projects', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
@@ -1161,7 +1161,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
               <Icon name={icon} size={20} color={P.cyan} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>{label}</span>
-                <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.cyan }}>{count}</span>
+                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.cyan }}>{count}</span>}
               </div>
             </button>
           ))}
