@@ -8,7 +8,9 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 
-const SAMPLE_PORTAL_ID = 'insp_1782944826780';   // the inspection whose live Home Portal is featured
+const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose live Home Portal + PDF are featured
+const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxfjczuymsvmfzxnbilo.supabase.co';
+const SAMPLE_PDF_URL = `${SUPA_URL}/storage/v1/object/public/inspection-pdfs/${SAMPLE_PORTAL_ID}/report.pdf`;
 
 export function SampleDeliverables() {
   return (
@@ -67,7 +69,7 @@ export function SampleDeliverables() {
           {/* PDF report */}
           <motion.a
             variants={fadeUp}
-            href="/sample-report.html"
+            href={SAMPLE_PDF_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/25"
