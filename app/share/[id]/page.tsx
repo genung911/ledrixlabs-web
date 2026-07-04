@@ -410,6 +410,15 @@ function FLabel({ children }: { children: ReactNode }) {
   return <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 1.2, fontFamily: 'Roboto Mono, monospace', marginBottom: 2 }}>{children}</div>;
 }
 
+// The printable PDF link. Prefer the stamped pdf_url; otherwise build the public URL from share_id — the
+// exact path the app uploads report.pdf to (and the same pattern the portal already uses for report.html),
+// so the link works even when the pdf_url column wasn't stamped (race / PATCH miss).
+function pdfHref(record: HomeRecord): string | null {
+  if (record.pdf_url) return record.pdf_url;
+  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+  return record.share_id && base ? `${base}/storage/v1/object/public/inspection-pdfs/${encodeURIComponent(record.share_id)}/report.pdf` : null;
+}
+
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
   const p = priorityOf(a);
   const color = p.color;
@@ -1770,7 +1779,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             </button>
           ))}
           <span style={{ marginLeft: 'auto' }} />
-          {record.pdf_url ? <a href={record.pdf_url} target="_blank" rel="noreferrer" style={{ background: '#f1f5f9', color: C.ink, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 14px', borderRadius: 8, textDecoration: 'none' }}>⤓ PDF</a> : null}
+          {pdfHref(record) ? <a href={pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: '#f1f5f9', color: C.ink, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 14px', borderRadius: 8, textDecoration: 'none' }}>⤓ PRINT / PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
@@ -1939,7 +1948,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
 
   const manuals   = docs.filter(d => d.kind === 'manual');
   const documents = docs.filter(d => d.kind !== 'manual' && d.kind !== 'report');
-  const hasReport = !!record.pdf_url;
+  const hasReport = !!pdfHref(record);
 
   // ── Category detail — open a tile to list + manage its items ──
   if (openCat) {
@@ -1958,8 +1967,8 @@ function DocsTab({ record }: { record: HomeRecord }) {
         {openCat === 'reports' ? (
           <div style={{ background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14, padding: '16px 18px' }}>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>Your full inspection report — a permanent record of this property&apos;s condition at the time of inspection.</p>
-            {record.pdf_url ? (
-              <a href={record.pdf_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 10, padding: 12, fontSize: 10, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW INSPECTION REPORT PDF ↗</a>
+            {pdfHref(record) ? (
+              <a href={pdfHref(record)!} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 10, padding: 12, fontSize: 10, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW / PRINT REPORT PDF ↗</a>
             ) : (
               <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR</div>
             )}
