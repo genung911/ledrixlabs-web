@@ -9,7 +9,7 @@ export function Footer() {
         <div className="flex items-center gap-2.5">
           <LedrixDelta size={18} sheen />
           <span className="text-sm font-bold text-white">Ledrix</span>
-          <span className="text-sm text-slate-600">— the AI backup for licensed inspectors.</span>
+          <span className="text-sm text-slate-600">— the AI backup for home inspectors.</span>
         </div>
 
         <div className="flex items-center gap-6 text-xs">

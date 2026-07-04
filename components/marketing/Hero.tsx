@@ -55,7 +55,7 @@ export function Hero() {
 
           {/* trust line */}
           <motion.p variants={fadeUp} className="mt-12 text-xs uppercase tracking-[0.25em] text-slate-600">
-            Built for licensed inspectors · iOS &amp; Android · Powered by Ledrix Intelligence
+            Built for home inspectors · iOS &amp; Android · Powered by Ledrix Intelligence
           </motion.p>
         </motion.div>
       </div>

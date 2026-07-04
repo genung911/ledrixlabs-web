@@ -16,7 +16,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "How it's different",
-    body: "Three things set Ledrix apart: a human-in-the-loop truth engine — AI drafts, the licensed inspector verifies — making output both fast and defensible; a vision-first workflow that keeps the inspector's attention on the house, not a checklist; and the Home Portal, which turns a one-time report into an enduring homeowner asset — and a durable channel to the buyer that no PDF-based competitor offers.",
+    body: "Three things set Ledrix apart: a human-in-the-loop truth engine — AI drafts, the inspector verifies — making output both fast and defensible; a vision-first workflow that keeps the inspector's attention on the house, not a checklist; and the Home Portal, which turns a one-time report into an enduring homeowner asset — and a durable channel to the buyer that no PDF-based competitor offers.",
   },
   {
     heading: 'Technology',
@@ -50,7 +50,7 @@ export default function About() {
           .
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-slate-400 [text-wrap:balance] md:text-xl">
-          Ledrix Labs is the company behind Ledrix, an AI-assisted inspection platform for licensed home
+          Ledrix Labs is the company behind Ledrix, an AI-assisted inspection platform for home
           inspectors and the home buyers they serve. Ledrix pairs a field-first mobile app (iOS and Android)
           with Ledrix Intelligence — an AI built specifically for the built environment — to compress a full
           day&apos;s inspection-and-reporting workflow into the walkthrough itself.
