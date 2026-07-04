@@ -64,9 +64,10 @@ const TEXT     = '#16242A';   // dark ink text
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Anomaly = {
-  id?: string; description?: string; severity?: string; unit?: string;
+  id?: string; description?: string; severity?: string; unit?: string; component?: string;
   location?: string; estimatedCost?: string; recommendation?: string; prosToCall?: string;
   imageUri?: string; isSafety?: boolean;   // real synced Safety flag (app's isSafetyConcern)
+  issueTitle?: string; observationBullets?: string[];   // canonical finding card: title + bullets
 };
 type Spec = { category?: string; material?: string; status?: string; };
 type HomeRecord = {
@@ -397,6 +398,18 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+// Split a prose observation into short bullets at sentence boundaries — mirrors the app's proseToBullets
+// so a legacy finding (no observationBullets) still renders in the canonical bulleted format.
+function splitBullets(text: string): string[] {
+  const t = (text ?? '').trim();
+  if (!t) return [];
+  return t.replace(/([.!?])\s+/g, '$1').split('').map(s => s.trim()).filter(Boolean);
+}
+// Uppercase field label — matches the AnalysisConfirmSheet / PDF canonical card sections.
+function FLabel({ children }: { children: ReactNode }) {
+  return <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 1.2, fontFamily: 'Roboto Mono, monospace', marginBottom: 2 }}>{children}</div>;
+}
+
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
   const p = priorityOf(a);
   const color = p.color;
@@ -408,20 +421,40 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
         background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${color}`,
         borderRadius: 12, padding: '14px 16px', marginBottom: 8, cursor: 'pointer',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span style={{ background: `${color}18`, color, fontSize: 7, fontWeight: 900, letterSpacing: 1,
-            padding: '3px 8px', borderRadius: 99, border: `1px solid ${color}44`, whiteSpace: 'nowrap',
-            fontFamily: 'Roboto Mono, monospace' }}>{p.label}</span>
-          <span style={{ color: TEXT, fontSize: 11, fontWeight: 800, flex: 1, minWidth: 0 }}>
-            {(a.unit ?? 'COMPONENT').toUpperCase()}</span>
-          {a.location && <span style={{ color: DIM, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{a.location}</span>}
-        </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: `1px solid ${BORDER}`, marginBottom: 8 }} />
+          <img src={img} alt="" style={{ width: '100%', height: 190, objectFit: 'cover', borderRadius: 10, border: `1px solid ${BORDER}`, marginBottom: 12 }} />
         )}
-        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, margin: 0 }}>{a.description ?? ''}</p>
-        <div style={{ marginTop: 6, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP TO OPEN →</div>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <FLabel>SYSTEM</FLabel>
+            <div style={{ color: TEXT, fontSize: 12.5, fontWeight: 700 }}>{a.component || a.unit || 'Component'}</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <FLabel>PRIORITY</FLabel>
+            <div style={{ color, fontSize: 12.5, fontWeight: 800 }}>{p.label}</div>
+          </div>
+        </div>
+        {a.location && (
+          <div style={{ marginBottom: 10 }}>
+            <FLabel>LOCATION</FLabel>
+            <div style={{ color: TEXT, fontSize: 12.5, fontWeight: 600 }}>{a.location}</div>
+          </div>
+        )}
+        <div style={{ marginBottom: 10 }}>
+          <FLabel>ISSUE</FLabel>
+          <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, lineHeight: 1.3 }}>{(a.issueTitle && a.issueTitle.trim()) || a.unit || 'Finding'}</div>
+        </div>
+        <div>
+          <FLabel>OBSERVATIONS</FLabel>
+          {(a.observationBullets && a.observationBullets.length ? a.observationBullets : splitBullets(a.description ?? '')).map((b, i) => (
+            <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
+              <span style={{ color, flexShrink: 0, lineHeight: 1.5 }}>•</span>
+              <span style={{ color: TEXT, fontSize: 12, lineHeight: 1.5 }}>{b}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP FOR DETAILS →</div>
       </div>
       {open && <FindingDetailModal a={a} zip={zip} cityState={cityState} shareId={shareId} onClose={() => setOpen(false)} />}
     </>
