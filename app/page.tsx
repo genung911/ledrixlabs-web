@@ -6,6 +6,7 @@ import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
 import { SampleDeliverables } from '@/components/marketing/SampleDeliverables';
 import { VisionManifesto } from '@/components/marketing/VisionManifesto';
+import { FAQ } from '@/components/marketing/FAQ';
 import { ContactCTA } from '@/components/marketing/ContactCTA';
 
 // The Ledrix Labs homepage — the premium landing (graduated from /testwebpage). The root layout supplies
@@ -20,6 +21,7 @@ export default function Home() {
         <BentoGrid />
         <SampleDeliverables />
         <Hero />
+        <FAQ />
         <ContactCTA />
       </main>
       <Footer />
