@@ -1878,16 +1878,6 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
 }
 
 // ─── DOCS TAB ─────────────────────────────────────────────────────────────────
-// Appliances & equipment carry make/model in their material string → a manual is
-// one tap away. Material finishes (carpet/drywall/paint) are not "appliances".
-const APPLIANCE_RE = /water heater|heating system|cooling system|hvac|furnace|condenser|air handler|boiler|panel|refrigerator|fridge|range|oven|cooktop|stove|dishwasher|washer|dryer|microwave|disposal|garbage disposal|generator|sump|water softener|water filtration|pool (pump|heater)|spa|softener/i;
-const isAppliance = (s: Spec) => APPLIANCE_RE.test(`${s.category ?? ''} ${s.material ?? ''}`);
-const manualUrl = (s: Spec) => {
-  // First clause of the material is usually "Make Model" — the best manual query.
-  const q = ((s.material ?? '').split(/[,(]/)[0].trim()) || (s.category ?? '');
-  return `https://www.manualslib.com/search.php?q=${encodeURIComponent(`${q} user manual`)}`;
-};
-const yearOf = (s: Spec) => { const m = (s.material ?? '').match(/\b(19|20)\d{2}\b/); return m ? m[0] : null; };
 
 function DocsTab({ record }: { record: HomeRecord }) {
   const shareId = record.share_id;
@@ -2278,25 +2268,6 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
   );
 }
 
-function LedrixFab({ onClick }: { onClick: () => void }) {
-  // VAL orb — dark glass core, cyan Δ, layered cyan halo (matches the inspector app's
-  // capture-rail orb). Glow, not a solid fill.
-  return (
-    <button onClick={onClick} aria-label="Ask Ledrix" style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120,
-      width: 62, height: 62, borderRadius: '50%',
-      background: 'radial-gradient(circle at 50% 36%, rgba(0,243,255,0.20), rgba(8,12,14,0.92) 70%)',
-      border: `1.5px solid ${CYAN}`, cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: `0 0 0 1px rgba(0,243,255,0.22), 0 0 22px ${CYAN}70, 0 0 52px ${CYAN}30, inset 0 0 18px rgba(0,243,255,0.12)` }}>
-      <ValDeltaSVG size={28} color={CYAN} />
-    </button>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-// ─── REPAIR REQUEST TAB ──────────────────────────────────────────────────────
-// The buyer's repair request to the seller. The BUYER decides what to include and
-// owns the wording; findings + AI drafts are advisory. Reads/writes home_repairs.
 function repairRefOf(a: Anomaly, i: number): string { return a.id || `a${i}`; }
 function repairFp(a: Anomaly): string { return `${a.id ?? ''}:${a.severity ?? ''}:${(a.description ?? '').slice(0, 40)}`; }
 function repairText(r: RepairRow): string { return (r.edited_text && r.edited_text.trim()) || r.generated_text || ''; }
