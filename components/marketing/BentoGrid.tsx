@@ -19,7 +19,7 @@ const TILES: Tile[] = [
     body: 'Every capture becomes a structured finding — system, location, priority, and the spec behind it — while you’re still standing in front of it. No evening typing up the report.',
   },
   { className: '', stat: '100%', title: 'Inspector-confirmed', body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.' },
-  { className: '', stat: '6', title: 'Priority levels', body: 'Safety · Major · Minor · Maint & Improve · Typical Wear · Good — clarity clients understand.' },
+  { className: '', stat: '5', title: 'Priority levels', body: 'Major Repair · Minor Repair · Maint & Improve · Typical Wear · Good — with Safety flagged separately. Clarity clients understand.' },
   { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.' },
   { className: '', kicker: 'Deliverable', title: 'A report clients read', body: 'A clean, legal PDF and a live client home portal — generated, not assembled.' },
   {

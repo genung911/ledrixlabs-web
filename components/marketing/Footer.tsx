@@ -20,8 +20,12 @@ export function Footer() {
           <a href="/#demo" className="transition-colors hover:text-white">Request a demo</a>
         </div>
       </div>
-      <div className="mx-auto mt-8 max-w-6xl px-6 text-center text-xs text-slate-700 sm:text-left">
-        © {year} Ledrix Labs. All rights reserved.
+      <div className="mx-auto mt-8 flex max-w-6xl flex-col items-center gap-2 px-6 text-xs text-slate-700 sm:flex-row sm:justify-between">
+        <span>© {year} Ledrix Labs. All rights reserved.</span>
+        <div className="flex items-center gap-5">
+          <a href="/privacy" className="transition-colors hover:text-white">Privacy</a>
+          <a href="/terms" className="transition-colors hover:text-white">Terms</a>
+        </div>
       </div>
     </footer>
   );

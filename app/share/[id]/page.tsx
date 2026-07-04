@@ -2061,6 +2061,9 @@ function DocsTab({ record }: { record: HomeRecord }) {
 
 // ─── Ledrix (Phase 1 experience layer) ──────────────────────────────────────
 // Live chat + Insight are the paid tier. Cyan returns here ONLY as the AI accent.
+// Billing is DORMANT until NEXT_PUBLIC_BILLING_ENABLED=1. Until then the Subscribe sheet is a pure
+// sign-in prompt — no pricing surfaces (these placeholder numbers must not show pre-launch).
+const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === '1';
 // PLACEHOLDER pricing — set real numbers before launch.
 const PLAN_BASE_PRICE  = '$4.99';
 const PLAN_BASE_TOKENS = '500K tokens / mo · ~150 questions';
@@ -2102,15 +2105,19 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
         </div>
         <div style={{ color: TEXT, fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
         <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>Ask Ledrix anything about your home — what a finding means, repair priorities, costs, what to do next — and get a living AI Insight that stays current with your record. Free members get the record; Ledrix members get the intelligence.</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-          <PlanCard title="LEDRIX PLUS" price={`${PLAN_BASE_PRICE}/mo`} sub={PLAN_BASE_TOKENS} highlight />
-          <PlanCard title="PAY AS YOU GO" price={PLAN_PAYG} sub="Only pay for what you ask — no monthly commitment." />
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 18 }}>
-          <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
-          <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
-        </div>
-        {signedIn ? (
+        {BILLING_ENABLED && (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+              <PlanCard title="LEDRIX PLUS" price={`${PLAN_BASE_PRICE}/mo`} sub={PLAN_BASE_TOKENS} highlight />
+              <PlanCard title="PAY AS YOU GO" price={PLAN_PAYG} sub="Only pay for what you ask — no monthly commitment." />
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 18 }}>
+              <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
+              <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
+            </div>
+          </>
+        )}
+        {BILLING_ENABLED && signedIn ? (
           <button onClick={onSubscribe} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Subscribe — {PLAN_BASE_PRICE}/mo</button>
         ) : sent ? (
           <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>

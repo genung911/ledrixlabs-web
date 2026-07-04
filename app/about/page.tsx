@@ -20,7 +20,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: 'Technology',
-    body: 'Ledrix runs on a cloud-baseline AI architecture so every device — new or old, iOS or Android — shares one brain, with on-device acceleration as an optional enhancement. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery.',
+    body: 'Ledrix runs on a cloud-baseline AI architecture so every device — new or old, iOS or Android — shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery.',
   },
   {
     heading: 'Market & model',
