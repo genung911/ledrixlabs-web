@@ -10,10 +10,11 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 
 const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose live Home Portal + PDF are featured
-// Strip any /rest/v1 suffix — the env URL is the REST endpoint, but storage lives at the ROOT (…/storage/v1).
-// Without this the link becomes …/rest/v1/storage/… which demands an apikey → "No API key found".
-const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxfjczuymsvmfzxnbilo.supabase.co').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-const SAMPLE_PDF_URL = `${SUPA_URL}/storage/v1/object/public/inspection-pdfs/${SAMPLE_PORTAL_ID}/report.pdf`;
+// The PDF tile points at the stable /sample.pdf route, which server-side signs the
+// sample's report.pdf and redirects. This keeps working whether the inspection-pdfs
+// bucket is public or private (no raw public storage URL in the client bundle).
+// Keep SAMPLE_PORTAL_ID in sync with SAMPLE_ID in app/sample.pdf/route.ts.
+const SAMPLE_PDF_URL = '/sample.pdf';
 
 const PORTAL_POINTS = [
   'The living portal your buyer keeps — health score, findings in plain language.',

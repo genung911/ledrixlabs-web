@@ -16,7 +16,7 @@ const SEV_COLOR: Record<string, string> = { critical: CRITICAL, anomaly: WARN, c
 const SEV_LABEL: Record<string, string> = { critical: 'SAFETY', anomaly: 'DEFICIENCY', cosmetic: 'MAINTENANCE' };
 
 type Repair = { id: string; item?: string; location?: string; severity?: string; generated_text?: string; edited_text?: string; status: string; sort_order?: number };
-type Rec = { address?: string; city?: string; state?: string; zip?: string; inspection_date?: string };
+type Rec = { share_id: string; address?: string; city?: string; state?: string; zip?: string; inspection_date?: string };
 
 async function pget<T>(path: string): Promise<T[]> {
   try {
@@ -30,23 +30,27 @@ const rtext = (r: Repair) => (r.edited_text && r.edited_text.trim()) || r.genera
 
 export default function PublicRepairsPage() {
   const params  = useParams();
-  const shareId = params?.id as string;
+  const routeId = params?.id as string;            // share_token (new) or legacy share_id
   const [record,  setRecord]  = useState<Rec | null>(null);
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!shareId) { setLoading(false); return; }
+    if (!routeId) { setLoading(false); return; }
     (async () => {
-      const [recs, reps] = await Promise.all([
-        pget<Rec>(`home_records?share_id=eq.${encodeURIComponent(shareId)}&select=address,city,state,zip,inspection_date&limit=1`),
-        pget<Repair>(`home_repairs?share_id=eq.${encodeURIComponent(shareId)}&status=eq.included&order=sort_order.asc`),
-      ]);
-      setRecord(recs[0] ?? null);
+      // Resolve the record by share_token first, then fall back to the legacy share_id.
+      const SEL = 'select=share_id,address,city,state,zip,inspection_date&limit=1';
+      let recs = await pget<Rec>(`home_records?share_token=eq.${encodeURIComponent(routeId)}&${SEL}`);
+      if (recs.length === 0) recs = await pget<Rec>(`home_records?share_id=eq.${encodeURIComponent(routeId)}&${SEL}`);
+      const rec = recs[0] ?? null;
+      setRecord(rec);
+      // Repairs key on the canonical share_id (insp_ id), not the token.
+      const canonicalId = rec?.share_id ?? routeId;
+      const reps = await pget<Repair>(`home_repairs?share_id=eq.${encodeURIComponent(canonicalId)}&status=eq.included&order=sort_order.asc`);
       setRepairs(reps);
       setLoading(false);
     })();
-  }, [shareId]);
+  }, [routeId]);
 
   const sub = record ? [record.city, record.state, record.zip].filter(Boolean).join(', ') : '';
 

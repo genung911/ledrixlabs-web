@@ -75,7 +75,7 @@ type HomeRecord = {
   zip?: string; year_built?: string; sqft?: string; beds?: string; baths?: string;
   garage?: string; inspector?: string; company?: string; license_number?: string;
   inspection_date?: string; inspection_type?: string; sop_mode?: string;
-  anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string; cover_url?: string;
+  anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string; cover_url?: string; share_token?: string;
 };
 type Project = {
   id: string; share_id: string; title: string; system?: string; priority?: string;
@@ -382,7 +382,11 @@ function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: s
 // storage path routes through the /api/photo signing proxy; a never-uploaded file:// → none.
 function photoUrl(uri?: string | null): string | null {
   if (!uri) return null;
-  if (/^https?:\/\//.test(uri)) return uri;
+  if (/^https?:\/\//.test(uri)) {
+    // Finding photos live in the inspection-pdfs bucket (may be private) → sign server-side.
+    // Any other absolute URL is already public/external and passes through untouched.
+    return uri.includes('/inspection-pdfs/') ? `/api/report-asset?path=${encodeURIComponent(uri)}` : uri;
+  }
   if (uri.startsWith('file')) return null;
   return `/api/photo?path=${encodeURIComponent(uri)}`;
 }
@@ -410,13 +414,13 @@ function FLabel({ children }: { children: ReactNode }) {
   return <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 1.2, fontFamily: 'Roboto Mono, monospace', marginBottom: 2 }}>{children}</div>;
 }
 
-// The printable PDF link. Prefer the stamped pdf_url; otherwise build the public URL from share_id — the
-// exact path the app uploads report.pdf to (and the same pattern the portal already uses for report.html),
-// so the link works even when the pdf_url column wasn't stamped (race / PATCH miss).
+// The printable PDF link. Routed through the /api/report-asset signing proxy (keyed on the
+// canonical share_id storage path) so it works when the inspection-pdfs bucket is private —
+// and regardless of whether the pdf_url column was ever stamped. If pdf_url holds a full
+// public inspection-pdfs URL, the proxy normalizes it back to the object path and signs it.
 function pdfHref(record: HomeRecord): string | null {
-  if (record.pdf_url) return record.pdf_url;
-  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-  return record.share_id && base ? `${base}/storage/v1/object/public/inspection-pdfs/${encodeURIComponent(record.share_id)}/report.pdf` : null;
+  const src = record.pdf_url || (record.share_id ? `${record.share_id}/report.pdf` : '');
+  return src ? `/api/report-asset?path=${encodeURIComponent(src)}` : null;
 }
 
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
@@ -1690,8 +1694,10 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   // published to storage. Fetch it; if present, render the complete report + hide the reconstructed
   // sidebar. If not published yet, fall back to the system-grouped reconstruction below.
   const [doc, setDoc] = useState<string | null | 'none'>(null);
+  // Signed via /api/report-asset so it resolves whether the inspection-pdfs bucket is public
+  // or private (fetch below follows the 302 redirect and reads the HTML text).
   const reportUrl = record.share_id
-    ? `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '')}/storage/v1/object/public/inspection-pdfs/${encodeURIComponent(record.share_id)}/report.html`
+    ? `/api/report-asset?path=${encodeURIComponent(`${record.share_id}/report.html`)}`
     : '';
   useEffect(() => {
     if (!reportUrl) { setDoc('none'); return; }
@@ -2536,7 +2542,8 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
 export default function SharePage() {
   const params  = useParams();
-  const shareId = params?.id as string;
+  const routeId = params?.id as string;            // URL slug: a share_token (new) or legacy share_id
+  const [shareId, setShareId] = useState('');      // canonical share_id (insp_ id) — keys all child tables
 
   const [record,    setRecord]    = useState<HomeRecord | null>(null);
   const [projects,  setProjects]  = useState<Project[]>([]);
@@ -2634,48 +2641,58 @@ export default function SharePage() {
     } catch { /* mic denied / unsupported */ }
   };
 
-  const loadProjects = useCallback(async () => {
-    if (!shareId) return;
-    const data = await supaGet<Project>(`home_projects?share_id=eq.${encodeURIComponent(shareId)}&order=created_at.asc`);
+  // Child-table loaders key on the CANONICAL share_id (the insp_ id), which may differ from
+  // the URL param (a share_token). They accept an explicit id so the initial load can run with
+  // the just-resolved record's share_id before the shareId state has settled.
+  const loadProjects = useCallback(async (sid: string = shareId) => {
+    if (!sid) return;
+    const data = await supaGet<Project>(`home_projects?share_id=eq.${encodeURIComponent(sid)}&order=created_at.asc`);
     setProjects(data);
   }, [shareId]);
 
-  const loadReminders = useCallback(async () => {
-    if (!shareId) return;
-    const data = await supaGet<Reminder>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&order=due_date.asc.nullslast`);
+  const loadReminders = useCallback(async (sid: string = shareId) => {
+    if (!sid) return;
+    const data = await supaGet<Reminder>(`home_reminders?share_id=eq.${encodeURIComponent(sid)}&order=due_date.asc.nullslast`);
     setReminders(data);
   }, [shareId]);
 
-  const loadLog = useCallback(async () => {
-    if (!shareId) return;
-    const data = await supaGet<MaintenanceLog>(`home_maintenance_log?share_id=eq.${encodeURIComponent(shareId)}&order=done_date.desc`);
+  const loadLog = useCallback(async (sid: string = shareId) => {
+    if (!sid) return;
+    const data = await supaGet<MaintenanceLog>(`home_maintenance_log?share_id=eq.${encodeURIComponent(sid)}&order=done_date.desc`);
     setLog(data);
   }, [shareId]);
 
-  const loadRepairs = useCallback(async () => {
-    if (!shareId) return;
-    const data = await supaGet<RepairRow>(`home_repairs?share_id=eq.${encodeURIComponent(shareId)}&order=sort_order.asc`);
+  const loadRepairs = useCallback(async (sid: string = shareId) => {
+    if (!sid) return;
+    const data = await supaGet<RepairRow>(`home_repairs?share_id=eq.${encodeURIComponent(sid)}&order=sort_order.asc`);
     setRepairs(data);
   }, [shareId]);
 
+  // Resolve the record by the URL param (routeId), trying share_token first, then falling back
+  // to the legacy share_id (so old insp_ links + the marketing sample keep working). Everything
+  // downstream keys on the record's canonical share_id, set into shareId state here.
   useEffect(() => {
-    if (!shareId) { setLoading(false); setNotFound(true); return; }
-    fetch(`/api/proxy?path=${encodeURIComponent(`home_records?share_id=eq.${encodeURIComponent(shareId)}&limit=1`)}`)
-      .then(r => r.json())
-      .then(async (data: HomeRecord[]) => {
-        if (!Array.isArray(data) || data.length === 0) { setNotFound(true); return; }
-        const rec = data[0]; setRecord(rec);
-        await Promise.all([loadProjects(), loadReminders(), loadRepairs(), loadLog()]).catch(() => {});
-        if (!seeded.current) {
-          seeded.current = true;
-          seedIfEmpty(shareId, rec.anomalies ?? [], rec.specs ?? [])
-            .then(() => Promise.all([loadProjects(), loadReminders()]).catch(() => {}))
-            .catch(() => {});
-        }
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [shareId, loadProjects, loadReminders, loadRepairs, loadLog]);
+    if (!routeId) { setLoading(false); setNotFound(true); return; }
+    (async () => {
+      let rows = await supaGet<HomeRecord>(`home_records?share_token=eq.${encodeURIComponent(routeId)}&limit=1`);
+      if (rows.length === 0) rows = await supaGet<HomeRecord>(`home_records?share_id=eq.${encodeURIComponent(routeId)}&limit=1`);
+      if (rows.length === 0) { setNotFound(true); return; }
+      const rec = rows[0];
+      const canonicalId = rec.share_id;
+      setRecord(rec);
+      setShareId(canonicalId);
+      await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId)]).catch(() => {});
+      if (!seeded.current) {
+        seeded.current = true;
+        seedIfEmpty(canonicalId, rec.anomalies ?? [], rec.specs ?? [])
+          .then(() => Promise.all([loadProjects(canonicalId), loadReminders(canonicalId)]).catch(() => {}))
+          .catch(() => {});
+      }
+    })().catch(() => setNotFound(true)).finally(() => setLoading(false));
+    // Keyed on routeId only — loaders are called with the resolved canonical id, so they
+    // don't need to be effect deps (and including them would re-run this on shareId change).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeId]);
 
   useEffect(() => {
     if (record?.address) document.title = `${record.address} — Ledrix Home Record`;
