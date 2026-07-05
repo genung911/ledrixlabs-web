@@ -1158,8 +1158,28 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
       {/* ── LIGHT BODY ── */}
       <div style={{ padding: '22px 18px 6px' }}>
-        <button onClick={() => onTabChange('report')} style={{ width: '100%', background: P.ink, color: '#fff', border: 'none', borderRadius: 13, padding: 15, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-          View full report <span style={{ color: P.bright }}>→</span>
+        <button
+          onClick={() => onTabChange('report')}
+          aria-label="View the most recent inspection report"
+          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 16, overflow: 'hidden', display: 'block', textAlign: 'left', boxShadow: '0 12px 30px -14px rgba(0,0,0,0.45)' }}
+        >
+          <div style={{
+            position: 'relative', minHeight: 172, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '18px 18px 16px',
+            background: record.cover_url
+              ? `linear-gradient(180deg, rgba(6,14,16,0.12) 0%, rgba(6,14,16,0.55) 58%, rgba(6,14,16,0.88) 100%), url(${record.cover_url}) center/cover`
+              : 'linear-gradient(150deg,#12333C,#0C1E24)',
+          }}>
+            <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.2em', color: P.bright, marginBottom: 7 }}>INSPECTION REPORT</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: '#fff', fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 1.1 }}>View Recent Report</div>
+                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 11.5, fontWeight: 600, marginTop: 4 }}>
+                  {record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : 'Your full inspection report'}
+                </div>
+              </div>
+              <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: P.bright, color: '#04121a', display: 'grid', placeItems: 'center', fontSize: 17, fontWeight: 900 }}>→</div>
+            </div>
+          </div>
         </button>
       </div>
 
