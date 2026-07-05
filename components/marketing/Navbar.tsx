@@ -17,7 +17,10 @@ const LINKS = [
   { href: '/#demo', label: 'Contact' },
 ];
 
-export function Navbar() {
+// `overLight` — the opener is now a LIGHT stage (the isometric dollhouse), so the
+// unscrolled nav must render in ink to stay legible. Dark-hero pages (about, ethix)
+// omit the prop and keep the white-over-dark treatment.
+export function Navbar({ overLight = false }: { overLight?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -26,6 +29,9 @@ export function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Ink chrome whenever the backdrop is light (scrolled frost, or the light opener).
+  const inkChrome = scrolled || overLight;
 
   return (
     <header
@@ -36,7 +42,7 @@ export function Navbar() {
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="group flex items-center gap-2.5">
           <LedrixDelta size={22} sheen className="transition-transform duration-300 group-hover:scale-110" />
-          <span className={`text-base font-bold tracking-tight transition-colors duration-300 ${scrolled ? 'text-ink' : 'text-white'}`}>
+          <span className={`text-base font-bold tracking-tight transition-colors duration-300 ${inkChrome ? 'text-ink' : 'text-white'}`}>
             Ledrix
           </span>
         </a>
@@ -47,7 +53,7 @@ export function Navbar() {
               key={l.href}
               href={l.href}
               className={`text-sm font-medium transition-colors duration-200 ${
-                scrolled ? 'text-body hover:text-ink' : 'text-white/80 hover:text-white'
+                inkChrome ? 'text-body hover:text-ink' : 'text-white/80 hover:text-white'
               }`}
             >
               {l.label}
@@ -55,7 +61,7 @@ export function Navbar() {
           ))}
         </div>
 
-        <GlowButton href="/#demo" variant="primary" tone={scrolled ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
+        <GlowButton href="/#demo" variant="primary" tone={inkChrome ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
           Request a demo
         </GlowButton>
       </nav>
