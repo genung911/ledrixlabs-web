@@ -19,7 +19,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ValVoiceVisualizer from './ValVoiceVisualizer';
-import { ValMark } from './ValMark';
+import { LedrixDelta } from './LedrixDelta';
 
 const ACCENT = '#217BE8'; // brand blue
 
@@ -168,7 +168,7 @@ export default function ValOrbVoice({
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.22 }}
           >
-            <ValMark size={Math.round(size * 0.66)} color={t.mark} sheen={tone === 'light'} />
+            <LedrixDelta size={Math.round(size * 0.42)} color={t.mark} sheen={tone === 'light'} />
           </motion.div>
         )}
       </AnimatePresence>
