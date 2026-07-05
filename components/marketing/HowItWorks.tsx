@@ -43,7 +43,7 @@ const STEPS: Array<{
   },
   {
     n: '03',
-    img: '/screenshots/IMG_5573.jpeg',
+    img: '/screenshots/deliver-screen.jpg',
     fit: 'contain',
     title: 'Deliver',
     body: 'It compiles into a clean, legal PDF and a client home portal — before you leave the driveway.',
