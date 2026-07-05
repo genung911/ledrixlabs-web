@@ -24,11 +24,11 @@ export function Hero() {
             variants={fadeUp}
             className="max-w-4xl text-5xl font-bold leading-[1.04] tracking-tight [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
-            Inspect the house, not the{' '}
+            The future of inspecting is{' '}
             <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(0,243,255,0.25)]">
-              template
+              finally here
             </span>
-            .
+            !
           </motion.h1>
 
           {/* subhead */}
@@ -36,8 +36,9 @@ export function Hero() {
             variants={fadeUp}
             className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 [text-wrap:balance] md:text-xl"
           >
-            Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject.
-            Inspector-verified findings, an instant legal report, and a client home portal.
+            Ledrix drafts the finding the moment you capture the photo. You confirm, adjust, or reject.
+            Always inspector-verified findings, an instant legal report, and a client home portal to blow
+            agents and clients away.
           </motion.p>
 
           {/* CTAs */}
