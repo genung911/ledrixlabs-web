@@ -40,9 +40,9 @@ export function VisionManifesto() {
           variants={fadeUp}
           className="text-4xl font-bold leading-[1.06] tracking-tight [text-wrap:balance] sm:text-5xl md:text-6xl"
         >
-          The best inspection isn&apos;t a longer report. It&apos;s your{' '}
+          Inspect the home, not the{' '}
           <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(0,243,255,0.25)]">
-            eyes, amplified
+            template
           </span>
           .
         </motion.h2>
@@ -51,9 +51,15 @@ export function VisionManifesto() {
           variants={fadeUp}
           className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-400 [text-wrap:balance] md:text-xl"
         >
-          For a century, the job meant a clipboard and a two-hour write-up at the kitchen table. Ledrix gives
-          that time back — you look, you talk, you confirm, and the documentation writes itself. Inspection
-          stops being data entry and becomes what it always was: expert judgment about a home.
+          True inspections require your eyes and your mind, locked onto the structure — not a screen. Ledrix keeps
+          you vision first. By automating the sorting, organizing, and checklist tracking in the background, Ledrix
+          ensures you never miss a defect, without ever forcing you to look down.
+        </motion.p>
+        <motion.p
+          variants={fadeUp}
+          className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-400 [text-wrap:balance] md:text-xl"
+        >
+          Stop managing a template. Get back into your flow, and bring expert judgment back to the forefront.
         </motion.p>
 
         {/* CTAs — this section is the page opener, so it drives action above the fold */}

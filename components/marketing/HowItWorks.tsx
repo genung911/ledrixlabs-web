@@ -47,7 +47,7 @@ export function HowItWorks() {
         <SectionHeading
           eyebrow="How it works"
           title="From the photo to the report, in one pass."
-          sub="Ledrix proposes; you confirm. The human-in-the-loop truth engine is the product — not a setting."
+          sub="Ledrix suggests, you decide. The human-in-the-loop truth engine is the product, not a setting. Nothing makes it to the report without a human in the loop."
         />
 
         <motion.ol
