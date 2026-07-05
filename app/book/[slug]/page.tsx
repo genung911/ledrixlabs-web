@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
-const ACCENT  = '#00F3FF';
+const ACCENT  = '#217BE8';
 const BG      = '#080808';
 const CARD    = '#0e0e0e';
 const BORDER  = '#1a1a1a';
@@ -219,8 +219,8 @@ export default function BookingPage() {
                   key={pkg.id}
                   onClick={() => setPkgId(pkg.id)}
                   style={{
-                    background:    pkgId === pkg.id ? 'rgba(0,243,255,0.06)' : CARD,
-                    border:        `1px solid ${pkgId === pkg.id ? 'rgba(0,243,255,0.35)' : BORDER}`,
+                    background:    pkgId === pkg.id ? 'rgba(33,123,232,0.06)' : CARD,
+                    border:        `1px solid ${pkgId === pkg.id ? 'rgba(33,123,232,0.35)' : BORDER}`,
                     borderRadius:  14,
                     padding:       '16px 18px',
                     display:       'flex',

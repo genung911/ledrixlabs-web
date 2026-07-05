@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-const ACCENT = '#00F3FF';
+const ACCENT = '#217BE8';
 const BG     = '#080808';
 const CARD   = '#0e0e0e';
 const BORDER = '#1a1a1a';

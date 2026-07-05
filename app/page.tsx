@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
-import ValOrbVoice from '@/components/ValOrbVoice';
+import MarketingOrb from '@/components/MarketingOrb';
 import { Hero } from '@/components/marketing/Hero';
 import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
@@ -25,9 +25,7 @@ export default function Home() {
         <ContactCTA />
       </main>
       <Footer />
-      <div className="fixed bottom-6 right-6 z-50">
-        <ValOrbVoice size={60} />
-      </div>
+      <MarketingOrb />
     </div>
   );
 }

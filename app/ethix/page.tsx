@@ -27,12 +27,12 @@ export default function Ethix() {
 
         {/* Intro — the reframe */}
         <span className="mb-7 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent/90 backdrop-blur">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#00F3FF]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#217BE8]" />
           Ethix · your data, your call
         </span>
         <h1 className="text-4xl font-bold leading-[1.08] tracking-tight [text-wrap:balance] sm:text-5xl">
           Your data isn’t a company’s to fight over.{' '}
-          <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(0,243,255,0.25)]">
+          <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(33,123,232,0.25)]">
             It’s yours.
           </span>
         </h1>
@@ -105,7 +105,7 @@ export default function Ethix() {
 
         {/* Closer */}
         <section className="mt-20 flex flex-col items-center border-t border-white/5 pt-16 text-center">
-          <div className="mb-7 drop-shadow-[0_0_28px_rgba(0,243,255,0.4)]">
+          <div className="mb-7 drop-shadow-[0_0_28px_rgba(33,123,232,0.4)]">
             <LedrixEye size={88} />
           </div>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">This is what ethical looks like.</h2>

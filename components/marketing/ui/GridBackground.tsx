@@ -1,10 +1,10 @@
 'use client';
 
 // GridBackground — the ambient grid behind feature sections.
-//   variant="dark"  → the futuristic near-black band: white hairlines, a slow cyan
+//   variant="dark"  → the futuristic near-black band: white hairlines, a slow blue
 //                     aurora, and a vignette into black (the Hero "hero moment").
 //   variant="light" → a whisper-quiet slate hairline grid on the off-white ground,
-//                     with a faint cyan bloom. No vignette, nothing loud.
+//                     with a faint blue bloom. No vignette, nothing loud.
 // Respects prefers-reduced-motion (the aurora holds still).
 import { motion, useReducedMotion } from 'framer-motion';
 

@@ -16,13 +16,13 @@ type P = [number, number];
 
 export function LedrixDelta({
   size = 22,
-  color = '#0A84FF',
+  color = '#217BE8',
   sheen = false,
   className,
 }: {
   size?: number;
   color?: string;
-  /** Premium logo finish: top-lit cyan gradient fill + glow. Leave off for small
+  /** Premium logo finish: top-lit blue gradient fill + glow. Leave off for small
    *  functional icons (e.g. the VAL orb), which want a flat `color`. */
   sheen?: boolean;
   className?: string;
@@ -97,7 +97,7 @@ export function LedrixDelta({
       viewBox={`0 0 ${S} ${S}`}
       fill="none"
       className={className}
-      style={{ display: 'block', ...(sheen ? { filter: `drop-shadow(0 0 ${(S * 0.1).toFixed(1)}px rgba(10,132,255,0.55))` } : null) }}
+      style={{ display: 'block', ...(sheen ? { filter: `drop-shadow(0 0 ${(S * 0.1).toFixed(1)}px rgba(33,123,232,0.55))` } : null) }}
       aria-hidden
     >
       <defs>
@@ -107,9 +107,9 @@ export function LedrixDelta({
         </mask>
         {sheen && (
           <linearGradient id={sheenId} x1="0" y1="0" x2="0.4" y2="1">
-            <stop offset="0" stopColor="#C9FCFF" />
-            <stop offset="0.45" stopColor="#0A84FF" />
-            <stop offset="1" stopColor="#0A63D1" />
+            <stop offset="0" stopColor="#C9E2FF" />
+            <stop offset="0.45" stopColor="#217BE8" />
+            <stop offset="1" stopColor="#1A63C8" />
           </linearGradient>
         )}
       </defs>
@@ -119,6 +119,6 @@ export function LedrixDelta({
 }
 
 // ─── The three official treatments of the mark ───────────────────────────────
-//   Cyan (brand, on dark)  →  <LedrixDelta sheen />            top-lit cyan gradient + glow
+//   Blue (brand, on dark)  →  <LedrixDelta sheen />            top-lit blue gradient + glow
 //   White (mono, on dark)  →  <LedrixDelta color="#ffffff" />  favicons, watermarks, photos
 //   Ink   (mono, on light) →  <LedrixDelta color="#070707" />  print, the report PDF, light UI

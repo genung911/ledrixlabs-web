@@ -43,11 +43,11 @@ async function supaDelete(table: string, filter: string) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-// Cyan + dark-glass — matches the Ledrix inspector app's GradientCard aesthetic.
-// Cyan is the primary UI accent; color is still reserved for MEANING (severity).
-// Stage 2: light theme. Accent is a readable teal (neon #00F3FF is reserved for dark surfaces/hero).
-const CYAN     = '#0B8FA6';   // readable teal accent on light
-const ACCENT   = '#0B8FA6';   // primary UI accent
+// Blue + dark-glass — matches the Ledrix inspector app's GradientCard aesthetic.
+// Blue is the primary UI accent; color is still reserved for MEANING (severity).
+// Stage 2: light theme. Accent is a readable brand blue (deep #1A63C8 stays legible on the light ground).
+const BLUE     = '#1A63C8';   // readable brand blue accent on light
+const ACCENT   = '#1A63C8';   // primary UI accent
 const CRITICAL = '#DC2626';   // safety (readable on light)
 const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
 const GREEN    = '#16A34A';   // satisfactory / resolved
@@ -352,7 +352,7 @@ function Logo({ size = 32 }: { size?: number }) {
   return (
     <div style={{ width: size, height: size, borderRadius: r, backgroundColor: '#080808',
       border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <ValDeltaSVG size={Math.round(size * 0.82)} color={CYAN} />
+      <ValDeltaSVG size={Math.round(size * 0.82)} color={BLUE} />
     </div>
   );
 }
@@ -609,7 +609,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: TEXT, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.45)', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', boxShadow: '0 0 14px rgba(0,243,255,0.25)', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
+            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.45)', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', boxShadow: '0 0 14px rgba(33,123,232,0.25)', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
           </div>
         </CardSection>
       </div>
@@ -1018,9 +1018,9 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {signedIn && (
-          <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: `${CYAN}14`, border: `1px solid ${CYAN}33`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
-            <span style={{ width: 6, height: 6, borderRadius: 3, background: CYAN, display: 'inline-block' }} />
-            <span style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
+          <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: `${BLUE}14`, border: `1px solid ${BLUE}33`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
+            <span style={{ width: 6, height: 6, borderRadius: 3, background: BLUE, display: 'inline-block' }} />
+            <span style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
           </button>
         )}
         <button onClick={onShare} style={{
@@ -1116,7 +1116,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const urgent = critical.concat(deficien).slice(0, 3);
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
-  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', cyan: '#0B8FA6', bright: '#22E3FF' };
+  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#217BE8' };
   const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
   const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
   const cover = record.cover_url;
@@ -1188,7 +1188,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 18, padding: '20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
           <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 62, height: 62, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
             background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.4), 0 0 26px rgba(34,227,255,0.35)' }}>
-            <ValMark size={40} color="#22E3FF" />
+            <ValMark size={40} color="#217BE8" />
           </button>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>Ask Ledrix about your home</div>
@@ -1229,10 +1229,10 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
             <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 15, padding: '17px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 11, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
-              <Icon name={icon} size={20} color={P.cyan} />
+              <Icon name={icon} size={20} color={P.blue} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>{label}</span>
-                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.cyan }}>{count}</span>}
+                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.blue }}>{count}</span>}
               </div>
             </button>
           ))}
@@ -1241,23 +1241,23 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
       {/* The Carfax line */}
       <div style={{ margin: '4px 18px 20px', display: 'flex', alignItems: 'center', gap: 11, background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 13, padding: '13px 15px' }}>
-        <Icon name="docs" size={16} color={P.cyan} />
+        <Icon name="docs" size={16} color={P.blue} />
         <p style={{ color: '#2A4247', fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
-          <b style={{ color: P.cyan }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
+          <b style={{ color: P.blue }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
         </p>
       </div>
 
       {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
       <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(135deg, #0B2A30, #06181C)', border: '1px solid rgba(11,143,166,0.4)', borderRadius: 16, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13, boxShadow: '0 3px 14px rgba(6,24,28,0.18)' }}>
-        <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 12, background: 'rgba(0,243,255,0.10)', border: '1px solid rgba(0,243,255,0.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22E3FF', fontSize: 18, fontWeight: 800 }}>◇</div>
+        <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 12, background: 'rgba(33,123,232,0.10)', border: '1px solid rgba(33,123,232,0.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#217BE8', fontSize: 18, fontWeight: 800 }}>◇</div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ color: '#EAF7F9', fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>Ethix</span>
-            <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 8, letterSpacing: '0.14em', color: '#22E3FF', border: '1px solid rgba(0,243,255,0.32)', borderRadius: 5, padding: '2px 6px' }}>YOUR DATA, YOUR CALL</span>
+            <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 8, letterSpacing: '0.14em', color: '#217BE8', border: '1px solid rgba(33,123,232,0.32)', borderRadius: 5, padding: '2px 6px' }}>YOUR DATA, YOUR CALL</span>
           </div>
           <p style={{ color: '#9FC2C8', fontSize: 12, lineHeight: 1.5, margin: '4px 0 0' }}>Your home data is yours. Opt in, choose what&apos;s shared, keep what it earns — and it&apos;s never personal.</p>
         </div>
-        <span style={{ color: '#22E3FF', fontSize: 20, flexShrink: 0 }}>›</span>
+        <span style={{ color: '#217BE8', fontSize: 20, flexShrink: 0 }}>›</span>
       </div>
 
       <Footer />
@@ -2080,7 +2080,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
 }
 
 // ─── Ledrix (Phase 1 experience layer) ──────────────────────────────────────
-// Live chat + Insight are the paid tier. Cyan returns here ONLY as the AI accent.
+// Live chat + Insight are the paid tier. Blue returns here ONLY as the AI accent.
 // Billing is DORMANT until NEXT_PUBLIC_BILLING_ENABLED=1. Until then the Subscribe sheet is a pure
 // sign-in prompt — no pricing surfaces (these placeholder numbers must not show pre-launch).
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === '1';
@@ -2091,9 +2091,9 @@ const PLAN_PAYG        = '$0.01 / 1K tokens';
 
 function PlanCard({ title, price, sub, highlight }: { title: string; price: string; sub: string; highlight?: boolean }) {
   return (
-    <div style={{ background: CARD, border: `1px solid ${highlight ? CYAN + '55' : BORDER}`, borderRadius: 14, padding: '14px 16px' }}>
+    <div style={{ background: CARD, border: `1px solid ${highlight ? BLUE + '55' : BORDER}`, borderRadius: 14, padding: '14px 16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-        <span style={{ color: highlight ? CYAN : '#e2e8f0', fontSize: 10, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace' }}>{title}</span>
+        <span style={{ color: highlight ? BLUE : '#e2e8f0', fontSize: 10, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace' }}>{title}</span>
         <span style={{ color: '#fff', fontSize: 15, fontWeight: 900 }}>{price}</span>
       </div>
       <div style={{ color: MED, fontSize: 10, lineHeight: 1.5 }}>{sub}</div>
@@ -2120,8 +2120,8 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: BG, borderTop: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0', padding: '20px 18px 28px' }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: '#222', margin: '0 auto 18px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-          <ValDeltaSVG size={20} color={CYAN} />
-          <span style={{ color: CYAN, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
+          <ValDeltaSVG size={20} color={BLUE} />
+          <span style={{ color: BLUE, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
         </div>
         <div style={{ color: TEXT, fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
         <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>Ask Ledrix anything about your home — what a finding means, repair priorities, costs, what to do next — and get a living AI Insight that stays current with your record. Free members get the record; Ledrix members get the intelligence.</p>
@@ -2132,7 +2132,7 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
               <PlanCard title="PAY AS YOU GO" price={PLAN_PAYG} sub="Only pay for what you ask — no monthly commitment." />
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 18 }}>
-              <span style={{ color: CYAN, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
+              <span style={{ color: BLUE, fontSize: 11, flexShrink: 0, marginTop: 1 }}>ⓘ</span>
               <p style={{ color: MED, fontSize: 10, lineHeight: 1.55 }}>Most homeowners ask ~150 questions a month; a typical question costs about 3,000 tokens. You&apos;ll always see your balance, and we&apos;ll help you pick the right plan.</p>
             </div>
           </>
@@ -2141,7 +2141,7 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
           <button onClick={onSubscribe} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Subscribe — {PLAN_BASE_PRICE}/mo</button>
         ) : sent ? (
           <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
-            <div style={{ color: CYAN, fontSize: 13, fontWeight: 900, marginBottom: 6 }}>Check your email ✉</div>
+            <div style={{ color: BLUE, fontSize: 13, fontWeight: 900, marginBottom: 6 }}>Check your email ✉</div>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: ACCENT }}>{email}</b>. Tap it to unlock Ledrix.</p>
           </div>
         ) : (
@@ -2149,7 +2149,7 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
             <input value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && sendLink()} placeholder="you@email.com" type="email"
               style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: TEXT, fontSize: 14, outline: 'none', marginBottom: 8 }} />
             {err && <div style={{ color: CRITICAL, fontSize: 10, marginBottom: 8 }}>{err}</div>}
-            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(0,243,255,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
+            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(33,123,232,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
           </>
         )}
         <button onClick={onClose} style={{ width: '100%', background: 'none', border: 'none', color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: 12, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>MAYBE LATER</button>
@@ -2191,10 +2191,10 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access, shareId]);
   return (
-    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${CYAN}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
+    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BLUE}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <ValDeltaSVG size={14} color={CYAN} />
-        <span style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
+        <ValDeltaSVG size={14} color={BLUE} />
+        <span style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
       </div>
       {access ? (
         <p style={{ color: loading ? MED : TEXT, fontSize: 12, lineHeight: 1.65 }}>{loading ? 'Analyzing your home…' : (insight ?? 'No insight available yet — ask Ledrix anything below.')}</p>
@@ -2204,7 +2204,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
             Your home is in strong overall condition, with a few maintenance items worth scheduling before winter. The water heater is approaching the end of its typical service life, and the panel shows&hellip;
           </p>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(180deg, rgba(10,10,10,0.25), rgba(10,10,10,0.86))' }}>
-            <button onClick={onUnlock} style={{ background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 10, padding: '11px 18px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(0,243,255,0.3)' }}>UNLOCK LEDRIX INSIGHT</button>
+            <button onClick={onUnlock} style={{ background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 10, padding: '11px 18px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(33,123,232,0.3)' }}>UNLOCK LEDRIX INSIGHT</button>
             <span style={{ color: MED, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>Live AI analysis of your home</span>
           </div>
         </>
@@ -2302,22 +2302,22 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
     <div style={{ position: 'fixed', top: vp ? vp.top : 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430, height: vp ? vp.h : '100dvh', zIndex: 210, background: BG, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-        <ValDeltaSVG size={20} color={CYAN} />
+        <ValDeltaSVG size={20} color={BLUE} />
         <span style={{ color: TEXT, fontSize: 13, fontWeight: 900, flex: 1 }}>Ledrix</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
       </div>
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '82%',
-            background: m.role === 'user' ? '#161616' : `${CYAN}10`, border: `1px solid ${m.role === 'user' ? BORDER : CYAN + '2a'}`,
+            background: m.role === 'user' ? '#161616' : `${BLUE}10`, border: `1px solid ${m.role === 'user' ? BORDER : BLUE + '2a'}`,
             borderRadius: 12, padding: '10px 13px', color: m.role === 'user' ? '#e2e8f0' : TEXT, fontSize: 13, lineHeight: 1.55 }}>{m.text}</div>
         ))}
         {busy && <div style={{ alignSelf: 'flex-start', color: MED, fontSize: 11, fontFamily: 'Roboto Mono, monospace' }}>Ledrix is thinking…</div>}
       </div>
       {recording && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 16px', borderTop: `1px solid ${BORDER}`, background: BG, flexShrink: 0 }}>
-          <ValVoiceVisualizer active={recording} stream={vizStream} color={CYAN} height={42} bars={7} />
-          <span style={{ color: CYAN, fontSize: 10, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LISTENING</span>
+          <ValVoiceVisualizer active={recording} stream={vizStream} color={BLUE} height={42} bars={7} />
+          <span style={{ color: BLUE, fontSize: 10, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LISTENING</span>
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, flexShrink: 0, alignItems: 'flex-end' }}>
@@ -2331,7 +2331,7 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
           placeholder={recording ? 'Listening…' : 'Ask Ledrix about your home…'} enterKeyHint="send"
           style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', color: TEXT, fontSize: 16, outline: 'none', minWidth: 0 }} />
         <button onClick={() => send()} disabled={busy || !input.trim()} style={{ flexShrink: 0, height: 44, padding: '0 16px',
-          background: 'rgba(0,243,255,0.10)', color: CYAN, border: '1px solid rgba(0,243,255,0.5)', borderRadius: 10, fontWeight: 900, fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 14px rgba(0,243,255,0.28)', opacity: (busy || !input.trim()) ? 0.45 : 1 }}>SEND</button>
+          background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 10, fontWeight: 900, fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 14px rgba(33,123,232,0.28)', opacity: (busy || !input.trim()) ? 0.45 : 1 }}>SEND</button>
       </div>
     </div>
   );
@@ -2749,7 +2749,7 @@ export default function SharePage() {
       {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
       <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
-        <ValOrbVoice size={62} controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
+        <ValOrbVoice size={62} tone="light" controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
       </div>
       {valLog && (
         <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>

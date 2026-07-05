@@ -17,7 +17,7 @@ export default function OpengraphImage() {
           alignItems: 'center',
           justifyContent: 'center',
           background: '#0b0f11',
-          backgroundImage: 'radial-gradient(circle at 50% 32%, rgba(0,243,255,0.10), transparent 60%)',
+          backgroundImage: 'radial-gradient(circle at 50% 32%, rgba(33,123,232,0.10), transparent 60%)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
@@ -28,7 +28,7 @@ export default function OpengraphImage() {
               height: 0,
               borderLeft: '48px solid transparent',
               borderRight: '48px solid transparent',
-              borderBottom: '82px solid #00F3FF',
+              borderBottom: '82px solid #217BE8',
             }}
           />
           <div style={{ fontSize: 124, fontWeight: 800, color: '#e7f0f2', letterSpacing: -4 }}>Ledrix</div>

@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
-const CYAN = '#00F3FF', BG = '#070707', BORDER = 'rgba(255,255,255,0.08)';
+const BLUE = '#217BE8', BG = '#070707', BORDER = 'rgba(255,255,255,0.08)';
 const CARD = 'linear-gradient(145deg, rgba(42,50,57,0.55), rgba(13,17,20,0.66))';
 const TEXT = '#b6c4c7', DIM = '#3a4a4e', MED = '#5f7378';
 const CRITICAL = '#FF3B3B', WARN = '#FACC15', INFO = '#8893A6';
@@ -55,7 +55,7 @@ export default function PublicRepairsPage() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{display:none}@media print{.no-print{display:none!important}body{background:#fff!important}}`}</style>
 
       <div style={{ padding: '24px 20px 16px', borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ color: CYAN, fontSize: 8, fontWeight: 900, letterSpacing: 2.5, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>LEDRIX · BUYER REPAIR REQUEST</div>
+        <div style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 2.5, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>LEDRIX · BUYER REPAIR REQUEST</div>
         <div style={{ color: '#fff', fontSize: 19, fontWeight: 900, lineHeight: 1.15 }}>{record?.address ?? 'Repair Request'}</div>
         {sub && <div style={{ color: MED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginTop: 5, fontFamily: 'Roboto Mono, monospace' }}>{sub}</div>}
         {record?.inspection_date && <div style={{ color: DIM, fontSize: 8.5, fontWeight: 700, letterSpacing: 1, marginTop: 6, fontFamily: 'Roboto Mono, monospace' }}>INSPECTED {record.inspection_date}</div>}
@@ -72,7 +72,7 @@ export default function PublicRepairsPage() {
           return (
             <div key={r.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '13px 15px', marginBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-                <span style={{ color: CYAN, fontSize: 10, fontWeight: 900, fontFamily: 'Roboto Mono, monospace' }}>{i + 1}.</span>
+                <span style={{ color: BLUE, fontSize: 10, fontWeight: 900, fontFamily: 'Roboto Mono, monospace' }}>{i + 1}.</span>
                 <span style={{ color: c, fontSize: 7.5, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', border: `1px solid ${c}44`, borderRadius: 6, padding: '2px 6px' }}>{l}</span>
                 {r.item && <span style={{ color: MED, fontSize: 9, fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.item}{r.location ? ` · ${r.location}` : ''}</span>}
               </div>
@@ -86,7 +86,7 @@ export default function PublicRepairsPage() {
             <p style={{ color: DIM, fontSize: 9.5, lineHeight: 1.6, margin: '18px 4px' }}>
               This is a buyer-prepared repair request based on the home inspection findings. It is not a legal form or legal advice.
             </p>
-            <button className="no-print" onClick={() => window.print()} style={{ width: '100%', background: `${CYAN}15`, border: `1px solid ${CYAN}44`, color: CYAN, borderRadius: 10, padding: '12px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / SAVE AS PDF</button>
+            <button className="no-print" onClick={() => window.print()} style={{ width: '100%', background: `${BLUE}15`, border: `1px solid ${BLUE}44`, color: BLUE, borderRadius: 10, padding: '12px', fontSize: 10, fontWeight: 900, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / SAVE AS PDF</button>
           </>
         )}
 
@@ -94,7 +94,7 @@ export default function PublicRepairsPage() {
           <div style={{ color: MED, fontSize: 10.5, fontWeight: 600, lineHeight: 1.6, marginBottom: 10 }}>
             Buying a home? Get inspection findings you can act on — and a repair request like this one.
           </div>
-          <a href="https://ledrixlabs.com" style={{ color: CYAN, fontSize: 11, fontWeight: 800, textDecoration: 'none', fontFamily: 'Roboto Mono, monospace', letterSpacing: 1 }}>LEDRIXLABS.COM ↗</a>
+          <a href="https://ledrixlabs.com" style={{ color: BLUE, fontSize: 11, fontWeight: 800, textDecoration: 'none', fontFamily: 'Roboto Mono, monospace', letterSpacing: 1 }}>LEDRIXLABS.COM ↗</a>
         </div>
       </div>
     </div>

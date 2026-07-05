@@ -15,7 +15,7 @@ export default function TermsOfService() {
       </nav>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '80px 24px' }}>
-        <div style={{ color: '#00F3FF', fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
+        <div style={{ color: '#217BE8', fontSize: 10, fontWeight: 700, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 16 }}>
           LEGAL
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Terms of Service</h1>

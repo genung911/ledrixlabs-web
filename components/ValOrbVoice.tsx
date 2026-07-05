@@ -1,10 +1,18 @@
 'use client';
 
 // ValOrbVoice — the VAL button. Idle, it's the VAL mark (delta + listening arcs) in a
-// dark-glass orb with a breathing glow. On tap it plays a crisp Web Audio chime, opens
-// the mic, and SPREADS into the live cyan waveform — the orb literally becoming the
+// premium glass orb with a breathing blue glow. On tap it plays a crisp Web Audio chime,
+// opens the mic, and SPREADS into the live blue waveform — the orb literally becoming the
 // waveform IS the "I'm listening" signal (no toast). The bars light up with your voice
 // (idle = calm ripple, speaking = bounce). Tap again to collapse back to the mark.
+//
+// Two premium shells via the `tone` prop, so the orb never reads as a heavy black blob:
+//   • tone="light" — frosted-white glass, hairline blue ring, blue mark, a real drop
+//     shadow that lifts it off the page + a soft blue hover halo. For light grounds
+//     (the home portal, the light marketing sections).
+//   • tone="dark"  — dark translucent glass, blue/white mark, a subtle blue glow ring.
+//     For dark grounds (the dollhouse hero, dark app-like contexts). This is the default,
+//     so existing call sites stay backward-compatible.
 //
 // Web-only (Web Audio + Framer Motion). The RN app uses the expo-av/reanimated twin.
 
@@ -13,7 +21,41 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ValVoiceVisualizer from './ValVoiceVisualizer';
 import { ValMark } from './ValMark';
 
-const CYAN = '#00F3FF';
+const ACCENT = '#217BE8'; // brand blue
+
+type Tone = 'light' | 'dark';
+
+// Per-tone premium treatments. `mark` is the delta/waveform color; `ring` is the solid
+// breathing-ring color; `shell()` and `shadow()` build the glass + lift/glow.
+const TONES: Record<Tone, {
+  mark: string;
+  ring: string;
+  shell: string;
+  border: (listening: boolean) => string;
+  shadow: (listening: boolean, hovered: boolean) => string;
+}> = {
+  light: {
+    mark: ACCENT,
+    ring: ACCENT,
+    shell: 'radial-gradient(125% 130% at 50% 0%, rgba(255,255,255,0.96), rgba(238,244,251,0.86))',
+    border: (l) => `1.25px solid rgba(33,123,232,${l ? 0.6 : 0.35})`,
+    // real drop shadow (lifts off the page) + a soft blue halo that blooms on hover / listen
+    shadow: (l, h) =>
+      `0 10px 30px rgba(12,28,54,${h ? 0.22 : 0.14}), 0 2px 8px rgba(12,28,54,0.08), 0 0 ${
+        l ? 30 : h ? 26 : 14
+      }px rgba(33,123,232,${l ? 0.3 : h ? 0.28 : 0.15})`,
+  },
+  dark: {
+    mark: '#7FB4F0', // accent.soft — reads bright on dark glass
+    ring: ACCENT,
+    shell: 'radial-gradient(125% 130% at 50% 0%, rgba(34,52,78,0.86), rgba(8,13,20,0.94))',
+    border: (l) => `1.5px solid rgba(33,123,232,${l ? 0.9 : 0.55})`,
+    shadow: (l, h) =>
+      `0 8px 26px rgba(0,0,0,0.45), 0 0 ${l ? 34 : h ? 26 : 16}px rgba(33,123,232,${
+        l ? 0.5 : h ? 0.4 : 0.3
+      })`,
+  },
+};
 
 // Short, crisp, tech-forward chime — generated, no asset hosting.
 function playChime() {
@@ -45,10 +87,20 @@ function playChime() {
 // self-managed demo orb.
 type Controlled = { listening: boolean; onToggle: () => void; stream?: MediaStream | null };
 
-export default function ValOrbVoice({ size = 66, controlled }: { size?: number; controlled?: Controlled }) {
+export default function ValOrbVoice({
+  size = 66,
+  tone = 'dark',
+  controlled,
+}: {
+  size?: number;
+  tone?: Tone;
+  controlled?: Controlled;
+}) {
   const [selfListening, setSelfListening] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const listening = controlled ? controlled.listening : selfListening;
   const reduce = useReducedMotion();
+  const t = TONES[tone];
 
   const toggle = () => {
     if (!listening) playChime(); // chime only on tap-to-start
@@ -60,6 +112,8 @@ export default function ValOrbVoice({ size = 66, controlled }: { size?: number; 
     <motion.button
       type="button"
       onClick={toggle}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
       aria-label={listening ? 'Stop listening' : 'Talk to VAL'}
       aria-pressed={listening}
       initial={false}
@@ -75,9 +129,12 @@ export default function ValOrbVoice({ size = 66, controlled }: { size?: number; 
         justifyContent: 'center',
         overflow: 'hidden',
         cursor: 'pointer',
-        background: 'radial-gradient(120% 130% at 50% 0%, rgba(22,51,59,0.92), rgba(6,10,12,0.97))',
-        border: `1.5px solid rgba(0,243,255,${listening ? 0.9 : 0.55})`,
-        boxShadow: `0 0 ${listening ? 34 : 16}px rgba(0,243,255,${listening ? 0.5 : 0.3})`,
+        background: t.shell,
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        border: t.border(listening),
+        boxShadow: t.shadow(listening, hovered),
+        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
         WebkitTapHighlightColor: 'transparent',
       }}
     >
@@ -85,8 +142,8 @@ export default function ValOrbVoice({ size = 66, controlled }: { size?: number; 
       {!listening && !reduce && (
         <motion.span
           aria-hidden
-          style={{ position: 'absolute', inset: -2, borderRadius: size, border: `1.5px solid ${CYAN}` }}
-          animate={{ opacity: [0, 0.5, 0], scale: [0.96, 1.12, 0.96] }}
+          style={{ position: 'absolute', inset: -2, borderRadius: size, border: `1.5px solid ${t.ring}` }}
+          animate={{ opacity: [0, tone === 'light' ? 0.35 : 0.5, 0], scale: [0.96, 1.12, 0.96] }}
           transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
@@ -101,7 +158,7 @@ export default function ValOrbVoice({ size = 66, controlled }: { size?: number; 
             transition={{ duration: 0.22 }}
             style={{ display: 'flex', alignItems: 'center' }}
           >
-            <ValVoiceVisualizer active={controlled ? !!controlled.stream : true} stream={controlled?.stream ?? undefined} bars={7} color={CYAN} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
+            <ValVoiceVisualizer active={controlled ? !!controlled.stream : true} stream={controlled?.stream ?? undefined} bars={7} color={t.mark} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
           </motion.div>
         ) : (
           <motion.div
@@ -111,7 +168,7 @@ export default function ValOrbVoice({ size = 66, controlled }: { size?: number; 
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.22 }}
           >
-            <ValMark size={Math.round(size * 0.66)} color={CYAN} />
+            <ValMark size={Math.round(size * 0.66)} color={t.mark} />
           </motion.div>
         )}
       </AnimatePresence>

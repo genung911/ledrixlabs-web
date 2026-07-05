@@ -1,7 +1,7 @@
 'use client';
 
 // ValVoiceVisualizer — a live mic equalizer for the VAL voice interface, in the
-// ChatGPT/Gemini idiom: a row of cyan bars, symmetric about center, that sit calm
+// ChatGPT/Gemini idiom: a row of blue bars, symmetric about center, that sit calm
 // when you're quiet and bounce with your voice when you speak.
 //
 // Two ways to drive it:
@@ -24,7 +24,7 @@ type Props = {
    *  second permission prompt). If omitted, the component opens its own on tap. */
   stream?: MediaStream | null;
   bars?: number;        // bar count — odd numbers look best (true center bar)
-  color?: string;       // accent (default high-viz cyan)
+  color?: string;       // accent (default brand blue)
   height?: number;      // track height, px
   barWidth?: number;    // px
   gap?: number;         // px between bars
@@ -36,7 +36,7 @@ export default function ValVoiceVisualizer({
   active,
   stream = null,
   bars = 7,
-  color = '#00F3FF',
+  color = '#217BE8',
   height = 48,
   barWidth = 5,
   gap = 6,

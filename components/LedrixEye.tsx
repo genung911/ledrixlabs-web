@@ -1,7 +1,7 @@
-// LedrixEye — the "Ledrix Vision" mark: a cyan circuit-iris eye (almond outline, concentric broken iris
+// LedrixEye — the "Ledrix Vision" mark: a blue circuit-iris eye (almond outline, concentric broken iris
 // rings, solid pupil, circuit-trace corner nodes). Web port of the app's react-native-svg version, as a
 // plain inline SVG so it scales crisply. Same geometry (viewBox 0 0 104 80) as src/components/LedrixEye.tsx.
-export function LedrixEye({ size = 96, color = '#00F3FF', className = '' }: { size?: number; color?: string; className?: string }) {
+export function LedrixEye({ size = 96, color = '#217BE8', className = '' }: { size?: number; color?: string; className?: string }) {
   const common = { stroke: color, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   const trace = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const };
   return (

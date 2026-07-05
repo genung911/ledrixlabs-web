@@ -5,7 +5,7 @@
 import { LedrixDelta } from '@/components/LedrixDelta';
 import ValOrbVoice from '@/components/ValOrbVoice';
 
-const CYAN = '#00F3FF';
+const BLUE = '#217BE8';
 
 // App icons in use — auto-collected from the inspector app (MaterialCommunityIcons,
 // which map 1:1 to Material Design Icons). Snapshot; re-grep the app to refresh.
@@ -64,7 +64,7 @@ function triPath(S: number, padR: number, gapFrom: number, gapTo: number) {
 }
 
 // B — single even-weight outline, centered base gap.
-function DeltaUniform({ size = 48, color = CYAN }: { size?: number; color?: string }) {
+function DeltaUniform({ size = 48, color = BLUE }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" style={{ display: 'block' }}>
       <path d={triPath(size, 0.1, 0.34, 0.66)} stroke={color} strokeWidth={size * 0.06} strokeLinecap="round" strokeLinejoin="round" />
@@ -73,7 +73,7 @@ function DeltaUniform({ size = 48, color = CYAN }: { size?: number; color?: stri
 }
 
 // C — concentric nested outlines (the #6/#7 family), both with a base gap.
-function DeltaConcentric({ size = 48, color = CYAN }: { size?: number; color?: string }) {
+function DeltaConcentric({ size = 48, color = BLUE }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" style={{ display: 'block' }}>
       <path d={triPath(size, 0.08, 0.37, 0.63)} stroke={color} strokeWidth={size * 0.05} strokeLinecap="round" strokeLinejoin="round" />
@@ -83,7 +83,7 @@ function DeltaConcentric({ size = 48, color = CYAN }: { size?: number; color?: s
 }
 
 // D — solid filled delta with an upward triangular notch cut from the base center.
-function DeltaSolid({ size = 48, color = CYAN }: { size?: number; color?: string }) {
+function DeltaSolid({ size = 48, color = BLUE }: { size?: number; color?: string }) {
   const S = size;
   const pad = S * 0.1;
   const W = S - 2 * pad;
@@ -136,7 +136,7 @@ function ValMark({ size, color, variant }: { size: number; color: string; varian
 type Variant = { name: string; note: string; render: (s: number, c: string) => React.ReactNode };
 
 const VARIANTS: Variant[] = [
-  { name: 'A · Calligraphic + off-center gap', note: 'Chosen mark. Variable weight (thin left, thick right), gap offset. Cyan shows the sheen finish; white/ink are the mono treatments.', render: (s, c) => <LedrixDelta size={s} color={c} sheen={c === CYAN} /> },
+  { name: 'A · Calligraphic + off-center gap', note: 'Chosen mark. Variable weight (thin left, thick right), gap offset. Blue shows the sheen finish; white/ink are the mono treatments.', render: (s, c) => <LedrixDelta size={s} color={c} sheen={c === BLUE} /> },
   { name: 'B · Uniform outline + centered gap', note: 'The simplest — single even stroke, gap centered.', render: (s, c) => <DeltaUniform size={s} color={c} /> },
   { name: 'C · Concentric nested', note: 'The #6 / #7 family — triangle-in-triangle. Strong large, muddy small.', render: (s, c) => <DeltaConcentric size={s} color={c} /> },
   { name: 'D · Solid + base notch', note: 'Filled, heaviest presence — reads even at the smallest sizes.', render: (s, c) => <DeltaSolid size={s} color={c} /> },
@@ -180,24 +180,24 @@ export default function LogosPage() {
         <h1 className="text-2xl font-bold tracking-tight">Ledrix delta — logo lab</h1>
         <p className="mt-1 text-sm text-slate-400">
           Four directions, rendered at real sizes (your VAL orb uses ~14–28px). Pick a row and I&apos;ll apply it to the one canonical
-          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 text-xs">LedrixDelta.tsx</code> — then add finish (cyan gradient sheen / glow) to the winner.
+          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 text-xs">LedrixDelta.tsx</code> — then add finish (blue gradient sheen / glow) to the winner.
         </p>
 
         <div className="mt-8 flex flex-col gap-6">
-          <Board label="On dark · cyan" sub="The default — brand accent on the black UI." bg="#0a0a0a" fg={CYAN} />
+          <Board label="On dark · blue" sub="The default — brand accent on the black UI." bg="#0a0a0a" fg={BLUE} />
           <Board label="On dark · white" sub="Mono on dark (favicons, watermarks)." bg="#0a0a0a" fg="#ffffff" />
           <Board label="On light · ink" sub="Mono on white (print, the report PDF)." bg="#f4f4f5" fg="#0b0b0b" />
         </div>
 
         <section className="mt-12 rounded-2xl p-6" style={{ background: '#0a0a0a' }}>
           <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-accent/80">VAL marks — delta + arcs</h2>
-          <p className="mt-1 text-xs text-slate-500">Bare Δ = Ledrix; Δ + arcs = VAL. Cyan, at orb sizes on dark.</p>
+          <p className="mt-1 text-xs text-slate-500">Bare Δ = Ledrix; Δ + arcs = VAL. Blue, at orb sizes on dark.</p>
           <div className="mt-6 flex flex-col gap-3">
             {([
-              { name: 'Reference · bare Ledrix Δ', render: (s: number) => <LedrixDelta size={s} color={CYAN} /> },
-              { name: 'V1 · Radiating arcs (voice)', render: (s: number) => <ValMark size={s} color={CYAN} variant="radiate" /> },
-              { name: 'V2 · Orbital ring (presence)', render: (s: number) => <ValMark size={s} color={CYAN} variant="ring" /> },
-              { name: 'V3 · Listening arcs (flanking)', render: (s: number) => <ValMark size={s} color={CYAN} variant="listen" /> },
+              { name: 'Reference · bare Ledrix Δ', render: (s: number) => <LedrixDelta size={s} color={BLUE} /> },
+              { name: 'V1 · Radiating arcs (voice)', render: (s: number) => <ValMark size={s} color={BLUE} variant="radiate" /> },
+              { name: 'V2 · Orbital ring (presence)', render: (s: number) => <ValMark size={s} color={BLUE} variant="ring" /> },
+              { name: 'V3 · Listening arcs (flanking)', render: (s: number) => <ValMark size={s} color={BLUE} variant="listen" /> },
             ] as { name: string; render: (s: number) => React.ReactNode }[]).map((v) => (
               <div key={v.name} className="flex items-center gap-4 rounded-xl border border-white/[0.08] px-4 py-3">
                 <div className="w-56 shrink-0 text-[13px] font-bold text-white">{v.name}</div>
@@ -227,7 +227,7 @@ export default function LogosPage() {
           <div className="mt-5 grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))' }}>
             {APP_ICONS.map((n) => (
               <div key={n} className="flex flex-col items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5">
-                <i className={`mdi mdi-${n}`} style={{ fontSize: 24, lineHeight: 1, color: CYAN }} aria-hidden />
+                <i className={`mdi mdi-${n}`} style={{ fontSize: 24, lineHeight: 1, color: BLUE }} aria-hidden />
                 <span className="break-all text-center text-[8px] leading-tight text-slate-500">{n}</span>
               </div>
             ))}
