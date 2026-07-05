@@ -22,8 +22,9 @@ const PORTAL_POINTS = [
   'Tap any finding: local cost estimate, pros to call, repair videos, and Ask Ledrix.',
 ];
 const PDF_POINTS = [
-  'A clean, legal inspection report with system scores.',
+  'An at-a-glance summary, then every finding grouped by system.',
   'Every finding backed by timestamped, GPS-anchored photo proof.',
+  'Checklists that adapt to your jurisdiction — no generic noise.',
   'Verified and signed by the inspector.',
 ];
 

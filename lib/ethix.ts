@@ -42,7 +42,7 @@ export const ETHIX_CATEGORIES: EthixCategory[] = [
     key: 'condition_signals',
     label: 'Condition signals',
     blurb: 'How systems in homes hold up over time.',
-    shares: 'Counts of findings by system and their severity band (safety / repair / maintenance).',
+    shares: 'Counts of findings by system and their priority band (major repair / minor repair / maintenance / typical wear / good), with safety concerns flagged separately.',
     never: 'Never the finding text, photos, or anything tying a defect to you.',
   },
   {

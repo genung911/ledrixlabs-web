@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: 'What it does',
-    body: "In the field, the inspector captures evidence by photo and voice; Ledrix drafts the finding — system attribution, severity, written narrative, and recommended action — and surfaces defects a tired eye might miss. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a legally-formatted PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
+    body: "In the field, the inspector captures evidence by photo and voice; Ledrix drafts the finding — system attribution, priority, written narrative, and recommended action — and surfaces defects a tired eye might miss. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a legally-formatted PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
   },
   {
     heading: "How it's different",
@@ -20,7 +20,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: 'Technology',
-    body: 'Ledrix runs on a cloud-baseline AI architecture so every device — new or old, iOS or Android — shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery.',
+    body: 'Ledrix runs on a cloud-baseline AI architecture so every device — new or old — shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery.',
   },
   {
     heading: 'Market & model',
@@ -51,9 +51,10 @@ export default function About() {
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-slate-400 [text-wrap:balance] md:text-xl">
           Ledrix Labs is the company behind Ledrix, an AI-assisted inspection platform for home
-          inspectors and the home buyers they serve. Ledrix pairs a field-first mobile app (iOS and Android)
-          with Ledrix Intelligence — an AI built specifically for the built environment — to compress a full
-          day&apos;s inspection-and-reporting workflow into the walkthrough itself.
+          inspectors and the home buyers they serve. Ledrix pairs a field-first mobile app (iOS today,
+          Android on the roadmap) with Ledrix Intelligence — an AI built specifically for the built
+          environment — to compress a full day&apos;s inspection-and-reporting workflow into the walkthrough
+          itself.
         </p>
 
         {/* Sections */}

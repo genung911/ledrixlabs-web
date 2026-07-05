@@ -70,7 +70,7 @@ export function Hero() {
 
           {/* trust line */}
           <motion.p variants={fadeUp} className="mt-12 font-mono text-xs uppercase tracking-[0.25em] text-slate-500">
-            Built for home inspectors · iOS &amp; Android · Powered by Ledrix Intelligence
+            Built for home inspectors · iOS · Powered by Ledrix Intelligence
           </motion.p>
         </motion.div>
       </div>

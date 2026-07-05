@@ -98,7 +98,7 @@ const TILES: Tile[] = [
     className: '',
     stat: '100%',
     title: 'Inspector-confirmed',
-    body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.',
+    body: 'Ledrix proposes; you Confirm, Adjust, or Reject. What you approve is exactly what ships — never quietly rewritten.',
     shot: { src: '/screenshots/review-card.jpg', alt: 'A Ledrix finding awaiting Reject, Edit, Combine, or Confirm' },
   },
   { className: '', stat: '5', title: 'Priority levels', pills: PRIORITY_PILLS },
@@ -114,7 +114,7 @@ const TILES: Tile[] = [
     className: 'md:col-span-2',
     kicker: 'Everywhere',
     title: 'Every device, one brain.',
-    body: 'iOS and Android, old phones and new — every device runs the same Ledrix Intelligence.',
+    body: 'Old phones and new all run the same Ledrix Intelligence — built on a cloud-baseline architecture, not tied to whatever hardware you carry.',
     devices: true,
   },
 ];

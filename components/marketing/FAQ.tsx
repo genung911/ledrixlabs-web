@@ -26,11 +26,15 @@ const FAQS = [
   },
   {
     q: 'What devices does it run on?',
-    a: 'iPhone and Android, phones and tablets. Ledrix runs on a cloud-baseline AI architecture, so every device — new or old — shares the same intelligence. No special hardware required.',
+    a: 'iPhone today, with Android on the roadmap. Ledrix runs on a cloud-baseline AI architecture, so every device — new or old — shares the same intelligence. No special hardware required.',
   },
   {
     q: 'How does the client Home Portal work?',
     a: 'Every inspection becomes a living home record your client can open anytime: findings with photos, clear priorities, and specs — plus a durable channel back to them. It turns a one-time PDF into an asset the homeowner actually keeps and returns to.',
+  },
+  {
+    q: 'Does it catch duplicate or overlapping findings?',
+    a: 'Yes. After analysis, Ledrix automatically flags likely duplicates and related findings across your photos for you to review — never merged silently. You decide what combines and what stays separate.',
   },
   {
     q: 'Who owns my data, and is it secure?',
@@ -38,7 +42,7 @@ const FAQS = [
   },
   {
     q: 'Can my whole team use it?',
-    a: 'Yes. Owners and managers can bring their inspectors onto one company account with shared templates and settings, so the whole crew works from the same playbook. Want to see it with your team? Request a demo below.',
+    a: 'Yes. Bring your whole crew onto one company account — owners, managers, office staff, and inspectors each get the right level of access, with templates and settings synced across everyone. Want to see it with your team? Request a demo below.',
   },
 ];
 
