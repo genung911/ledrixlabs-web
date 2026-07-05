@@ -17,13 +17,17 @@ type Tile = {
   body?: string;
   points?: string[];
   img?: string;
+  imgs?: { src: string; alt: string }[]; // lead tile: capture → drafted finding, side by side
 };
 
 const TILES: Tile[] = [
   {
     className: 'md:col-span-2 md:row-span-2',
     kicker: 'In the field',
-    img: '/screenshots/IMG_5555.PNG',
+    imgs: [
+      { src: '/screenshots/capture-analyze.jpg', alt: 'Isolating a defect in the Ledrix camera' },
+      { src: '/screenshots/finding-drafted.jpg', alt: 'The Ledrix Finding drafted and ready to confirm' },
+    ],
     title: 'The finding, drafted the moment you shoot.',
     points: [
       'Every capture becomes a structured finding — system, location, priority, and the spec behind it.',
@@ -90,10 +94,17 @@ export function BentoGrid() {
                     ))}
                   </ul>
                 )}
-                {t.img && (
-                  <div className="relative mt-6 h-56 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
-                    <Image src={t.img} alt="A finding drafted by Ledrix in the field" fill className="object-cover object-[50%_47%]" sizes="(max-width:768px) 100vw, 66vw" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
+                {t.imgs && (
+                  <div className="relative mt-6 grid grid-cols-2 gap-3">
+                    {t.imgs.map((im, j) => (
+                      <div key={im.src} className="relative h-64 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60 sm:h-72">
+                        <Image src={im.src} alt={im.alt} fill className="object-cover object-top" sizes="(max-width:768px) 50vw, 33vw" />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
+                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-ink/80 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
+                          {j === 0 ? 'Shoot' : 'Drafted'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
