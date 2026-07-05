@@ -76,16 +76,9 @@ export function SampleDeliverables() {
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/25"
           >
-            <div className="relative flex h-64 items-center justify-center overflow-hidden bg-white/[0.02]">
-              <svg width="88" height="88" viewBox="0 0 72 72" fill="none" className="opacity-80 transition-transform duration-500 group-hover:scale-105">
-                <rect x="12" y="6" width="42" height="56" rx="4" stroke="#3a4650" strokeWidth="2" />
-                <line x1="22" y1="24" x2="44" y2="24" stroke="#3a4650" strokeWidth="2" strokeLinecap="round" />
-                <line x1="22" y1="33" x2="44" y2="33" stroke="#3a4650" strokeWidth="2" strokeLinecap="round" />
-                <line x1="22" y1="42" x2="36" y2="42" stroke="#3a4650" strokeWidth="2" strokeLinecap="round" />
-                <rect x="34" y="42" width="26" height="20" rx="3" fill="#0a0f12" stroke="#5a6b76" strokeWidth="1.6" />
-                <line x1="40" y1="50" x2="54" y2="50" stroke="#5a6b76" strokeWidth="1.6" strokeLinecap="round" />
-                <line x1="40" y1="56" x2="49" y2="56" stroke="#5a6b76" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
+            <div className="relative h-64 overflow-hidden bg-black/40">
+              <Image src="/sample-pdf-cover.jpg" alt="The Ledrix inspection report cover page" fill className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-ink/90" />
             </div>
             <div className="flex flex-1 flex-col p-7">
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Inspection Report · PDF</span>
