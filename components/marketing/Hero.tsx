@@ -32,7 +32,7 @@ export function Hero() {
             variants={fadeUp}
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent/90 backdrop-blur"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#00F3FF]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#0A84FF]" />
             Ledrix Intelligence
           </motion.span>
 
@@ -42,7 +42,7 @@ export function Hero() {
             className="max-w-4xl text-5xl font-bold leading-[1.04] tracking-tight [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
             The future of inspecting is{' '}
-            <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(0,243,255,0.25)]">
+            <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(10,132,255,0.25)]">
               finally here
             </span>
             !
@@ -52,7 +52,7 @@ export function Hero() {
           <motion.ul variants={fadeUp} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 text-left">
             {POINTS.map((p) => (
               <li key={p} className="flex items-start gap-3">
-                <span className="mt-[8px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent shadow-[0_0_10px_#00F3FF]" />
+                <span className="mt-[8px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent shadow-[0_0_10px_#0A84FF]" />
                 <span className="text-lg leading-relaxed text-slate-200 [text-wrap:balance]">{p}</span>
               </li>
             ))}

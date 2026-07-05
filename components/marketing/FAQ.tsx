@@ -69,7 +69,7 @@ export function FAQ() {
                 className={[
                   'overflow-hidden rounded-2xl border transition-colors duration-300',
                   isOpen
-                    ? 'border-accent/50 bg-surface shadow-[0_14px_40px_-30px_rgba(0,243,255,0.6)]'
+                    ? 'border-accent/50 bg-surface shadow-[0_14px_40px_-30px_rgba(10,132,255,0.6)]'
                     : 'border-hairline bg-surface hover:border-accent-ink/40',
                 ].join(' ')}
               >

@@ -7,7 +7,7 @@ const config: Config = {
       colors: {
         // Brand cyan — neon for glows + dark sections; `.ink` is the legible
         // deeper cyan reserved for accent text / links / underlines on the light ground.
-        accent: { DEFAULT: '#00F3FF', soft: '#67e8f9', ink: '#0891A8' },
+        accent: { DEFAULT: '#0A84FF', soft: '#7FB0FF', ink: '#0A63D1' },
         // Light-forward system
         ground:   '#F6F8FA', // cool off-white page ground
         surface:  '#FFFFFF', // cards

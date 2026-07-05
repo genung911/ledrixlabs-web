@@ -32,8 +32,8 @@ export function GlowButton({
   // just the border + glow, so it reads as light, not a heavy cyan block on the hero.
   const primary =
     tone === 'dark'
-      ? 'border border-accent/70 bg-white/[0.04] text-white backdrop-blur shadow-[0_0_28px_-2px_rgba(0,243,255,0.6)] hover:border-accent hover:shadow-[0_0_44px_0_rgba(0,243,255,0.85)]'
-      : 'bg-gradient-to-b from-[#3af7ff] to-accent text-[#04252b] shadow-[0_6px_24px_-6px_rgba(0,243,255,0.65)] hover:shadow-[0_10px_32px_-6px_rgba(0,243,255,0.85)]';
+      ? 'border border-accent/70 bg-white/[0.04] text-white backdrop-blur shadow-[0_0_28px_-2px_rgba(10,132,255,0.6)] hover:border-accent hover:shadow-[0_0_44px_0_rgba(10,132,255,0.85)]'
+      : 'bg-gradient-to-b from-[#4DA6FF] to-accent text-white shadow-[0_6px_24px_-6px_rgba(10,132,255,0.6)] hover:shadow-[0_10px_32px_-6px_rgba(10,132,255,0.85)]';
   // Hairline pill — inverts by tone.
   const ghost =
     tone === 'dark'

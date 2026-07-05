@@ -16,7 +16,7 @@ type P = [number, number];
 
 export function LedrixDelta({
   size = 22,
-  color = '#00F3FF',
+  color = '#0A84FF',
   sheen = false,
   className,
 }: {
@@ -97,7 +97,7 @@ export function LedrixDelta({
       viewBox={`0 0 ${S} ${S}`}
       fill="none"
       className={className}
-      style={{ display: 'block', ...(sheen ? { filter: `drop-shadow(0 0 ${(S * 0.1).toFixed(1)}px rgba(0,243,255,0.55))` } : null) }}
+      style={{ display: 'block', ...(sheen ? { filter: `drop-shadow(0 0 ${(S * 0.1).toFixed(1)}px rgba(10,132,255,0.55))` } : null) }}
       aria-hidden
     >
       <defs>
@@ -108,8 +108,8 @@ export function LedrixDelta({
         {sheen && (
           <linearGradient id={sheenId} x1="0" y1="0" x2="0.4" y2="1">
             <stop offset="0" stopColor="#C9FCFF" />
-            <stop offset="0.45" stopColor="#00F3FF" />
-            <stop offset="1" stopColor="#00A7C4" />
+            <stop offset="0.45" stopColor="#0A84FF" />
+            <stop offset="1" stopColor="#0A63D1" />
           </linearGradient>
         )}
       </defs>

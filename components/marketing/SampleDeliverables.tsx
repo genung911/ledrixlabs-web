@@ -33,7 +33,7 @@ function Points({ items, tone }: { items: string[]; tone: 'accent' | 'muted' }) 
         <li key={p} className="flex items-start gap-2.5">
           <span
             className={`mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full ${
-              tone === 'accent' ? 'bg-accent-ink shadow-[0_0_8px_rgba(8,145,168,0.5)]' : 'bg-muted'
+              tone === 'accent' ? 'bg-accent-ink shadow-[0_0_8px_rgba(10,99,209,0.5)]' : 'bg-muted'
             }`}
           />
           <span className="text-sm leading-relaxed text-body">{p}</span>
@@ -71,7 +71,7 @@ export function SampleDeliverables() {
             href={`/share/${SAMPLE_PORTAL_ID}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-accent/30 bg-surface shadow-[0_24px_60px_-38px_rgba(0,243,255,0.5)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/50"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-accent/30 bg-surface shadow-[0_24px_60px_-38px_rgba(10,132,255,0.5)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/50"
           >
             <div className="relative h-64 overflow-hidden bg-[#e2e8ee]">
               <Image

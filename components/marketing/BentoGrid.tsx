@@ -74,7 +74,7 @@ export function BentoGrid() {
                   <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-accent-ink">{t.kicker}</span>
                 )}
                 {t.stat && (
-                  <div className="bg-gradient-to-br from-[#0aa8c4] to-accent-ink bg-clip-text text-5xl font-bold tracking-tight text-transparent">
+                  <div className="bg-gradient-to-br from-[#2B8AE0] to-accent-ink bg-clip-text text-5xl font-bold tracking-tight text-transparent">
                     {t.stat}
                   </div>
                 )}
@@ -87,7 +87,7 @@ export function BentoGrid() {
                   <ul className="mt-3 flex flex-col gap-2">
                     {t.points.map((p) => (
                       <li key={p} className="flex items-start gap-2.5">
-                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(8,145,168,0.5)]" />
+                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(10,99,209,0.5)]" />
                         <span className="text-sm leading-relaxed text-body">{p}</span>
                       </li>
                     ))}

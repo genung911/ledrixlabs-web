@@ -62,7 +62,7 @@ export function ContactCTA() {
           {sent ? (
             <motion.div
               variants={fadeUp}
-              className="mt-10 rounded-2xl border border-accent/40 bg-surface p-8 text-ink shadow-[0_18px_50px_-34px_rgba(0,243,255,0.6)]"
+              className="mt-10 rounded-2xl border border-accent/40 bg-surface p-8 text-ink shadow-[0_18px_50px_-34px_rgba(10,132,255,0.6)]"
             >
               <div className="text-lg font-bold">Thanks — you’re on the list.</div>
               <p className="mt-1 text-sm text-body">We’ll be in touch shortly to schedule your walkthrough.</p>

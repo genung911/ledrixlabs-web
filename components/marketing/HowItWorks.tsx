@@ -64,7 +64,7 @@ export function HowItWorks() {
               className={[
                 'group relative flex flex-col overflow-hidden rounded-2xl border p-5 transition-all duration-300',
                 s.featured
-                  ? 'border-accent/50 bg-surface shadow-[0_20px_60px_-30px_rgba(0,243,255,0.55)] ring-1 ring-accent/20'
+                  ? 'border-accent/50 bg-surface shadow-[0_20px_60px_-30px_rgba(10,132,255,0.55)] ring-1 ring-accent/20'
                   : 'border-hairline bg-surface shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)] hover:-translate-y-1 hover:border-accent-ink/40',
               ].join(' ')}
             >

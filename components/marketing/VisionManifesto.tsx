@@ -32,7 +32,7 @@ export function VisionManifesto() {
           className="flex flex-col items-start"
         >
           <motion.div variants={fadeUp} className="mb-6 flex items-center gap-3">
-            <LedrixEye size={44} color="#0891A8" />
+            <LedrixEye size={44} color="#0A63D1" />
             <span className="inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-ink">
               <span className="h-px w-6 bg-accent-ink/70" />
               The future of inspection
@@ -44,7 +44,7 @@ export function VisionManifesto() {
             className="text-5xl font-bold leading-[1.02] tracking-tight text-ink [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
             Inspect the home, not the{' '}
-            <span className="bg-gradient-to-r from-[#0aa8c4] via-accent-ink to-[#066f82] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#2B8AE0] via-accent-ink to-[#08519E] bg-clip-text text-transparent">
               template
             </span>
             .
@@ -53,7 +53,7 @@ export function VisionManifesto() {
           <motion.ul variants={fadeUp} className="mt-9 flex flex-col gap-3.5">
             {POINTS.map((p) => (
               <li key={p} className="flex items-start gap-3">
-                <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(8,145,168,0.5)]" />
+                <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(10,99,209,0.5)]" />
                 <span className="text-base leading-relaxed text-body md:text-lg">{p}</span>
               </li>
             ))}
