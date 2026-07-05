@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
+import { ValMark } from '../ValMark';
 
 type Tile = {
   className: string;
@@ -19,7 +20,49 @@ type Tile = {
   img?: string;
   imgs?: { src: string; alt: string }[]; // lead tile: capture → drafted finding, side by side
   pills?: { label: string; color: string }[]; // priority-levels tile: the real pills, not a sentence
+  shot?: { src: string; alt: string }; // a single supporting screenshot (e.g. the real review card)
+  orb?: boolean; // the VAL mark, in its glass orb shell
+  devices?: boolean; // the "two devices, one brain" mark
 };
+
+// A static rendition of ValOrbVoice's "light" glass shell (no interactivity needed here —
+// this is a feature-grid illustration, not the live VAL button).
+function StaticValOrb() {
+  return (
+    <div
+      className="flex h-20 w-20 items-center justify-center rounded-full"
+      style={{
+        background: 'radial-gradient(125% 130% at 50% 0%, rgba(255,255,255,0.96), rgba(238,244,251,0.86))',
+        border: '1.25px solid rgba(33,123,232,0.4)',
+        boxShadow: '0 10px 30px rgba(12,28,54,0.14), 0 2px 8px rgba(12,28,54,0.08), 0 0 20px rgba(33,123,232,0.2)',
+      }}
+    >
+      <ValMark size={40} />
+    </div>
+  );
+}
+
+// Two phone outlines flanking the Ledrix delta — "every device, one brain." Hand-drawn SVG
+// to match the site's icon language (no icon-library dependency). Devices neutral; the
+// brain/delta is the one place blue belongs here (it's the AI).
+function DevicesOneBrain() {
+  return (
+    <svg width="180" height="72" viewBox="0 0 180 72" fill="none" aria-hidden>
+      {/* connecting lines */}
+      <path d="M46 36 H80" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
+      <path d="M134 36 H100" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
+      {/* left phone (iOS-ish) */}
+      <rect x="14" y="8" width="32" height="56" rx="7" stroke="#0A0F14" strokeWidth="2" />
+      <rect x="20" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
+      {/* right phone (Android-ish, squarer corners) */}
+      <rect x="134" y="8" width="32" height="56" rx="3" stroke="#0A0F14" strokeWidth="2" />
+      <rect x="140" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
+      {/* the brain — Ledrix delta, centered */}
+      <circle cx="90" cy="36" r="19" fill="#217BE8" fillOpacity="0.08" stroke="#217BE8" strokeOpacity="0.35" strokeWidth="1.25" />
+      <path d="M90 25 L100 47 H80 Z" stroke="#217BE8" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 // Exact palette from src/core/theme/SeverityConfig.ts — keep in sync with the app.
 const PRIORITY_PILLS = [
@@ -46,15 +89,28 @@ const TILES: Tile[] = [
       'No evening typing up the report.',
     ],
   },
-  { className: '', stat: '100%', title: 'Inspector-confirmed', body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.' },
+  {
+    className: '',
+    stat: '100%',
+    title: 'Inspector-confirmed',
+    body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.',
+    shot: { src: '/screenshots/review-card.jpg', alt: 'A Ledrix finding awaiting Reject, Edit, Combine, or Confirm' },
+  },
   { className: '', stat: '5', title: 'Priority levels', pills: PRIORITY_PILLS },
-  { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.' },
-  { className: '', kicker: 'Deliverable', title: 'A report clients read', body: 'A clean, legal PDF and a live client home portal — generated, not assembled.' },
+  { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.', orb: true },
+  {
+    className: '',
+    kicker: 'Deliverable',
+    title: 'A report clients read',
+    body: 'A clean, legal PDF and a live client home portal — generated, not assembled.',
+    shot: { src: '/sample-pdf-cover.jpg', alt: 'The Ledrix inspection report cover page' },
+  },
   {
     className: 'md:col-span-2',
     kicker: 'Everywhere',
     title: 'Every device, one brain.',
     body: 'iOS and Android, old phones and new — every device runs the same Ledrix Intelligence.',
+    devices: true,
   },
 ];
 
@@ -128,6 +184,22 @@ export function BentoGrid() {
                       </li>
                     ))}
                   </ul>
+                )}
+                {t.orb && (
+                  <div className="mt-5 flex justify-start">
+                    <StaticValOrb />
+                  </div>
+                )}
+                {t.devices && (
+                  <div className="mt-6 flex justify-center opacity-90">
+                    <DevicesOneBrain />
+                  </div>
+                )}
+                {t.shot && (
+                  <div className="relative mt-5 h-72 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
+                    <Image src={t.shot.src} alt={t.shot.alt} fill className="object-cover object-top" sizes="(max-width:768px) 100vw, 33vw" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
+                  </div>
                 )}
                 {t.imgs && (
                   <div className="relative mt-6 grid grid-cols-2 gap-3">
