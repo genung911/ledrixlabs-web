@@ -3,11 +3,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Ledrix — The AI Backup for Home Inspectors',
-  description: 'Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject. Catch the defect a long day overlooks and deliver the report before you leave the driveway.',
+  description: 'Ledrix is AI home inspection software — the AI backup for home inspectors. Draft a structured finding the instant you capture a photo (you confirm, adjust, or reject), catch the defect a long day overlooks, and deliver a legal PDF report and a client home portal before you leave the driveway.',
+  keywords: ['home inspection software', 'AI home inspection software', 'home inspection app', 'home inspector software', 'AI home inspection assistant', 'inspection report software', 'home inspection report app', 'AI for home inspectors'],
   metadataBase: new URL('https://ledrixlabs.com'),
   openGraph: {
     title: 'Ledrix — The AI Backup for Home Inspectors',
-    description: 'Inspect the house, not the template. Deliver before you leave. AI-assisted inspection with inspector-verified findings, instant PDF reports, and a client home portal.',
+    description: 'AI home inspection software with inspector-verified findings, instant PDF reports, and a client home portal. Inspect the home, not the template — deliver before you leave the driveway.',
     url: 'https://ledrixlabs.com',
     siteName: 'Ledrix Labs',
     type: 'website',
