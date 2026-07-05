@@ -9,7 +9,9 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 
 const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose live Home Portal + PDF are featured
-const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxfjczuymsvmfzxnbilo.supabase.co';
+// Strip any /rest/v1 suffix — the env URL is the REST endpoint, but storage lives at the ROOT (…/storage/v1).
+// Without this the link becomes …/rest/v1/storage/… which demands an apikey → "No API key found".
+const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxfjczuymsvmfzxnbilo.supabase.co').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SAMPLE_PDF_URL = `${SUPA_URL}/storage/v1/object/public/inspection-pdfs/${SAMPLE_PORTAL_ID}/report.pdf`;
 
 export function SampleDeliverables() {
