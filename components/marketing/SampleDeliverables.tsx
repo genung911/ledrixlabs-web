@@ -46,7 +46,7 @@ export function SampleDeliverables() {
           >
             <div className="relative h-64 overflow-hidden bg-black/40">
               <Image
-                src="/screenshots/IMG_5564.PNG"
+                src="/sample-home-portal.jpg"
                 alt="The live Ledrix client home portal"
                 fill
                 className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
