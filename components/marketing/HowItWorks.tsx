@@ -13,8 +13,8 @@ import { SectionHeading } from './ui/SectionHeading';
 const STEPS = [
   {
     n: '01',
-    img: '/screenshots/IMG_5571.jpeg',
-    fit: 'cover' as const,
+    img: '/screenshots/capture-live.jpg',
+    fit: 'contain' as const,
     title: 'Capture',
     body: 'Point your camera. Ledrix Vision reads the structure the way you do — roof to crawlspace.',
     icon: (
@@ -23,7 +23,7 @@ const STEPS = [
   },
   {
     n: '02',
-    img: '/screenshots/IMG_5575.jpeg',
+    img: '/screenshots/finding-panel.jpg',
     fit: 'contain' as const,
     title: 'Draft & Confirm',
     body: 'Ledrix Intelligence drafts the finding the instant you shoot — system, priority, and the spec behind it. You stay the source of truth: Confirm, Adjust, or Reject, by tap or by voice.',
