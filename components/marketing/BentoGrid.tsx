@@ -37,7 +37,7 @@ function StaticValOrb() {
         boxShadow: '0 10px 30px rgba(12,28,54,0.14), 0 2px 8px rgba(12,28,54,0.08), 0 0 20px rgba(33,123,232,0.2)',
       }}
     >
-      <LedrixDelta size={30} color="#217BE8" />
+      <LedrixDelta size={30} sheen />
     </div>
   );
 }

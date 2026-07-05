@@ -3,11 +3,11 @@
 // the orb; on tap the orb spreads them open into the live waveform (ValOrbVoice).
 import { LedrixDelta } from './LedrixDelta';
 
-export function ValMark({ size = 40, color = '#217BE8' }: { size?: number; color?: string }) {
+export function ValMark({ size = 40, color = '#217BE8', sheen = false }: { size?: number; color?: string; sheen?: boolean }) {
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LedrixDelta size={size * 0.64} color={color} />
+        <LedrixDelta size={size * 0.64} color={color} sheen={sheen} />
       </div>
       <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ position: 'absolute', inset: 0 }} aria-hidden>
         <path d="M23 37 Q15 50 23 63" stroke={color} strokeWidth="2.8" strokeLinecap="round" />

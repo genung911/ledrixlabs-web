@@ -352,7 +352,7 @@ function Logo({ size = 32 }: { size?: number }) {
   return (
     <div style={{ width: size, height: size, borderRadius: r, backgroundColor: '#080808',
       border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <ValDeltaSVG size={Math.round(size * 0.82)} color={BLUE} />
+      <ValDeltaSVG size={Math.round(size * 0.82)} color={BLUE} sheen />
     </div>
   );
 }
@@ -1192,7 +1192,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 18, padding: '20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
           <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 62, height: 62, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
             background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.4), 0 0 26px rgba(34,227,255,0.35)' }}>
-            <ValMark size={40} color="#217BE8" />
+            <ValMark size={40} color="#217BE8" sheen />
           </button>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>Ask Ledrix about your home</div>
@@ -2126,7 +2126,7 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: BG, borderTop: `1px solid ${BORDER}`, borderRadius: '20px 20px 0 0', padding: '20px 18px 28px' }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: '#222', margin: '0 auto 18px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-          <ValDeltaSVG size={20} color={BLUE} />
+          <ValDeltaSVG size={20} color={BLUE} sheen />
           <span style={{ color: BLUE, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
         </div>
         <div style={{ color: TEXT, fontSize: 21, fontWeight: 900, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
@@ -2199,7 +2199,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
   return (
     <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BLUE}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <ValDeltaSVG size={14} color={BLUE} />
+        <ValDeltaSVG size={14} color={BLUE} sheen />
         <span style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
       </div>
       {access ? (
@@ -2308,7 +2308,7 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
     <div style={{ position: 'fixed', top: vp ? vp.top : 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430, height: vp ? vp.h : '100dvh', zIndex: 210, background: BG, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-        <ValDeltaSVG size={20} color={BLUE} />
+        <ValDeltaSVG size={20} color={BLUE} sheen />
         <span style={{ color: TEXT, fontSize: 13, fontWeight: 900, flex: 1 }}>Ledrix</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
       </div>

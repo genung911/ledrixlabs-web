@@ -168,7 +168,7 @@ export default function ValOrbVoice({
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.22 }}
           >
-            <ValMark size={Math.round(size * 0.66)} color={t.mark} />
+            <ValMark size={Math.round(size * 0.66)} color={t.mark} sheen={tone === 'light'} />
           </motion.div>
         )}
       </AnimatePresence>
