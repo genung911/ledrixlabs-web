@@ -213,8 +213,8 @@ export function BentoGrid() {
                         <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                           {j === 0 ? 'Shoot' : 'Drafted'}
                         </span>
-                        <div className="relative h-64 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60 sm:h-72">
-                          <Image src={im.src} alt={im.alt} fill className="object-cover object-bottom" sizes="(max-width:768px) 50vw, 33vw" />
+                        <div className="relative aspect-[1284/2778] w-full overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
+                          <Image src={im.src} alt={im.alt} fill className="object-contain" sizes="(max-width:768px) 50vw, 33vw" />
                           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
                         </div>
                       </div>
