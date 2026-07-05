@@ -22,7 +22,7 @@ export function VisionManifesto() {
         fill
         priority
         sizes="100vw"
-        className="-z-20 object-cover object-center"
+        className="-z-20 object-cover object-center md:object-contain"
       />
       {/* legibility scrim — stays dark through the whole text zone (top ~65%) so white type never
           washes out over the bright lit rooms, then lifts to reveal the lower rooms + settles at the base */}
