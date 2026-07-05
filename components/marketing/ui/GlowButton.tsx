@@ -28,9 +28,12 @@ export function GlowButton({
   tone = 'light',
   className = '',
 }: Props) {
-  // Solid cyan pill with a deep-ink label + cyan bloom — the same on light or dark.
+  // primary: a solid cyan pill on LIGHT (strong CTA), but a glowing cyan OUTLINE on DARK — no solid fill,
+  // just the border + glow, so it reads as light, not a heavy cyan block on the hero.
   const primary =
-    'bg-gradient-to-b from-[#3af7ff] to-accent text-[#04252b] shadow-[0_6px_24px_-6px_rgba(0,243,255,0.65)] hover:shadow-[0_10px_32px_-6px_rgba(0,243,255,0.85)]';
+    tone === 'dark'
+      ? 'border border-accent/70 bg-white/[0.04] text-white backdrop-blur shadow-[0_0_28px_-2px_rgba(0,243,255,0.6)] hover:border-accent hover:shadow-[0_0_44px_0_rgba(0,243,255,0.85)]'
+      : 'bg-gradient-to-b from-[#3af7ff] to-accent text-[#04252b] shadow-[0_6px_24px_-6px_rgba(0,243,255,0.65)] hover:shadow-[0_10px_32px_-6px_rgba(0,243,255,0.85)]';
   // Hairline pill — inverts by tone.
   const ghost =
     tone === 'dark'

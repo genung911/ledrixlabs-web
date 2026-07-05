@@ -60,7 +60,7 @@ export function Hero() {
 
           {/* CTAs */}
           <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-            <GlowButton href="#demo" variant="primary">
+            <GlowButton href="#demo" variant="primary" tone="dark">
               Request a demo
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:translate-x-0.5">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
