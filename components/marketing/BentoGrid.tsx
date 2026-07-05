@@ -18,7 +18,18 @@ type Tile = {
   points?: string[];
   img?: string;
   imgs?: { src: string; alt: string }[]; // lead tile: capture → drafted finding, side by side
+  pills?: { label: string; color: string }[]; // priority-levels tile: the real pills, not a sentence
 };
+
+// Exact palette from src/core/theme/SeverityConfig.ts — keep in sync with the app.
+const PRIORITY_PILLS = [
+  { label: 'MAJOR REPAIR',    color: '#F97316' },
+  { label: 'MINOR REPAIR',    color: '#EAB308' },
+  { label: 'MAINT & IMPROVE', color: '#64748B' },
+  { label: 'TYPICAL WEAR',    color: '#38BDF8' },
+  { label: 'GOOD',            color: '#22C55E' },
+];
+const SAFETY_COLOR = '#D9706E';
 
 const TILES: Tile[] = [
   {
@@ -36,7 +47,7 @@ const TILES: Tile[] = [
     ],
   },
   { className: '', stat: '100%', title: 'Inspector-confirmed', body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.' },
-  { className: '', stat: '5', title: 'Priority levels', body: 'Major Repair · Minor Repair · Maint & Improve · Typical Wear · Good — with Safety flagged separately. Clarity clients understand.' },
+  { className: '', stat: '5', title: 'Priority levels', pills: PRIORITY_PILLS },
   { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.' },
   { className: '', kicker: 'Deliverable', title: 'A report clients read', body: 'A clean, legal PDF and a live client home portal — generated, not assembled.' },
   {
@@ -84,6 +95,30 @@ export function BentoGrid() {
               <div className="relative mt-6">
                 <h3 className="text-lg font-bold text-ink">{t.title}</h3>
                 {t.body && <p className="mt-2 text-sm leading-relaxed text-body">{t.body}</p>}
+                {t.pills && (
+                  <div className="mt-3 flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {t.pills.map((p) => (
+                        <span
+                          key={p.label}
+                          className="rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.02em]"
+                          style={{ color: p.color, borderColor: `${p.color}55`, backgroundColor: `${p.color}14` }}
+                        >
+                          {p.label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="rounded-full border border-dashed px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.02em]"
+                        style={{ color: SAFETY_COLOR, borderColor: `${SAFETY_COLOR}70`, backgroundColor: `${SAFETY_COLOR}14` }}
+                      >
+                        + SAFETY
+                      </span>
+                      <span className="text-xs text-muted">flagged separately — orthogonal to priority</span>
+                    </div>
+                  </div>
+                )}
                 {t.points && (
                   <ul className="mt-3 flex flex-col gap-2">
                     {t.points.map((p) => (
