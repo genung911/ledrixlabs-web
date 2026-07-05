@@ -5,9 +5,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand cyan — neon for glows + dark sections; `.ink` is the legible
-        // deeper cyan reserved for accent text / links / underlines on the light ground.
-        accent: { DEFAULT: '#0A84FF', soft: '#7FB0FF', ink: '#0A63D1' },
+        // Signature royal blue — used SPARINGLY, in the Tesla-red spirit (the delta mark,
+        // link hover/active). `.ink` is the legible deeper blue for link text on the light
+        // ground. The interface is otherwise monochrome; color comes from the photography.
+        accent: { DEFAULT: '#217BE8', soft: '#7FB4F0', ink: '#1A63C8' },
         // Light-forward system
         ground:   '#F6F8FA', // cool off-white page ground
         surface:  '#FFFFFF', // cards

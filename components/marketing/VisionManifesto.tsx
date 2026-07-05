@@ -1,14 +1,15 @@
 'use client';
 
-// VisionManifesto — the light, image-first opener. Big airy headline, the accent word
-// in a deeper-cyan gradient, the "eyes, amplified" beat reflowed into scannable bullets
-// (the in-app finding-card voice), and a large piece of real photography leading the eye.
+// VisionManifesto — the full-bleed image opener (Tesla model-hero energy). A single
+// large photograph of the house does all the talking; a dark legibility scrim lets the
+// headline reverse out in white. Monochrome chrome — no accent color, the color comes
+// from the photo. Copy is verbatim; the finding-card bullets stay (dots recolored to
+// silver so they read on the image).
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
-import { LedrixEye } from '@/components/LedrixEye';
 import { GlowButton } from './ui/GlowButton';
-import { GridBackground } from './ui/GridBackground';
+import { VisionOverlay } from './ui/VisionOverlay';
 
 const POINTS = [
   'Your eyes and mind locked onto the structure — not a screen. Ledrix keeps you vision first.',
@@ -19,80 +20,71 @@ const POINTS = [
 
 export function VisionManifesto() {
   return (
-    <section id="vision" className="relative isolate overflow-hidden bg-ground pb-24 pt-36 sm:pb-32 sm:pt-44">
-      <GridBackground variant="light" />
+    <section
+      id="vision"
+      className="relative isolate flex min-h-[85vh] items-center justify-center overflow-hidden bg-dark text-white"
+    >
+      {/* full-bleed photograph */}
+      <div className="absolute inset-0 -z-20">
+        <Image
+          src="/cover-exterior.JPG"
+          alt="A home exterior, inspected with Ledrix"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        {/* legibility scrim — darkest through the centre where the type sits */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,12,14,0.55)_0%,rgba(8,12,14,0.72)_45%,rgba(8,12,14,0.82)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(8,12,14,0.35)_0%,transparent_65%)]" />
+      </div>
 
-      <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 lg:grid-cols-[1.05fr_1fr]">
-        {/* Left — the statement, reflowed to a finding card: eyebrow → headline → bullets */}
+      {/* AI-vision layer — the one place the accent blue lives (the product's eye) */}
+      <VisionOverlay />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-24 pb-16 text-center">
         <motion.div
           variants={stagger}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="flex flex-col items-start"
+          className="flex flex-col items-center"
         >
-          <motion.div variants={fadeUp} className="mb-6 flex items-center gap-3">
-            <LedrixEye size={44} color="#0A63D1" />
-            <span className="inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-ink">
-              <span className="h-px w-6 bg-accent-ink/70" />
-              The future of inspection
-            </span>
-          </motion.div>
+          <motion.span
+            variants={fadeUp}
+            className="mb-7 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.32em] text-white/60"
+          >
+            <span className="h-px w-6 bg-white/40" />
+            The future of inspection
+          </motion.span>
 
           <motion.h1
             variants={fadeUp}
-            className="text-5xl font-bold leading-[1.02] tracking-tight text-ink [text-wrap:balance] sm:text-6xl md:text-7xl"
+            className="text-5xl font-bold leading-[1.03] tracking-tight text-white [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
-            Inspect the home, not the{' '}
-            <span className="bg-gradient-to-r from-[#2B8AE0] via-accent-ink to-[#08519E] bg-clip-text text-transparent">
-              template
-            </span>
-            .
+            Inspect the home, not the template.
           </motion.h1>
 
-          <motion.ul variants={fadeUp} className="mt-9 flex flex-col gap-3.5">
+          <motion.ul variants={fadeUp} className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 text-left">
             {POINTS.map((p) => (
               <li key={p} className="flex items-start gap-3">
-                <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(10,99,209,0.5)]" />
-                <span className="text-base leading-relaxed text-body md:text-lg">{p}</span>
+                <span className="mt-[9px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white/70" />
+                <span className="text-base leading-relaxed text-white/85 md:text-lg">{p}</span>
               </li>
             ))}
           </motion.ul>
 
-          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-start gap-4 sm:flex-row">
-            <GlowButton href="#demo" variant="primary">
+          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+            <GlowButton href="#demo" variant="primary" tone="dark">
               Request a demo
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:translate-x-0.5">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </GlowButton>
-            <GlowButton href="#how" variant="ghost">
+            <GlowButton href="#how" variant="ghost" tone="dark">
               See how it works
             </GlowButton>
           </motion.div>
-        </motion.div>
-
-        {/* Right — the lead photograph. Image-first, hairline-framed, soft cyan bloom. */}
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.3 }}
-          className="relative"
-        >
-          <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-accent/[0.10] blur-[80px]" />
-          <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-hairline bg-surface shadow-[0_30px_80px_-40px_rgba(10,15,20,0.45)] ring-1 ring-white/60">
-            <Image
-              src="/cover-exterior.JPG"
-              alt="A home exterior, inspected with Ledrix"
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width:1024px) 100vw, 46vw"
-            />
-            {/* precise cyan hairline accent along the top edge */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent" />
-          </div>
         </motion.div>
       </div>
     </section>

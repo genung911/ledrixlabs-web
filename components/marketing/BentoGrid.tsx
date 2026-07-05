@@ -1,8 +1,8 @@
 'use client';
 
 // §3 — bento grid of the things that actually matter, on light cards with hairline
-// borders and hover micro-interactions (lift, cyan border, accent bloom). Image-first
-// where it counts; the lead tile reflows its finding into scannable bullets. Honest,
+// borders and a restrained hover lift (monochrome — no accent bloom). Image-first where
+// it counts; the lead tile reflows its finding into scannable bullets. Honest,
 // feature-grounded claims — no fabricated accuracy stats, no "monitoring device" framing.
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -64,17 +64,14 @@ export function BentoGrid() {
             <motion.div
               key={i}
               variants={fadeUp}
-              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-accent-ink/40 ${t.className}`}
+              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 ${t.className}`}
             >
-              {/* hover accent bloom */}
-              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/10 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
-
               <div className="relative">
                 {t.kicker && (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-accent-ink">{t.kicker}</span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">{t.kicker}</span>
                 )}
                 {t.stat && (
-                  <div className="bg-gradient-to-br from-[#2B8AE0] to-accent-ink bg-clip-text text-5xl font-bold tracking-tight text-transparent">
+                  <div className="text-5xl font-bold tracking-tight text-ink">
                     {t.stat}
                   </div>
                 )}
@@ -87,7 +84,7 @@ export function BentoGrid() {
                   <ul className="mt-3 flex flex-col gap-2">
                     {t.points.map((p) => (
                       <li key={p} className="flex items-start gap-2.5">
-                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(10,99,209,0.5)]" />
+                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ink" />
                         <span className="text-sm leading-relaxed text-body">{p}</span>
                       </li>
                     ))}
@@ -96,7 +93,7 @@ export function BentoGrid() {
                 {t.img && (
                   <div className="relative mt-6 h-56 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
                     <Image src={t.img} alt="A finding drafted by Ledrix in the field" fill className="object-cover object-[50%_47%]" sizes="(max-width:768px) 100vw, 66vw" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
                   </div>
                 )}
               </div>

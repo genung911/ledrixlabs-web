@@ -48,8 +48,8 @@ export function ContactCTA() {
 
       <div className="relative z-10 mx-auto max-w-2xl px-6 text-center">
         <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }}>
-          <motion.span variants={fadeUp} className="mb-5 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-ink">
-            <span className="h-px w-6 bg-accent-ink/70" />
+          <motion.span variants={fadeUp} className="mb-5 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">
+            <span className="h-px w-6 bg-muted/50" />
             Request a demo
           </motion.span>
           <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight text-ink [text-wrap:balance] md:text-5xl">
@@ -62,7 +62,7 @@ export function ContactCTA() {
           {sent ? (
             <motion.div
               variants={fadeUp}
-              className="mt-10 rounded-2xl border border-accent/40 bg-surface p-8 text-ink shadow-[0_18px_50px_-34px_rgba(10,132,255,0.6)]"
+              className="mt-10 rounded-2xl border border-hairline bg-surface p-8 text-ink shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)]"
             >
               <div className="text-lg font-bold">Thanks — you’re on the list.</div>
               <p className="mt-1 text-sm text-body">We’ll be in touch shortly to schedule your walkthrough.</p>
@@ -98,7 +98,7 @@ function Field({
       <input
         id={id}
         name={id}
-        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-ink outline-none transition-colors duration-200 placeholder:text-muted focus:border-accent-ink/60 focus:ring-2 focus:ring-accent/20"
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-ink outline-none transition-colors duration-200 placeholder:text-muted focus:border-ink/40 focus:ring-2 focus:ring-ink/10"
         {...props}
       />
     </label>

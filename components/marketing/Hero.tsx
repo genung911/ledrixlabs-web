@@ -1,8 +1,9 @@
 'use client';
 
-// Hero — THE dark full-bleed "hero moment" on an otherwise light page. A real home
-// photo sits behind a near-black scrim, white type reverses out, and the accent word
-// glows cyan. The subhead is reflowed into scannable bullets (the finding-card voice).
+// Hero — a second dark "hero moment" further down the page (living-room photo, so it
+// doesn't echo the exterior opener). A real home photo sits behind a near-black scrim
+// and white type reverses out — monochrome, restrained, no accent glow. The subhead is
+// reflowed into scannable bullets (the finding-card voice).
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
@@ -30,29 +31,25 @@ export function Hero() {
           {/* eyebrow */}
           <motion.span
             variants={fadeUp}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent/90 backdrop-blur"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#0A84FF]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
             Ledrix Intelligence
           </motion.span>
 
           {/* headline */}
           <motion.h2
             variants={fadeUp}
-            className="max-w-4xl text-5xl font-bold leading-[1.04] tracking-tight [text-wrap:balance] sm:text-6xl md:text-7xl"
+            className="max-w-4xl text-5xl font-bold leading-[1.04] tracking-tight text-white [text-wrap:balance] sm:text-6xl md:text-7xl"
           >
-            The future of inspecting is{' '}
-            <span className="bg-gradient-to-r from-accent-soft via-accent to-accent-soft bg-clip-text text-transparent [text-shadow:0_0_40px_rgba(10,132,255,0.25)]">
-              finally here
-            </span>
-            !
+            The future of inspecting is finally here!
           </motion.h2>
 
           {/* subhead → bullets */}
           <motion.ul variants={fadeUp} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 text-left">
             {POINTS.map((p) => (
               <li key={p} className="flex items-start gap-3">
-                <span className="mt-[8px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent shadow-[0_0_10px_#0A84FF]" />
+                <span className="mt-[8px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white/60" />
                 <span className="text-lg leading-relaxed text-slate-200 [text-wrap:balance]">{p}</span>
               </li>
             ))}

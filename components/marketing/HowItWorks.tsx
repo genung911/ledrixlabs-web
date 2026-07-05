@@ -64,18 +64,16 @@ export function HowItWorks() {
               className={[
                 'group relative flex flex-col overflow-hidden rounded-2xl border p-5 transition-all duration-300',
                 s.featured
-                  ? 'border-accent/50 bg-surface shadow-[0_20px_60px_-30px_rgba(10,132,255,0.55)] ring-1 ring-accent/20'
-                  : 'border-hairline bg-surface shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)] hover:-translate-y-1 hover:border-accent-ink/40',
+                  ? 'border-ink/20 bg-surface shadow-[0_20px_60px_-34px_rgba(10,15,20,0.5)]'
+                  : 'border-hairline bg-surface shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)] hover:-translate-y-1 hover:border-ink/20',
               ].join(' ')}
             >
-              {/* hover glow wash */}
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
               {/* screenshot — uniform light stage; the app screen sits in a phone bezel,
                   the photo + delivery screen fill the framed stage */}
               <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee]">
                 {s.featured ? (
-                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_16px_44px_-14px_rgba(10,15,20,0.5)] ring-1 ring-accent/25">
+                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_16px_44px_-14px_rgba(10,15,20,0.5)]">
                     {/* dynamic island */}
                     <div className="absolute left-1/2 top-1.5 z-10 h-3.5 w-12 -translate-x-1/2 rounded-full bg-black" />
                     <Image src={s.img} alt={s.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="220px" />
@@ -98,11 +96,11 @@ export function HowItWorks() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold tracking-widest text-accent-ink">{s.n}</span>
+                <span className="font-mono text-xs font-bold tracking-widest text-muted">{s.n}</span>
                 <svg
                   width="28" height="28" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-                  className="text-accent-ink transition-transform duration-300 group-hover:scale-110"
+                  className="text-ink transition-transform duration-300 group-hover:scale-110"
                 >
                   {s.icon}
                 </svg>

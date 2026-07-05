@@ -21,7 +21,7 @@ export function GridBackground({
     return (
       <div aria-hidden className={`absolute inset-0 ${className}`}>
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(10,15,20,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(10,15,20,0.035)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-        <div className="absolute left-1/2 top-[30%] h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-accent/[0.06] blur-[150px]" />
+        <div className="absolute left-1/2 top-[30%] h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-ink/[0.03] blur-[150px]" />
       </div>
     );
   }
@@ -31,10 +31,10 @@ export function GridBackground({
       {/* grid lines, faded toward the edges with a radial mask */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black_25%,transparent_72%)]" />
 
-      {/* slow-drifting cyan aurora */}
+      {/* slow-drifting neutral glow */}
       <motion.div
-        className="absolute left-1/2 top-[34%] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-accent/20 blur-[140px]"
-        animate={reduce ? undefined : { x: [-60, 60, -60], y: [-24, 24, -24], opacity: [0.45, 0.75, 0.45] }}
+        className="absolute left-1/2 top-[34%] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-white/[0.06] blur-[140px]"
+        animate={reduce ? undefined : { x: [-60, 60, -60], y: [-24, 24, -24], opacity: [0.35, 0.55, 0.35] }}
         transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
       />
 

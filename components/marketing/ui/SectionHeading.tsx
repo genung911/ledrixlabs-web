@@ -1,8 +1,8 @@
 'use client';
 
 // SectionHeading — the staggered eyebrow + title + sub atop each light section.
-// Mono uppercase deeper-cyan eyebrow with a precise hairline tick; near-black title;
-// slate sub. The futuristic-on-light cue.
+// Mono uppercase MUTED-GREY eyebrow with a precise grey tick; near-black title; slate
+// sub. Monochrome — no accent color.
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 
@@ -29,9 +29,9 @@ export function SectionHeading({
     >
       <motion.span
         variants={fadeUp}
-        className="mb-5 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-ink"
+        className="mb-5 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-muted"
       >
-        <span className="h-px w-6 bg-accent-ink/70" />
+        <span className="h-px w-6 bg-muted/50" />
         {eyebrow}
       </motion.span>
       <motion.h2 variants={fadeUp} className="max-w-3xl text-4xl font-bold tracking-tight text-ink [text-wrap:balance] md:text-5xl">
