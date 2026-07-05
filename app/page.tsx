@@ -14,7 +14,7 @@ import { ContactCTA } from '@/components/marketing/ContactCTA';
 export default function Home() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
-      <Navbar overLight />
+      <Navbar />
       <main>
         <VisionManifesto />
         <HowItWorks />
