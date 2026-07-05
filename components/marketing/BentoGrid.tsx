@@ -196,20 +196,22 @@ export function BentoGrid() {
                   </div>
                 )}
                 {t.shot && (
-                  <div className="relative mt-5 h-72 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
-                    <Image src={t.shot.src} alt={t.shot.alt} fill className="object-cover object-top" sizes="(max-width:768px) 100vw, 33vw" />
+                  <div className="relative mt-5 aspect-[1284/1530] w-full overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
+                    <Image src={t.shot.src} alt={t.shot.alt} fill className="object-contain" sizes="(max-width:768px) 100vw, 33vw" />
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
                   </div>
                 )}
                 {t.imgs && (
                   <div className="relative mt-6 grid grid-cols-2 gap-3">
                     {t.imgs.map((im, j) => (
-                      <div key={im.src} className="relative h-64 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60 sm:h-72">
-                        <Image src={im.src} alt={im.alt} fill className="object-cover object-top" sizes="(max-width:768px) 50vw, 33vw" />
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
-                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-ink/80 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
+                      <div key={im.src} className="flex flex-col gap-2">
+                        <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                           {j === 0 ? 'Shoot' : 'Drafted'}
                         </span>
+                        <div className="relative h-64 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60 sm:h-72">
+                          <Image src={im.src} alt={im.alt} fill className="object-cover object-bottom" sizes="(max-width:768px) 50vw, 33vw" />
+                          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
+                        </div>
                       </div>
                     ))}
                   </div>
