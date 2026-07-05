@@ -1,12 +1,30 @@
 'use client';
 
-// GridBackground — the animated dark-mode grid used behind the hero (and reusable
-// behind other dark sections). Masked grid lines + a slow-drifting cyan aurora +
-// a vignette. Respects prefers-reduced-motion (the aurora holds still).
+// GridBackground — the ambient grid behind feature sections.
+//   variant="dark"  → the futuristic near-black band: white hairlines, a slow cyan
+//                     aurora, and a vignette into black (the Hero "hero moment").
+//   variant="light" → a whisper-quiet slate hairline grid on the off-white ground,
+//                     with a faint cyan bloom. No vignette, nothing loud.
+// Respects prefers-reduced-motion (the aurora holds still).
 import { motion, useReducedMotion } from 'framer-motion';
 
-export function GridBackground({ className = '' }: { className?: string }) {
+export function GridBackground({
+  className = '',
+  variant = 'dark',
+}: {
+  className?: string;
+  variant?: 'dark' | 'light';
+}) {
   const reduce = useReducedMotion();
+
+  if (variant === 'light') {
+    return (
+      <div aria-hidden className={`absolute inset-0 ${className}`}>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(10,15,20,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(10,15,20,0.035)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-[30%] h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-accent/[0.06] blur-[150px]" />
+      </div>
+    );
+  }
 
   return (
     <div aria-hidden className={`absolute inset-0 ${className}`}>
@@ -21,7 +39,7 @@ export function GridBackground({ className = '' }: { className?: string }) {
       />
 
       {/* vignette into pure black */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,#070707_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,#0A0F11_100%)]" />
     </div>
   );
 }

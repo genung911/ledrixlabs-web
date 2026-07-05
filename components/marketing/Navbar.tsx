@@ -1,7 +1,8 @@
 'use client';
 
-// Navbar — sticky, transparent over the hero, frosts + hairline on scroll. Glowing
-// delta mark + wordmark, anchor links, and the primary CTA.
+// Navbar — transparent over the light opener, frosts to translucent WHITE with a
+// hairline on scroll. Cyan delta mark + dark wordmark, slate nav links that ink on
+// hover, and the primary cyan CTA.
 import { useEffect, useState } from 'react';
 import { GlowButton } from './ui/GlowButton';
 import { LedrixDelta } from '@/components/LedrixDelta';
@@ -28,18 +29,18 @@ export function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled ? 'border-b border-white/[0.08] bg-ink/70 backdrop-blur-xl' : 'border-b border-transparent'
+        scrolled ? 'border-b border-hairline bg-white/75 backdrop-blur-xl' : 'border-b border-transparent'
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="group flex items-center gap-2.5">
           <LedrixDelta size={22} sheen className="transition-transform duration-300 group-hover:scale-110" />
-          <span className="text-base font-bold tracking-tight text-white">Ledrix</span>
+          <span className="text-base font-bold tracking-tight text-ink">Ledrix</span>
         </a>
 
         <div className="hidden items-center gap-8 md:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-white">
+            <a key={l.href} href={l.href} className="text-sm font-medium text-body transition-colors duration-200 hover:text-ink">
               {l.label}
             </a>
           ))}

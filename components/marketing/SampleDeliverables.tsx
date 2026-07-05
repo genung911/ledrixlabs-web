@@ -2,6 +2,7 @@
 
 // SampleDeliverables — "see what your client gets": two clickable tiles that open real samples in a new
 // tab — the live Home Portal (rendered by /share/[id], always the current design) and the PDF report.
+// Light cards, big real photos leading, copy reflowed to scannable bullets (the finding-card voice).
 // Swap SAMPLE_PORTAL_ID for the inspection you want to feature; drop a fresh /sample-report.html to refresh
 // the PDF.
 import Image from 'next/image';
@@ -14,22 +15,50 @@ const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose 
 const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxfjczuymsvmfzxnbilo.supabase.co').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SAMPLE_PDF_URL = `${SUPA_URL}/storage/v1/object/public/inspection-pdfs/${SAMPLE_PORTAL_ID}/report.pdf`;
 
+const PORTAL_POINTS = [
+  'The living portal your buyer keeps — health score, findings in plain language.',
+  'A maintenance schedule and property records.',
+  'Tap any finding: local cost estimate, pros to call, repair videos, and Ask Ledrix.',
+];
+const PDF_POINTS = [
+  'A clean, legal inspection report with system scores.',
+  'Every finding backed by timestamped, GPS-anchored photo proof.',
+  'Verified and signed by the inspector.',
+];
+
+function Points({ items, tone }: { items: string[]; tone: 'accent' | 'muted' }) {
+  return (
+    <ul className="mt-4 flex flex-col gap-2.5">
+      {items.map((p) => (
+        <li key={p} className="flex items-start gap-2.5">
+          <span
+            className={`mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full ${
+              tone === 'accent' ? 'bg-accent-ink shadow-[0_0_8px_rgba(8,145,168,0.5)]' : 'bg-muted'
+            }`}
+          />
+          <span className="text-sm leading-relaxed text-body">{p}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SampleDeliverables() {
   return (
-    <section id="sample" className="relative bg-ink py-28 sm:py-32">
+    <section id="sample" className="relative bg-ground py-28 sm:py-32">
       <div className="mx-auto max-w-5xl px-6">
         <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} className="flex flex-col items-center text-center">
           <motion.span
             variants={fadeUp}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.06] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent/90 backdrop-blur"
+            className="mb-5 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-ink"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_#00F3FF]" />
+            <span className="h-px w-6 bg-accent-ink/70" />
             See what your client gets
           </motion.span>
-          <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight [text-wrap:balance] sm:text-5xl">
+          <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight text-ink [text-wrap:balance] sm:text-5xl">
             Open a real one.
           </motion.h2>
-          <motion.p variants={fadeUp} className="mt-5 max-w-xl text-lg leading-relaxed text-slate-400 [text-wrap:balance]">
+          <motion.p variants={fadeUp} className="mt-5 max-w-xl text-lg leading-relaxed text-body [text-wrap:balance]">
             Every inspection delivers two things — a clean, legal PDF and a live home portal the buyer keeps.
             Click either to open a real sample.
           </motion.p>
@@ -42,26 +71,22 @@ export function SampleDeliverables() {
             href={`/share/${SAMPLE_PORTAL_ID}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-accent/20 bg-white/[0.02] shadow-[0_0_60px_rgba(0,243,255,0.05)] transition-colors hover:border-accent/40"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-accent/30 bg-surface shadow-[0_24px_60px_-38px_rgba(0,243,255,0.5)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/50"
           >
-            <div className="relative h-64 overflow-hidden bg-black/40">
+            <div className="relative h-64 overflow-hidden bg-[#e2e8ee]">
               <Image
                 src="/sample-home-portal.jpg"
                 alt="The live Ledrix client home portal"
                 fill
                 className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-ink/90" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent" />
             </div>
             <div className="flex flex-1 flex-col p-7">
-              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent/90">Client Home App · Live</span>
-              <h3 className="mt-2 text-xl font-bold tracking-tight text-white">Sample Home Portal</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                The living portal your buyer keeps — health score, findings in plain language, a maintenance
-                schedule, and property records. Tap any finding for a local cost estimate, pros to call, repair
-                videos, and Ask Ledrix.
-              </p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-accent">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-accent-ink">Client Home App · Live</span>
+              <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample Home Portal</h3>
+              <Points items={PORTAL_POINTS} tone="accent" />
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-accent-ink">
                 Open the live portal
                 <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
               </span>
@@ -74,20 +99,16 @@ export function SampleDeliverables() {
             href={SAMPLE_PDF_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/25"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
           >
-            <div className="relative h-64 overflow-hidden bg-black/40">
+            <div className="relative h-64 overflow-hidden bg-[#e2e8ee]">
               <Image src="/sample-pdf-cover.jpg" alt="The Ledrix inspection report cover page" fill className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-ink/90" />
             </div>
             <div className="flex flex-1 flex-col p-7">
-              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Inspection Report · PDF</span>
-              <h3 className="mt-2 text-xl font-bold tracking-tight text-white">Sample PDF Report</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                A clean, legal inspection report — system scores and every finding backed by timestamped,
-                GPS-anchored photo proof, verified and signed by the inspector.
-              </p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-slate-300">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Inspection Report · PDF</span>
+              <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample PDF Report</h3>
+              <Points items={PDF_POINTS} tone="muted" />
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-body">
                 Open the sample
                 <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
               </span>

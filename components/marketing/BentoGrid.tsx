@@ -1,14 +1,23 @@
 'use client';
 
-// §3 — bento grid of the things that actually matter, with hover micro-interactions
-// (lift, border glow, accent wash). Honest, feature-grounded claims — no fabricated
-// accuracy stats and no "monitoring device" framing.
+// §3 — bento grid of the things that actually matter, on light cards with hairline
+// borders and hover micro-interactions (lift, cyan border, accent bloom). Image-first
+// where it counts; the lead tile reflows its finding into scannable bullets. Honest,
+// feature-grounded claims — no fabricated accuracy stats, no "monitoring device" framing.
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
 
-type Tile = { className: string; kicker?: string; stat?: string; title: string; body: string; img?: string };
+type Tile = {
+  className: string;
+  kicker?: string;
+  stat?: string;
+  title: string;
+  body?: string;
+  points?: string[];
+  img?: string;
+};
 
 const TILES: Tile[] = [
   {
@@ -16,7 +25,11 @@ const TILES: Tile[] = [
     kicker: 'In the field',
     img: '/screenshots/IMG_5555.PNG',
     title: 'The finding, drafted the moment you shoot.',
-    body: 'Every capture becomes a structured finding — system, location, priority, and the spec behind it — while you’re still standing in front of it. No evening typing up the report.',
+    points: [
+      'Every capture becomes a structured finding — system, location, priority, and the spec behind it.',
+      'Drafted while you’re still standing in front of it.',
+      'No evening typing up the report.',
+    ],
   },
   { className: '', stat: '100%', title: 'Inspector-confirmed', body: 'Ledrix proposes; you Confirm, Adjust, or Reject. Nothing ships you didn’t sign off on.' },
   { className: '', stat: '5', title: 'Priority levels', body: 'Major Repair · Minor Repair · Maint & Improve · Typical Wear · Good — with Safety flagged separately. Clarity clients understand.' },
@@ -32,7 +45,7 @@ const TILES: Tile[] = [
 
 export function BentoGrid() {
   return (
-    <section id="features" className="relative bg-ink py-28">
+    <section id="features" className="relative bg-ground py-28">
       <div className="mx-auto max-w-6xl px-6">
         <SectionHeading
           eyebrow="Why Ledrix"
@@ -51,29 +64,39 @@ export function BentoGrid() {
             <motion.div
               key={i}
               variants={fadeUp}
-              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 ${t.className}`}
+              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-accent-ink/40 ${t.className}`}
             >
-              {/* hover accent wash */}
+              {/* hover accent bloom */}
               <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/10 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
 
               <div className="relative">
                 {t.kicker && (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-accent/70">{t.kicker}</span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-accent-ink">{t.kicker}</span>
                 )}
                 {t.stat && (
-                  <div className="bg-gradient-to-br from-accent-soft to-accent bg-clip-text text-5xl font-bold tracking-tight text-transparent">
+                  <div className="bg-gradient-to-br from-[#0aa8c4] to-accent-ink bg-clip-text text-5xl font-bold tracking-tight text-transparent">
                     {t.stat}
                   </div>
                 )}
               </div>
 
               <div className="relative mt-6">
-                <h3 className="text-lg font-bold text-white">{t.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{t.body}</p>
+                <h3 className="text-lg font-bold text-ink">{t.title}</h3>
+                {t.body && <p className="mt-2 text-sm leading-relaxed text-body">{t.body}</p>}
+                {t.points && (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {t.points.map((p) => (
+                      <li key={p} className="flex items-start gap-2.5">
+                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-ink shadow-[0_0_8px_rgba(8,145,168,0.5)]" />
+                        <span className="text-sm leading-relaxed text-body">{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {t.img && (
-                  <div className="relative mt-6 h-56 overflow-hidden rounded-xl border border-white/10 ring-1 ring-white/5">
+                  <div className="relative mt-6 h-56 overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
                     <Image src={t.img} alt="A finding drafted by Ledrix in the field" fill className="object-cover object-[50%_47%]" sizes="(max-width:768px) 100vw, 66vw" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b]/20 to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent" />
                   </div>
                 )}
               </div>

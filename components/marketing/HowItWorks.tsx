@@ -42,7 +42,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how" className="relative bg-ink py-28">
+    <section id="how" className="relative bg-ground py-28">
       <div className="mx-auto max-w-6xl px-6">
         <SectionHeading
           eyebrow="How it works"
@@ -62,20 +62,20 @@ export function HowItWorks() {
               key={s.n}
               variants={fadeUp}
               className={[
-                'group relative flex flex-col overflow-hidden rounded-2xl border p-5 transition-colors duration-300',
+                'group relative flex flex-col overflow-hidden rounded-2xl border p-5 transition-all duration-300',
                 s.featured
-                  ? 'border-accent/40 bg-accent/[0.04] shadow-[0_0_50px_-18px] shadow-accent/40'
-                  : 'border-white/[0.08] bg-white/[0.02] hover:border-accent/30',
+                  ? 'border-accent/50 bg-surface shadow-[0_20px_60px_-30px_rgba(0,243,255,0.55)] ring-1 ring-accent/20'
+                  : 'border-hairline bg-surface shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)] hover:-translate-y-1 hover:border-accent-ink/40',
               ].join(' ')}
             >
               {/* hover glow wash */}
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
-              {/* screenshot — uniform dark stage; the app screen sits in a phone bezel,
+              {/* screenshot — uniform light stage; the app screen sits in a phone bezel,
                   the photo + delivery screen fill the framed stage */}
-              <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#0e1416] to-[#06090a]">
+              <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee]">
                 {s.featured ? (
-                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_12px_40px_-12px_rgba(0,0,0,0.85)] ring-1 ring-accent/20">
+                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_16px_44px_-14px_rgba(10,15,20,0.5)] ring-1 ring-accent/25">
                     {/* dynamic island */}
                     <div className="absolute left-1/2 top-1.5 z-10 h-3.5 w-12 -translate-x-1/2 rounded-full bg-black" />
                     <Image src={s.img} alt={s.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="220px" />
@@ -92,24 +92,24 @@ export function HowItWorks() {
                       ].join(' ')}
                       sizes="(max-width:768px) 100vw, 33vw"
                     />
-                    <div className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]" />
+                    <div className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_24px_rgba(10,15,20,0.12)]" />
                   </>
                 )}
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold tracking-widest text-accent/70">{s.n}</span>
+                <span className="font-mono text-xs font-bold tracking-widest text-accent-ink">{s.n}</span>
                 <svg
                   width="28" height="28" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-                  className="text-accent transition-transform duration-300 group-hover:scale-110"
+                  className="text-accent-ink transition-transform duration-300 group-hover:scale-110"
                 >
                   {s.icon}
                 </svg>
               </div>
 
-              <h3 className="mt-5 text-xl font-bold text-white">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">{s.body}</p>
+              <h3 className="mt-5 text-xl font-bold text-ink">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-body">{s.body}</p>
             </motion.li>
           ))}
         </motion.ol>

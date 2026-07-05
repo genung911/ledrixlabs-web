@@ -13,7 +13,7 @@ import { ContactCTA } from '@/components/marketing/ContactCTA';
 // <html>/<body> + the indexable SEO metadata; this page owns the marketing chrome (Navbar/Footer/VAL orb).
 export default function Home() {
   return (
-    <div id="top" className="min-h-screen bg-ink font-sans text-white antialiased">
+    <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
       <Navbar />
       <main>
         <VisionManifesto />

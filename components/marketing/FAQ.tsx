@@ -45,7 +45,7 @@ const FAQS = [
 export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faq" className="relative bg-ink py-28">
+    <section id="faq" className="relative bg-ground py-28">
       <div className="mx-auto max-w-3xl px-6">
         <SectionHeading
           eyebrow="FAQ"
@@ -69,8 +69,8 @@ export function FAQ() {
                 className={[
                   'overflow-hidden rounded-2xl border transition-colors duration-300',
                   isOpen
-                    ? 'border-accent/40 bg-accent/[0.04]'
-                    : 'border-white/[0.08] bg-white/[0.02] hover:border-accent/30',
+                    ? 'border-accent/50 bg-surface shadow-[0_14px_40px_-30px_rgba(0,243,255,0.6)]'
+                    : 'border-hairline bg-surface hover:border-accent-ink/40',
                 ].join(' ')}
               >
                 <button
@@ -78,12 +78,12 @@ export function FAQ() {
                   aria-expanded={isOpen}
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                 >
-                  <span className="text-base font-bold text-white">{f.q}</span>
+                  <span className="text-base font-bold text-ink">{f.q}</span>
                   <svg
                     width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     className={[
-                      'flex-shrink-0 text-accent transition-transform duration-300',
+                      'flex-shrink-0 text-accent-ink transition-transform duration-300',
                       isOpen ? 'rotate-45' : '',
                     ].join(' ')}
                     aria-hidden="true"
@@ -98,7 +98,7 @@ export function FAQ() {
                   ].join(' ')}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-5 pb-5 text-sm leading-relaxed text-slate-400">{f.a}</p>
+                    <p className="px-5 pb-5 text-sm leading-relaxed text-body">{f.a}</p>
                   </div>
                 </div>
               </motion.div>
