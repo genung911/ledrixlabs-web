@@ -5,16 +5,27 @@
 // confirms (the human-in-the-loop truth engine — the middle tile, gently highlighted).
 // Equal-height cards on one uniform image frame; the photo fills (cover) while the two
 // UI screens are contained (nothing crops), so the mismatched sizes stay balanced.
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
 
-const STEPS = [
+type Fit = 'cover' | 'contain';
+
+const STEPS: Array<{
+  n: string;
+  img: string;
+  fit: Fit;
+  title: string;
+  body: string;
+  icon: ReactNode;
+  featured?: boolean;
+}> = [
   {
     n: '01',
     img: '/screenshots/capture-live.jpg',
-    fit: 'contain' as const,
+    fit: 'contain',
     title: 'Capture',
     body: 'Point your camera. Ledrix Vision reads the structure the way you do — roof to crawlspace.',
     icon: (
@@ -24,7 +35,7 @@ const STEPS = [
   {
     n: '02',
     img: '/screenshots/finding-panel.jpg',
-    fit: 'contain' as const,
+    fit: 'contain',
     title: 'Draft & Confirm',
     body: 'Ledrix Intelligence drafts the finding the instant you shoot — system, priority, and the spec behind it. You stay the source of truth: Confirm, Adjust, or Reject, by tap or by voice.',
     icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3Z M9.5 11.5l1.8 1.8 3.4-3.6" />,
@@ -33,7 +44,7 @@ const STEPS = [
   {
     n: '03',
     img: '/screenshots/IMG_5573.jpeg',
-    fit: 'contain' as const,
+    fit: 'contain',
     title: 'Deliver',
     body: 'It compiles into a clean, legal PDF and a client home portal — before you leave the driveway.',
     icon: <path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4Z M9 13l2 2 4-4" />,
