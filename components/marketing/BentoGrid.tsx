@@ -47,20 +47,25 @@ function StaticValOrb() {
 // brain/delta is the one place blue belongs here (it's the AI).
 function DevicesOneBrain() {
   return (
-    <svg width="180" height="72" viewBox="0 0 180 72" fill="none" aria-hidden>
-      {/* connecting lines */}
-      <path d="M46 36 H80" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
-      <path d="M134 36 H100" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
-      {/* left phone (iOS-ish) */}
-      <rect x="14" y="8" width="32" height="56" rx="7" stroke="#0A0F14" strokeWidth="2" />
-      <rect x="20" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
-      {/* right phone (Android-ish, squarer corners) */}
-      <rect x="134" y="8" width="32" height="56" rx="3" stroke="#0A0F14" strokeWidth="2" />
-      <rect x="140" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
-      {/* the brain — Ledrix delta, centered */}
-      <circle cx="90" cy="36" r="19" fill="#217BE8" fillOpacity="0.08" stroke="#217BE8" strokeOpacity="0.35" strokeWidth="1.25" />
-      <path d="M90 25 L100 47 H80 Z" stroke="#217BE8" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <div className="relative" style={{ width: 180, height: 72 }}>
+      <svg width="180" height="72" viewBox="0 0 180 72" fill="none" aria-hidden className="absolute inset-0">
+        {/* connecting lines */}
+        <path d="M46 36 H80" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
+        <path d="M134 36 H100" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
+        {/* left phone (iOS-ish) */}
+        <rect x="14" y="8" width="32" height="56" rx="7" stroke="#0A0F14" strokeWidth="2" />
+        <rect x="20" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
+        {/* right phone (Android-ish, squarer corners) */}
+        <rect x="134" y="8" width="32" height="56" rx="3" stroke="#0A0F14" strokeWidth="2" />
+        <rect x="140" y="16" width="20" height="34" rx="1.5" stroke="#0A0F14" strokeOpacity="0.35" strokeWidth="1.4" />
+        {/* the brain's glow pedestal */}
+        <circle cx="90" cy="36" r="19" fill="#217BE8" fillOpacity="0.08" stroke="#217BE8" strokeOpacity="0.35" strokeWidth="1.25" />
+      </svg>
+      {/* the brain — the real Ledrix delta mark, centered on the pedestal */}
+      <div className="absolute" style={{ left: 90 - 11, top: 36 - 11 }}>
+        <LedrixDelta size={22} sheen />
+      </div>
+    </div>
   );
 }
 
