@@ -69,7 +69,12 @@ type Anomaly = {
   imageUri?: string; isSafety?: boolean;   // real synced Safety flag (app's isSafetyConcern)
   issueTitle?: string; observationBullets?: string[];   // canonical finding card: title + bullets
 };
-type Spec = { category?: string; material?: string; status?: string; };
+type Spec = {
+  category?: string; material?: string; status?: string;
+  manual_url?: string;
+  manual_verified_at?: string;
+  manual_maintenance?: { task: string; intervalDays: number; notes?: string }[];
+};
 type HomeRecord = {
   id: string; share_id: string; address?: string; city?: string; state?: string;
   zip?: string; year_built?: string; sqft?: string; beds?: string; baths?: string;
@@ -297,7 +302,37 @@ function buildMaintenanceReminders(shareId: string, specs: Spec[], anomalies: An
   if (has('irrigation', 'sprinkler'))                                      rem.push(mk('Winterize the irrigation',   'Exterior', 210, '365d'));
   if (has('pool', 'spa', 'hot tub'))                                       rem.push(mk('Service the pool / spa',     'Exterior', 60,  '90d'));
 
+  // Manufacturer-sourced maintenance — pulled straight from the appliance's data-plate manual
+  // (Ledrix Intelligence looks up + verifies the manual, then extracts its service schedule).
+  // Title includes the spec so re-seeding recognizes it's already been added (stable dedupe key).
+  for (const s of specs.filter(s => s.status === 'confirmed')) {
+    for (const item of s.manual_maintenance ?? []) {
+      rem.push(mk(`${item.task} (${s.material || s.category})`, s.category ?? 'General', Math.min(item.intervalDays, 30), `${item.intervalDays}d`));
+    }
+  }
+
   return rem;
+}
+
+// Auto-seed the Docs/Manuals tab from any spec Ledrix Intelligence has verified a manufacturer
+// manual for. Dedupe strictly by URL (not title) — a homeowner's own upload has no "seeded" flag
+// to lean on, so matching the exact link is the only safe way to avoid duplicating their work.
+async function seedManualDocs(shareId: string, specs: Spec[]) {
+  const withManual = specs.filter(s => s.manual_url);
+  if (withManual.length === 0) return;
+  const existing = await supaGet<{ url: string }>(`home_documents?share_id=eq.${encodeURIComponent(shareId)}&select=url`);
+  const haveUrls = new Set(existing.map(d => d.url));
+  const missing = withManual
+    .filter(s => !haveUrls.has(s.manual_url!))
+    .map(s => ({
+      share_id: shareId,
+      name: `${s.material || s.category || 'Appliance'} Manual`,
+      url: s.manual_url,
+      path: null,
+      kind: 'manual',
+      size: null,
+    }));
+  if (missing.length > 0) await supaPost('home_documents', missing);
 }
 
 // ─── Seeding ─────────────────────────────────────────────────────────────────
@@ -321,6 +356,8 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
   const have = new Set((isLegacy ? [] : existRem).map(r => r.title));
   const missing = implied.filter(r => !have.has((r as { title: string }).title));
   if (missing.length > 0) await supaPost('home_reminders', missing);
+
+  await seedManualDocs(shareId, specs);
 }
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
