@@ -90,7 +90,7 @@ export function SampleDeliverables() {
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Client Home App · Live</span>
               <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample Home Portal</h3>
               <Points items={PORTAL_POINTS} tone="accent" />
-              <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-ink">
+              <span className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white transition-colors duration-300 group-hover:bg-accent-ink">
                 Open the live portal
                 <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
               </span>
@@ -114,7 +114,7 @@ export function SampleDeliverables() {
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Inspection Report · PDF</span>
               <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample PDF Report</h3>
               <Points items={PDF_POINTS} tone="muted" />
-              <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-body">
+              <span className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white transition-colors duration-300 group-hover:bg-accent-ink">
                 Open the sample
                 <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
               </span>
