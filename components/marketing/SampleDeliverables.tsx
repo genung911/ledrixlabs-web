@@ -8,6 +8,7 @@
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
+import { PhoneBezel } from './PhoneBezel';
 
 const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose live Home Portal + PDF are featured
 // The PDF tile points at the stable /sample.pdf route, which server-side signs the
@@ -75,14 +76,15 @@ export function SampleDeliverables() {
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
           >
-            <div className="relative h-64 overflow-hidden bg-[#e2e8ee]">
-              <Image
-                src="/sample-home-portal.jpg"
-                alt="The live Ledrix client home portal"
-                fill
-                className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
-              />
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
+            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-6">
+              <PhoneBezel className="aspect-[1000/2053] w-full max-w-[220px] transition-transform duration-500 group-hover:scale-[1.03]">
+                <Image
+                  src="/sample-home-portal.jpg"
+                  alt="The live Ledrix client home portal"
+                  fill
+                  className="object-contain"
+                />
+              </PhoneBezel>
             </div>
             <div className="flex flex-1 flex-col p-7">
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Client Home App · Live</span>
@@ -103,8 +105,10 @@ export function SampleDeliverables() {
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
           >
-            <div className="relative h-64 overflow-hidden bg-[#e2e8ee]">
-              <Image src="/sample-pdf-cover.jpg" alt="The Ledrix inspection report cover page" fill className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]" />
+            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-6">
+              <div className="relative aspect-[772/1000] w-full max-w-[220px] overflow-hidden rounded-md shadow-[0_14px_34px_-16px_rgba(10,15,20,0.4)] ring-1 ring-black/10 transition-transform duration-500 group-hover:scale-[1.03]">
+                <Image src="/sample-pdf-cover.jpg" alt="The Ledrix inspection report cover page" fill className="object-contain" />
+              </div>
             </div>
             <div className="flex flex-1 flex-col p-7">
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Inspection Report · PDF</span>

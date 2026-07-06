@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
+import { PhoneBezel } from './PhoneBezel';
 
 type Fit = 'cover' | 'contain';
 
@@ -80,30 +81,20 @@ export function HowItWorks() {
               ].join(' ')}
             >
 
-              {/* screenshot — uniform light stage; the app screen sits in a phone bezel,
-                  the photo + delivery screen fill the framed stage */}
+              {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel */}
               <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee]">
-                {s.featured ? (
-                  <div className="relative aspect-[9/19.5] h-[20.5rem] overflow-hidden rounded-[1.8rem] border-[5px] border-[#14181b] bg-black shadow-[0_16px_44px_-14px_rgba(10,15,20,0.5)]">
-                    {/* dynamic island */}
-                    <div className="absolute left-1/2 top-1.5 z-10 h-3.5 w-12 -translate-x-1/2 rounded-full bg-black" />
-                    <Image src={s.img} alt={s.title} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" sizes="220px" />
-                  </div>
-                ) : (
-                  <>
-                    <Image
-                      src={s.img}
-                      alt={s.title}
-                      fill
-                      className={[
-                        'transition-transform duration-500 group-hover:scale-[1.03]',
-                        s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain p-2',
-                      ].join(' ')}
-                      sizes="(max-width:768px) 100vw, 33vw"
-                    />
-                    <div className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_24px_rgba(10,15,20,0.12)]" />
-                  </>
-                )}
+                <PhoneBezel className="aspect-[9/19.5] h-[20.5rem]">
+                  <Image
+                    src={s.img}
+                    alt={s.title}
+                    fill
+                    className={[
+                      'transition-transform duration-500 group-hover:scale-[1.03]',
+                      s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain',
+                    ].join(' ')}
+                    sizes="220px"
+                  />
+                </PhoneBezel>
               </div>
 
               <div className="flex items-center justify-between">

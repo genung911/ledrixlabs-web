@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
 import { LedrixDelta } from '../LedrixDelta';
+import { PhoneBezel } from './PhoneBezel';
 
 type Tile = {
   className: string;
@@ -201,10 +202,9 @@ export function BentoGrid() {
                   </div>
                 )}
                 {t.shot && (
-                  <div className="relative mt-5 aspect-[1284/1530] w-full overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
+                  <PhoneBezel className="mt-5 aspect-[1284/1530] w-full">
                     <Image src={t.shot.src} alt={t.shot.alt} fill className="object-contain" sizes="(max-width:768px) 100vw, 33vw" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
-                  </div>
+                  </PhoneBezel>
                 )}
                 {t.imgs && (
                   <div className="relative mt-6 grid grid-cols-2 gap-3">
@@ -213,10 +213,9 @@ export function BentoGrid() {
                         <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                           {j === 0 ? 'Shoot' : 'Drafted'}
                         </span>
-                        <div className="relative aspect-[1284/2778] w-full overflow-hidden rounded-xl border border-hairline ring-1 ring-white/60">
+                        <PhoneBezel className="aspect-[1284/2778] w-full">
                           <Image src={im.src} alt={im.alt} fill className="object-contain" sizes="(max-width:768px) 50vw, 33vw" />
-                          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-hairline to-transparent" />
-                        </div>
+                        </PhoneBezel>
                       </div>
                     ))}
                   </div>
