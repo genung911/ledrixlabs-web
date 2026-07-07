@@ -110,6 +110,15 @@ type MaintenanceLog = {
   kind?: string; note?: string; photo_url?: string; done_date: string;
   source?: string; reminder_id?: string; created_at?: string;
 };
+// Schematic (non-LiDAR) floor plan — a byproduct of the inspector's coverage-photo
+// walkthrough in the field app. May not exist for a given inspection (no coverage
+// photos = no adjacency data to lay out from); that's a normal, unremarkable state.
+type FPRoom = {
+  roomId: string; label: string; gridX: number; gridY: number; w: number; h: number;
+  floor?: number | string; systemId?: string;
+};
+type FPLayout = { rooms: FPRoom[]; pins?: Record<string, { fx: number; fy: number }>; generatedAt?: string };
+type FloorPlanRow = { inspection_id: string; layout: FPLayout | null; fingerprint?: string; updated_at?: string };
 
 type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
 
@@ -193,6 +202,33 @@ function reportSystem(a: Anomaly): string {
   const t = `${a.location ?? ''} ${a.description ?? ''}`;
   for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
   return 'General';
+}
+// ── Floor plan: does a finding belong to this schematic room box? ───────────────
+// Primary signal: the finding's own logged `location` text against the room's label —
+// the same field this tab's "room" sort already groups by, and a more direct room-
+// identity signal than a trade category (a bedroom and a living room can both be
+// "Interior"). Only when a finding has NO location logged do we fall back to
+// `reportSystem()` — the SAME resolver the Findings list/PDF already group by, not a
+// parallel counting mechanism — matched against the room's `systemId` (from the app's
+// systemForUnit) or, failing that, the room's plain label.
+function normKey(s?: string): string { return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function textOverlap(a: string, b: string): boolean { return !!a && !!b && (a.includes(b) || b.includes(a)); }
+function anomalyInRoom(a: Anomaly, room: FPRoom): boolean {
+  const loc = normKey(a.location);
+  const label = normKey(room.label);
+  if (loc) return !!label && textOverlap(loc, label);
+  const sys = normKey(reportSystem(a));
+  return textOverlap(sys, normKey(room.systemId)) || textOverlap(sys, label);
+}
+function floorLabel(floor?: number | string): string {
+  if (floor === undefined || floor === null || floor === '') return 'Main Level';
+  if (typeof floor === 'number') {
+    if (floor === 0) return 'Main Level';
+    if (floor === 1) return 'Upper Level';
+    if (floor >= 2) return `Level ${floor + 1}`;
+    return 'Basement';
+  }
+  return String(floor);
 }
 // Tier label/color/rank (no safety overlay), derived from PRIO — for string-keyed callers.
 const PRIO_LABEL: Record<string,string> = SEV_LABEL;
@@ -1412,15 +1448,113 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
 }
 
 // ─── FINDINGS TAB ─────────────────────────────────────────────────────────────
-function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; record: HomeRecord; shareId: string }) {
+// ─── FLOOR PLAN — schematic (non-LiDAR) room layout + per-room finding count-pins ──
+// Renders ONLY when a floor_plans row exists for this inspection (a byproduct of the
+// inspector's coverage-photo walkthrough) — no row = no section at all, no placeholder,
+// no empty header. One block per floor. Rooms drawn as SVG rects (consistent with this
+// file's existing SVG usage in Icon/ScoreRing); labels + count-pin badges are absolutely
+// positioned HTML on top so typography stays crisp regardless of the room grid's scale.
+function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
+  label: string; rooms: FPRoom[]; pins?: Record<string, { fx: number; fy: number }>;
+  anomalies: Anomaly[]; onSelectRoom: (room: FPRoom) => void;
+}) {
+  const pad = 0.6;
+  const minX = Math.min(...rooms.map(r => r.gridX));
+  const minY = Math.min(...rooms.map(r => r.gridY));
+  const maxX = Math.max(...rooms.map(r => r.gridX + r.w));
+  const maxY = Math.max(...rooms.map(r => r.gridY + r.h));
+  const vbX = minX - pad, vbY = minY - pad;
+  const vbW = Math.max(maxX - minX, 1) + pad * 2;
+  const vbH = Math.max(maxY - minY, 1) + pad * 2;
+  const aspectPct = Math.min(Math.max((vbH / vbW) * 100, 42), 130);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ color: TEXT, fontSize: 11.5, fontWeight: 800, marginBottom: 6 }}>{label}</div>
+      <div style={{ position: 'relative', width: '100%', paddingTop: `${aspectPct}%`, background: CARD2, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
+        <svg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          {rooms.map(r => (
+            <rect key={r.roomId} x={r.gridX} y={r.gridY} width={r.w} height={r.h} rx={0.12}
+              fill="#EEF3F1" stroke={ACCENT} strokeOpacity={0.35} strokeWidth={0.06} vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+        {rooms.map(r => {
+          const count = anomalies.filter(a => anomalyInRoom(a, r)).length;
+          const pin = pins?.[r.roomId];
+          const fx = pin?.fx ?? 0.5, fy = pin?.fy ?? 0.5;
+          const left = ((r.gridX - vbX) / vbW) * 100;
+          const top  = ((r.gridY - vbY) / vbH) * 100;
+          const w    = (r.w / vbW) * 100;
+          const h    = (r.h / vbH) * 100;
+          return (
+            <div key={r.roomId} style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, width: `${w}%`, height: `${h}%` }}>
+              <div style={{ position: 'absolute', left: 4, top: 3, right: 4, fontSize: 9, fontWeight: 700, color: MED, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
+              {count > 0 && (
+                <button
+                  onClick={() => onSelectRoom(r)}
+                  aria-label={`${count} finding${count > 1 ? 's' : ''} in ${r.label} — view`}
+                  style={{
+                    position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, transform: 'translate(-50%, -50%)',
+                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: ACCENT, color: '#fff',
+                    border: '2px solid #fff', fontSize: 9.5, fontWeight: 800, lineHeight: '14px', display: 'grid',
+                    placeItems: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(16,24,28,0.35)',
+                  }}
+                >{count}</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+function FloorPlanSchematic({ layout, anomalies, onSelectRoom }: { layout: FPLayout; anomalies: Anomaly[]; onSelectRoom: (room: FPRoom) => void }) {
+  const rooms = layout.rooms ?? [];
+  if (rooms.length === 0) return null;
+
+  const byFloor = new Map<string, FPRoom[]>();
+  for (const r of rooms) {
+    const key = String(r.floor ?? 0);
+    if (!byFloor.has(key)) byFloor.set(key, []);
+    byFloor.get(key)!.push(r);
+  }
+  const floorKeys = Array.from(byFloor.keys()).sort((a, b) => {
+    const na = Number(a), nb = Number(b);
+    return (!Number.isNaN(na) && !Number.isNaN(nb)) ? na - nb : a.localeCompare(b);
+  });
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>FLOOR PLAN · SCHEMATIC</div>
+      {floorKeys.map(fk => (
+        <FloorBlock key={fk} label={floorLabel(byFloor.get(fk)![0].floor)} rooms={byFloor.get(fk)!} pins={layout.pins} anomalies={anomalies} onSelectRoom={onSelectRoom} />
+      ))}
+      <p style={{ color: DIM, fontSize: 10.5, lineHeight: 1.5, margin: '10px 2px 0', fontStyle: 'italic' }}>
+        This floor plan is a schematic approximation generated from the inspector&rsquo;s room-by-room documentation.
+        Room positions and proportions are AI-estimated for orientation only — not measured, not to scale, and not
+        suitable for renovation, permitting, or construction use.
+      </p>
+    </div>
+  );
+}
+
+function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Anomaly[]; record: HomeRecord; shareId: string; floorPlan?: FloorPlanRow | null }) {
   const [filter, setFilter] = useState<'all' | PrioKey>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'priority' | 'system' | 'room'>('priority');
   const [specsOpen, setSpecsOpen] = useState(false);
+  const [focusRoom, setFocusRoom] = useState<FPRoom | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const selectRoom = (room: FPRoom) => {
+    setFocusRoom(room);
+    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+  };
 
   const prioCount = anomalies.reduce((m, a) => { const k = priorityOf(a).key; m[k] = (m[k] ?? 0) + 1; return m; }, {} as Record<PrioKey, number>);
 
   const filtered = anomalies.filter(a => {
+    if (focusRoom && !anomalyInRoom(a, focusRoom)) return false;
     if (filter !== 'all' && priorityOf(a).key !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -1448,6 +1582,16 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>FINDINGS</div>
+
+      {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
+
+      {focusRoom && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: `${ACCENT}12`, border: `1px solid ${ACCENT}44`, borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
+          <span style={{ color: ACCENT, fontSize: 11.5, fontWeight: 700 }}>Showing findings in {focusRoom.label}</span>
+          <button onClick={() => setFocusRoom(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 11, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>Clear</button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
         {(([['all', 'All', anomalies.length, TEXT]] as ['all' | PrioKey, string, number, string][])
           .concat(PRIO_ORDER.filter(k => (prioCount[k] ?? 0) > 0).map(k => [k, PRIO_SHORT[k], prioCount[k], PRIO[k].color]))
@@ -1479,11 +1623,12 @@ function FindingsTab({ anomalies, record, shareId }: { anomalies: Anomaly[]; rec
           }}>{key}</button>
         ))}
       </div>
+      <div ref={listRef} />
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
           <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: filter === 'all' ? GREEN : DIM, fontFamily: 'Roboto Mono, monospace' }}>
-            {filter === 'all' ? 'NO FINDINGS LOGGED' : `NO ${filter.toUpperCase()} FINDINGS`}
+            {focusRoom ? `NO FINDINGS IN ${focusRoom.label.toUpperCase()}` : filter === 'all' ? 'NO FINDINGS LOGGED' : `NO ${filter.toUpperCase()} FINDINGS`}
           </div>
         </div>
       ) : sort === 'priority' ? (
@@ -2587,6 +2732,7 @@ export default function SharePage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [repairs,   setRepairs]   = useState<RepairRow[]>([]);
   const [log,       setLog]       = useState<MaintenanceLog[]>([]);
+  const [floorPlan, setFloorPlan] = useState<FloorPlanRow | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [notFound,  setNotFound]  = useState(false);
   const [tab,       setTab]       = useState<Tab>('home');
@@ -2705,6 +2851,15 @@ export default function SharePage() {
     setRepairs(data);
   }, [shareId]);
 
+  // Schematic floor plan (byproduct of coverage photos) — row may legitimately not
+  // exist (no coverage walkthrough = no adjacency data); an empty array back is the
+  // normal, expected shape, not an error.
+  const loadFloorPlan = useCallback(async (sid: string = shareId) => {
+    if (!sid) return;
+    const rows = await supaGet<FloorPlanRow>(`floor_plans?inspection_id=eq.${encodeURIComponent(sid)}&limit=1`);
+    setFloorPlan(rows[0] ?? null);
+  }, [shareId]);
+
   // Resolve the record by the URL param (routeId), trying share_token first, then falling back
   // to the legacy share_id (so old insp_ links + the marketing sample keep working). Everything
   // downstream keys on the record's canonical share_id, set into shareId state here.
@@ -2718,7 +2873,7 @@ export default function SharePage() {
       const canonicalId = rec.share_id;
       setRecord(rec);
       setShareId(canonicalId);
-      await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId)]).catch(() => {});
+      await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId), loadFloorPlan(canonicalId)]).catch(() => {});
       if (!seeded.current) {
         seeded.current = true;
         seedIfEmpty(canonicalId, rec.anomalies ?? [], rec.specs ?? [])
@@ -2794,7 +2949,7 @@ export default function SharePage() {
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
-      {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} />}
+      {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} anomalies={anomalies} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
