@@ -141,20 +141,22 @@ export function BentoGrid() {
             <motion.div
               key={i}
               variants={fadeUp}
-              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 ${t.className}`}
+              className={`group relative flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 ${t.className}`}
             >
-              <div className="relative">
-                {t.kicker && (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">{t.kicker}</span>
-                )}
-                {t.stat && (
-                  <div className="text-5xl font-bold tracking-tight text-ink">
-                    {t.stat}
-                  </div>
-                )}
-              </div>
+              {(t.kicker || t.stat) && (
+                <div className="relative">
+                  {t.kicker && (
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">{t.kicker}</span>
+                  )}
+                  {t.stat && (
+                    <div className="text-5xl font-bold tracking-tight text-ink">
+                      {t.stat}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="relative mt-6">
+              <div className={`relative flex min-h-0 flex-1 flex-col ${t.kicker || t.stat ? 'mt-4' : ''}`}>
                 <h3 className="text-lg font-bold text-ink">{t.title}</h3>
                 {t.body && <p className="mt-2 text-sm leading-relaxed text-body">{t.body}</p>}
                 {t.pills && (
@@ -192,29 +194,34 @@ export function BentoGrid() {
                   </ul>
                 )}
                 {t.orb && (
-                  <div className="mt-5 flex justify-start">
+                  <div className="mt-auto flex justify-start pt-6">
                     <StaticValOrb />
                   </div>
                 )}
                 {t.devices && (
-                  <div className="mt-6 flex justify-center opacity-90">
+                  <div className="mt-auto flex justify-center pt-6 opacity-90">
                     <DevicesOneBrain />
                   </div>
                 )}
                 {t.shot && (
-                  <PhoneBezel className="mt-5 aspect-[1284/1530] w-full">
-                    <Image src={t.shot.src} alt={t.shot.alt} fill className="object-contain" sizes="(max-width:768px) 100vw, 33vw" />
-                  </PhoneBezel>
+                  /* Not a full phone screen (a cropped review card / a document cover) — a flat
+                     screenshot frame reads honestly where a bezel + notch would look mangled.
+                     Bottom-pinned so visuals align across a row even when the grid stretches. */
+                  <div className="mt-auto pt-5">
+                    <div className="relative aspect-[1284/1530] w-full overflow-hidden rounded-xl border border-hairline shadow-[0_14px_36px_-24px_rgba(10,15,20,0.45)]">
+                      <Image src={t.shot.src} alt={t.shot.alt} fill className="object-cover object-top" sizes="(max-width:768px) 100vw, 33vw" />
+                    </div>
+                  </div>
                 )}
                 {t.imgs && (
-                  <div className="relative mt-6 grid grid-cols-2 gap-3">
+                  <div className="relative mt-6 flex flex-1 items-start justify-center gap-6">
                     {t.imgs.map((im, j) => (
-                      <div key={im.src} className="flex flex-col gap-2">
+                      <div key={im.src} className="flex w-full max-w-[220px] flex-col gap-2.5">
                         <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                           {j === 0 ? 'Shoot' : 'Drafted'}
                         </span>
                         <PhoneBezel className="aspect-[1284/2778] w-full">
-                          <Image src={im.src} alt={im.alt} fill className="object-contain" sizes="(max-width:768px) 50vw, 33vw" />
+                          <Image src={im.src} alt={im.alt} fill className="object-contain" sizes="(max-width:768px) 50vw, 20vw" />
                         </PhoneBezel>
                       </div>
                     ))}
