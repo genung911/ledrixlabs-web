@@ -1185,7 +1185,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Reports', ''],
-    ['findings', 'findings', 'Improvements', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
+    ['findings', 'findings', 'Needs attention', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
     ['repairs', 'projects', 'Repair request', includedRepairs],
     ['projects', 'projects', 'Projects', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
     ['reminders', 'reminders', 'Maintenance', dueReminders.length],
@@ -1541,7 +1541,7 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
-      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Improvements</div>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Needs Attention</div>
 
       {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
 
