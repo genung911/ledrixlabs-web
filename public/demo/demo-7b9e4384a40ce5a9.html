@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Ledrix — Live Field-to-Report Demo</title>
+<style>
+/* ============================================================
+   LEDRIX LIVE DEMO — design tokens
+   Left pane = field app (dark, high-contrast, one-thumb UI)
+   Right pane = client deliverable (executive light "PDF")
+   Fully self-contained: no CDN, no network, demo-safe offline.
+   ============================================================ */
+:root{
+  --ink:#e8eef5; --ink-dim:#94a3b3; --ink-faint:#5c6a7a;
+  --field-bg:#07090c; --field-raised:#10151c; --field-sunken:#04060a;
+  --line:rgba(200,220,240,.10); --line-strong:rgba(200,220,240,.2);
+  --cyan:#2fb6e8; --cyan-deep:#217be8; --cyan-soft:rgba(47,182,232,.13); --cyan-line:rgba(47,182,232,.4);
+  --green:#31d283; --green-soft:rgba(49,210,131,.13);
+  /* ---- real Ledrix report tokens (from src/core/theme/SeverityConfig.ts + generateInspectionPDF.ts) ---- */
+  --sev-critical:#f97316;  /* Major Repair   */ --sev-critical-soft:rgba(249,115,22,.12);
+  --sev-deficiency:#eab308;/* Minor Repair   */ --sev-deficiency-soft:rgba(234,179,8,.13);
+  --sev-maint:#64748b;     /* Maint & Improve*/ --sev-maint-soft:rgba(100,116,139,.13);
+  --sev-char:#38bdf8;      /* Typical Wear   */ --sev-char-soft:rgba(56,189,248,.13);
+  --sev-spec:#22c55e;      /* Good           */ --sev-spec-soft:rgba(34,197,94,.13);
+  --safety:#d9706e;        /* orthogonal safety flag, not a severity tier */ --safety-soft:rgba(217,112,110,.14);
+  --rpt-accent:#0e7490;    /* PDF ACCENT (teal) */
+  --paper:#ffffff; --paper-dim:#f7f9fb; --paper-line:#e2e8f0; --paper-line-strong:#cbd5e1;
+  --rink:#0f172a; --rink-dim:#475569; --rink-faint:#94a3b8;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; /* stands in for Roboto Mono — CSP blocks Google Fonts */
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; /* stands in for Inter */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#04060a;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::selection{background:var(--cyan-soft)}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:minmax(390px,44%) 1fr;min-height:100vh}
+@media(max-width:920px){.shell{grid-template-columns:1fr}}
+
+/* ============================================================
+   LEFT — FIELD APP (phone frame)
+   ============================================================ */
+.field{
+  background:
+    radial-gradient(900px 500px at 15% -5%,rgba(47,182,232,.09),transparent 60%),
+    radial-gradient(700px 600px at 90% 110%,rgba(33,123,232,.06),transparent 55%),
+    var(--field-bg);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;
+  padding:26px 22px 30px;gap:16px;
+}
+.field-eyebrow{align-self:flex-start;display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase;font-weight:700}
+.field-eyebrow .live{display:inline-flex;align-items:center;gap:6px;color:var(--cyan);border:1px solid var(--cyan-line);background:var(--cyan-soft);border-radius:999px;padding:3px 10px;font-size:10px}
+.field-eyebrow .live i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(47,182,232,.5)}55%{box-shadow:0 0 0 7px rgba(47,182,232,0)}}
+
+/* phone bezel */
+.phone{
+  width:min(370px,100%);border-radius:38px;padding:11px;flex:none;
+  background:linear-gradient(160deg,#1b232d,#0a0e13 60%);
+  border:1px solid var(--line-strong);
+  box-shadow:0 30px 70px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.07);
+}
+.screen{
+  border-radius:29px;overflow:hidden;background:var(--field-sunken);
+  border:1px solid rgba(0,0,0,.7);display:flex;flex-direction:column;position:relative;
+  min-height:560px;
+}
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:11px 20px 7px;font-family:var(--mono);font-size:10.5px;color:var(--ink-dim)}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:96px;height:20px;border-radius:12px;background:#000;border:1px solid rgba(255,255,255,.05)}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+.appbar .mark{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;letter-spacing:.1em}
+.appbar .mark svg{width:15px;height:15px}
+.appbar .ctx{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);text-align:right;line-height:1.5}
+.appbar .ctx b{color:var(--cyan);font-weight:600}
+
+/* transcript zone */
+.voicezone{padding:14px 16px 6px;flex:1;display:flex;flex-direction:column;min-height:0}
+.vz-label{display:flex;align-items:center;gap:7px;font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase;font-weight:700;margin-bottom:9px}
+.vz-label .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);flex:none}
+.vz-label .dot.hot{background:var(--safety);animation:pulse 1.2s infinite}
+.transcript{
+  font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--ink);
+  background:var(--field-raised);border:1px solid var(--line);border-radius:13px;
+  padding:13px 14px;min-height:108px;max-height:170px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;
+}
+.transcript .ph{color:var(--ink-faint)}
+.transcript .caret{display:inline-block;width:7px;height:13px;background:var(--cyan);vertical-align:-2px;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* spatial toast */
+.spatial{
+  margin-top:10px;display:flex;align-items:center;gap:9px;
+  background:var(--green-soft);border:1px solid rgba(49,210,131,.35);border-radius:11px;
+  padding:9px 12px;font-size:11px;color:var(--ink);
+  opacity:0;transform:translateY(6px);transition:all .4s cubic-bezier(.2,.8,.2,1);pointer-events:none;
+}
+.spatial.show{opacity:1;transform:translateY(0)}
+.spatial svg{width:14px;height:14px;color:var(--green);flex:none}
+.spatial b{color:var(--green)}
+.spatial small{display:block;color:var(--ink-dim);font-size:10px;margin-top:1px}
+
+/* camera flash overlay */
+.camflash{
+  position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .18s;z-index:20;
+}
+.camflash.on{opacity:1}
+.camflash .viewport{
+  width:78%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;position:relative;
+  border:1px solid var(--line-strong);background:#111;
+}
+.camflash .viewport img,.camflash .viewport .mockshot{width:100%;height:100%;object-fit:cover;display:block}
+.camflash .reticle{position:absolute;inset:14px;border:1.5px solid rgba(47,182,232,.8);border-radius:8px;
+  mask:linear-gradient(#000 0 0) top/28px 2px no-repeat, linear-gradient(#000 0 0);-webkit-mask:none}
+.camflash .reticle::before,.camflash .reticle::after{content:"";position:absolute;background:var(--cyan)}
+.camflash .whiteout{position:absolute;inset:0;background:#fff;opacity:0}
+.camflash.snap .whiteout{animation:snap .5s ease}
+@keyframes snap{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+.camflash .camlabel{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:.12em}
+
+/* action deck */
+.deck{padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line)}
+.deck-label{font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase;font-weight:700;margin-bottom:2px}
+.abtn{
+  display:flex;align-items:center;gap:11px;text-align:left;
+  background:var(--field-raised);border:1px solid var(--line-strong);border-radius:13px;
+  padding:11px 13px;transition:all .18s ease;
+}
+.abtn:hover:not(:disabled){border-color:var(--cyan-line);background:#131b24;transform:translateY(-1px)}
+.abtn:active:not(:disabled){transform:translateY(0) scale(.99)}
+.abtn:disabled{opacity:.45;cursor:default}
+.abtn .aicon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;border:1px solid var(--line)}
+.abtn .aicon svg{width:17px;height:17px}
+.abtn[data-tone="maint"] .aicon{color:var(--sev-maint);background:var(--sev-maint-soft);border-color:rgba(100,116,139,.35)}
+.abtn[data-tone="spec"] .aicon{color:var(--sev-spec);background:var(--sev-spec-soft);border-color:rgba(34,197,94,.35)}
+.abtn[data-tone="char"] .aicon{color:var(--sev-char);background:var(--sev-char-soft);border-color:rgba(56,189,248,.35)}
+.abtn[data-tone="hazard"] .aicon{color:var(--safety);background:var(--safety-soft);border-color:rgba(217,112,110,.4)}
+.abtn[data-tone="green"] .aicon{color:var(--green);background:var(--green-soft);border-color:rgba(49,210,131,.3)}
+.abtn .atxt b{display:block;font-size:12.5px;font-weight:700;color:var(--ink)}
+.abtn .atxt small{display:block;font-size:10px;color:var(--ink-dim);margin-top:2px;line-height:1.4}
+.abtn .adone{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:.1em;opacity:0;transition:opacity .3s}
+.abtn.logged .adone{opacity:1}
+
+/* ROI widget */
+.roi{
+  width:min(370px,100%);border:1px solid var(--line-strong);border-radius:16px;
+  background:linear-gradient(160deg,#0e141c,#0a0f15);padding:14px 16px 13px;
+}
+.roi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.roi-head h3{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);font-weight:800}
+.roi-head .shield{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--green);font-family:var(--mono)}
+.roi-head .shield svg{width:12px;height:12px}
+.roi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.roi-cell{background:var(--field-sunken);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .3s}
+.roi-cell.bump{border-color:var(--cyan-line);animation:bump .5s ease}
+@keyframes bump{30%{transform:scale(1.05)}}
+.roi-cell .num{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--cyan);font-variant-numeric:tabular-nums}
+.roi-cell .num.grn{color:var(--green)}
+.roi-cell .lbl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-top:2px;line-height:1.35}
+.roi-note{font-size:10px;color:var(--ink-faint);margin-top:9px;line-height:1.5}
+.roi-note b{color:var(--ink-dim)}
+
+/* photo prep strip */
+.prep{width:min(370px,100%);display:flex;align-items:center;gap:12px}
+.prep .plabel{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);line-height:1.5;width:86px;flex:none}
+.slots{display:flex;gap:9px;flex:1}
+.slot{flex:1;display:flex;flex-direction:column;gap:4px;align-items:center;cursor:pointer}
+.slot input{display:none}
+.slot .sthumb{width:100%;aspect-ratio:4/3;border-radius:9px;border:1.5px dashed var(--line-strong);background:var(--field-raised);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-faint);overflow:hidden;transition:border-color .2s}
+.slot:hover .sthumb{border-color:var(--cyan-line)}
+.slot .sthumb.filled{border-style:solid;border-color:rgba(49,210,131,.45)}
+.slot .sthumb img{width:100%;height:100%;object-fit:cover}
+.slot .sthumb svg{width:15px;height:15px}
+.slot span{font-size:8.5px;color:var(--ink-faint);letter-spacing:.04em;text-align:center}
+.resetrow{width:min(370px,100%);display:flex;justify-content:center}
+.resetbtn{font-size:11px;color:var(--ink-faint);border:1px solid var(--line);border-radius:9px;padding:8px 16px;letter-spacing:.05em}
+.resetbtn:hover{color:var(--ink);border-color:var(--line-strong)}
+
+/* ============================================================
+   RIGHT — CLIENT DELIVERABLE
+   ============================================================ */
+.deliverable{background:#e8ecf2;min-height:100vh;overflow-y:auto;padding:30px clamp(18px,4vw,52px) 60px;position:relative}
+.paper{
+  max-width:820px;margin:0 auto;background:var(--paper);border-radius:10px;color:var(--rink);
+  box-shadow:0 24px 70px rgba(15,27,43,.18),0 2px 8px rgba(15,27,43,.08);
+  overflow:hidden;
+}
+
+/* cover hero — matches the REAL production cover (verified against a live /share screenshot 2026-07-08):
+   small 2-line mono eyebrow top-left, Δ LEDRIX / INTELLIGENCE lockup top-right, the ADDRESS itself as the
+   big H1 (not a generic report title), city/state/date beneath. No badge row — production has none. */
+.cover{
+  position:relative;min-height:210px;padding:26px 40px 26px;display:flex;flex-direction:column;justify-content:flex-end;
+  background:linear-gradient(165deg,#0f1e2e,#0b2530 55%,#0f172a);color:#eef4f8;overflow:hidden;
+}
+.cover::after{content:"";position:absolute;inset:0;background:radial-gradient(560px 320px at 88% -10%,rgba(14,116,144,.35),transparent 60%)}
+.covertop{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:46px}
+.covertop .ceyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;line-height:1.9;color:#eef4f8}
+.covertop .ceyebrow span{display:block;color:#7fa9b8}
+.covertop .cbrand{display:flex;align-items:center;gap:8px}
+.covertop .cbrand svg{width:19px;height:19px;flex:none}
+.covertop .cbrand .word{font-size:16px;font-weight:800;letter-spacing:.04em;line-height:1}
+.covertop .cbrand .sub{display:block;font-family:var(--mono);font-size:7.5px;letter-spacing:.24em;color:#7fd4ea;margin-top:3px;text-align:right}
+.cover h1{position:relative;font-size:26px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
+.cover .addr{position:relative;font-size:12px;color:#a9c2cf;font-family:var(--mono);letter-spacing:.03em}
+
+/* PROPERTY / INSPECTION two-card row, directly under the cover — matches production */
+.infocards{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 40px;border-bottom:1px solid var(--paper-line);background:var(--paper-dim)}
+@media(max-width:640px){.infocards{grid-template-columns:1fr}}
+.infocard{background:var(--paper);border:1px solid var(--paper-line);border-radius:10px;padding:13px 15px}
+.infocard h5{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--rpt-accent);font-weight:800;margin-bottom:8px}
+.infocard .irow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--paper-line);font-size:11.5px}
+.infocard .irow:first-of-type{border-top:none}
+.infocard .irow em{font-style:normal;letter-spacing:.04em;text-transform:uppercase;font-size:9.5px;color:var(--rink-faint)}
+.infocard .irow b{font-weight:700;color:var(--rink)}
+
+/* status pill + What Matters + Ask Ledrix — replaces the invented exec-summary paragraph */
+.statusrow{padding:16px 40px 0;display:flex;align-items:center;gap:8px}
+.statuspill{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.03em;
+  border-radius:999px;padding:6px 13px;border:1px solid var(--paper-line-strong);color:var(--rink-dim);background:var(--paper)}
+.statuspill .sdot{width:7px;height:7px;border-radius:50%;background:var(--rink-faint)}
+.statuspill.clear .sdot{background:var(--sev-spec)} .statuspill.clear{color:#15803d;border-color:rgba(34,197,94,.35);background:var(--sev-spec-soft)}
+.statuspill.flagged .sdot{background:var(--safety)} .statuspill.flagged{color:#a13530;border-color:rgba(217,112,110,.4);background:var(--safety-soft)}
+
+.whatmatters{margin:12px 40px 0;border-radius:11px;border:1px solid rgba(234,179,8,.35);background:#fffaf0;padding:14px 16px}
+.whatmatters .wmtop{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#8a6a06;margin-bottom:6px}
+.whatmatters .wmtop svg{width:14px;height:14px;flex:none}
+.whatmatters .wmline{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#3a4757}
+.whatmatters .wmline svg{width:13px;height:13px;flex:none}
+.whatmatters.clear .wmline{color:#166534}
+.whatmatters.hot{border-color:rgba(217,112,110,.4);background:#fdf6f6}
+.whatmatters.hot .wmtop{color:#a13530}
+.whatmatters.hot .wmline{color:#a13530}
+
+.askbar{margin:10px 40px 0;border-radius:11px;background:linear-gradient(120deg,#0e7490,#0a5a70);color:#eef9fb;
+  padding:12px 16px;display:flex;align-items:center;gap:11px}
+.askbar svg{width:17px;height:17px;flex:none;color:#bdeef8}
+.askbar .atext{flex:1;min-width:0}
+.askbar .atext b{display:block;font-size:12px;font-weight:800}
+.askbar .atext small{font-size:10.5px;color:#bfe4ec}
+.askbar .cta{font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;color:#fff}
+
+/* Report Contents TOC */
+.toc{padding:22px 40px 6px}
+.toc .tochead{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--rpt-accent);font-weight:800;margin-bottom:4px}
+.toc h2{font-size:17px;font-weight:800;margin-bottom:3px}
+.toc .tocsub{font-size:11px;color:var(--rink-dim);margin-bottom:12px}
+.tocrow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-top:1px solid var(--paper-line);cursor:pointer;transition:opacity .15s}
+.tocrow:last-child{border-bottom:1px solid var(--paper-line)}
+.tocrow:hover{opacity:.7}
+.tocrow.disabled{cursor:default;opacity:.45}
+.tocrow .tn{font-family:var(--mono);font-size:11px;color:var(--rpt-accent);font-weight:700;width:20px}
+.tocrow .tl{flex:1;font-size:12.5px;font-weight:700;color:var(--rink)}
+.tocrow .tarrow{color:var(--rink-faint);font-size:13px}
+
+/* section divider — matches production: LIGHT background, teal numeral, no dark band */
+.chapter{position:relative;padding:30px 40px 10px}
+.chapter .num{font-family:var(--mono);font-size:30px;font-weight:800;color:var(--rpt-accent);letter-spacing:-.02em;line-height:1;margin-bottom:8px}
+.chapter h2{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px;color:var(--rink)}
+.chapter .sub{font-size:12px;color:var(--rink-dim);max-width:56ch;line-height:1.55;margin-bottom:8px}
+.chapter .lockup{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--rpt-accent)}
+.chapter .lockup svg{width:12px;height:12px}
+
+/* systems coverage grid */
+.covwrap{padding:14px 40px 4px}
+.covwrap .covhead{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--rpt-accent);font-weight:800;margin-bottom:2px}
+.covwrap .covtitle{font-size:13px;font-weight:800;color:var(--rink);margin-bottom:10px}
+.covstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:14px}
+.covstat{border-radius:9px;border:1px solid var(--paper-line);background:var(--paper);padding:10px 12px;text-align:center}
+.covstat.good{background:var(--sev-spec-soft);border-color:rgba(34,197,94,.35)}
+.covstat .n{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--rink)}
+.covstat.good .n{color:#15803d}
+.covstat .l{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--rink-faint);margin-top:1px}
+.sysgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.sysgrid{grid-template-columns:1fr}}
+.syschip{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--paper-line);border-radius:9px;background:var(--paper);padding:9px 12px;transition:all .3s}
+.syschip .sl b{display:block;font-size:11.5px;font-weight:800;color:var(--rink)}
+.syschip .sl small{font-size:9.5px;color:var(--rink-faint)}
+.syschip .sstat{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#15803d}
+.syschip .sstat svg{width:11px;height:11px}
+.syschip.hasfind{border-color:rgba(249,115,22,.4);background:var(--sev-critical-soft)}
+.syschip.hasfind .sstat{color:#b04a08}
+
+/* inventory (compact spec cards) — matches the real tiny "Flooring — Carpet" cards */
+.invwrap{padding:14px 40px 4px}
+.invwrap .invhead{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--rpt-accent);font-weight:800;margin-bottom:2px}
+.invwrap .invtitle{font-size:13px;font-weight:800;color:var(--rink);margin-bottom2:2px}
+.invwrap .invsub{font-size:11px;color:var(--rink-dim);margin-bottom:10px}
+.invgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:560px){.invgrid{grid-template-columns:1fr}}
+.invcard{display:flex;gap:10px;align-items:center;border:1px solid var(--paper-line);border-radius:9px;background:var(--paper);padding:10px 11px;
+  opacity:0;transform:translateY(6px);transition:all .45s cubic-bezier(.2,.8,.2,1)}
+.invcard.in{opacity:1;transform:translateY(0)}
+.invcard .ithumb{width:40px;height:40px;border-radius:7px;overflow:hidden;flex:none;border:1px solid var(--paper-line-strong)}
+.invcard .ithumb img{width:100%;height:100%;object-fit:cover;display:block}
+.invcard .itxt b{display:block;font-size:11.5px;font-weight:800;color:var(--rink)}
+.invcard .itxt span{font-size:11px;color:#3a4757}
+
+/* limitations */
+.limwrap{padding:14px 40px 4px}
+.limwrap .limhead{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--rpt-accent);font-weight:800;margin-bottom:2px}
+.limwrap .limtitle{font-size:13px;font-weight:800;color:var(--rink);margin-bottom:4px}
+.limwrap .limsub{font-size:11px;color:var(--rink-dim);margin-bottom:10px;line-height:1.6}
+.limrow{display:flex;gap:8px;padding:9px 0;border-top:1px solid var(--paper-line);font-size:11.5px;line-height:1.6;color:#3a4757}
+.limrow svg{width:13px;height:13px;color:var(--sev-deficiency);flex:none;margin-top:2px}
+.limrow b{color:var(--rink)}
+
+/* preview badge (floor plan is in-development app work, not yet in the shipped report) */
+.previewbadge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  color:#8a6a06;background:var(--sev-deficiency-soft);border:1px solid rgba(234,179,8,.4);border-radius:999px;padding:3px 10px;margin-left:8px}
+
+/* section headers */
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:26px 40px 0;flex-wrap:wrap}
+.sechead h2{font-family:var(--sans);font-size:16.5px;font-weight:800;letter-spacing:-.005em}
+.sechead .sub{font-size:11px;color:var(--rink-dim)}
+
+/* filter tabs */
+.filters{display:flex;gap:7px;padding:14px 40px 0;flex-wrap:wrap}
+.ftab{
+  font-size:11px;font-weight:700;letter-spacing:.04em;border:1px solid var(--paper-line-strong);
+  border-radius:999px;padding:6px 15px;color:var(--rink-dim);background:var(--paper);transition:all .18s;
+}
+.ftab:hover{border-color:var(--rpt-accent);color:var(--rpt-accent)}
+.ftab.on{background:var(--rink);border-color:var(--rink);color:#fff}
+.ftab .cnt{font-family:var(--mono);font-size:9.5px;opacity:.65;margin-left:5px}
+
+/* floor plan */
+.planwrap{padding:16px 40px 8px}
+.planframe{border:1px solid var(--paper-line-strong);border-radius:8px;background:
+  linear-gradient(rgba(14,116,144,.045) 1px,transparent 1px) 0 0/22px 22px,
+  linear-gradient(90deg,rgba(14,116,144,.045) 1px,transparent 1px) 0 0/22px 22px,#fbfcfe;
+  position:relative;overflow:hidden}
+.planframe svg{display:block;width:100%;height:auto}
+.plancap{display:flex;justify-content:space-between;padding:8px 4px 0;font-family:var(--mono);font-size:9px;color:var(--rink-faint);letter-spacing:.08em}
+
+/* svg internals */
+.wall{stroke:#37475b;stroke-width:2.5;fill:none;stroke-linejoin:miter}
+.wall-inner{stroke:#8fa0b4;stroke-width:1.3;fill:none}
+.roomfill{fill:rgba(14,116,144,.035)}
+.roomlbl{font-family:var(--mono);font-size:9.5px;fill:#7a8a9c;letter-spacing:.1em}
+.roomlbl.sm{font-size:8px}
+.dimlbl{font-family:var(--mono);font-size:7.5px;fill:#a5b2c1;letter-spacing:.06em}
+.bay{opacity:0;transform:translateX(-8px);transform-origin:600px 120px;transition:all .6s cubic-bezier(.2,.8,.2,1)}
+.bay.shown{opacity:1;transform:translateX(0)}
+.bay path{stroke:#0e7490;stroke-width:2;fill:rgba(14,116,144,.12)}
+.bay text{font-family:var(--mono);font-size:8px;fill:#0e7490;letter-spacing:.05em}
+.oldwall{transition:opacity .5s}
+.oldwall.gone{opacity:0}
+
+.pin{opacity:0;transition:opacity .3s}
+.pin.dropped{opacity:1}
+.pin .pcore{animation:none}
+.pin.dropped .pgroup{animation:pindrop .55s cubic-bezier(.3,1.4,.4,1)}
+@keyframes pindrop{0%{transform:translateY(-26px);opacity:0}60%{transform:translateY(3px)}100%{transform:translateY(0);opacity:1}}
+.pin .ring{animation:ringout 2.2s ease-out infinite}
+@keyframes ringout{0%{r:7;opacity:.55}100%{r:19;opacity:0}}
+.pin.hidden-by-filter{opacity:0;pointer-events:none}
+.pinlbl{font-family:var(--mono);font-size:8px;letter-spacing:.04em;font-weight:700}
+
+/* defect log */
+.log{padding:10px 40px 34px;display:flex;flex-direction:column;gap:13px}
+.logempty{border:1.5px dashed var(--paper-line-strong);border-radius:10px;padding:26px;text-align:center;color:var(--rink-faint);font-size:12px;line-height:1.6}
+.logempty b{color:var(--rink-dim)}
+.entry{
+  border:1px solid var(--paper-line);border-left-width:4px;border-radius:9px;background:var(--paper);
+  padding:16px 18px;display:flex;gap:18px;
+  opacity:0;transform:translateY(10px);transition:all .5s cubic-bezier(.2,.8,.2,1);
+  box-shadow:0 1px 3px rgba(15,27,43,.05);
+}
+.entry.in{opacity:1;transform:translateY(0)}
+.entry.sev-critical{border-left-color:var(--sev-critical)}
+.entry.sev-deficiency{border-left-color:var(--sev-deficiency)}
+.entry.sev-maint{border-left-color:var(--sev-maint)}
+.entry.sev-char{border-left-color:var(--sev-char)}
+.entry.sev-spec{border-left-color:var(--sev-spec)}
+.entry.hidden-by-filter{display:none}
+.entry .ephoto{width:180px;height:132px;border-radius:6px;overflow:hidden;flex:none;border:1px solid var(--paper-line);position:relative}
+.entry .ephoto img{width:100%;height:100%;object-fit:cover;display:block}
+.entry .ephoto .tstamp{position:absolute;bottom:0;left:0;right:0;background:rgba(10,16,24,.72);color:#cfe3f5;font-family:var(--mono);font-size:7.5px;padding:3px 6px;letter-spacing:.05em}
+.entry .ebody{flex:1;min-width:0}
+.entry .eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--rink-faint);text-transform:uppercase;margin-bottom:4px}
+.entry .etop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.entry h4{font-size:14px;font-weight:800}
+.sevchip{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:4px;padding:3px 8px}
+.sevchip.critical{background:var(--sev-critical-soft);color:#b04a08;border:1px solid rgba(249,115,22,.4)}
+.sevchip.deficiency{background:var(--sev-deficiency-soft);color:#8a6a06;border:1px solid rgba(234,179,8,.4)}
+.sevchip.maint{background:var(--sev-maint-soft);color:#3f4c5e;border:1px solid rgba(100,116,139,.4)}
+.sevchip.char{background:var(--sev-char-soft);color:#0369a1;border:1px solid rgba(56,189,248,.4)}
+.sevchip.spec{background:var(--sev-spec-soft);color:#15803d;border:1px solid rgba(34,197,94,.4)}
+.sevchip.safety{background:var(--safety-soft);color:#a13530;border:1px solid rgba(217,112,110,.45)}
+.sevchip.safety svg{width:9px;height:9px;vertical-align:-1px;margin-right:2px}
+.geochip{font-family:var(--mono);font-size:8.5px;color:var(--rink-dim);border:1px solid var(--paper-line-strong);border-radius:4px;padding:3px 7px;display:inline-flex;align-items:center;gap:4px}
+.geochip svg{width:9px;height:9px}
+.fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 18px;margin-bottom:8px}
+.fieldgrid .fr{font-size:11.5px;color:#3a4757}
+.fieldgrid .fr em{font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--rink-faint);margin-right:5px}
+.entry .obs{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--rink-faint);font-family:var(--mono);margin-bottom:3px}
+.entry ul.obslist{list-style:none;margin:0 0 8px}
+.entry ul.obslist li{position:relative;padding-left:13px;font-size:11.5px;line-height:1.65;color:#3a4757}
+.entry ul.obslist li::before{content:"—";position:absolute;left:0;color:var(--rink-faint)}
+.entry .erec{margin-top:7px;font-size:11px;line-height:1.6;color:var(--rink);border-top:1px solid var(--paper-line);padding-top:8px}
+.entry .erec b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--rink-faint);display:block;margin-bottom:2px}
+@media(max-width:600px){.entry{flex-direction:column}.entry .ephoto{width:100%;height:150px}.fieldgrid{grid-template-columns:1fr}}
+
+/* report footer — mirrors pageFooter() in the real PDF */
+.repfoot{border-top:1px solid var(--paper-line);padding:14px 40px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--rink-faint);flex-wrap:wrap;gap:8px}
+.repfoot .fchip{display:flex;align-items:center;gap:6px}
+.repfoot svg{width:12px;height:12px}
+
+/* ============ HOME APP VIEW ============ */
+.homeapp{display:none}
+.paper.mode-home .homeapp{display:block}
+.paper.mode-home .reportview{display:none}
+.ha-hero{padding:34px 40px 26px;background:linear-gradient(150deg,#0e1826,#12233a 70%);color:#e9f1fa;position:relative;overflow:hidden}
+.ha-hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(47,182,232,.2),transparent 70%)}
+.ha-hero .eyebrow{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#7fc6e8;font-weight:800;margin-bottom:8px}
+.ha-hero h2{font-family:var(--sans);font-size:24px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+.ha-hero p{font-size:12px;color:#a8bdd2;max-width:52ch;line-height:1.65}
+.ha-score{position:absolute;right:40px;top:32px;text-align:center}
+.ha-score .ring{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:conic-gradient(var(--green) 0 311deg,rgba(255,255,255,.12) 311deg 360deg);position:relative}
+.ha-score .ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:#0f1e33}
+.ha-score .ring b{position:relative;z-index:1;font-family:var(--mono);font-size:19px;color:#fff}
+.ha-score em{display:block;font-style:normal;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#7fc6e8;margin-top:6px}
+@media(max-width:640px){.ha-score{display:none}}
+.ha-grid{padding:24px 40px 10px;display:grid;grid-template-columns:1fr 1fr;gap:13px}
+@media(max-width:640px){.ha-grid{grid-template-columns:1fr}}
+.ha-card{border:1px solid var(--paper-line);border-radius:10px;padding:15px 16px;background:var(--paper)}
+.ha-card.alert{border-color:rgba(217,112,110,.4);background:#fdf6f6}
+.ha-card .hc-top{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.ha-card .hc-top svg{width:16px;height:16px;flex:none}
+.ha-card h4{font-size:12.5px;font-weight:800}
+.ha-card .due{margin-left:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;border-radius:4px;padding:3px 7px;background:var(--paper-dim);color:var(--rink-dim)}
+.ha-card.alert .due{background:var(--safety-soft);color:#a13530}
+.ha-card p{font-size:11px;line-height:1.65;color:#3a4757}
+.ha-card .hc-cta{margin-top:9px;font-size:10.5px;font-weight:800;color:var(--rpt-accent);letter-spacing:.03em}
+.ha-ask{margin:14px 40px 34px;border:1px solid var(--paper-line-strong);border-radius:12px;background:var(--paper-dim);
+  padding:13px 16px;display:flex;align-items:center;gap:11px}
+.ha-ask svg{width:18px;height:18px;color:var(--rpt-accent);flex:none}
+.ha-ask .q{font-size:11.5px;color:var(--rink-dim);flex:1}
+.ha-ask .q b{color:var(--rink)}
+
+/* toggle chip on the right pane */
+.viewtag{
+  position:sticky;top:0;z-index:5;display:flex;justify-content:center;padding-bottom:16px;
+}
+.viewtag .tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#5b6b7d;background:#f2f5f9;
+  border:1px solid var(--paper-line-strong);border-radius:999px;padding:6px 16px;box-shadow:0 4px 14px rgba(15,27,43,.1)}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ================= LEFT : FIELD APP ================= -->
+  <aside class="field">
+    <div class="field-eyebrow">
+      Ledrix Field OS
+      <span class="live"><i></i>VOICE SESSION ACTIVE</span>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="statusbar"><span>9:41</span><span id="sbRight">LTE · 100%</span></div>
+
+        <div class="appbar">
+          <div class="mark">
+            <svg viewBox="0 0 100 100"><mask id="dm-app"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#2fb6e8" fill-rule="evenodd" mask="url(#dm-app)"/></svg>
+            LEDRIX
+          </div>
+          <div class="ctx">14312 Chantilly Batist Ln<br><b>HANDS-FREE · SPATIAL LOCK ON</b></div>
+        </div>
+
+        <div class="voicezone">
+          <div class="vz-label"><span class="dot" id="recDot"></span>Live transcript — Ledrix Intelligence listening</div>
+          <div class="transcript" id="transcript"><span class="ph">Tap an action below. Ledrix hears you, sees the room, and files the finding — your hands never leave the flashlight.</span></div>
+          <div class="spatial" id="spatial">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            <div><b id="spatialHead">Position locked</b><small id="spatialSub"></small></div>
+          </div>
+        </div>
+
+        <!-- camera capture overlay -->
+        <div class="camflash" id="camflash">
+          <div class="whiteout"></div>
+          <div class="viewport" id="camViewport"></div>
+          <div class="camlabel" id="camLabel">EVIDENCE CAPTURED · GEO-TAGGED</div>
+        </div>
+
+        <div class="deck">
+          <div class="deck-label">Simulate a field action</div>
+          <button class="abtn" id="act_waterheater" data-tone="spec">
+            <span class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1 2 2.5 2 4a5 5 0 0 1-10 0c0-4 3-5 3-9 0-1.2 1-2.5 2-3z"/></svg></span>
+            <span class="atxt"><b>Log Data-Plate Spec</b><small>Tankless water heater under the kitchen sink — filed as a SPEC, not a defect</small></span>
+            <span class="adone">LOGGED ✓</span>
+          </button>
+          <button class="abtn" id="act_fireplace" data-tone="hazard">
+            <span class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1 2 2.5 2 4a5 5 0 0 1-10 0c0-4 3-5 3-9 0-1.2 1-2.5 2-3z"/><path d="M4 21h16"/></svg></span>
+            <span class="atxt"><b>Log Gas Fireplace Finding</b><small>Known-requirement recall: missing damper clamp → the CO-safety language writes itself</small></span>
+            <span class="adone">LOGGED ✓</span>
+          </button>
+          <button class="abtn" id="act_baywindow" data-tone="char">
+            <span class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M12 5v14M4 12h16"/></svg></span>
+            <span class="atxt"><b>Log Complex Bay Window</b><small>Irregular geometry the schematic redraws itself around — no sketching</small></span>
+            <span class="adone">LOGGED ✓</span>
+          </button>
+          <button class="abtn" id="act_electrical" data-tone="hazard">
+            <span class="aicon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9"/></svg></span>
+            <span class="atxt"><b>Log Electrical Hazard</b><small>Known-defect recall: Ledrix recognizes the FPE panel and writes the liability language for you</small></span>
+            <span class="adone">LOGGED ✓</span>
+          </button>
+          <button class="abtn" id="act_toggle" data-tone="green">
+            <span class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span>
+            <span class="atxt"><b id="toggleTitle">View Client Home App</b><small id="toggleSub">The report becomes a living asset the homeowner keeps — your brand stays on their phone for years</small></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROI tracker -->
+    <div class="roi">
+      <div class="roi-head">
+        <h3>ROI &amp; Time-Saved Tracker</h3>
+        <div class="shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span id="shieldTxt">LIABILITY SHIELD: ARMED</span></div>
+      </div>
+      <div class="roi-grid">
+        <div class="roi-cell" id="roiTime"><div class="num" id="roiTimeNum">0<span style="font-size:11px"> min</span></div><div class="lbl">Admin time saved vs. manual entry</div></div>
+        <div class="roi-cell" id="roiFind"><div class="num" id="roiFindNum">0</div><div class="lbl">Items logged · zero typing</div></div>
+        <div class="roi-cell" id="roiDoc"><div class="num grn" id="roiDocNum">0</div><div class="lbl">Geo-pinned evidence records</div></div>
+      </div>
+      <div class="roi-note" id="roiNote">Every action you simulate is <b>one sentence spoken on-site</b> — Ledrix does the locating, photographing, formatting and legal phrasing in the same breath.</div>
+    </div>
+
+    <!-- real photo preload -->
+    <div class="prep">
+      <div class="plabel">Load real photos before the pitch</div>
+      <div class="slots" id="slots"></div>
+    </div>
+
+    <div class="resetrow" style="gap:8px;flex-wrap:wrap;">
+      <a href="https://www.ledrixlabs.com/share/eval-house-seed-v1" target="_blank" rel="noopener" class="resetbtn" style="text-decoration:none;color:#2fb6e8;border-color:rgba(47,182,232,0.4);">Real Home App ↗</a>
+      <a href="https://www.ledrixlabs.com/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report" target="_blank" rel="noopener" class="resetbtn" style="text-decoration:none;color:#2fb6e8;border-color:rgba(47,182,232,0.4);">Real Web Report ↗</a>
+      <button class="resetbtn" id="resetBtn">↺ Reset demo</button>
+    </div>
+  </aside>
+
+  <!-- ================= RIGHT : CLIENT DELIVERABLE ================= -->
+  <main class="deliverable">
+    <div class="viewtag"><span class="tag" id="viewTag">CLIENT DELIVERABLE · LIVE PREVIEW — UPDATES AS YOU SPEAK</span></div>
+
+    <div class="paper" id="paper">
+
+      <!-- ============ REPORT VIEW — structure verified against a real /share screenshot 2026-07-08 ============ -->
+      <div class="reportview">
+        <div class="cover">
+          <div class="covertop">
+            <div class="ceyebrow">LEDRIX INSPECTION REPORT<span>CONFIDENTIAL · CLIENT COPY</span></div>
+            <div class="cbrand">
+              <svg viewBox="0 0 100 100"><mask id="dm-cover"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#fff" fill-rule="evenodd" mask="url(#dm-cover)"/></svg>
+              <div><span class="word">LEDRIX</span><span class="sub">INTELLIGENCE</span></div>
+            </div>
+          </div>
+          <h1>14312 Chantilly Batist Ln</h1>
+          <div class="addr" id="coverSub">Austin, TX 78745 &middot; Report generated live, on-site</div>
+        </div>
+
+        <div class="infocards">
+          <div class="infocard">
+            <h5>Property</h5>
+            <div class="irow"><em>Year Built</em><b>2016</b></div>
+            <div class="irow"><em>Sq Footage</em><b>2,340</b></div>
+            <div class="irow"><em>Floors</em><b>2-Story · Slab</b></div>
+          </div>
+          <div class="infocard">
+            <h5>Inspection</h5>
+            <div class="irow"><em>Date</em><b>Today</b></div>
+            <div class="irow"><em>Scope</em><b>Full Home Inspection</b></div>
+            <div class="irow"><em>Inspector</em><b>K. Genung · Lic. #TREC-24810</b></div>
+            <div class="irow"><em>Coverage</em><b id="covCell">0 systems documented</b></div>
+          </div>
+        </div>
+
+        <div class="statusrow">
+          <span class="statuspill clear" id="statusPill"><span class="sdot"></span><span id="statusPillTxt">0 Findings</span></span>
+        </div>
+        <div class="whatmatters clear" id="whatMatters">
+          <div class="wmtop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg>What Matters — <span id="wmCount">0</span> things Ledrix flagged</div>
+          <div class="wmline" id="wmLine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg><span>No safety or immediate-attention items — nothing urgent.</span></div>
+        </div>
+        <div class="askbar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <div class="atext"><b>Ask Ledrix about your home</b><small>"Will the furnace make it another winter?" &middot; cost projections &middot; ask anything</small></div>
+          <div class="cta">Unlock Insight →</div>
+        </div>
+
+        <div class="toc">
+          <div class="tochead">Contents</div>
+          <h2>Report Contents</h2>
+          <div class="tocsub">Every section of this inspection, one tap away.</div>
+          <div class="tocrow" data-goto="sec-home"><span class="tn">01</span><span class="tl">Home Profile</span><span class="tarrow">→</span></div>
+          <div class="tocrow disabled"><span class="tn">02</span><span class="tl">Executive Summary</span><span class="tarrow">→</span></div>
+          <div class="tocrow" data-goto="sec-findings"><span class="tn">03</span><span class="tl">Detailed Findings</span><span class="tarrow">→</span></div>
+          <div class="tocrow" data-goto="sec-systems"><span class="tn">04</span><span class="tl">Systems, Specifications &amp; Scope</span><span class="tarrow">→</span></div>
+          <div class="tocrow disabled"><span class="tn">05</span><span class="tl">Extras</span><span class="tarrow">→</span></div>
+        </div>
+
+        <div id="sec-home" class="chapter">
+          <div class="num">01</div>
+          <h2>Home Profile</h2>
+          <div class="sub">Property specifications and intelligence.</div>
+          <div class="lockup"><svg viewBox="0 0 100 100"><mask id="dm-home"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#0e7490" fill-rule="evenodd" mask="url(#dm-home)"/></svg>LEDRIX</div>
+        </div>
+        <div class="covwrap" style="padding-top:4px">
+          <div class="infocards" style="padding:0 0 4px;border:none;background:transparent">
+            <div class="infocard">
+              <div class="irow" style="border-top:none"><em>Construction</em><b>Site-Built</b></div>
+              <div class="irow"><em>Site / Climate</em><b>Expansive Clay Soil</b></div>
+            </div>
+          </div>
+          <div class="infocards" style="padding:0 0 4px;border:none;background:transparent">
+            <div class="infocard">
+              <h5>Utilities</h5>
+              <div class="irow"><em>Water Source</em><b>City / Municipal</b></div>
+              <div class="irow"><em>Waste System</em><b>Public Sewer</b></div>
+              <div class="irow"><em>Power Supply</em><b>200A Service</b></div>
+              <div class="irow"><em>Irrigation</em><b>Present</b></div>
+            </div>
+            <div class="infocard">
+              <h5>Mechanicals</h5>
+              <div class="irow"><em>HVAC System</em><b>Gas Forced Air</b></div>
+              <div class="irow"><em>Plumbing</em><b>PEX</b></div>
+              <div class="irow"><em>Wiring</em><b>200A Copper</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="sec-findings" class="chapter">
+          <div class="num">03</div>
+          <h2>Detailed Findings</h2>
+          <div class="sub">Every observation below was voice-captured and geo-pinned at the moment it was made — not reconstructed from memory that evening.</div>
+          <div class="lockup"><svg viewBox="0 0 100 100"><mask id="dm-chapter"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#0e7490" fill-rule="evenodd" mask="url(#dm-chapter)"/></svg>LEDRIX</div>
+        </div>
+
+        <div class="sechead">
+          <h2>Interactive Property Schematic<span class="previewbadge">PREVIEW · SHIPPING SOON</span></h2>
+          <div class="sub">Auto-generated from walk-through &middot; in-development (Floor Plan Camera) — not yet part of the live client report, shown here as roadmap</div>
+        </div>
+
+        <div class="filters" id="filters">
+          <button class="ftab on" data-filter="all">All Findings<span class="cnt" id="cnt_all">0</span></button>
+          <button class="ftab" data-filter="systems">Systems<span class="cnt" id="cnt_systems">0</span></button>
+          <button class="ftab" data-filter="electrical">Electrical<span class="cnt" id="cnt_electrical">0</span></button>
+          <button class="ftab" data-filter="structure">Structure &amp; Windows<span class="cnt" id="cnt_structure">0</span></button>
+          <button class="ftab" data-filter="fireplace">Fireplace<span class="cnt" id="cnt_fireplace">0</span></button>
+        </div>
+
+        <div class="planwrap">
+          <div class="planframe">
+            <svg viewBox="0 0 660 470" id="plan">
+              <!-- ===== MAIN FLOOR ===== -->
+              <rect x="40" y="30" width="560" height="300" class="roomfill"/>
+              <!-- outer walls: east wall drawn as two segments so the bay can replace the middle -->
+              <path class="wall" d="M40 30 H600"/>
+              <path class="wall" d="M40 330 H600"/>
+              <path class="wall" d="M40 30 V330"/>
+              <path class="wall" d="M600 30 V95"/>
+              <path class="wall" d="M600 145 V330"/>
+              <path class="wall oldwall" id="eastMid" d="M600 95 V145"/>
+              <!-- bay window (hidden until logged) -->
+              <g class="bay" id="bayGroup">
+                <path d="M600 95 L626 105 L626 135 L600 145"/>
+                <text x="610" y="88" text-anchor="start" transform="rotate(0)">BAY WINDOW · 16" DEEP</text>
+              </g>
+              <!-- interior walls -->
+              <path class="wall-inner" d="M380 30 V330"/>
+              <path class="wall-inner" d="M380 200 H600"/>
+              <path class="wall-inner" d="M230 30 V180"/>
+              <path class="wall-inner" d="M40 180 H380"/>
+              <path class="wall-inner" d="M230 180 V330"/>
+              <!-- door swings -->
+              <path class="wall-inner" d="M380 110 a26 26 0 0 1 -26 26" opacity=".55"/>
+              <path class="wall-inner" d="M300 180 a24 24 0 0 1 24 24" opacity=".55"/>
+              <!-- room labels -->
+              <text x="490" y="118" class="roomlbl" text-anchor="middle">LIVING ROOM</text>
+              <text x="490" y="132" class="dimlbl" text-anchor="middle">18'4" × 15'6"</text>
+              <text x="490" y="268" class="roomlbl" text-anchor="middle">KITCHEN</text>
+              <text x="135" y="108" class="roomlbl" text-anchor="middle">PRIMARY BED</text>
+              <text x="305" y="108" class="roomlbl" text-anchor="middle">BEDROOM 2</text>
+              <text x="135" y="258" class="roomlbl" text-anchor="middle">GARAGE</text>
+              <text x="305" y="258" class="roomlbl" text-anchor="middle">HALL / LAUNDRY</text>
+              <!-- compass + scale -->
+              <g transform="translate(622,36)"><path d="M0 14 L5 0 L10 14 L5 10 Z" fill="#8fa0b4"/><text x="5" y="26" text-anchor="middle" class="dimlbl">N</text></g>
+              <!-- ===== BASEMENT INSET ===== -->
+              <rect x="40" y="368" width="270" height="84" class="roomfill" stroke="#37475b" stroke-width="1.8" fill="rgba(33,123,232,.03)"/>
+              <text x="52" y="386" class="roomlbl sm">BASEMENT — LEVEL B1 (MECHANICAL)</text>
+              <rect x="86" y="398" width="26" height="38" fill="none" stroke="#8fa0b4" stroke-width="1.2"/>
+              <text x="99" y="446" class="dimlbl" text-anchor="middle">PANEL</text>
+              <rect x="180" y="402" width="30" height="30" rx="15" fill="none" stroke="#8fa0b4" stroke-width="1.2"/>
+              <text x="195" y="446" class="dimlbl" text-anchor="middle">WH</text>
+              <text x="330" y="420" class="dimlbl">SECTION VIEW — SYSTEMS PINNED TO LEVEL</text>
+
+              <!-- ===== PINS ===== -->
+              <g class="pin" id="pin_waterheater" data-trade="systems">
+                <circle class="ring" cx="560" cy="238" r="7" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+                <g class="pgroup">
+                  <circle cx="560" cy="238" r="7" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+                  <circle cx="560" cy="238" r="2.2" fill="#fff"/>
+                  <text x="552" y="222" class="pinlbl" fill="#15803d" text-anchor="end">INSTANT WH</text>
+                  <text x="552" y="232" class="dimlbl" text-anchor="end">UNDER SINK · SPEC</text>
+                </g>
+              </g>
+              <g class="pin" id="pin_fireplace" data-trade="fireplace">
+                <circle class="ring" cx="415" cy="62" r="7" fill="none" stroke="#eab308" stroke-width="1.5"/>
+                <g class="pgroup">
+                  <circle cx="415" cy="62" r="7" fill="#eab308" stroke="#fff" stroke-width="2"/>
+                  <circle cx="415" cy="62" r="2.2" fill="#fff"/>
+                  <text x="428" y="59" class="pinlbl" fill="#8a6a06">GAS FIREPLACE</text>
+                  <text x="428" y="69" class="dimlbl">DAMPER CLAMP · ⚠ SAFETY</text>
+                </g>
+              </g>
+              <g class="pin" id="pin_baywindow" data-trade="structure">
+                <circle class="ring" cx="613" cy="120" r="7" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+                <g class="pgroup">
+                  <circle cx="613" cy="120" r="7" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+                  <circle cx="613" cy="120" r="2.2" fill="#fff"/>
+                  <text x="613" y="162" class="pinlbl" fill="#15803d" text-anchor="middle">EAST BAY</text>
+                </g>
+              </g>
+              <g class="pin" id="pin_electrical" data-trade="electrical">
+                <circle class="ring" cx="99" cy="410" r="7" fill="none" stroke="#f97316" stroke-width="1.5"/>
+                <g class="pgroup">
+                  <circle cx="99" cy="410" r="7" fill="#f97316" stroke="#fff" stroke-width="2"/>
+                  <circle cx="99" cy="410" r="2.2" fill="#fff"/>
+                  <text x="118" y="407" class="pinlbl" fill="#d9706e">FPE STAB-LOK PANEL</text>
+                  <text x="118" y="417" class="dimlbl">SAFETY HAZARD · B1</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="plancap"><span>SCHEMATIC AUTO-DRAWN FROM SPATIAL WALK-THROUGH — NOT HAND-SKETCHED</span><span>SCALE 1:120 · REV LIVE</span></div>
+        </div>
+
+        <div class="sechead">
+          <h2>Asset &amp; Defect Log</h2>
+          <div class="sub">Condition only — formal language written at the moment of observation, court-ready, not recalled at 9 PM</div>
+        </div>
+
+        <div class="log" id="log">
+          <div class="logempty" id="logEmpty"><b>No findings filed yet.</b><br>Press an action on the inspector's phone — watch the formal entry, evidence photo and map pin land here in the same second.</div>
+        </div>
+
+        <div id="sec-systems" class="chapter">
+          <div class="num">04</div>
+          <h2>Systems, Specifications &amp; Scope</h2>
+          <div class="sub">What was inspected and its condition, the specifications on record, and the scope &amp; limitations.</div>
+          <div class="lockup"><svg viewBox="0 0 100 100"><mask id="dm-sys"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#0e7490" fill-rule="evenodd" mask="url(#dm-sys)"/></svg>LEDRIX</div>
+        </div>
+
+        <div class="covwrap">
+          <div class="covhead">Systems Assessed</div>
+          <div class="covtitle">Inspection Coverage Overview</div>
+          <div class="covstats">
+            <div class="covstat good"><div class="n" id="covGood">8</div><div class="l">Satisfactory</div></div>
+            <div class="covstat" id="covFindCell"><div class="n" id="covFind">0</div><div class="l">With Findings</div></div>
+            <div class="covstat"><div class="n">8</div><div class="l">Total Systems</div></div>
+          </div>
+          <div class="sysgrid" id="sysgrid"></div>
+        </div>
+
+        <div class="invwrap">
+          <div class="invhead">Inventory</div>
+          <div class="invtitle">Systems &amp; Components</div>
+          <div class="invsub">Equipment, materials &amp; specifications recorded during the inspection — described only, never judged.</div>
+          <div class="invgrid" id="specs">
+            <div class="logempty" id="specsEmpty" style="grid-column:1/-1"><b>No specs logged yet.</b><br>Log the water heater from the inspector's phone — it lands here, never in the findings above.</div>
+          </div>
+        </div>
+
+        <div class="limwrap">
+          <div class="limhead">Limitations &amp; Exclusions</div>
+          <div class="limtitle">Access &amp; Inspection Limitations</div>
+          <div class="limsub">The following systems or areas were present but could not be fully inspected, or were inaccessible at the time of inspection.</div>
+          <div class="limrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg><span><b>ROOFING:</b> Roof areas not safely accessible were viewed from the eave, ladder, or ground rather than walked.</span></div>
+          <div class="limrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg><span><b>ELECTRICAL:</b> The main service disconnect was not cycled and overcurrent devices were not tripped or tested.</span></div>
+        </div>
+
+        <div class="repfoot">
+          <div class="fchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>LEDRIX SPATIAL OS</div>
+          <div>CONFIDENTIAL INSPECTION DOCUMENT · PAGE 1</div>
+        </div>
+      </div>
+
+      <!-- ============ HOME APP VIEW ============ -->
+      <div class="homeapp">
+        <div class="ha-hero">
+          <div class="eyebrow">After closing, the report doesn't die in a drawer</div>
+          <h2>Your Home, On Record.</h2>
+          <p>The inspection becomes the <b>living baseline of the house</b> — maintenance reminders generated from the actual equipment we documented, not generic checklists. Your inspector's brand stays on the homeowner's phone for the life of the home: that's the referral engine.</p>
+          <div class="ha-score"><div class="ring"><b>86</b></div><em>Home Health</em></div>
+        </div>
+        <div class="ha-grid">
+          <div class="ha-card alert">
+            <div class="hc-top"><svg viewBox="0 0 24 24" fill="#d9706e"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9"/></svg><h4>Federal Pacific Panel — Replace</h4><span class="due">PRIORITY</span></div>
+            <p>Flagged at inspection as a documented fire-safety hazard. Ledrix has three licensed electricians in your area with panel-swap pricing on file.</p>
+            <div class="hc-cta">Get 3 vetted quotes →</div>
+          </div>
+          <div class="ha-card">
+            <div class="hc-top"><svg viewBox="0 0 24 24" fill="none" stroke="#217be8" stroke-width="1.8"><path d="M12 3c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1 2 2.5 2 4a5 5 0 0 1-10 0c0-4 3-5 3-9 0-1.2 1-2.5 2-3z"/></svg><h4>Water Heater Flush</h4><span class="due">DUE OCT 2026</span></div>
+            <p>Your 2016 Rheem 50-gal is in year 10 of a 12-year expected life. An annual flush is the cheapest year you can add to it.</p>
+            <div class="hc-cta">Watch the 4-min how-to →</div>
+          </div>
+          <div class="ha-card">
+            <div class="hc-top"><svg viewBox="0 0 24 24" fill="none" stroke="#31d283" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h16M6 20V9l6-4 6 4v11"/></svg><h4>Attic Insulation — R-30 Documented</h4><span class="due">SPEC ON FILE</span></div>
+            <p>Captured as a baseline spec during your inspection — no defect, just the exact figure to compare against if you ever upgrade or a contractor quotes you something different.</p>
+            <div class="hc-cta">View full spec sheet →</div>
+          </div>
+          <div class="ha-card">
+            <div class="hc-top"><svg viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M12 5v14M4 12h16"/></svg><h4>Bay Window Seals</h4><span class="due">SEASONAL</span></div>
+            <p>Older east-facing bay documented at inspection. Check glazing seals before winter — condensation between panes means a failed seal, not a failed window.</p>
+            <div class="hc-cta">Add to fall checklist →</div>
+          </div>
+        </div>
+        <div class="ha-ask">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a8 8 0 1 1-3.5-6.6"/><path d="M21 4v5h-5"/></svg>
+          <div class="q"><b>Ask Ledrix anything about this house:</b> "What breaker feeds the garage?" · "When was the roof last documented?" · It answers from YOUR inspection record.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   DATA — the three field actions
+   ============================================================ */
+var MOCKS = {
+  waterheater:{grad:"linear-gradient(155deg,#b8c4cc,#7d8b94 55%,#4a565e)",lines:["#dde6ec","#a8b6bf"],label:"TANKLESS WH · KITCHEN SINK"},
+  fireplace:{grad:"linear-gradient(155deg,#8a5a3a,#5c3a24 55%,#33200f)",lines:["#c98a5a","#a86e42"],label:"GAS FIREPLACE · LIVING RM"},
+  baywindow:{grad:"linear-gradient(160deg,#8fb6d9,#5a7ea3 60%,#33506e)",lines:["#c8dcee","#a9c4dd"],label:"BAY WINDOW · EAST"},
+  electrical:{grad:"linear-gradient(155deg,#4a4f57,#2e3238 60%,#1d2024)",lines:["#6f767f","#5a616a"],label:"FPE PANEL · B1"}
+};
+
+var ACTIONS = {
+  waterheater:{
+    trade:"systems", minutes:6, type:"spec",
+    transcript:"Under the kitchen sink — instant water heater, tankless, point-of-use, twenty twenty-three.",
+    spatialHead:"Spec logged — Instant Water Heater, Kitchen",
+    spatialSub:"No defect to flag — pure inventory data, filed as a SPEC not a finding.",
+    entry:{
+      sev:"spec", sevLabel:"Spec Logged", safety:false, obsLabel:"Specifications", recLabel:"Maintenance Note",
+      title:"Instant Water Heater — Tankless, Point-of-Use",
+      system:"Plumbing — Water Heater", location:"Kitchen · Under Sink",
+      geo:"KITCHEN · UNDER SINK",
+      observations:[
+        "Point-of-use tankless unit serving the kitchen sink.",
+        "Installed 2023 — electric, on-demand.",
+        "Data plate photographed and logged verbatim — no transcription errors, nothing typed twice."
+      ],
+      rec:"Logged as a spec — not a defect — so the homeowner's app carries the exact model for descaling reminders and warranty lookups. A second data plate the old-way report would have skipped entirely."
+    }
+  },
+  fireplace:{
+    trade:"fireplace", minutes:8, type:"finding",
+    transcript:"Living room gas fireplace — the damper clamp is missing on the gas log set.",
+    spatialHead:"Known-requirement recall — gas log damper clamp",
+    spatialSub:"Ledrix recognized the gas log set and pre-wrote the standard safety language.",
+    entry:{
+      sev:"deficiency", sevLabel:"Minor Repair", safety:true,
+      title:"Gas Fireplace — Damper Clamp Not Installed",
+      system:"Fireplace", location:"Living Room",
+      geo:"LIVING RM · MAIN LVL",
+      observations:[
+        "Gas log set installed in the wood-burning firebox; no damper stop clamp present.",
+        "Without a clamp the damper can be fully closed while the logs are burning.",
+        "Standard practice requires the damper be permanently blocked open on gas log installations — combustion byproducts (CO) must always vent."
+      ],
+      rec:"Install a damper stop clamp — an inexpensive part, but the exact kind of carbon-monoxide detail a tired inspector misses at 4 PM and Ledrix never does."
+    }
+  },
+  baywindow:{
+    trade:"structure", minutes:4, type:"geometry",
+    transcript:"Living room has an older bay window on the east side, approximately 16 inches deep.",
+    spatialHead:"Schematic updated — East wall redrawn",
+    spatialSub:"Irregular geometry captured by voice, drawn straight onto the schematic — no defect entry, no clutter in the report body."
+  },
+  electrical:{
+    trade:"electrical", minutes:9, type:"finding",
+    transcript:"In the basement… logging an older 100-amp Federal Pacific electrical panel with Stab-Lok breakers.",
+    spatialHead:"Known-defect recall triggered — FPE Stab-Lok",
+    spatialSub:"Ledrix recognized the manufacturer and pre-wrote the industry-standard hazard language.",
+    entry:{
+      sev:"critical", sevLabel:"Major Repair", safety:true,
+      title:"Electrical — Federal Pacific Stab-Lok Panel (100A)",
+      system:"Electrical", location:"Basement B1 · Mechanical Room",
+      geo:"BASEMENT B1 · MECH RM",
+      observations:[
+        "Federal Pacific Electric (FPE) Stab-Lok load center (100A) serves the residence.",
+        "FPE Stab-Lok breakers have a widely documented history of failing to trip under overcurrent conditions.",
+        "Considered a latent fire-safety hazard by the inspection industry regardless of apparent current function."
+      ],
+      rec:"Evaluation and replacement by a licensed electrician is recommended. This exact language — written at the moment of observation, geo-pinned and photo-verified — is what stands between an inspector and a negligence claim."
+    }
+  }
+};
+
+var TRADE_LABELS = {systems:"systems", electrical:"electrical", structure:"structure", fireplace:"fireplace"};
+
+/* ============================================================
+   STATE + ELEMENT CACHE
+   ============================================================ */
+var S = {logged:{}, minutes:0, findings:0, specCount:0, findingCount:0, docs:0, filter:"all", homeMode:false, busy:false, photos:{}};
+function $(id){return document.getElementById(id);}
+var els = {};
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+function typeInto(el, text, speed){
+  return new Promise(function(resolve){
+    var line=document.createElement("div"), caret=document.createElement("span");
+    caret.className="caret";
+    el.appendChild(line); line.appendChild(document.createTextNode("")); line.appendChild(caret);
+    var node=line.firstChild, i=0;
+    var iv=setInterval(function(){
+      node.textContent+=text[i]; i++;
+      el.scrollTop=el.scrollHeight;
+      if(i>=text.length){clearInterval(iv);caret.remove();resolve();}
+    }, speed||24);
+  });
+}
+
+function mockShotHTML(key){
+  var m=MOCKS[key];
+  return '<div class="mockshot" style="background:'+m.grad+';position:relative">'+
+    '<div style="position:absolute;left:12%;top:30%;width:60%;height:2px;background:'+m.lines[0]+';transform:rotate(-14deg);opacity:.8"></div>'+
+    '<div style="position:absolute;left:24%;top:52%;width:44%;height:1.5px;background:'+m.lines[1]+';transform:rotate(8deg);opacity:.7"></div>'+
+    '<div style="position:absolute;bottom:6px;left:8px;font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.85);letter-spacing:.1em">'+m.label+'</div>'+
+  '</div>';
+}
+function photoHTML(key){
+  return S.photos[key] ? '<img src="'+S.photos[key]+'" alt="">' : mockShotHTML(key);
+}
+
+/* ============================================================
+   CAMERA FLASH
+   ============================================================ */
+function cameraFlash(key){
+  return new Promise(function(resolve){
+    els.camViewport.innerHTML = photoHTML(key);
+    els.camflash.classList.add("on");
+    requestAnimationFrame(function(){ els.camflash.classList.add("snap"); });
+    setTimeout(function(){
+      els.camflash.classList.remove("on","snap");
+      resolve();
+    }, 1150);
+  });
+}
+
+/* ============================================================
+   SPATIAL TOAST
+   ============================================================ */
+function spatialToast(head, sub){
+  els.spatialHead.textContent = head;
+  els.spatialSub.textContent = sub;
+  els.spatial.classList.add("show");
+  setTimeout(function(){ els.spatial.classList.remove("show"); }, 3400);
+}
+
+/* ============================================================
+   ROI TRACKER
+   ============================================================ */
+function bump(cellId){
+  var c=$(cellId); c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
+}
+function updateROI(minutes){
+  S.minutes+=minutes; S.findings+=1; S.docs+=1;
+  animateNum(els.roiTimeNum, S.minutes, ' min');
+  els.roiFindNum.textContent=S.findings;
+  els.roiDocNum.textContent=S.docs;
+  bump("roiTime"); bump("roiFind"); bump("roiDoc");
+  els.covCell.textContent=S.findings+" system"+(S.findings===1?"":"s")+" documented";
+  els.roiNote.innerHTML="At ~"+Math.round(S.minutes/S.findings)+" min saved per item, a 60-item inspection returns <b>"+(Math.round(S.minutes/S.findings)*60/60).toFixed(0)+"+ hours of your evening</b> — that's the report-writing night Ledrix deletes.";
+}
+function animateNum(el, target, suffix){
+  var start=parseInt(el.textContent,10)||0, steps=14, i=0;
+  var iv=setInterval(function(){
+    i++; var v=Math.round(start+(target-start)*(i/steps));
+    el.innerHTML=v+'<span style="font-size:11px">'+(suffix||'')+'</span>';
+    if(i>=steps)clearInterval(iv);
+  },28);
+}
+
+/* ============================================================
+   REPORT LOG
+   ============================================================ */
+var SAFETY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg>';
+
+function appendEntry(key){
+  var a=ACTIONS[key], e=a.entry;
+  var isSpec = a.type==="spec";
+
+  if(isSpec){
+    // compact inventory card — matches the real tiny "Flooring — Carpet" cards, not a narrative block
+    els.specsEmpty.style.display="none";
+    var card=document.createElement("div");
+    card.className="invcard";
+    card.setAttribute("data-trade", a.trade);
+    card.innerHTML='<div class="ithumb">'+photoHTML(key)+'</div><div class="itxt"><b>'+e.title.split(" — ")[0]+'</b><span>'+e.title.split(" — ")[1]+'</span></div>';
+    els.specs.appendChild(card);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ card.classList.add("in"); }); });
+    S.specCount++;
+    applyFilter();
+    return;
+  }
+
+  var container=els.log, emptyEl=els.logEmpty, seq=S.findingCount+1;
+  emptyEl.style.display="none";
+  var div=document.createElement("div");
+  div.className="entry sev-"+e.sev;
+  div.setAttribute("data-trade", a.trade);
+  var obsHtml = e.observations.map(function(o){return '<li>'+o+'</li>';}).join("");
+  div.innerHTML=
+    '<div class="ephoto">'+photoHTML(key)+'<div class="tstamp">09:4'+(2+S.findings)+' AM · GEO-VERIFIED · '+e.geo.split("·")[0].trim()+'</div></div>'+
+    '<div class="ebody">'+
+      '<div class="eyebrow">FINDING #'+seq+'</div>'+
+      '<div class="etop"><h4>'+e.title+'</h4>'+
+        '<span class="sevchip '+e.sev+'">'+e.sevLabel+'</span>'+
+        (e.safety ? '<span class="sevchip safety">'+SAFETY_ICON+'Safety Concern</span>' : '')+
+        '<span class="geochip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>'+e.geo+'</span></div>'+
+      '<div class="fieldgrid"><div class="fr"><em>System</em>'+e.system+'</div><div class="fr"><em>Location</em>'+e.location+'</div></div>'+
+      '<div class="obs">'+(e.obsLabel||"Observations")+'</div>'+
+      '<ul class="obslist">'+obsHtml+'</ul>'+
+      '<div class="erec"><b>'+(e.recLabel||"Recommendation")+'</b>'+e.rec+'</div>'+
+    '</div>';
+  container.appendChild(div);
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ div.classList.add("in"); }); });
+  S.findingCount++;
+  updateSummary(e, a.trade);
+  applyFilter();
+}
+
+function updateSummary(e, trade){
+  var n = S.findingCount;
+  els.statusPill.className = "statuspill "+(n>0?"flagged":"clear");
+  els.statusPillTxt.textContent = n+" Finding"+(n===1?"":"s");
+  els.wmCount.textContent = n;
+  els.whatMatters.className = "whatmatters "+(e.safety ? "hot" : (n>0?"":"clear"));
+  els.wmLine.innerHTML = e.safety
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg><span>'+n+' item'+(n===1?" needs":"s need")+' attention — including a documented safety concern.</span>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg><span>Logged, but nothing safety-critical yet.</span>';
+
+  var chip = document.querySelector('.syschip[data-trade="'+trade+'"]');
+  if(chip && !chip.classList.contains("hasfind")){
+    chip.classList.add("hasfind");
+    chip.querySelector(".sstat").innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 22 20H2z"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg>FINDINGS';
+    var good=parseInt(els.covGood.textContent,10)-1, find=parseInt(els.covFind.textContent,10)+1;
+    els.covGood.textContent=good; els.covFind.textContent=find;
+    els.covFindCell.classList.toggle("good", false);
+  }
+}
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+function setFilter(f){
+  S.filter=f;
+  var tabs=els.filters.querySelectorAll(".ftab");
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle("on", tabs[i].getAttribute("data-filter")===f);
+  applyFilter();
+}
+function applyFilter(){
+  var pins=document.querySelectorAll(".pin.dropped");
+  for(var i=0;i<pins.length;i++){
+    var t=pins[i].getAttribute("data-trade");
+    pins[i].classList.toggle("hidden-by-filter", S.filter!=="all" && t!==S.filter);
+  }
+  // Inventory (specs) isn't trade-filtered in production — only the schematic pins + findings log are.
+  filterSection(els.log, els.logEmpty, "findings", "<b>No findings filed yet.</b><br>Press an action on the inspector's phone — watch the formal entry, evidence photo and map pin land here in the same second.");
+  updateCounts();
+}
+function filterSection(container, emptyEl, noun, emptyDefaultHtml){
+  var entries=container.querySelectorAll(".entry");
+  var visible=0;
+  for(var j=0;j<entries.length;j++){
+    var et=entries[j].getAttribute("data-trade");
+    var hide=(S.filter!=="all" && et!==S.filter);
+    entries[j].classList.toggle("hidden-by-filter", hide);
+    if(!hide)visible++;
+  }
+  emptyEl.style.display = (entries.length===0) ? "" : (visible===0 ? "" : "none");
+  if(entries.length>0 && visible===0){
+    emptyEl.innerHTML="<b>No "+(TRADE_LABELS[S.filter]||S.filter)+" "+noun+" in this view.</b><br>Log one from the inspector's phone, or tap All Findings.";
+  } else if(entries.length===0){
+    emptyEl.innerHTML=emptyDefaultHtml;
+  }
+}
+function updateCounts(){
+  var counts={all:0,systems:0,electrical:0,structure:0,fireplace:0};
+  var pins=document.querySelectorAll(".pin.dropped");
+  for(var i=0;i<pins.length;i++){
+    var t=pins[i].getAttribute("data-trade");
+    counts.all++;
+    if(counts[t]!==undefined) counts[t]++;
+  }
+  ["all","systems","electrical","structure","fireplace"].forEach(function(k){ $("cnt_"+k).textContent=counts[k]; });
+}
+
+/* ============================================================
+   ACTION RUNNER
+   ============================================================ */
+async function runAction(key){
+  if(S.busy || S.logged[key]) return;
+  S.busy=true;
+  var a=ACTIONS[key];
+  var btn=$("act_"+key);
+
+  // ensure we're on the report view so the owner watches it land
+  if(S.homeMode) toggleHome(false);
+
+  els.recDot.classList.add("hot");
+  if(els.transcript.querySelector(".ph")) els.transcript.innerHTML="";
+  await typeInto(els.transcript, "▸ "+a.transcript, 22);
+  els.recDot.classList.remove("hot");
+
+  await cameraFlash(key);
+  spatialToast(a.spatialHead, a.spatialSub);
+
+  // map effects
+  if(key==="baywindow"){
+    $("eastMid").classList.add("gone");
+    $("bayGroup").classList.add("shown");
+  }
+  var pin=$("pin_"+key);
+  pin.classList.add("dropped");
+
+  if(a.entry) appendEntry(key);
+  updateROI(a.minutes);
+
+  S.logged[key]=true;
+  btn.classList.add("logged");
+  btn.disabled=true;
+  S.busy=false;
+}
+
+/* ============================================================
+   HOME APP TOGGLE
+   ============================================================ */
+function toggleHome(force){
+  S.homeMode = (typeof force==="boolean") ? force : !S.homeMode;
+  els.paper.classList.toggle("mode-home", S.homeMode);
+  els.viewTag.textContent = S.homeMode
+    ? "CLIENT HOME APP · WHAT THE HOMEOWNER KEEPS AFTER CLOSING"
+    : "CLIENT DELIVERABLE · LIVE PREVIEW — UPDATES AS YOU SPEAK";
+  els.toggleTitle.textContent = S.homeMode ? "Back to Live Report" : "View Client Home App";
+  els.toggleSub.textContent = S.homeMode
+    ? "Return to the report the owner is watching build in real time"
+    : "The report becomes a living asset the homeowner keeps — your brand stays on their phone for years";
+}
+
+/* ============================================================
+   PHOTO SLOTS (real photos, persisted on-device)
+   ============================================================ */
+var SLOT_DEFS=[{key:"waterheater",label:"Tankless WH"},{key:"fireplace",label:"Fireplace"},{key:"baywindow",label:"Bay window"},{key:"electrical",label:"FPE panel"}];
+function buildSlots(){
+  els.slots.innerHTML=SLOT_DEFS.map(function(s){
+    return '<label class="slot" for="file_'+s.key+'">'+
+      '<div class="sthumb" id="thumb_'+s.key+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.6-2.5h4.8L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg></div>'+
+      '<span>'+s.label+'</span><input type="file" id="file_'+s.key+'" accept="image/*"></label>';
+  }).join("");
+  SLOT_DEFS.forEach(function(s){
+    $("file_"+s.key).addEventListener("change", function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f)return;
+      var rd=new FileReader();
+      rd.onload=function(ev){
+        S.photos[s.key]=ev.target.result;
+        try{localStorage.setItem("ledrixDemoPhoto_"+s.key, ev.target.result);}catch(err){}
+        renderThumb(s.key);
+        refreshEntryPhoto(s.key);
+      };
+      rd.readAsDataURL(f);
+    });
+  });
+  SLOT_DEFS.forEach(function(s){
+    try{var v=localStorage.getItem("ledrixDemoPhoto_"+s.key); if(v){S.photos[s.key]=v; renderThumb(s.key);}}catch(err){}
+  });
+}
+function renderThumb(key){
+  var t=$("thumb_"+key); t.classList.add("filled"); t.innerHTML='<img src="'+S.photos[key]+'" alt="">';
+}
+function refreshEntryPhoto(key){
+  // findings: hot-swap the .ephoto block. specs: hot-swap the compact .ithumb.
+  var findEntries = els.log.querySelectorAll('.entry[data-trade="'+ACTIONS[key].trade+'"]');
+  for(var i=0;i<findEntries.length;i++){
+    var ph=findEntries[i].querySelector(".ephoto");
+    var stamp=ph.querySelector(".tstamp").outerHTML;
+    ph.innerHTML=photoHTML(key)+stamp;
+  }
+  var specCards = els.specs.querySelectorAll('.invcard[data-trade="'+ACTIONS[key].trade+'"]');
+  for(var j=0;j<specCards.length;j++){
+    specCards[j].querySelector(".ithumb").innerHTML=photoHTML(key);
+  }
+}
+
+/* ============================================================
+   SYSTEMS COVERAGE GRID (04 — mirrors the real "8 systems assessed" chips)
+   ============================================================ */
+var SYS_LIST=[
+  {label:"Roofing", sub:"Roof"}, {label:"Electrical", sub:"Electrical", trade:"electrical"},
+  {label:"HVAC", sub:"HVAC"}, {label:"Plumbing", sub:"Plumbing"},
+  {label:"Foundation", sub:"Slab"}, {label:"Fireplace", sub:"Gas Log", trade:"fireplace"},
+  {label:"Kitchen", sub:"Kitchen"}, {label:"Primary Bathroom", sub:"Bathroom"}
+];
+function buildSysGrid(){
+  els.sysgrid.innerHTML = SYS_LIST.map(function(s){
+    return '<div class="syschip"'+(s.trade?' data-trade="'+s.trade+'"':'')+'>'+
+      '<div class="sl"><b>'+s.label+'</b><small>'+s.sub+'</small></div>'+
+      '<div class="sstat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg>SATISFACTORY</div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function reset(){
+  S.logged={}; S.minutes=0; S.findings=0; S.specCount=0; S.findingCount=0; S.docs=0; S.busy=false;
+  els.transcript.innerHTML='<span class="ph">Tap an action below. Ledrix hears you, sees the room, and files the finding — your hands never leave the flashlight.</span>';
+  els.spatial.classList.remove("show");
+  ["waterheater","fireplace","baywindow","electrical"].forEach(function(k){
+    var b=$("act_"+k); b.disabled=false; b.classList.remove("logged");
+    $("pin_"+k).classList.remove("dropped","hidden-by-filter");
+  });
+  $("eastMid").classList.remove("gone");
+  $("bayGroup").classList.remove("shown");
+  els.log.querySelectorAll(".entry").forEach(function(e){e.remove();});
+  els.specs.querySelectorAll(".invcard").forEach(function(e){e.remove();});
+  els.logEmpty.style.display=""; els.specsEmpty.style.display="";
+  els.roiTimeNum.innerHTML='0<span style="font-size:11px"> min</span>';
+  els.roiFindNum.textContent="0"; els.roiDocNum.textContent="0";
+  els.covCell.textContent="0 systems documented";
+  els.roiNote.innerHTML='Every action you simulate is <b>one sentence spoken on-site</b> — Ledrix does the locating, photographing, formatting and legal phrasing in the same breath.';
+  els.statusPill.className="statuspill clear"; els.statusPillTxt.textContent="0 Findings";
+  els.wmCount.textContent="0"; els.whatMatters.className="whatmatters clear";
+  els.wmLine.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg><span>No safety or immediate-attention items — nothing urgent.</span>';
+  els.covGood.textContent="8"; els.covFind.textContent="0";
+  buildSysGrid();
+  setFilter("all");
+  toggleHome(false);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  ["transcript","spatial","spatialHead","spatialSub","camflash","camViewport","recDot",
+   "roiTimeNum","roiFindNum","roiDocNum","roiNote","covCell",
+   "log","logEmpty","specs","specsEmpty","filters","paper","viewTag","toggleTitle","toggleSub","slots",
+   "statusPill","statusPillTxt","whatMatters","wmCount","wmLine","sysgrid","covGood","covFind","covFindCell"
+  ].forEach(function(id){ els[id]=$(id); });
+
+  buildSlots();
+  buildSysGrid();
+
+  ["waterheater","fireplace","baywindow","electrical"].forEach(function(k){
+    $("act_"+k).addEventListener("click", function(){ runAction(k); });
+  });
+  $("act_toggle").addEventListener("click", function(){ toggleHome(); });
+  $("resetBtn").addEventListener("click", reset);
+
+  els.filters.querySelectorAll(".ftab").forEach(function(tab){
+    tab.addEventListener("click", function(){ setFilter(tab.getAttribute("data-filter")); });
+  });
+
+  document.querySelectorAll(".tocrow[data-goto]").forEach(function(row){
+    row.addEventListener("click", function(){
+      var target=$(row.getAttribute("data-goto"));
+      if(target) target.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+    });
+  });
+
+  updateCounts();
+}
+
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+})();
+</script>
+</body>
+</html>
