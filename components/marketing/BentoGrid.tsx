@@ -112,7 +112,9 @@ const TILES: Tile[] = [
     shot: { src: '/sample-pdf-cover.jpg', alt: 'The Ledrix inspection report cover page' },
   },
   {
-    className: 'md:col-span-2',
+    // Single-width so the six tiles tessellate exactly (2×2 lead + 2 stacked right = rows 1-2;
+    // these three complete row 3). A 2-wide tile here left a permanent hole in the grid.
+    className: '',
     kicker: 'Everywhere',
     title: 'Every device, one brain.',
     body: 'Old phones and new all run the same Ledrix Intelligence — built on a cloud-baseline architecture, not tied to whatever hardware you carry.',
@@ -214,9 +216,11 @@ export function BentoGrid() {
                   </div>
                 )}
                 {t.imgs && (
-                  <div className="relative mt-6 flex flex-1 items-start justify-center gap-6">
+                  /* Vertically centered in the leftover row-span space — the pair floats in the
+                     tile instead of leaving a dead band beneath it. */
+                  <div className="relative flex flex-1 items-center justify-center gap-6 py-6">
                     {t.imgs.map((im, j) => (
-                      <div key={im.src} className="flex w-full max-w-[220px] flex-col gap-2.5">
+                      <div key={im.src} className="flex w-full max-w-[240px] flex-col gap-2.5">
                         <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                           {j === 0 ? 'Shoot' : 'Drafted'}
                         </span>
