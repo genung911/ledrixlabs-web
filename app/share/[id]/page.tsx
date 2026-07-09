@@ -11,6 +11,20 @@ import { LedrixEye } from '@/components/LedrixEye';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
+// Desktop breakpoint — the page is inline-styled, so responsiveness is driven by this
+// hook rather than media queries. False during SSR; resolves on mount.
+function useDesk(): boolean {
+  const [desk, setDesk] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1080px)');
+    const apply = () => setDesk(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return desk;
+}
+
 async function supaGet<T>(path: string): Promise<T[]> {
   try {
     const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
@@ -1058,7 +1072,7 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(246,247,244,0.9)',
       position: 'sticky', top: 0, zIndex: 90, backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)', maxWidth: 430, width: '100%', boxSizing: 'border-box',
+      WebkitBackdropFilter: 'blur(12px)', width: '100%', boxSizing: 'border-box',
     }}>
       {active === 'home' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -1176,6 +1190,8 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   onTabChange: (t: Tab) => void;
   access: boolean; shareId: string; onUnlock: () => void; onAsk: () => void;
 }) {
+  const desk = useDesk();
+  const gut = desk ? 40 : 18;   // side gutter — one value so every section stays flush
   const { score } = scoreCalc(anomalies);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
@@ -1204,58 +1220,63 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         background: cover
           ? `linear-gradient(180deg, rgba(6,11,14,0.60) 0%, rgba(6,11,14,0.18) 34%, rgba(6,11,14,0.22) 52%, rgba(4,9,12,0.88) 100%), url(${cover}) center/cover`
           : 'radial-gradient(120% 90% at 78% 8%, rgba(34,227,255,0.14), transparent 55%), linear-gradient(168deg,#1B2C34,#0E1518 62%,#0A1013)' }}>
-        <div style={{ padding: '28px 20px 26px' }}>
+        <div style={{ padding: desk ? `40px ${gut}px 36px` : '28px 20px 26px' }}>
           <div style={{ ...eyebrow('rgba(255,255,255,0.88)') }}>Your Home Record · Verified</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: 42 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: desk ? 66 : 42 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, lineHeight: 1.08, letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>{record.address ?? 'Address pending'}</div>
-              <div style={{ fontFamily: MONO, fontSize: 10.5, color: 'rgba(255,255,255,0.76)', marginTop: 10, letterSpacing: '0.06em' }}>{[subAddress, record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : ''].filter(Boolean).join('  ·  ')}</div>
+              <div style={{ fontFamily: SERIF, fontSize: desk ? 44 : 30, fontWeight: 600, lineHeight: 1.08, letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>{record.address ?? 'Address pending'}</div>
+              <div style={{ fontFamily: MONO, fontSize: desk ? 11.5 : 10.5, color: 'rgba(255,255,255,0.76)', marginTop: 10, letterSpacing: '0.06em' }}>{[subAddress, record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : ''].filter(Boolean).join('  ·  ')}</div>
             </div>
-            <div style={{ flexShrink: 0, position: 'relative', width: 84, height: 84 }}>
+            {(() => { const R = desk ? 112 : 84; const c = R / 2; const r = c - 3;
+              return (
+            <div style={{ flexShrink: 0, position: 'relative', width: R, height: R }}>
               {/* frosted disc — integrated with the photo, not floating over it */}
               <div style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'rgba(8,14,17,0.42)', backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }} />
               {/* pristine ring: hairline track + exact arc */}
-              <svg width={84} height={84} viewBox="0 0 84 84" style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
-                <circle cx={42} cy={42} r={39} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
-                <circle cx={42} cy={42} r={39} fill="none" stroke={P.bright} strokeWidth={2.5} strokeLinecap="round"
-                  strokeDasharray={`${(2 * Math.PI * 39 * Math.max(0, Math.min(100, score)) / 100).toFixed(1)} ${(2 * Math.PI * 39).toFixed(1)}`} />
+              <svg width={R} height={R} viewBox={`0 0 ${R} ${R}`} style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
+                <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
+                <circle cx={c} cy={c} r={r} fill="none" stroke={P.bright} strokeWidth={2.5} strokeLinecap="round"
+                  strokeDasharray={`${(2 * Math.PI * r * Math.max(0, Math.min(100, score)) / 100).toFixed(1)} ${(2 * Math.PI * r).toFixed(1)}`} />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 600, lineHeight: 1 }}>{score}</div>
-                  <div style={{ ...eyebrow(P.bright, 7), marginTop: 3 }}>Health</div>
+                  <div style={{ fontFamily: SERIF, fontSize: desk ? 33 : 25, fontWeight: 600, lineHeight: 1 }}>{score}</div>
+                  <div style={{ ...eyebrow(P.bright, desk ? 8 : 7), marginTop: 3 }}>Health</div>
                 </div>
               </div>
             </div>
+              ); })()}
           </div>
         </div>
       </div>
 
       {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}
-      <div style={{ margin: '20px 18px 0' }}>
+      <div style={{ margin: `${desk ? 26 : 20}px ${gut}px 0` }}>
         <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
       </div>
 
       {/* Needs attention — top safety/major, light cards */}
       {urgent.length > 0 && (
-        <div style={{ padding: '20px 18px 2px' }}>
+        <div style={{ padding: `20px ${gut}px 2px` }}>
           <div style={{ ...eyebrow(PRIO.major.report, 9), marginBottom: 10 }}>Needs attention</div>
+          <div style={desk ? { display: 'grid', gridTemplateColumns: `repeat(${Math.min(urgent.length, 3)}, 1fr)`, gap: 10 } : undefined}>
           {urgent.map((a, i) => {
             const pr = priorityOf(a);
             return (
-            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 8, padding: '12px 15px', marginBottom: 8, cursor: 'pointer' }}>
+            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 8, padding: '12px 15px', marginBottom: desk ? 0 : 8, cursor: 'pointer' }}>
               <div style={{ ...eyebrow(pr.report, 8.5) }}>{pr.label}</div>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
               <div style={{ color: '#33454B', fontSize: 12.5, lineHeight: 1.55, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
             </div>
             );
           })}
+          </div>
         </div>
       )}
 
       {/* Section tiles */}
-      <div style={{ padding: '16px 18px 10px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ padding: `16px ${gut}px 10px` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: desk ? 'repeat(3, 1fr)' : '1fr 1fr', gap: desk ? 12 : 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
             <button key={tab} onClick={() => onTabChange(tab)} style={{ position: 'relative', background: P.card, border: `1px solid ${P.line}`, borderRadius: 8, padding: '17px 16px 15px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {tab === 'report' && !!record.pdf_url && (
@@ -1271,9 +1292,11 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         </div>
       </div>
 
-      {/* Ledrix Intelligence — the two AI actions as one dark surface: Δ = ask, Eye = vision */}
-      <div style={{ margin: '6px 18px 20px' }}>
-        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 10, padding: '6px 20px', color: '#fff' }}>
+      {/* Ledrix Intelligence — the two AI actions as one dark surface: Δ = ask, Eye = vision.
+          Desktop: the two actions sit side-by-side with a vertical rule. */}
+      <div style={{ margin: `6px ${gut}px 20px` }}>
+        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 10, padding: desk ? '10px 28px' : '6px 20px', color: '#fff',
+          display: desk ? 'grid' : 'block', gridTemplateColumns: desk ? '1fr 1px 1fr' : undefined, columnGap: desk ? 28 : undefined, alignItems: 'center' }}>
           <button onClick={onAsk} aria-label="Ask Ledrix" style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
             <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center',
               background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
@@ -1284,13 +1307,13 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
               <span style={{ display: 'block', color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Is it urgent? Can I DIY it? Get answers drawn straight from your home.</span>
             </span>
           </button>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.09)' }} />
+          <div style={{ height: desk ? '68%' : 1, width: desk ? 1 : undefined, background: 'rgba(255,255,255,0.09)', justifySelf: desk ? 'center' : undefined }} />
           <PhotoAnalyze access={access} onUnlock={onUnlock} shareId={shareId} />
         </div>
       </div>
 
       {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
-      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(150deg,#101B22 0%,#0C161C 80%)', borderRadius: 10, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+      <div onClick={() => onTabChange('ethix')} style={{ margin: `0 ${gut}px 22px`, cursor: 'pointer', background: 'linear-gradient(150deg,#101B22 0%,#0C161C 80%)', borderRadius: 10, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: SERIF, color: '#EAF7F9', fontSize: 15.5, fontWeight: 600 }}>Ethix</span>
@@ -2724,6 +2747,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
 export default function SharePage() {
   const params  = useParams();
+  const desk    = useDesk();
   const routeId = params?.id as string;            // URL slug: a share_token (new) or legacy share_id
   const [shareId, setShareId] = useState('');      // canonical share_id (insp_ id) — keys all child tables
 
@@ -2929,7 +2953,7 @@ export default function SharePage() {
   const specs     = Array.isArray(record.specs)     ? record.specs     : [];
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
+    <div style={{ background: BG, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : desk ? (tab === 'home' ? 1080 : 720) : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -2967,7 +2991,8 @@ export default function SharePage() {
       {/* VAL command line — a persistent bottom dock: text opens the chat, orb starts voice.
           Hidden on the wide report view, which carries its own Ask-Ledrix CTA. */}
       {tab !== 'report' && (
-        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, zIndex: 120,
+        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: desk ? 560 : 430, zIndex: 120,
+          borderRadius: desk ? '14px 14px 0 0' : undefined, borderLeft: desk ? `1px solid ${BORDER}` : undefined, borderRight: desk ? `1px solid ${BORDER}` : undefined,
           background: 'rgba(245,246,243,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
           borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px 11px' }}>
           <button onClick={openLedrix} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
