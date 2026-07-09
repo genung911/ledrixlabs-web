@@ -552,7 +552,7 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
             </div>
           ))}
         </div>
-        <div style={{ ...eyebrow(ACCENT, 8), marginTop: 12 }}>Tap for details →</div>
+        <div style={{ ...eyebrow(MED, 8), marginTop: 12 }}>Tap for details →</div>
       </div>
       {open && <FindingDetailModal a={a} zip={zip} cityState={cityState} shareId={shareId} onClose={() => setOpen(false)} />}
     </>
@@ -563,7 +563,7 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
 function CardSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ marginTop: 18, borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
-      <div style={{ ...eyebrow(ACCENT, 8), marginBottom: 9 }}>{label}</div>
+      <div style={{ ...eyebrow(MED, 8), marginBottom: 9 }}>{label}</div>
       {children}
     </div>
   );
@@ -682,7 +682,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
   const [showAppliance, setShowAppliance] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_COLOR[p.status] ?? DIM;
-  const pc = p.priority === 'critical' ? CRITICAL : p.priority === 'high' ? WARN : p.priority === 'low' ? GREEN : ACCENT;
+  const pc = p.priority === 'critical' ? CRITICAL : p.priority === 'high' ? WARN : p.priority === 'low' ? GREEN : INFO;
 
   const advance = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -732,7 +732,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
           <div onClick={e => e.stopPropagation()} style={{ paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
             {p.recommendation && <p style={{ color: MED, fontSize: 11, lineHeight: 1.6, marginBottom: 10 }}>{p.recommendation}</p>}
             {p.contractor_type && p.contractor_type !== 'N/A' && (
-              <div style={{ color: ACCENT, fontSize: 9, fontWeight: 700, marginBottom: 10, fontFamily: 'Roboto Mono, monospace' }}>
+              <div style={{ color: MED, fontSize: 9, fontWeight: 600, marginBottom: 10, fontFamily: 'Roboto Mono, monospace' }}>
                 CONTRACTOR: {p.contractor_type}
               </div>
             )}
@@ -766,7 +766,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
                 </button>
               )}
               <button onClick={() => fileRef.current?.click()} style={{
-                background: `${ACCENT}10`, border: `1px solid ${ACCENT}30`, color: ACCENT,
+                background: 'none', border: `1px solid ${BORDER}`, color: TEXT,
                 borderRadius: 8, padding: '7px 14px', fontSize: 9, fontWeight: 700,
                 letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace',
               }}>ADD PHOTO</button>
@@ -898,9 +898,9 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
 
         {/* Photo capture */}
         <button onClick={() => fileRef.current?.click()} style={{
-          width: '100%', background: photo ? `${GREEN}10` : `${ACCENT}10`,
-          border: `1px solid ${photo ? GREEN : ACCENT}33`,
-          color: photo ? GREEN : ACCENT, borderRadius: 10, padding: '12px',
+          width: '100%', background: photo ? `${GREEN}10` : 'none',
+          border: `1px solid ${photo ? GREEN + '33' : BORDER}`,
+          color: photo ? GREEN : TEXT, borderRadius: 10, padding: '12px',
           fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer',
           fontFamily: 'Roboto Mono, monospace', marginBottom: 16,
         }}>
@@ -956,7 +956,7 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
   const today = new Date().toISOString().split('T')[0];
   const overdue = r.due_date && r.due_date < today;
   const soon = r.due_date && r.due_date <= addDays(7) && !overdue;
-  const dotColor = r.completed ? GREEN : overdue ? CRITICAL : soon ? WARN : ACCENT;
+  const dotColor = r.completed ? GREEN : overdue ? CRITICAL : soon ? WARN : INFO;
 
   const complete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1039,7 +1039,7 @@ function NotFound() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', padding: 40, textAlign: 'center', gap: 16 }}>
       <div style={{ color: DIM, fontSize: 32 }}>◈</div>
-      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 600, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace' }}>RECORD NOT FOUND</div>
+      <div style={{ ...eyebrow(MED, 9) }}>Record not found</div>
       <p style={{ color: MED, fontSize: 12, lineHeight: 1.7, maxWidth: 280 }}>
         This Home Record may not be activated yet. Contact your inspector to publish this report.
       </p>
@@ -1063,7 +1063,7 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
       ) : (
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6,
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          ...eyebrow(ACCENT, 9.5) }}>
+          ...eyebrow(TEXT, 9.5) }}>
           <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}>‹</span>
           <span>{active}</span>
         </button>
@@ -1226,34 +1226,8 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         </div>
       </div>
 
-      {/* ── LIGHT BODY ── */}
-      <div style={{ padding: '22px 18px 6px' }}>
-        <button
-          onClick={() => onTabChange('report')}
-          aria-label="View the most recent inspection report"
-          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 6, overflow: 'hidden', display: 'block', textAlign: 'left' }}
-        >
-          {/* Flat ink panel — the hero above already shows the house; repeating the photo here read as a glitch. */}
-          <div style={{
-            position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '20px 18px 18px',
-            background: 'linear-gradient(155deg,#101B22 0%,#0C161C 70%,#0E2830 130%)',
-          }}>
-            <div style={{ ...eyebrow('rgba(255,255,255,0.55)', 8.5), marginBottom: 8 }}>Inspection Report</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: SERIF, color: '#fff', fontSize: 19, fontWeight: 600, letterSpacing: '-0.005em', lineHeight: 1.12 }}>View Recent Report</div>
-                <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: 11.5, fontWeight: 500, marginTop: 4 }}>
-                  {record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : 'Your full inspection report'}
-                </div>
-              </div>
-              <div style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 600 }}>→</div>
-            </div>
-          </div>
-        </button>
-      </div>
-
       {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}
-      <div style={{ margin: '14px 18px 0' }}>
+      <div style={{ margin: '20px 18px 0' }}>
         <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
       </div>
 
@@ -1278,7 +1252,10 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       <div style={{ padding: '16px 18px 10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
-            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 8, padding: '17px 16px 15px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <button key={tab} onClick={() => onTabChange(tab)} style={{ position: 'relative', background: P.card, border: `1px solid ${P.line}`, borderRadius: 8, padding: '17px 16px 15px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {tab === 'report' && !!record.pdf_url && (
+                <span aria-label="New report available" style={{ position: 'absolute', top: 12, right: 12, width: 7, height: 7, borderRadius: 99, background: CRITICAL }} />
+              )}
               <Icon name={icon} size={19} color={P.text} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: P.text }}>{label}</span>
@@ -1368,14 +1345,14 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
 
   return (
     <div style={{ padding: '18px 18px 40px' }}>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Ethix · your data, your call</div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>Ethix · your data, your call</div>
       <h2 style={{ color: TEXT, fontSize: 22, fontWeight: 600, letterSpacing: -0.4, margin: '0 0 8px' }}>Your data is yours.</h2>
-      <p style={{ color: MED, fontSize: 13.5, lineHeight: 1.6, margin: '0 0 18px' }}>Opt in to share only anonymized, aggregate signals about your home — never anything personal — and keep what it earns. Ledrix already makes its money on your subscription, so this isn&apos;t ours to profit from. <a href="/ethix" target="_blank" rel="noopener" style={{ color: ACCENT, fontWeight: 700 }}>How Ethix works ›</a></p>
+      <p style={{ color: MED, fontSize: 13.5, lineHeight: 1.6, margin: '0 0 18px' }}>Opt in to share only anonymized, aggregate signals about your home — never anything personal — and keep what it earns. Ledrix already makes its money on your subscription, so this isn&apos;t ours to profit from. <a href="/ethix" target="_blank" rel="noopener" style={{ color: TEXT, fontWeight: 600, textDecoration: "underline" }}>How Ethix works ›</a></p>
 
       {!access ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 18, textAlign: 'center' }}>
           <p style={{ color: MED, fontSize: 14, lineHeight: 1.6, margin: '0 0 14px' }}>Sign in to set your Ethix preferences. It&apos;s tied to your account, so only you can change it.</p>
-          <button onClick={onUnlock} style={{ background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: '12px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Sign in</button>
+          <button onClick={onUnlock} style={{ background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: '12px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Sign in</button>
         </div>
       ) : loading ? (
         <div style={{ color: MED, fontSize: 14, padding: '20px 0' }}>Loading your preferences…</div>
@@ -1387,7 +1364,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
               <div style={{ color: MED, fontSize: 12.5, marginTop: 3 }}>{optedIn ? 'On — you’re sharing the categories below.' : 'Off — nothing is shared.'}</div>
             </div>
             <button onClick={() => optedIn ? save(false, []) : save(true, ETHIX_CATEGORY_KEYS)} aria-pressed={optedIn}
-              style={{ flexShrink: 0, width: 52, height: 30, borderRadius: 15, border: 'none', cursor: 'pointer', background: optedIn ? ACCENT : '#CBD5D8', position: 'relative', transition: 'background 0.15s' }}>
+              style={{ flexShrink: 0, width: 52, height: 30, borderRadius: 15, border: 'none', cursor: 'pointer', background: optedIn ? TEXT : '#CBD5D8', position: 'relative', transition: 'background 0.15s' }}>
               <span style={{ position: 'absolute', top: 3, left: optedIn ? 25 : 3, width: 24, height: 24, borderRadius: '50%', background: '#fff', transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
             </button>
           </div>
@@ -1400,7 +1377,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
                   const on = cats.has(c.key);
                   return (
                     <div key={c.key} onClick={() => toggleCat(c.key)} style={{ background: CARD, border: `1px solid ${on ? 'rgba(11,143,166,0.4)' : BORDER}`, borderRadius: 13, padding: 14, cursor: 'pointer', display: 'flex', gap: 12 }}>
-                      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on ? ACCENT : '#CBD5D8'}`, background: on ? ACCENT : 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, marginTop: 1 }}>{on ? '✓' : ''}</div>
+                      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on ? TEXT : '#CBD5D8'}`, background: on ? TEXT : 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, marginTop: 1 }}>{on ? '✓' : ''}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{c.label}</div>
                         <div style={{ color: MED, fontSize: 12, lineHeight: 1.5, marginTop: 3 }}><b style={{ color: GREEN, fontWeight: 700 }}>Shared:</b> {c.shares}</div>
@@ -1414,7 +1391,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
               <div style={{ background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 14, padding: 16, marginTop: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                   <span style={{ color: '#2A4247', fontSize: 13, fontWeight: 700 }}>Earned so far</span>
-                  <span style={{ color: ACCENT, fontSize: 24, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>$0.00</span>
+                  <span style={{ color: TEXT, fontSize: 24, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>$0.00</span>
                 </div>
                 <p style={{ color: '#3C575C', fontSize: 12, lineHeight: 1.55, margin: '8px 0 0' }}>Nothing is being sold yet — we&apos;re building this carefully. Your choice is saved, and we&apos;ll ask you again before a single dollar ever changes hands. You&apos;ll see every cent.</p>
               </div>
@@ -1457,7 +1434,7 @@ function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
         <svg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
           {rooms.map(r => (
             <rect key={r.roomId} x={r.gridX} y={r.gridY} width={r.w} height={r.h} rx={0.12}
-              fill="#EEF3F1" stroke={ACCENT} strokeOpacity={0.35} strokeWidth={0.06} vectorEffect="non-scaling-stroke" />
+              fill="#EEF3F1" stroke="#37475B" strokeOpacity={0.4} strokeWidth={0.06} vectorEffect="non-scaling-stroke" />
           ))}
         </svg>
         {rooms.map(r => {
@@ -1477,7 +1454,7 @@ function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
                   aria-label={`${count} finding${count > 1 ? 's' : ''} in ${r.label} — view`}
                   style={{
                     position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, transform: 'translate(-50%, -50%)',
-                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: ACCENT, color: '#fff',
+                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: TEXT, color: '#fff',
                     border: '2px solid #fff', fontSize: 9.5, fontWeight: 700, lineHeight: '14px', display: 'grid',
                     placeItems: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(16,24,28,0.35)',
                   }}
@@ -1507,7 +1484,7 @@ function FloorPlanSchematic({ layout, anomalies, onSelectRoom }: { layout: FPLay
 
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 10 }}>Floor Plan · Schematic</div>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 10 }}>Floor Plan · Schematic</div>
       {floorKeys.map(fk => (
         <FloorBlock key={fk} label={floorLabel(byFloor.get(fk)![0].floor)} rooms={byFloor.get(fk)!} pins={layout.pins} anomalies={anomalies} onSelectRoom={onSelectRoom} />
       ))}
@@ -1563,15 +1540,15 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Inspection</div>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
       <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Findings</div>
 
       {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
 
       {focusRoom && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: `${ACCENT}12`, border: `1px solid ${ACCENT}44`, borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
-          <span style={{ color: ACCENT, fontSize: 11.5, fontWeight: 600 }}>Showing findings in {focusRoom.label}</span>
-          <button onClick={() => setFocusRoom(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Clear</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${TEXT}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
+          <span style={{ color: TEXT, fontSize: 11.5, fontWeight: 600 }}>Showing findings in {focusRoom.label}</span>
+          <button onClick={() => setFocusRoom(null)} style={{ background: 'none', border: 'none', color: MED, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, textDecoration: 'underline' }}>Clear</button>
         </div>
       )}
 
@@ -1599,8 +1576,8 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
         <span style={{ ...eyebrow(DIM, 8), flexShrink: 0 }}>Sort</span>
         {(['priority', 'system', 'room'] as const).map(key => (
           <button key={key} onClick={() => setSort(key)} style={{
-            background: sort === key ? `${ACCENT}12` : CARD, border: `1px solid ${sort === key ? ACCENT + '55' : BORDER}`,
-            color: sort === key ? ACCENT : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
+            background: sort === key ? TEXT : CARD, border: `1px solid ${sort === key ? TEXT : BORDER}`,
+            color: sort === key ? '#fff' : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
             fontWeight: 600, letterSpacing: '0.12em', fontFamily: MONO,
             cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, textTransform: 'capitalize',
           }}>{key}</button>
@@ -1669,14 +1646,14 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Home Record</div>
+          <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
           <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600 }}>Projects</div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {(['open','all'] as const).map(f => (
             <button key={f} onClick={() => setStatusFilter(f)} style={{
-              background: statusFilter === f ? `${ACCENT}15` : CARD, border: `1px solid ${statusFilter === f ? ACCENT+'44' : BORDER}`,
-              color: statusFilter === f ? ACCENT : DIM, borderRadius: 8, padding: '5px 12px',
+              background: statusFilter === f ? TEXT : CARD, border: `1px solid ${statusFilter === f ? TEXT : BORDER}`,
+              color: statusFilter === f ? '#fff' : MED, borderRadius: 8, padding: '5px 12px',
               fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace',
             }}>{f.toUpperCase()}</button>
           ))}
@@ -1690,12 +1667,12 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         </div>
       )}
       {/* Add a project — manually or from a finding */}
-      <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: showAdd ? CARD : `${ACCENT}12`, border: `1px solid ${showAdd ? BORDER : ACCENT + '44'}`, color: ACCENT, borderRadius: 11, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Add a project'}</button>
+      <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Add a project'}</button>
       {showAdd && (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 13, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: fromFindings.length ? 14 : 0 }}>
             <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addManual()} placeholder="New project…" style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', color: TEXT, fontSize: 13, outline: 'none' }} />
-            <button onClick={addManual} disabled={busy || !title.trim()} style={{ background: ACCENT, color: '#04121a', border: 'none', borderRadius: 9, padding: '0 16px', fontSize: 12, fontWeight: 700, cursor: title.trim() ? 'pointer' : 'default', opacity: title.trim() ? 1 : 0.5 }}>Add</button>
+            <button onClick={addManual} disabled={busy || !title.trim()} style={{ background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: '0 16px', fontSize: 12, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default', opacity: title.trim() ? 1 : 0.5 }}>Add</button>
           </div>
           {fromFindings.length > 0 && (
             <>
@@ -2042,7 +2019,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
     setTitle(''); setSystem(''); setNote(''); setSaving(false); setOpen(false); onSaved();
   };
   if (!open) return (
-    <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 13, padding: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ Log a service or improvement</button>
+    <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 14, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>+ Log a service or improvement</button>
   );
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 16, boxShadow: '0 1px 2px rgba(16,24,28,0.04)' }}>
@@ -2056,7 +2033,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
         <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note — contractor, cost, warranty (optional)" style={inp} />
         <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
           <button onClick={() => setOpen(false)} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={save} disabled={saving || !title.trim()} style={{ flex: 2, background: ACCENT, color: '#fff', border: 'none', borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: title.trim() ? 1 : 0.5 }}>{saving ? 'Saving…' : 'Add to home record'}</button>
+          <button onClick={save} disabled={saving || !title.trim()} style={{ flex: 2, background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: title.trim() ? 1 : 0.5 }}>{saving ? 'Saving…' : 'Add to home record'}</button>
         </div>
       </div>
     </div>
@@ -2073,7 +2050,7 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
 
   return (
     <div style={{ padding: '16px 18px 28px' }}>
-      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Home Record</div>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
       <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Maintenance</div>
       <LogServiceForm shareId={shareId} onSaved={onRefresh} access={access} onUnlock={onUnlock} />
 
@@ -2098,7 +2075,7 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '4px 16px', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
             {log.map((e, i) => (
               <div key={e.id} style={{ display: 'flex', gap: 12, padding: '13px 0', borderBottom: i < log.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, flexShrink: 0, width: 66, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(e.done_date)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: MED, fontWeight: 600, flexShrink: 0, width: 66, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(e.done_date)}</div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: TEXT }}>{e.title}</div>
                   {(e.system || e.note) && <div style={{ fontSize: 12, color: MED, marginTop: 2 }}>{[e.system, e.note].filter(Boolean).join(' · ')}</div>}
@@ -2150,19 +2127,19 @@ function DocsTab({ record }: { record: HomeRecord }) {
     const items = openCat === 'manual' ? manuals : openCat === 'document' ? documents : [];
     return (
       <div style={{ padding: '16px 16px 0' }}>
-        <button onClick={() => setOpenCat(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', padding: '2px 0', marginBottom: 12, fontFamily: 'Roboto Mono, monospace' }}>← DOCS</button>
+        <button onClick={() => setOpenCat(null)} style={{ background: 'none', border: 'none', color: TEXT, fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', padding: '2px 0', marginBottom: 12, fontFamily: 'Roboto Mono, monospace' }}>← DOCS</button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ color: ACCENT, fontSize: 12, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{label.toUpperCase()}</div>
+          <div style={{ color: TEXT, fontSize: 12, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{label.toUpperCase()}</div>
           {openCat !== 'reports' && (
-            <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '8px 12px', fontSize: 9, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
+            <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '8px 12px', fontSize: 9, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
           )}
         </div>
         <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.heic" style={{ display: 'none' }} />
         {openCat === 'reports' ? (
-          <div style={{ background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '16px 18px' }}>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>Your full inspection report — a permanent record of this property&apos;s condition at the time of inspection.</p>
             {pdfHref(record) ? (
-              <a href={pdfHref(record)!} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 10, padding: 12, fontSize: 10, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW / PRINT REPORT PDF ↗</a>
+              <a href={pdfHref(record)!} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: TEXT, border: 'none', color: '#fff', borderRadius: 8, padding: 12, fontSize: 10, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW / PRINT REPORT PDF ↗</a>
             ) : (
               <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR</div>
             )}
@@ -2173,7 +2150,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
           </div>
         ) : items.map(d => (
           <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
-            <Icon name="docs" size={18} color={ACCENT} />
+            <Icon name="docs" size={18} color={TEXT} />
             <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
             <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>
           </div>
@@ -2184,23 +2161,23 @@ function DocsTab({ record }: { record: HomeRecord }) {
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Home Record</div>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
       <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Documents</div>
 
       {/* Category tiles — open one to view its items */}
       {([['reports', 'Inspection Reports', hasReport ? 1 : 0], ['manual', 'Manuals', manuals.length], ['document', 'Documents', documents.length]] as ['reports' | 'manual' | 'document', string, number][]).map(([cat, label, count]) => (
         <button key={label} onClick={() => setOpenCat(cat)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px', marginBottom: 10, cursor: 'pointer', textAlign: 'left' }}>
-          <Icon name="docs" size={20} color={ACCENT} />
+          <Icon name="docs" size={20} color={TEXT} />
           <span style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 14, fontWeight: 700 }}>{label}</span>
           <span style={{ color: DIM, fontSize: 12, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{count}</span>
-          <span style={{ color: ACCENT, fontSize: 16, lineHeight: 1 }}>›</span>
+          <span style={{ color: MED, fontSize: 16, lineHeight: 1 }}>›</span>
         </button>
       ))}
       <div style={{ height: 6 }} />
 
       {/* Inspection record */}
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px', marginBottom: 16 }}>
-        <div style={{ color: ACCENT, fontSize: 8, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 12 }}>
+        <div style={{ color: MED, fontSize: 8, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 12 }}>
           INSPECTION RECORD
         </div>
         {([
@@ -2224,7 +2201,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
 
       {/* Inspector */}
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px', marginBottom: 16 }}>
-        <div style={{ color: ACCENT, fontSize: 8, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>INSPECTOR</div>
+        <div style={{ color: MED, fontSize: 8, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>INSPECTOR</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{record.inspector ?? '—'}</div>
@@ -2551,7 +2528,7 @@ function RepairItemCard({ r, index, busy, onRemove, onSave }: { r: RepairRow; in
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '13px 14px', marginBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ color: ACCENT, fontSize: 9, fontWeight: 600, fontFamily: 'Roboto Mono, monospace' }}>{index}.</span>
+        <span style={{ color: MED, fontSize: 9, fontWeight: 600, fontFamily: 'Roboto Mono, monospace' }}>{index}.</span>
         <span style={{ color: tagColor, fontSize: 7.5, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', border: `1px solid ${tagColor}44`, borderRadius: 6, padding: '2px 6px' }}>{tagLabel}</span>
         {r.item && <span style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 0.3, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.item}{r.location ? ` · ${r.location}` : ''}</span>}
         <span style={{ flex: 1 }} />
@@ -2581,7 +2558,7 @@ function AddFindingRow({ a, busy, onAdd }: { a: Anomaly; busy: boolean; onAdd: (
         <div style={{ color: TEXT, fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.unit || 'Finding'}{a.location ? ` · ${a.location}` : ''}</div>
         <div style={{ color: DIM, fontSize: 9.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.description ?? ''}</div>
       </div>
-      <button onClick={onAdd} disabled={busy} style={{ flexShrink: 0, background: busy ? CARD2 : `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 8, padding: '6px 12px', fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: busy ? 'default' : 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{busy ? '…' : 'ADD'}</button>
+      <button onClick={onAdd} disabled={busy} style={{ flexShrink: 0, background: busy ? CARD2 : 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '6px 12px', fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: busy ? 'default' : 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{busy ? '…' : 'ADD'}</button>
     </div>
   );
 }
@@ -2646,7 +2623,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Home Record</div>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
       <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 8 }}>Repair Request</div>
       <p style={{ color: MED, fontSize: 10.5, lineHeight: 1.6, marginBottom: 16 }}>
         Your list to give the seller — <b style={{ color: TEXT }}>you decide</b> what to ask to be repaired. Ledrix drafts neutral wording; edit anything. This is a draft, not legal advice.
@@ -2654,10 +2631,10 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
       {included.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : `${ACCENT}1e`, border: `1px solid ${linkCopied ? GREEN + '55' : ACCENT + '55'}`, color: linkCopied ? GREEN : ACCENT, borderRadius: 9, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>
+          <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : TEXT, border: `1px solid ${linkCopied ? GREEN + '55' : TEXT}`, color: linkCopied ? GREEN : '#fff', borderRadius: 8, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '44'}`, color: copied ? GREEN : ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
-            <button onClick={() => window.print()} style={{ flex: 1, background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 9, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
+            <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : 'none', border: `1px solid ${copied ? GREEN + '44' : BORDER}`, color: copied ? GREEN : TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
+            <button onClick={() => window.print()} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
           </div>
         </div>
       )}
@@ -2673,9 +2650,9 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
       ))}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '22px 0 12px' }}>
-        <div style={{ color: ACCENT, fontSize: 9, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>ADD FROM FINDINGS</div>
+        <div style={{ color: MED, fontSize: 9, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>ADD FROM FINDINGS</div>
         {available.length > 0 && (
-          <button onClick={addAll} style={{ background: `${ACCENT}15`, border: `1px solid ${ACCENT}44`, color: ACCENT, borderRadius: 8, padding: '6px 12px', fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>+ ADD ALL ({available.length})</button>
+          <button onClick={addAll} style={{ background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '6px 12px', fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>+ ADD ALL ({available.length})</button>
         )}
       </div>
       {available.length === 0 ? (
