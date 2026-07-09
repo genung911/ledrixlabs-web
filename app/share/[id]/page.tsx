@@ -495,7 +495,7 @@ function splitBullets(text: string): string[] {
 }
 // Uppercase field label — matches the AnalysisConfirmSheet / PDF canonical card sections.
 function FLabel({ children }: { children: ReactNode }) {
-  return <div style={{ color: DIM, fontSize: 8, fontWeight: 900, letterSpacing: 1.2, fontFamily: 'Roboto Mono, monospace', marginBottom: 2 }}>{children}</div>;
+  return <div style={{ ...eyebrow(DIM, 7.5), marginBottom: 3 }}>{children}</div>;
 }
 
 // The printable PDF link. Routed through the /api/report-asset signing proxy (keyed on the
@@ -515,43 +515,43 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
   return (
     <>
       <div onClick={() => setOpen(true)} style={{
-        background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${color}`,
-        borderRadius: 12, padding: '14px 16px', marginBottom: 8, cursor: 'pointer',
+        background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${color}`,
+        borderRadius: 10, padding: '14px 16px', marginBottom: 8, cursor: 'pointer',
       }}>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt="" style={{ width: '100%', height: 190, objectFit: 'cover', borderRadius: 10, border: `1px solid ${BORDER}`, marginBottom: 12 }} />
-        )}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <FLabel>SYSTEM</FLabel>
-            <div style={{ color: TEXT, fontSize: 12.5, fontWeight: 700 }}>{a.component || a.unit || 'Component'}</div>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <FLabel>PRIORITY</FLabel>
-            <div style={{ color, fontSize: 12.5, fontWeight: 800 }}>{p.label}</div>
-          </div>
-        </div>
-        {a.location && (
-          <div style={{ marginBottom: 10 }}>
-            <FLabel>LOCATION</FLabel>
-            <div style={{ color: TEXT, fontSize: 12.5, fontWeight: 600 }}>{a.location}</div>
-          </div>
+          <img src={img} alt="" style={{ width: '100%', height: 190, objectFit: 'cover', borderRadius: 6, marginBottom: 12 }} />
         )}
         <div style={{ marginBottom: 10 }}>
           <FLabel>ISSUE</FLabel>
-          <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, lineHeight: 1.3 }}>{(a.issueTitle && a.issueTitle.trim()) || a.unit || 'Finding'}</div>
+          <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{(a.issueTitle && a.issueTitle.trim()) || a.unit || 'Finding'}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <FLabel>SYSTEM</FLabel>
+            <div style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{a.component || a.unit || 'Component'}</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <FLabel>PRIORITY</FLabel>
+            <div style={{ color, fontSize: 11.5, fontWeight: 700 }}>{p.label}</div>
+          </div>
+          {a.location && (
+            <div style={{ flex: 1.2, minWidth: 0 }}>
+              <FLabel>LOCATION</FLabel>
+              <div style={{ color: TEXT, fontSize: 12, fontWeight: 500 }}>{a.location}</div>
+            </div>
+          )}
         </div>
         <div>
           <FLabel>OBSERVATIONS</FLabel>
           {(a.observationBullets && a.observationBullets.length ? a.observationBullets : splitBullets(a.description ?? '')).map((b, i) => (
             <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
-              <span style={{ color, flexShrink: 0, lineHeight: 1.5 }}>•</span>
-              <span style={{ color: TEXT, fontSize: 12, lineHeight: 1.5 }}>{b}</span>
+              <span style={{ color: DIM, flexShrink: 0, lineHeight: 1.55 }}>•</span>
+              <span style={{ color: '#33454B', fontSize: 12, lineHeight: 1.55 }}>{b}</span>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 12, color: ACCENT, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>TAP FOR DETAILS →</div>
+        <div style={{ ...eyebrow(ACCENT, 8), marginTop: 12 }}>Tap for details →</div>
       </div>
       {open && <FindingDetailModal a={a} zip={zip} cityState={cityState} shareId={shareId} onClose={() => setOpen(false)} />}
     </>
@@ -561,8 +561,8 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
 // ─── FindingDetailModal — the homeowner card ───────────────────────────────────
 function CardSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 1.5, marginBottom: 8, fontFamily: 'Roboto Mono, monospace' }}>{label}</div>
+    <div style={{ marginTop: 18, borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
+      <div style={{ ...eyebrow(ACCENT, 8), marginBottom: 9 }}>{label}</div>
       {children}
     </div>
   );
@@ -617,34 +617,34 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
 
   const cta: CSSProperties = {
     display: 'inline-block', background: CARD2, border: `1px solid ${BORDER}`, color: TEXT,
-    fontSize: 12, fontWeight: 700, padding: '10px 14px', borderRadius: 10, textDecoration: 'none',
+    fontSize: 12, fontWeight: 600, padding: '10px 14px', borderRadius: 9, textDecoration: 'none',
   };
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: '18px 18px 0 0', width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', padding: 20, boxSizing: 'border-box' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: BG, borderRadius: '18px 18px 0 0', width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', padding: 20, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ background: `${color}18`, color, fontSize: 8, fontWeight: 900, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, border: `1px solid ${color}44`, fontFamily: 'Roboto Mono, monospace' }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
+          <span style={{ ...eyebrow(color, 8), background: `${color}12`, padding: '4px 10px', borderRadius: 5, border: `1px solid ${color}33` }}>{SEV_LABEL[sev] ?? sev.toUpperCase()}</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: MED, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} onClick={() => setZoom(img)} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14, cursor: 'zoom-in' }} />
+          <img src={img} onClick={() => setZoom(img)} alt={a.unit ?? 'Finding photo'} style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 8, marginBottom: 14, cursor: 'zoom-in' }} />
         )}
         {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
-        <h3 style={{ color: TEXT, fontSize: 17, fontWeight: 800, margin: '0 0 3px' }}>{a.unit ?? 'Finding'}</h3>
-        {a.location && <div style={{ color: DIM, fontSize: 10, fontWeight: 700, marginBottom: 12 }}>{a.location}</div>}
+        <h3 style={{ fontFamily: SERIF, color: TEXT, fontSize: 19, fontWeight: 600, margin: '0 0 4px' }}>{a.unit ?? 'Finding'}</h3>
+        {a.location && <div style={{ ...eyebrow(DIM, 8), marginBottom: 12 }}>{a.location}</div>}
         <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
         {a.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{a.recommendation}</p>}
 
         <CardSection label="TOP-RATED LOCAL PROS · MIN. 20 REVIEWS">
           {pros.length > 0 ? pros.map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 7 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', marginBottom: 7 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                <div style={{ color: MED, fontSize: 10, marginTop: 1 }}>{p.rating ? `★ ${p.rating}` : ''}{p.reviews ? `  (${p.reviews.toLocaleString()})` : ''}</div>
+                <div style={{ color: TEXT, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                <div style={{ color: MED, fontSize: 10.5, marginTop: 1 }}>{p.rating ? `★ ${p.rating}` : ''}{p.reviews ? `  (${p.reviews.toLocaleString()})` : ''}</div>
               </div>
-              {p.phone && <a href={`tel:${p.phone}`} style={{ ...cta, padding: '8px 12px', color: GREEN, textDecoration: 'none' }}>📞 Call</a>}
+              {p.phone && <a href={`tel:${p.phone}`} style={{ ...cta, padding: '8px 12px', color: GREEN, textDecoration: 'none' }}>Call</a>}
               {p.website && <a href={p.website} target="_blank" rel="noreferrer" style={{ ...cta, padding: '8px 12px' }}>Site</a>}
             </div>
           )) : (
@@ -654,7 +654,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
 
         <CardSection label="REPAIR VIDEOS">
           <a href={ytUrl} target="_blank" rel="noreferrer" style={cta}>▶ Watch how-to videos</a>
-          <p style={{ color: '#c9a94e', fontSize: 10.5, lineHeight: 1.5, marginTop: 8, background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.2)', borderRadius: 8, padding: '8px 10px' }}>
+          <p style={{ color: '#8a6a2e', fontSize: 10.5, lineHeight: 1.55, marginTop: 9, borderLeft: `2px solid ${WARN}66`, paddingLeft: 10 }}>
             Videos are a guide for minor upkeep only. For anything structural, electrical, gas, or plumbing — use a licensed pro.
           </p>
         </CardSection>
@@ -662,12 +662,12 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
         <CardSection label="ASK LEDRIX ABOUT THIS">
           {msgs.map((m, i) => (
             <div key={i} style={{ marginBottom: 8, textAlign: m.role === 'user' ? 'right' : 'left' }}>
-              <span style={{ display: 'inline-block', background: m.role === 'user' ? '#13202a' : '#0d0d0d', border: `1px solid ${BORDER}`, color: m.role === 'user' ? '#cfe' : '#aaa', fontSize: 12, lineHeight: 1.5, padding: '8px 11px', borderRadius: 10, maxWidth: '85%', textAlign: 'left' }}>{m.text}</span>
+              <span style={{ display: 'inline-block', background: m.role === 'user' ? `${BLUE}10` : CARD, border: `1px solid ${m.role === 'user' ? BLUE + '2e' : BORDER}`, color: TEXT, fontSize: 12, lineHeight: 1.55, padding: '8px 11px', borderRadius: 10, maxWidth: '85%', textAlign: 'left' }}>{m.text}</span>
             </div>
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', color: TEXT, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.45)', borderRadius: 8, padding: '0 16px', fontWeight: 900, fontSize: 12, cursor: 'pointer', boxShadow: '0 0 14px rgba(33,123,232,0.25)', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'ASK'}</button>
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }} placeholder="Is this urgent? Can I DIY it?" style={{ flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', color: TEXT, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+            <button onClick={ask} disabled={busy || !input.trim()} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 9, padding: '0 16px', fontWeight: 600, fontSize: 12, cursor: 'pointer', opacity: busy || !input.trim() ? 0.4 : 1 }}>{busy ? '…' : 'Ask'}</button>
           </div>
         </CardSection>
       </div>
@@ -1445,8 +1445,8 @@ function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ color: TEXT, fontSize: 11.5, fontWeight: 800, marginBottom: 6 }}>{label}</div>
-      <div style={{ position: 'relative', width: '100%', paddingTop: `${aspectPct}%`, background: CARD2, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{ position: 'relative', width: '100%', paddingTop: `${aspectPct}%`, background: CARD2, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
         <svg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
           {rooms.map(r => (
             <rect key={r.roomId} x={r.gridX} y={r.gridY} width={r.w} height={r.h} rx={0.12}
@@ -1471,7 +1471,7 @@ function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
                   style={{
                     position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, transform: 'translate(-50%, -50%)',
                     minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: ACCENT, color: '#fff',
-                    border: '2px solid #fff', fontSize: 9.5, fontWeight: 800, lineHeight: '14px', display: 'grid',
+                    border: '2px solid #fff', fontSize: 9.5, fontWeight: 700, lineHeight: '14px', display: 'grid',
                     placeItems: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(16,24,28,0.35)',
                   }}
                 >{count}</button>
@@ -1500,7 +1500,7 @@ function FloorPlanSchematic({ layout, anomalies, onSelectRoom }: { layout: FPLay
 
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 10 }}>FLOOR PLAN · SCHEMATIC</div>
+      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 10 }}>Floor Plan · Schematic</div>
       {floorKeys.map(fk => (
         <FloorBlock key={fk} label={floorLabel(byFloor.get(fk)![0].floor)} rooms={byFloor.get(fk)!} pins={layout.pins} anomalies={anomalies} onSelectRoom={onSelectRoom} />
       ))}
@@ -1556,14 +1556,15 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
 
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ color: ACCENT, fontSize: 9, fontWeight: 900, letterSpacing: 3, fontFamily: 'Roboto Mono, monospace', marginBottom: 14 }}>FINDINGS</div>
+      <div style={{ ...eyebrow(ACCENT, 8.5), marginBottom: 4 }}>Inspection</div>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Findings</div>
 
       {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
 
       {focusRoom && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: `${ACCENT}12`, border: `1px solid ${ACCENT}44`, borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
-          <span style={{ color: ACCENT, fontSize: 11.5, fontWeight: 700 }}>Showing findings in {focusRoom.label}</span>
-          <button onClick={() => setFocusRoom(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 11, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>Clear</button>
+          <span style={{ color: ACCENT, fontSize: 11.5, fontWeight: 600 }}>Showing findings in {focusRoom.label}</span>
+          <button onClick={() => setFocusRoom(null)} style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Clear</button>
         </div>
       )}
 
@@ -1572,9 +1573,9 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
           .concat(PRIO_ORDER.filter(k => (prioCount[k] ?? 0) > 0).map(k => [k, PRIO_SHORT[k], prioCount[k], PRIO[k].color]))
         ).map(([key, label, count, c]) => (
           <button key={key} onClick={() => setFilter(key)} style={{
-            background: filter === key ? `${c}20` : CARD, border: `1px solid ${filter === key ? c+'55' : BORDER}`,
-            color: filter === key ? c : DIM, borderRadius: 99, padding: '6px 14px', fontSize: 9,
-            fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace',
+            background: filter === key ? `${c}14` : CARD, border: `1px solid ${filter === key ? c+'55' : BORDER}`,
+            color: filter === key ? c : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
+            fontWeight: 600, letterSpacing: '0.12em', fontFamily: MONO, textTransform: 'uppercase',
             cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
           }}>{label} {count > 0 && <span style={{ opacity: 0.7 }}>({count})</span>}</button>
         ))}
@@ -1588,12 +1589,12 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
         }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 2 }}>
-        <span style={{ color: DIM, fontSize: 9, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace', flexShrink: 0 }}>SORT</span>
+        <span style={{ ...eyebrow(DIM, 8), flexShrink: 0 }}>Sort</span>
         {(['priority', 'system', 'room'] as const).map(key => (
           <button key={key} onClick={() => setSort(key)} style={{
-            background: sort === key ? `${ACCENT}20` : CARD, border: `1px solid ${sort === key ? ACCENT + '55' : BORDER}`,
-            color: sort === key ? ACCENT : DIM, borderRadius: 99, padding: '6px 14px', fontSize: 9,
-            fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace',
+            background: sort === key ? `${ACCENT}12` : CARD, border: `1px solid ${sort === key ? ACCENT + '55' : BORDER}`,
+            color: sort === key ? ACCENT : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
+            fontWeight: 600, letterSpacing: '0.12em', fontFamily: MONO,
             cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, textTransform: 'capitalize',
           }}>{key}</button>
         ))}
@@ -1602,7 +1603,7 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
-          <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: filter === 'all' ? GREEN : DIM, fontFamily: 'Roboto Mono, monospace' }}>
+          <div style={{ ...eyebrow(filter === 'all' ? GREEN : DIM, 9) }}>
             {focusRoom ? `NO FINDINGS IN ${focusRoom.label.toUpperCase()}` : filter === 'all' ? 'NO FINDINGS LOGGED' : `NO ${filter.toUpperCase()} FINDINGS`}
           </div>
         </div>
@@ -1614,8 +1615,8 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
         (groups ?? []).map(g => (
           <div key={g.key} style={{ marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 2px 8px' }}>
-              <span style={{ color: ACCENT, fontSize: 10, fontWeight: 900, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace', textTransform: sort === 'system' ? 'uppercase' : 'none' }}>{g.key}</span>
-              <span style={{ color: DIM, fontSize: 10, fontWeight: 700 }}>({g.items.length})</span>
+              <span style={{ fontFamily: SERIF, color: TEXT, fontSize: 14, fontWeight: 600 }}>{g.key}</span>
+              <span style={{ fontFamily: MONO, color: DIM, fontSize: 9.5, fontWeight: 500 }}>({g.items.length})</span>
             </div>
             {g.items.map((a, i) => (
               <FindingCard key={a.id ?? `${g.key}-${i}`} a={a} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={shareId} />
