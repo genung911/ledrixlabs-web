@@ -1725,17 +1725,17 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
   const label = p.label;
   const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
   return (
-    <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `4px solid ${color}`, borderRadius: 12, padding: 16, marginBottom: 12, display: 'flex', gap: 14, boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
+    <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `2px solid ${color}`, borderRadius: 10, padding: 16, marginBottom: 12, display: 'flex', gap: 14 }}>
       {photoUrl(a.imageUri) ? <img src={photoUrl(a.imageUri)!} alt="" style={{ width: 104, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 5 }}>
-          <span style={{ background: `${color}14`, color, border: `1px solid ${color}33`, fontSize: 10, fontWeight: 800, letterSpacing: 0.5, padding: '3px 9px', borderRadius: 6 }}>{label}</span>
-          {isSafetyFinding(a) ? <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 6 }}>⚠ SAFETY</span> : null}
+          <span style={{ ...eyebrow(color, 8), background: `${color}10`, border: `1px solid ${color}2e`, padding: '3px 9px', borderRadius: 5 }}>{label}</span>
+          {isSafetyFinding(a) ? <span style={{ ...eyebrow('#dc2626', 8), background: '#fef2f2', border: '1px solid #fecaca', padding: '3px 9px', borderRadius: 5 }}>⚠ Safety</span> : null}
           {a.location ? <span style={{ color: C.sub, fontSize: 12 }}>{a.location}</span> : null}
         </div>
-        {a.unit ? <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit}</div> : null}
+        {a.unit ? <div style={{ fontFamily: SERIF, color: C.ink, fontSize: 15, fontWeight: 600 }}>{a.unit}</div> : null}
         {desc ? <div style={{ color: '#4b5563', fontSize: 13.5, lineHeight: 1.55, marginTop: 3 }}>{desc}</div> : null}
-        {a.recommendation ? <div style={{ color: C.accent, fontSize: 12.5, fontWeight: 600, marginTop: 6 }}>Recommendation: {a.recommendation}</div> : null}
+        {a.recommendation ? <div style={{ color: C.accent, fontSize: 12.5, fontWeight: 500, marginTop: 6, borderTop: `1px solid ${C.line}`, paddingTop: 6 }}>Recommendation: {a.recommendation}</div> : null}
       </div>
     </div>
   );
@@ -1755,11 +1755,11 @@ function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
         const color = PRIO[k].report;
         return (
         <section key={k} style={{ paddingTop: 24 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color, margin: '0 0 8px', borderBottom: `2px solid ${color}`, paddingBottom: 6 }}>{PRIO[k].label} <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>({byKey.get(k)!.length})</span></h2>
+          <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: C.ink, margin: '0 0 8px', borderBottom: `1px solid ${color}`, paddingBottom: 7, display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={{ width: 8, height: 8, borderRadius: 4, background: color, alignSelf: 'center' }} />{PRIO[k].label} <span style={{ fontFamily: MONO, fontSize: 10, color: C.sub, fontWeight: 500 }}>({byKey.get(k)!.length})</span></h2>
           {byKey.get(k)!.map((a, j) => (
             <div key={a.id ?? j} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: `1px solid ${C.line}` }}>
               <span style={{ width: 14, flexShrink: 0, color: '#dc2626', fontSize: 12 }}>{isSafetyFinding(a) ? '⚠' : ''}</span>
-              <span style={{ fontWeight: 700, color: C.ink, fontSize: 13, minWidth: 110, flexShrink: 0 }}>{reportSystem(a)}</span>
+              <span style={{ fontWeight: 600, color: C.ink, fontSize: 13, minWidth: 110, flexShrink: 0 }}>{reportSystem(a)}</span>
               <span style={{ color: '#4b5563', fontSize: 13, flex: 1 }}>{a.unit ? `${a.unit} — ` : ''}{(a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim().slice(0, 130)}</span>
             </div>
           ))}
@@ -1778,11 +1778,10 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
   const rest = anomalies.length - matters.length;
   return (
     <section style={{ paddingTop: 24 }}>
-      <div style={{ background: 'linear-gradient(160deg,#fffaf2,#fff7ed)', border: '1px solid #fde4c8', borderRadius: 14, padding: 20, boxShadow: '0 2px 14px rgba(180,120,40,0.06)' }}>
+      <div style={{ background: '#FFFBF3', border: '1px solid #F3E4C8', borderRadius: 12, padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 18 }}>⚠</span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>What Matters</span>
-          <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>— {matters.length} thing{matters.length !== 1 ? 's' : ''} Ledrix flagged</span>
+          <span style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, color: C.ink }}>What Matters</span>
+          <span style={{ fontSize: 12, color: C.sub, fontWeight: 500 }}>— {matters.length} thing{matters.length !== 1 ? 's' : ''} Ledrix flagged</span>
         </div>
         {matters.length === 0 ? (
           <div style={{ color: '#16a34a', fontSize: 14, fontWeight: 600 }}>✓ No safety or immediate-attention items — nothing urgent.</div>
@@ -1791,19 +1790,19 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
           const desc = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
           return (
             <div key={a.id ?? i} style={{ display: 'flex', gap: 12, padding: '9px 0', borderTop: i ? '1px solid #fde3c4' : 'none' }}>
-              <span style={{ flexShrink: 0, color: safety ? PRIO.safety.report : PRIO.major.report, fontWeight: 800, fontSize: 10, letterSpacing: 0.3, paddingTop: 3, width: 88 }}>{safety ? '⚠ SAFETY' : PRIO.major.label}</span>
+              <span style={{ ...eyebrow(safety ? PRIO.safety.report : PRIO.major.report, 8), flexShrink: 0, paddingTop: 4, width: 88 }}>{safety ? '⚠ Safety' : PRIO.major.label}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit ?? 'Finding'}</div>
+                <div style={{ color: C.ink, fontSize: 14, fontWeight: 600 }}>{a.unit ?? 'Finding'}</div>
                 <div style={{ color: '#4b5563', fontSize: 13, lineHeight: 1.5 }}>{desc.slice(0, 170)}{desc.length > 170 ? '…' : ''}</div>
                 {a.prosToCall ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{a.prosToCall}</div> : null}
               </div>
             </div>
           );
         })}
-        {rest > 0 ? <div style={{ color: C.sub, fontSize: 13, marginTop: 12, fontWeight: 600 }}>✓ {rest} more item{rest !== 1 ? 's' : ''} below — all Repair / Maintenance, not urgent.</div> : null}
-        <button onClick={onOpen} style={{ marginTop: 18, width: '100%', background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', border: 'none', borderRadius: 12, padding: '15px 18px', cursor: 'pointer', textAlign: 'left', boxShadow: '0 6px 20px rgba(8,145,178,0.22)' }}>
-          <div style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>🔓 Ask Ledrix about your home<span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.95 }}>Unlock Insight →</span></div>
-          <div style={{ fontSize: 11.5, opacity: 0.9, marginTop: 4, lineHeight: 1.45 }}>“Will the furnace make it another winter?” · cost projections · maintenance plan · ask anything</div>
+        {rest > 0 ? <div style={{ color: C.sub, fontSize: 12.5, marginTop: 12, fontWeight: 500 }}>✓ {rest} more item{rest !== 1 ? 's' : ''} below — all Repair / Maintenance, not urgent.</div> : null}
+        <button onClick={onOpen} style={{ marginTop: 18, width: '100%', background: '#0e7490', color: '#fff', border: 'none', borderRadius: 10, padding: '14px 18px', cursor: 'pointer', textAlign: 'left' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>Ask Ledrix about your home<span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.9 }}>Unlock Insight →</span></div>
+          <div style={{ fontSize: 11.5, opacity: 0.85, marginTop: 4, lineHeight: 1.5 }}>“Will the furnace make it another winter?” · maintenance plan · ask anything</div>
         </button>
       </div>
     </section>
@@ -1914,14 +1913,14 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
     <div className="rpt">
       {!reportReady && (
       <div className="rpt-hero" style={{ position: 'relative', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '28px 28px 24px', background: photoUrl(record.cover_url) ? `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.72) 100%), url(${photoUrl(record.cover_url)}) center/cover` : 'linear-gradient(160deg,#1e293b,#0f172a)' }}>
-        <div style={{ color: '#fff', fontSize: 30, fontWeight: 800, lineHeight: 1.08, letterSpacing: -0.5 }}>{record.address ?? 'Property'}</div>
-        <div style={{ color: '#e5e7eb', fontSize: 15, marginTop: 4 }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
+        <div style={{ fontFamily: SERIF, color: '#fff', fontSize: 30, fontWeight: 600, lineHeight: 1.1, letterSpacing: '-0.01em' }}>{record.address ?? 'Property'}</div>
+        <div style={{ fontFamily: MONO, color: '#e5e7eb', fontSize: 12, marginTop: 6, letterSpacing: '0.04em' }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
         {(record.inspector || record.company) ? (
           <div style={{ position: 'absolute', right: 24, bottom: 24, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(6px)', borderRadius: 999, padding: '8px 18px 8px 10px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 18px rgba(0,0,0,0.28)' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 19, background: C.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>{(record.inspector ?? 'I').slice(0, 1).toUpperCase()}</div>
+            <div style={{ width: 38, height: 38, borderRadius: 19, background: C.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 15, fontFamily: SERIF }}>{(record.inspector ?? 'I').slice(0, 1).toUpperCase()}</div>
             <div>
-              <div style={{ fontSize: 8, color: C.sub, letterSpacing: 1, fontWeight: 800 }}>INSPECTOR</div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>{record.inspector ?? '—'}</div>
+              <div style={{ ...eyebrow(C.sub, 7.5) }}>Inspector</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{record.inspector ?? '—'}</div>
               {record.company ? <div style={{ fontSize: 11, color: C.sub }}>{record.company}</div> : null}
             </div>
           </div>
@@ -1930,26 +1929,25 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
       )}
       <aside className="rpt-side">{reportReady ? (
         <>
-          <div style={{ padding: '20px 18px 12px', fontSize: 10, fontWeight: 800, letterSpacing: 2.5, color: C.accent, fontFamily: 'Roboto Mono, monospace' }}>CONTENTS</div>
+          <div style={{ padding: '20px 18px 12px', ...eyebrow(C.accent, 8.5) }}>Contents</div>
           {toc.map((t, i) => (
             <button key={t.id} onClick={() => jumpIn(t.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '12px 18px', color: C.ink, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
-              <span style={{ fontFamily: 'Roboto Mono, monospace', color: C.accent, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
+              style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '12px 18px', color: C.ink, fontSize: 13, fontWeight: 500, fontFamily: SERIF, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: MONO, color: C.accent, fontSize: 10, fontWeight: 500, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
               <span style={{ flex: 1 }}>{t.label}</span>
             </button>
           ))}
         </>
       ) : (<>
         <button onClick={() => jump('rpt-overview')}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.accent, fontSize: 14, fontWeight: 800, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
-          <span>📋</span><span style={{ flex: 1 }}>Inspection Details</span>
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.accent, fontSize: 13.5, fontWeight: 600, fontFamily: SERIF, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1 }}>Inspection Details</span>
         </button>
         {sections.map(sec => (
           <button key={sec.system} onClick={() => jump(slug(sec.system))}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.ink, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
-            <span style={{ width: 18, textAlign: 'center', flexShrink: 0 }}>{REPORT_ICON[sec.system] ?? '•'}</span>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.ink, fontSize: 13.5, fontWeight: 500, fontFamily: SERIF, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
             <span style={{ flex: 1 }}>{sec.system}</span>
-            <span style={{ background: C.accent, color: '#fff', fontSize: 11, fontWeight: 800, minWidth: 22, height: 22, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px', flexShrink: 0 }}>{sec.items.length}</span>
+            <span style={{ fontFamily: MONO, color: C.sub, fontSize: 10, fontWeight: 500, flexShrink: 0 }}>{sec.items.length}</span>
           </button>
         ))}
       </>)}</aside>
@@ -1958,12 +1956,12 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
         <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #eef0f3', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', position: 'sticky', top: 0, zIndex: 4 }}>
           {(['full', 'summary'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              style={{ background: view === v ? C.accent : '#f1f5f9', color: view === v ? '#fff' : C.sub, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 16px', borderRadius: 8, cursor: 'pointer', boxShadow: view === v ? `0 2px 10px ${C.accent}40` : 'none' }}>
+              style={{ background: view === v ? C.accent : 'none', color: view === v ? '#fff' : C.sub, border: view === v ? '1px solid transparent' : `1px solid ${C.line}`, fontSize: 12, fontWeight: 600, padding: '7px 15px', borderRadius: 8, cursor: 'pointer' }}>
               {v === 'full' ? 'Full Report' : 'Summary'}
             </button>
           ))}
           <span style={{ marginLeft: 'auto' }} />
-          {pdfHref(record) ? <a href={pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: '#f1f5f9', color: C.ink, border: 'none', fontSize: 12, fontWeight: 800, padding: '8px 14px', borderRadius: 8, textDecoration: 'none' }}>⤓ PRINT / PDF</a> : null}
+          {pdfHref(record) ? <a href={pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 600, padding: '8px 14px', borderRadius: 8, textDecoration: 'none', fontFamily: MONO, letterSpacing: '0.08em' }}>⤓ PRINT / PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
@@ -1987,7 +1985,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             <>
               <WhatMatters anomalies={anomalies} C={C} onOpen={() => onTabChange('home')} />
               <section id="rpt-overview" style={{ scrollMarginTop: 56, paddingTop: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>Inspection Details</h1>
+                <h1 style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, margin: '0 0 6px' }}>Inspection Details</h1>
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: C.sub, fontSize: 13, marginBottom: 10 }}>
                   {record.year_built ? <span>Built {record.year_built}</span> : null}
                   {record.sqft ? <span>{record.sqft} sqft</span> : null}
@@ -2003,9 +2001,9 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
                 <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
               ) : sections.map((sec, i) => (
                 <section key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
-                  <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 12px', borderBottom: `2px solid ${C.accent}`, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>{i + 1} · {sec.system}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: 12, color: C.sub, fontWeight: 600 }}>{sec.items.length} finding{sec.items.length !== 1 ? 's' : ''}</span>
+                  <h2 style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, margin: '0 0 12px', borderBottom: `1px solid ${C.ink}`, paddingBottom: 8, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span>{sec.system}</span>
+                    <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: 10, color: C.sub, fontWeight: 500, letterSpacing: '0.08em' }}>{sec.items.length} FINDING{sec.items.length !== 1 ? 'S' : ''}</span>
                   </h2>
                   {sec.items.map((a, j) => <ReportRow key={a.id ?? j} a={a} C={C} />)}
                 </section>
