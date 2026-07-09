@@ -94,7 +94,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
             <p class="desc">${esc(f.description) || 'No description provided.'}</p>
             ${f._photo ? `<img class="photo" src="${esc(f._photo)}" alt="evidence" loading="lazy"/>` : ''}
             <div class="meta">
-              ${f.estimated_cost ? `<span>Est. cost: ${esc(f.estimated_cost)}</span>` : ''}
               ${f.pros_to_call ? `<span>Recommended: ${esc(f.pros_to_call)}</span>` : ''}
             </div>
           </div>`;

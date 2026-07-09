@@ -65,7 +65,7 @@ const TEXT     = '#16242A';   // dark ink text
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Anomaly = {
   id?: string; description?: string; severity?: string; unit?: string; component?: string;
-  location?: string; estimatedCost?: string; recommendation?: string; prosToCall?: string;
+  location?: string; recommendation?: string; prosToCall?: string;
   imageUri?: string; isSafety?: boolean;   // real synced Safety flag (app's isSafetyConcern)
   issueTitle?: string; observationBullets?: string[];   // canonical finding card: title + bullets
 };
@@ -559,10 +559,6 @@ function CardSection({ label, children }: { label: string; children: ReactNode }
 function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomaly; zip?: string; cityState?: string; shareId: string; onClose: () => void }) {
   const sev = a.severity ?? 'cosmetic';
   const color = SEV_COLOR[sev] ?? MED;
-  const staticCost = a.estimatedCost && a.estimatedCost !== 'N/A' ? a.estimatedCost : null;
-  const [price, setPrice] = useState<string | null>(staticCost);
-  const [priceSrc, setPriceSrc] = useState<'local' | 'static' | null>(staticCost ? 'static' : null);
-  const [priceLoading, setPriceLoading] = useState(false);
   const [zoom, setZoom] = useState<string | null>(null);
   const img = photoUrl(a.imageUri);
 
@@ -589,27 +585,6 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
       .finally(() => { if (alive) setProsLoading(false); });
     return () => { alive = false; };
   }, [where, trade]);
-
-  // Location-aware AI price (signed-in homeowner only — else the static range stands).
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      if (!where) return;
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      setPriceLoading(true);
-      try {
-        const r = await fetch('/api/ledrix', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ shareId, mode: 'price', finding: `${a.unit ?? ''}: ${a.description ?? ''}` }),
-        });
-        const j = await r.json();
-        if (alive && r.ok && typeof j.text === 'string' && /\$/.test(j.text)) { setPrice(j.text.trim()); setPriceSrc('local'); }
-      } catch { /* keep static */ } finally { if (alive) setPriceLoading(false); }
-    })();
-    return () => { alive = false; };
-  }, [where, shareId]);
 
   const ask = async () => {
     const q = input.trim(); if (!q || busy) return;
@@ -651,12 +626,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
         <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
         {a.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{a.recommendation}</p>}
 
-        <CardSection label="ESTIMATED COST">
-          <div style={{ color: GREEN, fontSize: 22, fontWeight: 900 }}>{price ?? (priceLoading ? '…' : 'Ask Ledrix for an estimate')}</div>
-          {priceSrc && <div style={{ color: DIM, fontSize: 9, fontWeight: 700, marginTop: 2, letterSpacing: 0.5 }}>{priceSrc === 'local' ? `BASED ON ${(cityState || where).toUpperCase()}` : 'TYPICAL RANGE'}</div>}
-        </CardSection>
-
-        <CardSection label="TOP-RATED LOCAL PROS">
+        <CardSection label="TOP-RATED LOCAL PROS · MIN. 20 REVIEWS">
           {pros.length > 0 ? pros.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', marginBottom: 7 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1677,7 +1647,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
       share_id: shareId, title: (a.description ?? 'Finding').slice(0, 100), system: a.unit ?? null,
       priority: a.severity === 'critical' ? 'critical' : a.severity === 'anomaly' ? 'high' : 'low',
       status: 'identified', description: a.description ?? null, recommendation: a.recommendation ?? null,
-      budget_estimate: a.estimatedCost ?? null, contractor_type: a.prosToCall ?? null, photos: [], seeded: false,
+      contractor_type: a.prosToCall ?? null, photos: [], seeded: false,
     });
     setBusy(false); onRefresh();
   };
@@ -1819,7 +1789,7 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: C.ink, fontSize: 14, fontWeight: 700 }}>{a.unit ?? 'Finding'}</div>
                 <div style={{ color: '#4b5563', fontSize: 13, lineHeight: 1.5 }}>{desc.slice(0, 170)}{desc.length > 170 ? '…' : ''}</div>
-                {(a.estimatedCost || a.prosToCall) ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{[a.estimatedCost, a.prosToCall].filter(Boolean).join(' · ')}</div> : null}
+                {a.prosToCall ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{a.prosToCall}</div> : null}
               </div>
             </div>
           );

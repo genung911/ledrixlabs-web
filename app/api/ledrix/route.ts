@@ -60,9 +60,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `You've used today's free Ledrix questions (${DAILY_CAP}). It resets tomorrow.` }, { status: 429 });
   }
 
-  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'price' | 'analyze' | 'logparse'; messages?: Msg[]; finding?: string; image?: string; question?: string };
+  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'analyze' | 'logparse'; messages?: Msg[]; image?: string; question?: string };
   try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
-  const { shareId, mode = 'chat', messages = [], finding = '', image = '', question = '' } = payload;
+  const { shareId, mode = 'chat', messages = [], image = '', question = '' } = payload;
   if (mode === 'analyze' && !/^data:image\/|^https?:\/\//.test(image)) return NextResponse.json({ error: 'No photo to analyze.' }, { status: 400 });
 
   // 2) Property context — fetched server-side, never trusted from the client. Includes the owner's
@@ -85,12 +85,10 @@ export async function POST(req: NextRequest) {
 
   // 3) Prompt — homeowner-facing, grounded in THIS property.
   const honesty = 'Be warm, plain-spoken, and practical. Only use the home’s record below (the inspection findings + the owner-logged service history) — never invent findings or services. ' +
-    'If asked something the record does not cover, say so and suggest verifying with a licensed pro. You are not a substitute for a professional.';
-  const loc = [rec?.zip, rec?.city, rec?.state].filter(Boolean).join(', ') || 'this area';
+    'If asked something the record does not cover, say so and suggest verifying with a licensed pro. You are not a substitute for a professional. ' +
+    'Never state or imply a dollar cost, price, or estimate for any repair — if asked what something costs, say Ledrix doesn’t estimate prices and point them to the top-rated local pros shown on this finding for an accurate quote.';
   const system = mode === 'insight'
     ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: the home's overall condition, the 1-2 things that matter most, and what to plan for. No alarmism.\n\n${ctx}`
-    : mode === 'price'
-    ? `You are a home-repair cost estimator with US ZIP-level pricing knowledge. Using local labor + material rates for ${loc}, estimate the typical cost a homeowner would pay a licensed contractor to repair/remediate the finding. Reply with ONLY a dollar range like "$X–$Y" — no words, no explanation.`
     : mode === 'analyze'
     ? `You are Ledrix, the homeowner's home assistant for this property. ${honesty} The homeowner has photographed something in or around their home. In plain language: say what it is, assess its condition from what's visible, flag any safety or maintenance concern, and give one practical next step. Be honest about what you can't tell from a photo, and recommend a licensed pro when it warrants one. 3-5 sentences, never alarmist.\n\n${ctx}`
     : mode === 'logparse'
@@ -99,7 +97,6 @@ export async function POST(req: NextRequest) {
 
   const userMsgs: any[] =
     mode === 'insight' ? [{ role: 'user', content: 'Give me a short insight about my home.' }]
-    : mode === 'price' ? [{ role: 'user', content: `Finding: ${String(finding).slice(0, 400)}` }]
     : mode === 'analyze' ? [{ role: 'user', content: [
         { type: 'text', text: (question || 'What is this, and is it something I should worry about?').slice(0, 500) },
         { type: 'image_url', image_url: { url: image } },
@@ -109,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   const body = {
     model: 'gpt-4o',
-    max_tokens: mode === 'insight' ? 450 : mode === 'price' ? 30 : mode === 'analyze' ? 400 : mode === 'logparse' ? 120 : 600,
+    max_tokens: mode === 'insight' ? 450 : mode === 'analyze' ? 400 : mode === 'logparse' ? 120 : 600,
     messages: [{ role: 'system', content: system }, ...userMsgs],
   };
 
