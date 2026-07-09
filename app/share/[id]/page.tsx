@@ -62,6 +62,15 @@ const DIM      = '#97A4A8';   // faint muted (was dark) — light secondary
 const MED      = '#64757B';   // muted body/secondary
 const TEXT     = '#16242A';   // dark ink text
 
+// Shared type voices — mirrors the inspection report's system: serif display for titles,
+// sans body, mono for tracked-caps labels. One definition; tabs reuse instead of redeclaring.
+const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
+const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
+// The one tracked-caps label treatment (quiet: 600 weight, restrained tracking) — pass a color.
+const eyebrow = (color: string, size = 9): CSSProperties => ({
+  fontFamily: MONO, fontSize: size, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color,
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Anomaly = {
   id?: string; description?: string; severity?: string; unit?: string; component?: string;
@@ -399,7 +408,7 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
 // ─── Icon ─────────────────────────────────────────────────────────────────────
 // Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
 // look — replaces the inconsistent unicode/emoji glyphs.
-type IconName = 'home' | 'findings' | 'projects' | 'reminders' | 'docs';
+type IconName = 'home' | 'findings' | 'projects' | 'reminders' | 'docs' | 'camera';
 function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number; color?: string }) {
   const common = {
     width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color,
@@ -416,6 +425,8 @@ function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number
       return (<svg {...common}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>);
     case 'docs':
       return (<svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8M16 17H8M10 9H8" /></svg>);
+    case 'camera':
+      return (<svg {...common}><path d="M3 8a2 2 0 0 1 2-2h1.6L8 3.8h8L17.4 6H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><circle cx="12" cy="13" r="3.4" /></svg>);
   }
 }
 
@@ -1045,37 +1056,36 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
     }}>
       {active === 'home' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <Logo size={30} />
-          <span style={{ fontSize: 7, fontWeight: 900, letterSpacing: 2, color: DIM, fontFamily: 'Roboto Mono, monospace' }}>HOME RECORD</span>
+          <Logo size={28} />
+          <span style={{ ...eyebrow(MED, 8) }}>Home Record</span>
         </div>
       ) : (
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6,
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          color: ACCENT, fontFamily: 'Roboto Mono, monospace', fontSize: 10, fontWeight: 900, letterSpacing: 1.5 }}>
-          <span style={{ fontSize: 20, lineHeight: 1, marginTop: -2 }}>‹</span>
-          <span>{active.toUpperCase()}</span>
+          ...eyebrow(ACCENT, 9.5) }}>
+          <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}>‹</span>
+          <span>{active}</span>
         </button>
       )}
       <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
         {address && (
-          <div style={{ color: '#aaa', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontFamily: SERIF, color: MED, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {address}
           </div>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {signedIn && (
-          <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: `${BLUE}14`, border: `1px solid ${BLUE}33`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
-            <span style={{ width: 6, height: 6, borderRadius: 3, background: BLUE, display: 'inline-block' }} />
-            <span style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
+          <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
+            <span style={{ width: 5, height: 5, borderRadius: 3, background: BLUE, display: 'inline-block' }} />
+            <span style={{ ...eyebrow(BLUE, 8) }}>Ledrix</span>
           </button>
         )}
         <button onClick={onShare} style={{
-          background: copied ? `${GREEN}20` : `${ACCENT}15`, border: `1px solid ${copied ? GREEN + '44' : ACCENT + '33'}`,
-          color: copied ? GREEN : ACCENT, borderRadius: 8, padding: '7px 12px',
-          fontSize: 9, fontWeight: 900, letterSpacing: 1, cursor: 'pointer',
-          fontFamily: 'Roboto Mono, monospace',
-        }}>{copied ? 'COPIED' : 'SHARE'}</button>
+          background: 'none', border: `1px solid ${copied ? GREEN + '55' : BORDER}`,
+          borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
+          ...eyebrow(copied ? GREEN : TEXT, 8.5),
+        }}>{copied ? 'Copied' : 'Share'}</button>
       </div>
     </div>
   );
@@ -1084,10 +1094,10 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <div style={{ padding: '20px 16px 100px', textAlign: 'center', borderTop: `1px solid ${BORDER}` }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Logo size={30} /></div>
-      <div style={{ color: DIM, fontSize: 8, fontWeight: 700, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>LEDRIX INTELLIGENCE</div>
-      <a href="https://ledrixlabs.com" style={{ color: MED, fontSize: 10, fontWeight: 600, textDecoration: 'none' }}>ledrixlabs.com</a>
+    <div style={{ padding: '22px 16px 100px', textAlign: 'center', borderTop: `1px solid ${BORDER}` }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 9 }}><Logo size={28} /></div>
+      <div style={{ ...eyebrow(DIM, 8), marginBottom: 8 }}>Ledrix Intelligence</div>
+      <a href="https://ledrixlabs.com" style={{ color: MED, fontSize: 10, fontWeight: 500, textDecoration: 'none' }}>ledrixlabs.com</a>
     </div>
   );
 }
@@ -1125,14 +1135,14 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
 
   return (
     <>
-      <button onClick={pick} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 15, fontSize: 14, fontWeight: 700, color: TEXT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
-        <span style={{ fontSize: 17 }}>📷</span> Analyze a photo with Ledrix
+      <button onClick={pick} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 15, fontSize: 13.5, fontWeight: 600, color: TEXT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <Icon name="camera" size={17} color={BLUE} /> Analyze a photo with Ledrix
       </button>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: 'none' }} />
       {(busy || result || err) && (
         <div onClick={() => { if (!busy) close(); }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '20px 20px 0 0', padding: '20px 20px 28px', maxHeight: '86vh', overflowY: 'auto' }}>
-            <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Ledrix · Photo analysis</div>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '18px 18px 0 0', padding: '20px 20px 28px', maxHeight: '86vh', overflowY: 'auto' }}>
+            <div style={{ ...eyebrow(ACCENT), marginBottom: 12 }}>Ledrix · Photo analysis</div>
             {preview && <img src={preview} alt="" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 12, border: `1px solid ${BORDER}`, marginBottom: 14 }} />}
             {busy
               ? <div style={{ color: MED, fontSize: 14, padding: '8px 0' }}>Ledrix is looking at your photo…</div>
@@ -1164,8 +1174,6 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
   const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#217BE8' };
-  const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
-  const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
   const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Current report', ''],
@@ -1181,21 +1189,21 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       {/* ── DARK HERO — cover photo, address, health ring ── */}
       <div style={{ position: 'relative', color: '#fff', overflow: 'hidden',
         background: cover
-          ? `linear-gradient(180deg, rgba(10,14,16,0.30) 0%, rgba(10,14,16,0.32) 44%, rgba(8,12,14,0.86) 100%), url(${cover}) center/cover`
-          : 'radial-gradient(120% 90% at 78% 8%, rgba(34,227,255,0.16), transparent 55%), linear-gradient(168deg,#1B2C34,#0E1518 62%,#0A1013)' }}>
-        <div style={{ padding: '30px 20px 26px' }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: P.bright, fontWeight: 600, textTransform: 'uppercase' }}>Your Home Record · Verified</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: 16 }}>
+          ? `linear-gradient(180deg, rgba(6,11,14,0.60) 0%, rgba(6,11,14,0.18) 34%, rgba(6,11,14,0.22) 52%, rgba(4,9,12,0.88) 100%), url(${cover}) center/cover`
+          : 'radial-gradient(120% 90% at 78% 8%, rgba(34,227,255,0.14), transparent 55%), linear-gradient(168deg,#1B2C34,#0E1518 62%,#0A1013)' }}>
+        <div style={{ padding: '28px 20px 26px' }}>
+          <div style={{ ...eyebrow('rgba(255,255,255,0.88)') }}>Your Home Record · Verified</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: 42 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.01em' }}>{record.address ?? 'Address pending'}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11.5, color: 'rgba(255,255,255,0.74)', marginTop: 10, letterSpacing: '0.03em' }}>{subAddress ? subAddress + '  ·  ' : ''}Inspected {fmtDate(record.inspection_date)}</div>
+              <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, lineHeight: 1.08, letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>{record.address ?? 'Address pending'}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, color: 'rgba(255,255,255,0.76)', marginTop: 10, letterSpacing: '0.06em' }}>{[subAddress, record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : ''].filter(Boolean).join('  ·  ')}</div>
             </div>
-            <div style={{ flexShrink: 0, width: 92, height: 92, borderRadius: '50%', display: 'grid', placeItems: 'center', boxShadow: '0 0 34px rgba(34,227,255,0.18)',
-              background: `conic-gradient(${P.bright} ${Math.max(0, Math.min(100, score))}%, rgba(255,255,255,0.14) 0)` }}>
-              <div style={{ width: 74, height: 74, borderRadius: '50%', background: P.ink, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+            <div style={{ flexShrink: 0, width: 84, height: 84, borderRadius: '50%', display: 'grid', placeItems: 'center',
+              background: `conic-gradient(${P.bright} ${Math.max(0, Math.min(100, score))}%, rgba(255,255,255,0.16) 0)` }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(10,16,19,0.92)', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 700, lineHeight: 1 }}>{score}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 7.5, letterSpacing: '0.18em', color: P.bright, marginTop: 2 }}>HEALTH</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 600, lineHeight: 1 }}>{score}</div>
+                  <div style={{ ...eyebrow(P.bright, 7), marginTop: 3 }}>Health</div>
                 </div>
               </div>
             </div>
@@ -1208,38 +1216,37 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <button
           onClick={() => onTabChange('report')}
           aria-label="View the most recent inspection report"
-          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 16, overflow: 'hidden', display: 'block', textAlign: 'left', boxShadow: '0 12px 30px -14px rgba(0,0,0,0.45)' }}
+          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 14, overflow: 'hidden', display: 'block', textAlign: 'left', boxShadow: '0 10px 26px -16px rgba(0,0,0,0.4)' }}
         >
+          {/* Flat ink panel — the hero above already shows the house; repeating the photo here read as a glitch. */}
           <div style={{
-            position: 'relative', minHeight: 172, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '18px 18px 16px',
-            background: cover
-              ? `linear-gradient(180deg, rgba(6,14,16,0.12) 0%, rgba(6,14,16,0.55) 58%, rgba(6,14,16,0.88) 100%), url(${cover}) center/cover`
-              : 'linear-gradient(150deg,#12333C,#0C1E24)',
+            position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '20px 18px 18px',
+            background: 'linear-gradient(155deg,#101B22 0%,#0C161C 70%,#0E2830 130%)',
           }}>
-            <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.2em', color: P.bright, marginBottom: 7 }}>INSPECTION REPORT</div>
+            <div style={{ ...eyebrow('rgba(255,255,255,0.55)', 8.5), marginBottom: 8 }}>Inspection Report</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ color: '#fff', fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 1.1 }}>View Recent Report</div>
-                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 11.5, fontWeight: 600, marginTop: 4 }}>
+                <div style={{ fontFamily: SERIF, color: '#fff', fontSize: 19, fontWeight: 600, letterSpacing: '-0.005em', lineHeight: 1.12 }}>View Recent Report</div>
+                <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: 11.5, fontWeight: 500, marginTop: 4 }}>
                   {record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : 'Your full inspection report'}
                 </div>
               </div>
-              <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: P.bright, color: '#04121a', display: 'grid', placeItems: 'center', fontSize: 17, fontWeight: 900 }}>→</div>
+              <div style={{ flexShrink: 0, width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 600 }}>→</div>
             </div>
           </div>
         </button>
       </div>
 
       {/* Ask Ledrix — dark premium card with the VAL orb (opens the assistant) */}
-      <div style={{ margin: '14px 18px 0' }}>
-        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 18, padding: '20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 62, height: 62, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
-            background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.4), 0 0 26px rgba(34,227,255,0.35)' }}>
-            <ValMark size={40} color="#217BE8" sheen />
+      <div style={{ margin: '12px 18px 0' }}>
+        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 14, padding: '18px 20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
+            background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
+            <ValMark size={38} color="#217BE8" sheen />
           </button>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>Ask Ledrix about your home</div>
-            <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: 13, lineHeight: 1.5, marginTop: 4 }}>Is it urgent? Can I DIY it? What should I budget? Get answers drawn straight from your home.</div>
+            <div style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600 }}>Ask Ledrix about your home</div>
+            <div style={{ color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Is it urgent? Can I DIY it? What should I budget? Get answers drawn straight from your home.</div>
           </div>
         </div>
       </div>
@@ -1256,15 +1263,15 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
       {/* Needs attention — top safety/major, light cards */}
       {urgent.length > 0 && (
-        <div style={{ padding: '18px 18px 2px' }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: PRIO.major.report, fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Needs attention</div>
+        <div style={{ padding: '20px 18px 2px' }}>
+          <div style={{ ...eyebrow(PRIO.major.report, 9), marginBottom: 10 }}>Needs attention</div>
           {urgent.map((a, i) => {
             const pr = priorityOf(a);
             return (
-            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `3px solid ${pr.report}`, borderRadius: 12, padding: '12px 15px', marginBottom: 8, cursor: 'pointer', boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
-              <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.06em', color: pr.report, fontWeight: 700, textTransform: 'uppercase' }}>{pr.label}</div>
-              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
-              <div style={{ color: '#33454B', fontSize: 13, lineHeight: 1.5, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
+            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 10, padding: '12px 15px', marginBottom: 8, cursor: 'pointer' }}>
+              <div style={{ ...eyebrow(pr.report, 8.5) }}>{pr.label}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
+              <div style={{ color: '#33454B', fontSize: 12.5, lineHeight: 1.55, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
             </div>
             );
           })}
@@ -1275,11 +1282,11 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       <div style={{ padding: '16px 18px 10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
-            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 15, padding: '17px 16px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 11, boxShadow: '0 1px 2px rgba(16,24,28,0.03)' }}>
-              <Icon name={icon} size={20} color={P.blue} />
+            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 12, padding: '16px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Icon name={icon} size={19} color={P.blue} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{label}</span>
-                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: P.blue }}>{count}</span>}
+                <span style={{ fontSize: 13, fontWeight: 600, color: P.text }}>{label}</span>
+                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: P.blue }}>{count}</span>}
               </div>
             </button>
           ))}
@@ -1287,24 +1294,22 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       </div>
 
       {/* The Carfax line */}
-      <div style={{ margin: '4px 18px 20px', display: 'flex', alignItems: 'center', gap: 11, background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 13, padding: '13px 15px' }}>
-        <Icon name="docs" size={16} color={P.blue} />
-        <p style={{ color: '#2A4247', fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
-          <b style={{ color: P.blue }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
+      <div style={{ margin: '4px 18px 20px', display: 'flex', alignItems: 'center', gap: 12, background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${P.blue}`, borderRadius: 10, padding: '13px 15px' }}>
+        <p style={{ color: '#33454B', fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+          <b style={{ color: P.text, fontWeight: 600 }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
         </p>
       </div>
 
       {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
-      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(135deg, #0B2A30, #06181C)', border: '1px solid rgba(11,143,166,0.4)', borderRadius: 16, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13, boxShadow: '0 3px 14px rgba(6,24,28,0.18)' }}>
-        <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 12, background: 'rgba(33,123,232,0.10)', border: '1px solid rgba(33,123,232,0.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#217BE8', fontSize: 18, fontWeight: 800 }}>◇</div>
+      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(150deg,#101B22 0%,#0C161C 80%)', borderRadius: 14, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ color: '#EAF7F9', fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>Ethix</span>
-            <span style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 8, letterSpacing: '0.14em', color: '#217BE8', border: '1px solid rgba(33,123,232,0.32)', borderRadius: 5, padding: '2px 6px' }}>YOUR DATA, YOUR CALL</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: SERIF, color: '#EAF7F9', fontSize: 15.5, fontWeight: 600 }}>Ethix</span>
+            <span style={{ ...eyebrow('rgba(255,255,255,0.5)', 7.5) }}>Your data, your call</span>
           </div>
-          <p style={{ color: '#9FC2C8', fontSize: 12, lineHeight: 1.5, margin: '4px 0 0' }}>Your home data is yours. Opt in, choose what&apos;s shared, keep what it earns — and it&apos;s never personal.</p>
+          <p style={{ color: '#9FC2C8', fontSize: 11.5, lineHeight: 1.55, margin: '5px 0 0' }}>Your home data is yours. Opt in, choose what&apos;s shared, keep what it earns — and it&apos;s never personal.</p>
         </div>
-        <span style={{ color: '#217BE8', fontSize: 20, flexShrink: 0 }}>›</span>
+        <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 18, flexShrink: 0 }}>›</span>
       </div>
 
       <Footer />
@@ -2349,13 +2354,13 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access, shareId]);
   return (
-    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BLUE}22`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
+    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${BLUE}`, borderRadius: 10, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <ValDeltaSVG size={14} color={BLUE} sheen />
-        <span style={{ color: BLUE, fontSize: 8, fontWeight: 900, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX INSIGHT</span>
+        <ValDeltaSVG size={13} color={BLUE} sheen />
+        <span style={{ ...eyebrow(BLUE, 8) }}>Ledrix Insight</span>
       </div>
       {access ? (
-        <p style={{ color: loading ? MED : TEXT, fontSize: 12, lineHeight: 1.65 }}>{loading ? 'Analyzing your home…' : (insight ?? 'No insight available yet — ask Ledrix anything below.')}</p>
+        <p style={{ color: loading ? MED : TEXT, fontSize: 12.5, lineHeight: 1.65 }}>{loading ? 'Analyzing your home…' : (insight ?? 'No insight available yet — ask Ledrix anything below.')}</p>
       ) : (
         <>
           <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, filter: 'blur(4.5px)', userSelect: 'none' }}>
@@ -2894,11 +2899,11 @@ export default function SharePage() {
   return (
     <div style={{ background: BG, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{display:none}
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-        input::placeholder{color:#222}
+        input::placeholder{color:#9AA6AB}
         button{-webkit-tap-highlight-color:transparent}
         .rpt{display:grid;grid-template-columns:250px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"side hero" "side main";background:#fff;min-height:100vh}
         .rpt-hero{grid-area:hero}
@@ -2932,9 +2937,9 @@ export default function SharePage() {
       </div>
       {valLog && (
         <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '20px 20px 0 0', padding: '22px 20px 28px' }}>
-            <div style={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10, letterSpacing: '0.16em', color: ACCENT, fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>Log to your home record?</div>
-            <div style={{ fontSize: 19, fontWeight: 700, color: TEXT }}>{valLog.title}</div>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '18px 18px 0 0', padding: '22px 20px 28px' }}>
+            <div style={{ ...eyebrow(ACCENT), marginBottom: 10 }}>Log to your home record?</div>
+            <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, color: TEXT }}>{valLog.title}</div>
             <div style={{ fontSize: 13, color: MED, marginTop: 4 }}>{[valLog.system, 'today'].filter(Boolean).join(' · ')}</div>
             <div style={{ fontSize: 12.5, color: MED, marginTop: 12, fontStyle: 'italic' }}>“{valLog.transcript}”</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
