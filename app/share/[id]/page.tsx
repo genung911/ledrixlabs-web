@@ -131,6 +131,11 @@ type FPLayout = { rooms: FPRoom[]; pins?: Record<string, { fx: number; fy: numbe
 type FloorPlanRow = { inspection_id: string; layout: FPLayout | null; fingerprint?: string; updated_at?: string };
 
 type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
+// User-facing tab names — the lifecycle standard (internal Tab ids never change).
+const TAB_LABEL: Record<Tab, string> = {
+  home: 'Home', findings: 'Repairs Needed', repairs: 'Repair Request', projects: 'Repair Status',
+  reminders: 'Maintenance', docs: 'Docs', report: 'Reports', ethix: 'Ethix',
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace',
@@ -1065,7 +1070,7 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           ...eyebrow(TEXT, 9.5) }}>
           <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}>‹</span>
-          <span>{active}</span>
+          <span>{TAB_LABEL[active] ?? active}</span>
         </button>
       )}
       <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
@@ -1185,9 +1190,9 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Reports', ''],
-    ['findings', 'findings', 'Needs attention', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
-    ['repairs', 'projects', 'Repair request', includedRepairs],
-    ['projects', 'projects', 'Projects', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
+    ['findings', 'findings', 'Repairs Needed', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
+    ['repairs', 'projects', 'Repair Request', includedRepairs],
+    ['projects', 'projects', 'Repair Status', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
     ['reminders', 'reminders', 'Maintenance', dueReminders.length],
     ['docs', 'docs', 'Docs', '—'],
   ];
@@ -1541,7 +1546,7 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
-      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Needs Attention</div>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Repairs Needed</div>
 
       {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
 
@@ -1647,7 +1652,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
-          <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600 }}>Projects</div>
+          <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600 }}>Repair Status</div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {(['open','all'] as const).map(f => (
@@ -1667,7 +1672,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         </div>
       )}
       {/* Add a project — manually or from a finding */}
-      <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Add a project'}</button>
+      <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Track a repair or project'}</button>
       {showAdd && (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 13, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: fromFindings.length ? 14 : 0 }}>
@@ -1694,7 +1699,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         <div style={{ textAlign: 'center', padding: '28px 0', color: DIM }}>
           {projects.length === 0
             ? <div style={{ fontSize: 12, lineHeight: 1.7 }}>No projects yet.<br />Add one above, or pull from a finding.</div>
-            : <><div style={{ fontSize: 22, marginBottom: 8 }}>✓</div><div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, color: GREEN, fontFamily: 'Roboto Mono, monospace' }}>ALL PROJECTS RESOLVED</div></>}
+            : <><div style={{ fontSize: 22, marginBottom: 8 }}>✓</div><div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, color: GREEN, fontFamily: 'Roboto Mono, monospace' }}>ALL REPAIRS RESOLVED</div></>}
         </div>
       ) : shown.map(p => <ProjectCard key={p.id} p={p} shareId={shareId} address={address} onUpdate={onRefresh} />)}
     </div>
