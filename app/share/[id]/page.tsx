@@ -1166,7 +1166,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#217BE8' };
   const SERIF = "'Iowan Old Style','Charter','Palatino Linotype',Georgia,serif";
   const MONO  = "ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace";
-  const cover = record.cover_url;
+  const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Current report', ''],
     ['findings', 'findings', 'Findings', anomalies.length],
@@ -1212,8 +1212,8 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         >
           <div style={{
             position: 'relative', minHeight: 172, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '18px 18px 16px',
-            background: record.cover_url
-              ? `linear-gradient(180deg, rgba(6,14,16,0.12) 0%, rgba(6,14,16,0.55) 58%, rgba(6,14,16,0.88) 100%), url(${record.cover_url}) center/cover`
+            background: cover
+              ? `linear-gradient(180deg, rgba(6,14,16,0.12) 0%, rgba(6,14,16,0.55) 58%, rgba(6,14,16,0.88) 100%), url(${cover}) center/cover`
               : 'linear-gradient(150deg,#12333C,#0C1E24)',
           }}>
             <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.2em', color: P.bright, marginBottom: 7 }}>INSPECTION REPORT</div>
@@ -1907,7 +1907,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   return (
     <div className="rpt">
       {!reportReady && (
-      <div className="rpt-hero" style={{ position: 'relative', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '28px 28px 24px', background: record.cover_url ? `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.72) 100%), url(${record.cover_url}) center/cover` : 'linear-gradient(160deg,#1e293b,#0f172a)' }}>
+      <div className="rpt-hero" style={{ position: 'relative', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '28px 28px 24px', background: photoUrl(record.cover_url) ? `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.72) 100%), url(${photoUrl(record.cover_url)}) center/cover` : 'linear-gradient(160deg,#1e293b,#0f172a)' }}>
         <div style={{ color: '#fff', fontSize: 30, fontWeight: 800, lineHeight: 1.08, letterSpacing: -0.5 }}>{record.address ?? 'Property'}</div>
         <div style={{ color: '#e5e7eb', fontSize: 15, marginTop: 4 }}>{sub}{record.inspection_date ? ` · ${fmtDate(record.inspection_date)}` : ''}</div>
         {(record.inspector || record.company) ? (
