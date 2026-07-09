@@ -7,6 +7,7 @@ import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import ValOrbVoice from '@/components/ValOrbVoice';
 import { ValMark } from '@/components/ValMark';
+import { LedrixEye } from '@/components/LedrixEye';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
@@ -1135,8 +1136,15 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
 
   return (
     <>
-      <button onClick={pick} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 15, fontSize: 13.5, fontWeight: 600, color: TEXT, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-        <Icon name="camera" size={17} color={BLUE} /> Analyze a photo with Ledrix
+      {/* Row inside the dark Ledrix Intelligence card — matches the Ask Ledrix row above it. */}
+      <button onClick={pick} style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
+        <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35)' }}>
+          <LedrixEye size={34} color="#217BE8" />
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'block', fontFamily: SERIF, fontSize: 17.5, fontWeight: 600 }}>Analyze a photo</span>
+          <span style={{ display: 'block', color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Snap anything in your home — Ledrix tells you what it is and whether it needs attention.</span>
+        </span>
       </button>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: 'none' }} />
       {(busy || result || err) && (
@@ -1237,25 +1245,6 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         </button>
       </div>
 
-      {/* Ask Ledrix — dark premium card with the VAL orb (opens the assistant) */}
-      <div style={{ margin: '12px 18px 0' }}>
-        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 14, padding: '18px 20px', color: '#fff', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={onAsk} aria-label="Ask Ledrix" style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
-            background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
-            <ValMark size={38} color="#217BE8" sheen />
-          </button>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600 }}>Ask Ledrix about your home</div>
-            <div style={{ color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Is it urgent? Can I DIY it? What should I budget? Get answers drawn straight from your home.</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Analyze a photo — homeowner vision (premium) */}
-      <div style={{ margin: '10px 18px 0' }}>
-        <PhotoAnalyze access={access} onUnlock={onUnlock} shareId={shareId} />
-      </div>
-
       {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}
       <div style={{ margin: '14px 18px 0' }}>
         <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
@@ -1293,11 +1282,22 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         </div>
       </div>
 
-      {/* The Carfax line */}
-      <div style={{ margin: '4px 18px 20px', display: 'flex', alignItems: 'center', gap: 12, background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${P.blue}`, borderRadius: 10, padding: '13px 15px' }}>
-        <p style={{ color: '#33454B', fontSize: 12, lineHeight: 1.6, margin: 0 }}>
-          <b style={{ color: P.text, fontWeight: 600 }}>The Carfax of your home.</b> A living record — inspection baseline plus every service you log — that transfers to every future owner.
-        </p>
+      {/* Ledrix Intelligence — the two AI actions as one dark surface: Δ = ask, Eye = vision */}
+      <div style={{ margin: '6px 18px 20px' }}>
+        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 14, padding: '6px 20px', color: '#fff' }}>
+          <button onClick={onAsk} aria-label="Ask Ledrix" style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
+            <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center',
+              background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
+              <ValMark size={38} color="#217BE8" sheen />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontFamily: SERIF, fontSize: 17.5, fontWeight: 600 }}>Ask Ledrix about your home</span>
+              <span style={{ display: 'block', color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Is it urgent? Can I DIY it? Get answers drawn straight from your home.</span>
+            </span>
+          </button>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.09)' }} />
+          <PhotoAnalyze access={access} onUnlock={onUnlock} shareId={shareId} />
+        </div>
       </div>
 
       {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
