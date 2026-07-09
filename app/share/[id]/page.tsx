@@ -1279,10 +1279,10 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
             <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 8, padding: '17px 16px 15px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Icon name={icon} size={19} color={P.blue} />
+              <Icon name={icon} size={19} color={P.text} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: P.text }}>{label}</span>
-                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: P.blue }}>{count}</span>}
+                {count !== '' && <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600, color: P.text }}>{count}</span>}
               </div>
             </button>
           ))}
