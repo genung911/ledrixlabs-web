@@ -37,17 +37,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 ::selection{background:var(--cyan-soft)}
 
 /* ---------- shell ---------- */
-.shell{display:grid;grid-template-columns:minmax(390px,520px) minmax(0,1fr);min-height:100vh;max-width:1720px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.shell{display:grid;grid-template-columns:minmax(390px,44%) 1fr;min-height:100vh}
 @media(max-width:920px){.shell{grid-template-columns:1fr}}
-/* Desktop scale-up: this is a boardroom/laptop demo — at monitor widths the panes render
-   at document scale, not phone scale. zoom scales type, spacing, and the floor plan uniformly. */
-@media(min-width:1150px){
-  .paper{zoom:1.18}
-  .phone,.prep,.resetrow,.field-eyebrow{zoom:1.1}
-}
-@media(min-width:1500px){
-  .paper{zoom:1.28}
-}
 
 /* ============================================================
    LEFT — FIELD APP (phone frame)
