@@ -2946,12 +2946,19 @@ export default function SharePage() {
       {tab === 'docs'      && <DocsTab record={record} />}
       {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
-      {/* VAL anchor — docked structural control, not a floating Material bubble */}
-      <div style={{ position: 'fixed', bottom: 22, right: 'max(18px, calc(50% - 197px))', zIndex: 120,
-        background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-        border: `1px solid ${BORDER}`, borderRadius: 12, padding: 6 }}>
-        <ValOrbVoice size={54} tone="light" quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
-      </div>
+      {/* VAL command line — a persistent bottom dock: text opens the chat, orb starts voice.
+          Hidden on the wide report view, which carries its own Ask-Ledrix CTA. */}
+      {tab !== 'report' && (
+        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, zIndex: 120,
+          background: 'rgba(245,246,243,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px 11px' }}>
+          <button onClick={openLedrix} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
+            <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 14.5, fontWeight: 600 }}>Ask Ledrix</div>
+            <div style={{ ...eyebrow(MED, 7.5), marginTop: 3 }}>Voice or type · about this home</div>
+          </button>
+          <ValOrbVoice size={46} tone="light" quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
+        </div>
+      )}
       {valLog && (
         <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '18px 18px 0 0', padding: '22px 20px 28px' }}>
