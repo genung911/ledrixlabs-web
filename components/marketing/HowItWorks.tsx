@@ -38,7 +38,7 @@ const STEPS: Array<{
     img: '/screenshots/finding-panel.jpg',
     fit: 'contain',
     title: 'Draft & Confirm',
-    body: 'Ledrix Intelligence drafts the finding the instant you shoot — system, priority, and the spec behind it. You stay the source of truth: Confirm, Adjust, or Reject, by tap or by voice.',
+    body: 'Ledrix Intelligence drafts the finding the instant you shoot; you stay the source of truth — Confirm, Adjust, or Reject, by tap or by voice.',
     icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3Z M9.5 11.5l1.8 1.8 3.4-3.6" />,
     featured: true,
   },

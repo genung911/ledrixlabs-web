@@ -1,15 +1,18 @@
 'use client';
 
 // §3 — bento grid of the things that actually matter, on light cards with hairline
-// borders and a restrained hover lift (monochrome — no accent bloom). Image-first where
-// it counts; the lead tile reflows its finding into scannable bullets. Honest,
+// borders and a restrained hover lift (monochrome — no accent bloom). Honest,
 // feature-grounded claims — no fabricated accuracy stats, no "monitoring device" framing.
+// Deliberately NO phone screenshots here: HowItWorks (§2) owns the process-in-screenshots
+// story; this section is proof and qualities, told through data artifacts (a rendered
+// structured finding, the priority pills, the deliverable cover) so the two sections
+// don't read as the same thing twice.
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { SectionHeading } from './ui/SectionHeading';
 import { LedrixDelta } from '../LedrixDelta';
-import { PhoneBezel } from './PhoneBezel';
 
 type Tile = {
   className: string;
@@ -19,9 +22,9 @@ type Tile = {
   body?: string;
   points?: string[];
   img?: string;
-  imgs?: { src: string; alt: string }[]; // lead tile: capture → drafted finding, side by side
+  draft?: boolean; // lead tile: the rendered structured-finding card (what a capture becomes)
   pills?: { label: string; color: string }[]; // priority-levels tile: the real pills, not a sentence
-  shot?: { src: string; alt: string }; // a single supporting screenshot (e.g. the real review card)
+  shot?: { src: string; alt: string }; // a single supporting artifact image (e.g. the PDF cover)
   orb?: boolean; // the VAL mark, in its glass orb shell
   devices?: boolean; // the "two devices, one brain" mark
 };
@@ -70,6 +73,49 @@ function DevicesOneBrain() {
   );
 }
 
+// The lead tile's artifact: a structured finding rendered as data, not a phone screenshot.
+// Content mirrors a real drafted finding from the app (same fields, same HITL verbs) so the
+// claim stays honest — this is exactly what a capture becomes.
+function StructuredFindingCard() {
+  const row = (label: string, value: ReactNode) => (
+    <div className="flex items-baseline gap-3 border-t border-hairline py-2.5 first:border-t-0">
+      <span className="w-[76px] flex-shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted">{label}</span>
+      <span className="min-w-0 text-[13px] leading-snug text-ink">{value}</span>
+    </div>
+  );
+  return (
+    <div className="rounded-xl border border-hairline bg-[#F7F9FB] p-4 sm:p-5">
+      <div className="rounded-lg border border-hairline bg-surface p-5 shadow-[0_16px_44px_-30px_rgba(10,15,20,0.5)]">
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted">Ledrix Finding · Drafted</span>
+          <span className="flex items-center gap-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#22C55E]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" /> Live
+          </span>
+        </div>
+        <div className="mt-3 text-[15px] font-bold leading-snug text-ink">Moisture-damaged wall finish at tub side</div>
+        <div className="mt-4">
+          {row('System', 'Interior · Bathroom')}
+          {row('Location', 'Wall adjacent to tub/shower')}
+          {row('Priority', (
+            <span className="rounded-full border px-2 py-0.5 font-mono text-[9.5px] font-bold" style={{ color: '#64748B', borderColor: '#64748B55', backgroundColor: '#64748B14' }}>
+              MAINT &amp; IMPROVE
+            </span>
+          ))}
+          {row('Spec', 'Painted drywall — wet-area side')}
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-hairline pt-4">
+          {['Reject', 'Adjust', 'Confirm'].map((v) => (
+            <span key={v} className={`rounded-lg border py-1.5 text-center font-mono text-[10px] font-bold uppercase tracking-[0.1em] ${v === 'Confirm' ? 'border-ink bg-ink text-white' : 'border-hairline text-muted'}`}>
+              {v}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 text-center font-mono text-[9px] uppercase tracking-[0.16em] text-muted">One shutter press · zero typing</div>
+    </div>
+  );
+}
+
 // Exact palette from src/core/theme/SeverityConfig.ts — keep in sync with the app.
 const PRIORITY_PILLS = [
   { label: 'MAJOR REPAIR',    color: '#F97316' },
@@ -84,13 +130,10 @@ const TILES: Tile[] = [
   {
     className: 'md:col-span-2 md:row-span-2',
     kicker: 'In the field',
-    imgs: [
-      { src: '/screenshots/capture-analyze.jpg', alt: 'Isolating a defect in the Ledrix camera' },
-      { src: '/screenshots/finding-drafted.jpg', alt: 'The Ledrix Finding drafted and ready to confirm' },
-    ],
-    title: 'The finding, drafted the moment you shoot.',
+    draft: true,
+    title: 'Every photo becomes structured data.',
     points: [
-      'Every capture becomes a structured finding — system, location, priority, and the spec behind it.',
+      'Not a photo note to sort later — a finding with system, location, priority, and the spec behind it.',
       'Drafted while you’re still standing in front of it.',
       'No evening typing up the report.',
     ],
@@ -100,7 +143,6 @@ const TILES: Tile[] = [
     stat: '100%',
     title: 'Inspector-confirmed',
     body: 'Ledrix proposes; you Confirm, Adjust, or Reject. What you approve is exactly what ships — never quietly rewritten.',
-    shot: { src: '/screenshots/review-card.jpg', alt: 'A Ledrix finding awaiting Reject, Edit, Combine, or Confirm' },
   },
   { className: '', stat: '5', title: 'Priority levels', pills: PRIORITY_PILLS },
   { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.', orb: true },
@@ -215,20 +257,13 @@ export function BentoGrid() {
                     </div>
                   </div>
                 )}
-                {t.imgs && (
-                  /* Vertically centered in the leftover row-span space — the pair floats in the
-                     tile instead of leaving a dead band beneath it. */
-                  <div className="relative flex flex-1 items-center justify-center gap-6 py-6">
-                    {t.imgs.map((im, j) => (
-                      <div key={im.src} className="flex w-full max-w-[240px] flex-col gap-2.5">
-                        <span className="self-start rounded-full bg-ink px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white">
-                          {j === 0 ? 'Shoot' : 'Drafted'}
-                        </span>
-                        <PhoneBezel className="aspect-[1284/2778] w-full">
-                          <Image src={im.src} alt={im.alt} fill className="object-contain" sizes="(max-width:768px) 50vw, 20vw" />
-                        </PhoneBezel>
-                      </div>
-                    ))}
+                {t.draft && (
+                  /* Vertically centered in the leftover row-span space — the artifact floats in
+                     the tile instead of leaving a dead band beneath it. */
+                  <div className="flex flex-1 items-center justify-center py-6">
+                    <div className="w-full max-w-[440px]">
+                      <StructuredFindingCard />
+                    </div>
                   </div>
                 )}
               </div>
