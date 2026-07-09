@@ -78,8 +78,10 @@ function DevicesOneBrain() {
 // claim stays honest — this is exactly what a capture becomes.
 function StructuredFindingCard() {
   const row = (label: string, value: ReactNode) => (
-    <div className="flex items-baseline gap-3 border-t border-hairline py-2.5 first:border-t-0">
-      <span className="w-[76px] flex-shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted">{label}</span>
+    // Stacks label-over-value when the tile is narrow; side-by-side once there's room —
+    // the fixed label column was clipping ("LOCATIO…") on small screens.
+    <div className="flex flex-col gap-1 border-t border-hairline py-2.5 first:border-t-0 sm:flex-row sm:items-baseline sm:gap-3">
+      <span className="flex-shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted sm:w-[82px]">{label}</span>
       <span className="min-w-0 text-[13px] leading-snug text-ink">{value}</span>
     </div>
   );
