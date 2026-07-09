@@ -1838,14 +1838,31 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   // published to storage. Fetch it; if present, render the complete report + hide the reconstructed
   // sidebar. If not published yet, fall back to the system-grouped reconstruction below.
   const [doc, setDoc] = useState<string | null | 'none'>(null);
+  // Report ARCHIVE (home_reports) — every publish snapshots a versioned copy, so this home
+  // accumulates report history across re-publishes and re-inspections. Empty (table absent or
+  // no snapshots yet) simply means "latest only" — exactly the old behavior.
+  const [history, setHistory] = useState<{ version: string; published_at: string; inspection_date?: string; html_path?: string; pdf_path?: string }[]>([]);
+  const [histSel, setHistSel] = useState<string | null>(null);   // null = latest (canonical path)
+  useEffect(() => {
+    if (!record.share_id) return;
+    let alive = true;
+    supaGet<any>(`home_reports?share_id=eq.${encodeURIComponent(record.share_id)}&order=published_at.desc&limit=24`)
+      .then(rows => { if (alive) setHistory(Array.isArray(rows) ? rows : []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [record.share_id]);
+  const selected = histSel ? history.find(h => h.version === histSel) : null;
   // Signed via /api/report-asset so it resolves whether the inspection-pdfs bucket is public
   // or private (fetch below follows the 302 redirect and reads the HTML text).
-  const reportUrl = record.share_id
+  const reportUrl = selected?.html_path
+    ? `/api/report-asset?path=${encodeURIComponent(selected.html_path)}`
+    : record.share_id
     ? `/api/report-asset?path=${encodeURIComponent(`${record.share_id}/report.html`)}`
     : '';
   useEffect(() => {
     if (!reportUrl) { setDoc('none'); return; }
     let alive = true;
+    setDoc(null);
     fetch(reportUrl).then(r => (r.ok ? r.text() : Promise.reject(r.status)))
       .then(t => { if (alive) setDoc(t && t.length > 300 ? t : 'none'); })
       .catch(() => { if (alive) setDoc('none'); });
@@ -1948,7 +1965,19 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
             </button>
           ))}
           <span style={{ marginLeft: 'auto' }} />
-          {pdfHref(record) ? <a href={pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 600, padding: '8px 14px', borderRadius: 8, textDecoration: 'none', fontFamily: MONO, letterSpacing: '0.08em' }}>⤓ PRINT / PDF</a> : null}
+          {history.length > 1 && (
+            <select
+              value={histSel ?? ''}
+              onChange={e => setHistSel(e.target.value || null)}
+              aria-label="Report history"
+              style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 500, padding: '7px 10px', borderRadius: 8, fontFamily: MONO, marginRight: 8 }}>
+              <option value="">Latest report</option>
+              {history.slice(1).map(h => (
+                <option key={h.version} value={h.version}>{fmtDate(h.inspection_date || h.published_at)} · {h.version}</option>
+              ))}
+            </select>
+          )}
+          {(selected?.pdf_path || pdfHref(record)) ? <a href={selected?.pdf_path ? `/api/report-asset?path=${encodeURIComponent(selected.pdf_path)}` : pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 600, padding: '8px 14px', borderRadius: 8, textDecoration: 'none', fontFamily: MONO, letterSpacing: '0.08em' }}>⤓ PRINT / PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>
