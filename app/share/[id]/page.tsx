@@ -1181,7 +1181,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const urgent = critical.concat(deficien).slice(0, 3);
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
-  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#217BE8' };
+  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#2BC8E0' };   // bright = the SCORE teal-cyan (metric readout only — interactive stays blue)
   const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Current report', ''],
