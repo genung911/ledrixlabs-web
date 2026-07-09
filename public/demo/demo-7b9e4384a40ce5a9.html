@@ -37,7 +37,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 ::selection{background:var(--cyan-soft)}
 
 /* ---------- shell ---------- */
-.shell{display:grid;grid-template-columns:minmax(390px,44%) 1fr;min-height:100vh}
+.shell{display:grid;grid-template-columns:minmax(390px,470px) minmax(0,1fr);min-height:100vh;max-width:1400px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line)}
 @media(max-width:920px){.shell{grid-template-columns:1fr}}
 
 /* ============================================================
@@ -457,6 +457,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </style>
 </head>
 <body>
+
 <div class="shell">
 
   <!-- ================= LEFT : FIELD APP ================= -->
@@ -476,7 +477,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             <svg viewBox="0 0 100 100"><mask id="dm-app"><rect width="100" height="100" fill="#fff"/><rect x="42" y="80" width="16" height="9" fill="#000"/></mask><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#2fb6e8" fill-rule="evenodd" mask="url(#dm-app)"/></svg>
             LEDRIX
           </div>
-          <div class="ctx">14312 Chantilly Batist Ln<br><b>HANDS-FREE · SPATIAL LOCK ON</b></div>
+          <div class="ctx">128 Eval House Ct<br><b>HANDS-FREE · SPATIAL LOCK ON</b></div>
         </div>
 
         <div class="voicezone">
@@ -568,15 +569,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
               <div><span class="word">LEDRIX</span><span class="sub">INTELLIGENCE</span></div>
             </div>
           </div>
-          <h1>14312 Chantilly Batist Ln</h1>
-          <div class="addr" id="coverSub">Austin, TX 78745 &middot; Report generated live, on-site</div>
+          <h1>128 Eval House Ct</h1>
+          <div class="addr" id="coverSub">Austin, TX 78701 &middot; Report generated live, on-site</div>
         </div>
 
         <div class="infocards">
           <div class="infocard">
             <h5>Property</h5>
-            <div class="irow"><em>Year Built</em><b>2016</b></div>
-            <div class="irow"><em>Sq Footage</em><b>2,340</b></div>
+            <div class="irow"><em>Year Built</em><b>2018</b></div>
+            <div class="irow"><em>Sq Footage</em><b>2,100</b></div>
             <div class="irow"><em>Floors</em><b>2-Story · Slab</b></div>
           </div>
           <div class="infocard">
@@ -597,7 +598,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
         <div class="askbar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          <div class="atext"><b>Ask Ledrix about your home</b><small>"Will the furnace make it another winter?" &middot; cost projections &middot; ask anything</small></div>
+          <div class="atext"><b>Ask Ledrix about your home</b><small>"Will the furnace make it another winter?" &middot; maintenance guidance &middot; ask anything</small></div>
           <div class="cta">Unlock Insight →</div>
         </div>
 
@@ -814,7 +815,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
           </div>
           <div class="ha-card">
             <div class="hc-top"><svg viewBox="0 0 24 24" fill="none" stroke="#217be8" stroke-width="1.8"><path d="M12 3c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1 2 2.5 2 4a5 5 0 0 1-10 0c0-4 3-5 3-9 0-1.2 1-2.5 2-3z"/></svg><h4>Water Heater Flush</h4><span class="due">DUE OCT 2026</span></div>
-            <p>Your 2016 Rheem 50-gal is in year 10 of a 12-year expected life. An annual flush is the cheapest year you can add to it.</p>
+            <p>Your 2018 Rheem 50-gal is in year 8 of a 12-year expected life. An annual flush is the cheapest year you can add to it.</p>
             <div class="hc-cta">Watch the 4-min how-to →</div>
           </div>
           <div class="ha-card">
@@ -1299,5 +1300,6 @@ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded"
 else init();
 })();
 </script>
+
 </body>
 </html>
