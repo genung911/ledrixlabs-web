@@ -10,12 +10,9 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { PhoneBezel } from './PhoneBezel';
 
-const SAMPLE_PORTAL_ID = 'insp_sample_1783195334539';   // the inspection whose live Home Portal + PDF are featured
-// The PDF tile points at the stable /sample.pdf route, which server-side signs the
-// sample's report.pdf and redirects. This keeps working whether the inspection-pdfs
-// bucket is public or private (no raw public storage URL in the client bundle).
-// Keep SAMPLE_PORTAL_ID in sync with SAMPLE_ID in app/sample.pdf/route.ts.
-const SAMPLE_PDF_URL = '/sample.pdf';
+const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';   // the featured sample home (128 Eval House Ct)
+// The Web Report tile deep-links the same home's tokenized share URL straight to its Reports view.
+const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report';
 
 const PORTAL_POINTS = [
   'The living portal your buyer keeps — health score, findings in plain language.',
@@ -100,7 +97,7 @@ export function SampleDeliverables() {
           {/* PDF report */}
           <motion.a
             variants={fadeUp}
-            href={SAMPLE_PDF_URL}
+            href={SAMPLE_WEB_REPORT_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
@@ -111,8 +108,8 @@ export function SampleDeliverables() {
               </div>
             </div>
             <div className="flex flex-1 flex-col p-7">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Inspection Report · PDF</span>
-              <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample PDF Report</h3>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted">Inspection Report · Web + PDF</span>
+              <h3 className="mt-2 text-xl font-bold tracking-tight text-ink">Sample Web Report</h3>
               <Points items={PDF_POINTS} tone="muted" />
               <span className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-bold text-white transition-colors duration-300 group-hover:bg-accent-ink">
                 Open the sample

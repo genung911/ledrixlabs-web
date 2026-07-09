@@ -2737,6 +2737,13 @@ export default function SharePage() {
   const [notFound,  setNotFound]  = useState(false);
   const [tab,       setTab]       = useState<Tab>('home');
   const [hist,      setHist]      = useState<Tab[]>([]);
+  // Deep link: /share/<id>?tab=report (marketing's Sample Web Report tile) lands directly on that view.
+  useEffect(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+      if (t && ['report', 'findings', 'repairs', 'projects', 'reminders', 'docs', 'ethix'].includes(t)) setTab(t);
+    } catch { /* no-op */ }
+  }, []);
   const [copied,    setCopied]    = useState(false);
 
   // Tile drill-in navigation (no bottom rail): go pushes the current screen onto
