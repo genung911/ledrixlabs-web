@@ -48,7 +48,7 @@ async function supaDelete(table: string, filter: string) {
 // Blue is the primary UI accent; color is still reserved for MEANING (severity).
 // Stage 2: light theme. Accent is a readable brand blue (deep #1A63C8 stays legible on the light ground).
 const BLUE     = '#1A63C8';   // readable brand blue accent on light
-const ACCENT   = '#1A63C8';   // primary UI accent
+const ACCENT   = '#1A63C8';   // primary UI accent — the Ledrix blue (owner call: blue, not the report teal)
 const CRITICAL = '#DC2626';   // safety (readable on light)
 const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
 const GREEN    = '#16A34A';   // satisfactory / resolved
@@ -1078,8 +1078,8 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {signedIn && (
           <button onClick={onSignOut} title="Signed in to Ledrix — tap to sign out" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer' }}>
-            <span style={{ width: 5, height: 5, borderRadius: 3, background: BLUE, display: 'inline-block' }} />
-            <span style={{ ...eyebrow(BLUE, 8) }}>Ledrix</span>
+            <span style={{ width: 5, height: 5, borderRadius: 3, background: ACCENT, display: 'inline-block' }} />
+            <span style={{ ...eyebrow(ACCENT, 8) }}>Ledrix</span>
           </button>
         )}
         <button onClick={onShare} style={{
@@ -1206,9 +1206,16 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
               <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, lineHeight: 1.08, letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>{record.address ?? 'Address pending'}</div>
               <div style={{ fontFamily: MONO, fontSize: 10.5, color: 'rgba(255,255,255,0.76)', marginTop: 10, letterSpacing: '0.06em' }}>{[subAddress, record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : ''].filter(Boolean).join('  ·  ')}</div>
             </div>
-            <div style={{ flexShrink: 0, width: 84, height: 84, borderRadius: '50%', display: 'grid', placeItems: 'center',
-              background: `conic-gradient(${P.bright} ${Math.max(0, Math.min(100, score))}%, rgba(255,255,255,0.16) 0)` }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(10,16,19,0.92)', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+            <div style={{ flexShrink: 0, position: 'relative', width: 84, height: 84 }}>
+              {/* frosted disc — integrated with the photo, not floating over it */}
+              <div style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'rgba(8,14,17,0.42)', backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }} />
+              {/* pristine ring: hairline track + exact arc */}
+              <svg width={84} height={84} viewBox="0 0 84 84" style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
+                <circle cx={42} cy={42} r={39} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
+                <circle cx={42} cy={42} r={39} fill="none" stroke={P.bright} strokeWidth={2.5} strokeLinecap="round"
+                  strokeDasharray={`${(2 * Math.PI * 39 * Math.max(0, Math.min(100, score)) / 100).toFixed(1)} ${(2 * Math.PI * 39).toFixed(1)}`} />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
                 <div>
                   <div style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 600, lineHeight: 1 }}>{score}</div>
                   <div style={{ ...eyebrow(P.bright, 7), marginTop: 3 }}>Health</div>
@@ -1224,7 +1231,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
         <button
           onClick={() => onTabChange('report')}
           aria-label="View the most recent inspection report"
-          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 14, overflow: 'hidden', display: 'block', textAlign: 'left', boxShadow: '0 10px 26px -16px rgba(0,0,0,0.4)' }}
+          style={{ width: '100%', padding: 0, border: 'none', cursor: 'pointer', borderRadius: 6, overflow: 'hidden', display: 'block', textAlign: 'left' }}
         >
           {/* Flat ink panel — the hero above already shows the house; repeating the photo here read as a glitch. */}
           <div style={{
@@ -1257,7 +1264,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
           {urgent.map((a, i) => {
             const pr = priorityOf(a);
             return (
-            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 10, padding: '12px 15px', marginBottom: 8, cursor: 'pointer' }}>
+            <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 8, padding: '12px 15px', marginBottom: 8, cursor: 'pointer' }}>
               <div style={{ ...eyebrow(pr.report, 8.5) }}>{pr.label}</div>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
               <div style={{ color: '#33454B', fontSize: 12.5, lineHeight: 1.55, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
@@ -1271,7 +1278,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       <div style={{ padding: '16px 18px 10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {pillars.map(([tab, icon, label, count]) => (
-            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 12, padding: '16px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <button key={tab} onClick={() => onTabChange(tab)} style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 8, padding: '17px 16px 15px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Icon name={icon} size={19} color={P.blue} />
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: P.text }}>{label}</span>
@@ -1284,7 +1291,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
       {/* Ledrix Intelligence — the two AI actions as one dark surface: Δ = ask, Eye = vision */}
       <div style={{ margin: '6px 18px 20px' }}>
-        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 14, padding: '6px 20px', color: '#fff' }}>
+        <div style={{ background: 'linear-gradient(150deg,#12333C,#0C1E24)', borderRadius: 10, padding: '6px 20px', color: '#fff' }}>
           <button onClick={onAsk} aria-label="Ask Ledrix" style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
             <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center',
               background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
@@ -1301,7 +1308,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       </div>
 
       {/* Ethix — your data, your call (the values surface; dark card echoes the hero) */}
-      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(150deg,#101B22 0%,#0C161C 80%)', borderRadius: 14, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+      <div onClick={() => onTabChange('ethix')} style={{ margin: '0 18px 22px', cursor: 'pointer', background: 'linear-gradient(150deg,#101B22 0%,#0C161C 80%)', borderRadius: 10, padding: '15px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: SERIF, color: '#EAF7F9', fontSize: 15.5, fontWeight: 600 }}>Ethix</span>
@@ -2359,10 +2366,10 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access, shareId]);
   return (
-    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${BLUE}`, borderRadius: 10, padding: '14px 16px', overflow: 'hidden' }}>
+    <div style={{ margin: '4px 16px 16px', position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${ACCENT}`, borderRadius: 8, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <ValDeltaSVG size={13} color={BLUE} sheen />
-        <span style={{ ...eyebrow(BLUE, 8) }}>Ledrix Insight</span>
+        <ValDeltaSVG size={13} color={ACCENT} sheen />
+        <span style={{ ...eyebrow(ACCENT, 8) }}>Ledrix Insight</span>
       </div>
       {access ? (
         <p style={{ color: loading ? MED : TEXT, fontSize: 12.5, lineHeight: 1.65 }}>{loading ? 'Analyzing your home…' : (insight ?? 'No insight available yet — ask Ledrix anything below.')}</p>
@@ -2371,9 +2378,9 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
           <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, filter: 'blur(4.5px)', userSelect: 'none' }}>
             Your home is in strong overall condition, with a few maintenance items worth scheduling before winter. The water heater is approaching the end of its typical service life, and the panel shows&hellip;
           </p>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(180deg, rgba(10,10,10,0.25), rgba(10,10,10,0.86))' }}>
-            <button onClick={onUnlock} style={{ background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 10, padding: '11px 18px', fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(33,123,232,0.3)' }}>UNLOCK LEDRIX INSIGHT</button>
-            <span style={{ color: MED, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>Live AI analysis of your home</span>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'rgba(247,249,251,0.42)', backdropFilter: 'blur(9px) saturate(140%)', WebkitBackdropFilter: 'blur(9px) saturate(140%)' }}>
+            <button onClick={onUnlock} style={{ background: '#fff', border: `1px solid ${ACCENT}55`, borderRadius: 6, padding: '11px 18px', cursor: 'pointer', ...eyebrow(ACCENT, 8.5) }}>Unlock Ledrix Insight</button>
+            <span style={{ ...eyebrow(MED, 7.5) }}>Live AI analysis of your home</span>
           </div>
         </>
       )}
@@ -2938,8 +2945,11 @@ export default function SharePage() {
       {tab === 'docs'      && <DocsTab record={record} />}
       {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
-      <div style={{ position: 'fixed', bottom: 24, right: 'max(20px, calc(50% - 195px))', zIndex: 120 }}>
-        <ValOrbVoice size={62} tone="light" controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
+      {/* VAL anchor — docked structural control, not a floating Material bubble */}
+      <div style={{ position: 'fixed', bottom: 22, right: 'max(18px, calc(50% - 197px))', zIndex: 120,
+        background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        border: `1px solid ${BORDER}`, borderRadius: 12, padding: 6 }}>
+        <ValOrbVoice size={54} tone="light" quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
       </div>
       {valLog && (
         <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>

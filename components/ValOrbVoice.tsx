@@ -91,10 +91,12 @@ export default function ValOrbVoice({
   size = 66,
   tone = 'dark',
   controlled,
+  quiet = false,   // structural placement (e.g. a docked anchor) — no lift shadow unless actively listening
 }: {
   size?: number;
   tone?: Tone;
   controlled?: Controlled;
+  quiet?: boolean;
 }) {
   const [selfListening, setSelfListening] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -133,7 +135,7 @@ export default function ValOrbVoice({
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
         border: t.border(listening),
-        boxShadow: t.shadow(listening, hovered),
+        boxShadow: quiet && !listening ? 'none' : t.shadow(listening, hovered),
         transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
         WebkitTapHighlightColor: 'transparent',
       }}
