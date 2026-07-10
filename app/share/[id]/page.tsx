@@ -1903,17 +1903,16 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   // anchors actually exist so the rail only lists real sections.
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [secIds, setSecIds] = useState<string[]>([]);
+  // MUST mirror generateInspectionPDF's actual chapter anchors (anchored() ids) — this list
+  // drifted once and sections silently vanished from the sidebar (2026-07-09 audit).
   const REPORT_TOC: { id: string; label: string }[] = [
-    { id: 'sec-profile',     label: 'Home Profile' },
-    { id: 'sec-coverage',    label: 'Systems Coverage' },
-    { id: 'sec-summary',     label: 'Executive Summary' },
-    { id: 'sec-systems',     label: 'Systems Assessment' },
-    { id: 'sec-findings',    label: 'Findings & Recommendations' },
-    { id: 'sec-limitations', label: 'Scope & Limitations' },
-    { id: 'sec-homeapp',     label: 'Your Home App' },
-    { id: 'sec-evidence',    label: 'Photo Documentation' },
-    { id: 'sec-sop',         label: 'Standards of Practice' },
-    { id: 'sec-cert',        label: 'Certification' },
+    { id: 'sec-profile',   label: 'Home Profile' },
+    { id: 'sec-summary',   label: 'Executive Summary' },
+    { id: 'sec-findings',  label: 'Detailed Findings' },
+    { id: 'sec-reinspect', label: 'Re-Inspection' },
+    { id: 'sec-floorplan', label: 'Floor Plan' },
+    { id: 'sec-systems',   label: 'Systems, Specs & Scope' },
+    { id: 'sec-extras',    label: 'Certification & Extras' },
   ];
   const toc = REPORT_TOC.filter(t => secIds.length === 0 || secIds.includes(t.id));
   // Auto-height iframe doesn't scroll itself — scroll the PARENT to the section's absolute Y.
