@@ -144,6 +144,11 @@ type FPRoom = {
 type FPLayout = { rooms: FPRoom[]; pins?: Record<string, { fx: number; fy: number }>; generatedAt?: string };
 type FloorPlanRow = { inspection_id: string; layout: FPLayout | null; fingerprint?: string; updated_at?: string };
 
+// Floor plan is shelved for MVP (owner call 2026-07-09) — mirrors FLOORPLAN_ENABLED in the
+// app's core/flags.ts. Hides the schematic even for inspections that synced a layout during
+// earlier testing; flip to true to restore.
+const FLOORPLAN_ENABLED = false;
+
 type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
 // User-facing tab names — the lifecycle standard (internal Tab ids never change).
 const TAB_LABEL: Record<Tab, string> = {
@@ -1571,7 +1576,7 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
       <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
       <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Repairs Needed</div>
 
-      {floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
+      {FLOORPLAN_ENABLED && floorPlan?.layout && <FloorPlanSchematic layout={floorPlan.layout} anomalies={anomalies} onSelectRoom={selectRoom} />}
 
       {focusRoom && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${TEXT}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
@@ -2885,7 +2890,7 @@ export default function SharePage() {
   // exist (no coverage walkthrough = no adjacency data); an empty array back is the
   // normal, expected shape, not an error.
   const loadFloorPlan = useCallback(async (sid: string = shareId) => {
-    if (!sid) return;
+    if (!sid || !FLOORPLAN_ENABLED) return;
     const rows = await supaGet<FloorPlanRow>(`floor_plans?inspection_id=eq.${encodeURIComponent(sid)}&limit=1`);
     setFloorPlan(rows[0] ?? null);
   }, [shareId]);
