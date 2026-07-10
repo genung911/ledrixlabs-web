@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Ledrix — The 60-Second Inspection</title>
+<style>
+/* ════════════════════════════════════════════════════════════════════════════
+   THE 60-SECOND INSPECTION — a playable Ledrix.
+   You are the inspector. Walk a two-story house, let the camera see, speak
+   your findings, clear the gate, seal the report. The plan draws itself while
+   you play. Everything on screen is the real product's real behavior.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#05080b; --panel:#0c1216; --card:#0b1013; --line:rgba(140,190,220,.14);
+  --line2:rgba(160,210,235,.3);
+  --txt:#dbe7ec; --dim:#7c909a; --faint:#48606c;
+  --blue:#217be8; --cyan:#22e3ff; --green:#2fc56e; --amber:#f0a020; --red:#ff5a5a;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:var(--txt);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer}
+::selection{background:rgba(34,227,255,.25)}
+
+#app{position:relative;height:100%;display:flex;flex-direction:column;
+  background:
+    linear-gradient(rgba(127,180,232,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(127,180,232,.04) 1px,transparent 1px),
+    radial-gradient(120% 100% at 50% 0%,#0b141a, #05080b 70%);
+  background-size:46px 46px,46px 46px,100% 100%}
+
+/* ── top chrome ─────────────────────────────────────────────────────────── */
+#top{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line);flex:none}
+#top .mark{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim)}
+#top .mark b{color:var(--cyan);font-weight:600;font-size:14px}
+#timer{font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:#cfe0e7;font-variant-numeric:tabular-nums}
+#lvlchip{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+  border:1px solid var(--line2);border-radius:999px;padding:6px 13px;color:#cfe0e7;background:rgba(8,18,24,.7);transition:box-shadow .4s}
+#lvlchip i{font-style:normal;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+#lvlchip.flip{animation:flip .7s}
+@keyframes flip{0%{box-shadow:0 0 0 0 rgba(34,227,255,.7)}100%{box-shadow:0 0 0 18px rgba(34,227,255,0)}}
+#objective{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);text-align:right;line-height:1.7}
+#objective b{color:var(--amber);font-weight:600}
+
+/* ── main split ─────────────────────────────────────────────────────────── */
+#main{flex:1;display:grid;grid-template-columns:1fr 330px;min-height:0}
+#stagewrap{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;padding:14px}
+#stage{width:100%;height:100%;max-width:860px;display:block}
+
+/* the house */
+.room{fill:rgba(255,255,255,.02);stroke:var(--line2);stroke-width:1.3;cursor:pointer;transition:fill .35s}
+.room:hover{fill:rgba(34,227,255,.05)}
+.room.seen{fill:rgba(33,123,232,.08)}
+.room.here{fill:rgba(34,227,255,.1)}
+.rlabel{font-family:var(--mono);font-size:10px;letter-spacing:.16em;fill:#8fa6af;pointer-events:none}
+.rooml.done .rlabel{fill:#cfe0e7}
+.door{stroke:var(--ink);stroke-width:5}
+.stairs line{stroke:rgba(160,210,235,.35);stroke-width:1.2}
+#avatar{pointer-events:none}
+#avatar .body{fill:var(--cyan);filter:drop-shadow(0 0 8px rgba(34,227,255,.9))}
+#avatar .halo{fill:none;stroke:rgba(34,227,255,.45);stroke-width:1.5;animation:halo 1.8s ease-out infinite}
+@keyframes halo{0%{r:8;opacity:.9}100%{r:22;opacity:0}}
+.hot{cursor:pointer}
+.hot .ring{fill:none;stroke:var(--amber);stroke-width:1.6;animation:hpulse 1.6s ease-out infinite}
+.hot.req .ring{stroke:var(--cyan)}
+.hot .core{fill:var(--amber)}
+.hot.req .core{fill:var(--cyan)}
+.hot.done .ring{animation:none;stroke:var(--green)}
+.hot.done .core{fill:var(--green)}
+.hot.done{cursor:default}
+@keyframes hpulse{0%{r:7;opacity:1}100%{r:18;opacity:0}}
+.hlabel{font-family:var(--mono);font-size:8px;letter-spacing:.1em;fill:#c9a35f;pointer-events:none}
+.hot.req + .hlabel{fill:#7fd4ea}
+
+#flash{position:absolute;inset:0;background:#dff4ff;opacity:0;pointer-events:none}
+#flash.go{animation:flash .32s ease-out}
+@keyframes flash{0%{opacity:.75}100%{opacity:0}}
+
+/* floor pager */
+#floorpager{position:absolute;left:26px;top:20px;display:flex;flex-direction:column;gap:6px}
+#floorpager .f{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--faint);
+  border:1px solid transparent;border-radius:8px;padding:6px 12px;transition:all .3s}
+#floorpager .f.cur{color:#eaf5f8;border-color:var(--line2);background:rgba(10,20,26,.8)}
+#hinttxt{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.24em;color:var(--faint);white-space:nowrap;transition:opacity .5s}
+
+/* ── right rail: Ledrix's brain ─────────────────────────────────────────── */
+#rail{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:rgba(6,10,13,.6)}
+#rail .sect{padding:14px 16px;border-bottom:1px solid var(--line)}
+#rail .st{font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:var(--faint);margin-bottom:10px;display:flex;justify-content:space-between}
+#rail .st b{color:var(--cyan);font-weight:600}
+#miniplan{width:100%;display:block}
+#miniplan rect{fill:rgba(255,255,255,.03);stroke:rgba(160,210,235,.4);stroke-width:1;opacity:0;transition:opacity .5s}
+#miniplan rect.on{opacity:1}
+#miniplan text{font-family:var(--mono);font-size:6.5px;letter-spacing:.08em;fill:#7c909a;opacity:0;transition:opacity .5s}
+#miniplan text.on{opacity:1}
+#miniplan .mfl{font-size:7px;letter-spacing:.3em;fill:#48606c}
+#console{flex:1;overflow-y:auto;padding:12px 16px;font-family:var(--mono);font-size:10.5px;line-height:1.9;color:#9db3bc;scrollbar-width:none}
+#console::-webkit-scrollbar{display:none}
+#console .ln b{color:#dbe7ec;font-weight:600}
+#console .ln.ai{color:#6fc3d8}
+#console .ln.ok{color:var(--green)}
+#gatechips{display:flex;flex-direction:column;gap:7px}
+.gchip{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--amber)}
+.gchip i{font-style:normal;width:7px;height:7px;border-radius:50%;background:var(--amber);flex:none}
+.gchip.ok{color:var(--faint);text-decoration:line-through;text-decoration-color:rgba(47,197,110,.7)}
+.gchip.ok i{background:var(--green)}
+#sealbtn{margin:12px 16px 16px;flex:none;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.24em;
+  border-radius:12px;padding:15px 0;text-align:center;transition:all .4s;
+  color:#8b9a9f;border:1px solid #232c31;background:transparent}
+#sealbtn.ready{color:#03130a;background:var(--green);border-color:var(--green);box-shadow:0 0 34px rgba(47,197,110,.4);cursor:pointer}
+#sealbtn.ready:hover{transform:translateY(-1px);box-shadow:0 0 50px rgba(47,197,110,.55)}
+
+/* ── VAL sheet (the finding moment) ─────────────────────────────────────── */
+#veil{position:fixed;inset:0;background:rgba(3,6,8,.72);backdrop-filter:blur(3px);z-index:40;
+  display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s}
+#veil.on{opacity:1;pointer-events:auto}
+#sheet{width:min(460px,94vw);background:rgba(12,17,22,.92);border:1px solid var(--line2);border-bottom:none;
+  border-radius:22px 22px 0 0;padding:20px 22px 26px;transform:translateY(40px);transition:transform .4s cubic-bezier(.2,.9,.3,1)}
+#veil.on #sheet{transform:none}
+#sheet .valrow{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+#sheet .orb{width:40px;height:40px;border-radius:50%;flex:none;position:relative;
+  background:radial-gradient(circle at 50% 34%,#123840,#081820);border:1px solid rgba(34,227,255,.55);box-shadow:0 0 18px rgba(34,227,255,.3)}
+#sheet .orb::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(34,227,255,.5);animation:halo2 1.9s ease-out infinite}
+@keyframes halo2{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+#sheet .vt{font-family:var(--mono);font-size:9px;letter-spacing:.3em;color:var(--cyan)}
+#stx{font-family:var(--mono);font-size:13.5px;line-height:1.9;color:#e6f0f4;min-height:3.6em;margin-bottom:12px}
+#stx .m{color:var(--faint);font-size:.8em;letter-spacing:.14em}
+/* embedded ledger card */
+.ledger{background:var(--card);border:1px solid #1d2b31;border-radius:14px;padding:15px 16px;border-left:3px solid var(--amber);
+  opacity:0;transform:translateY(14px);transition:all .5s cubic-bezier(.2,.9,.3,1.15)}
+.ledger.on{opacity:1;transform:none}
+.ledger.req{border-left-color:var(--cyan)}
+.ledger .lt{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;color:var(--faint);margin-bottom:8px}
+.ledger .lt .c{color:var(--green)}
+.ledger h4{font-family:var(--serif);font-size:16.5px;font-weight:600;color:#eef3f4;margin-bottom:10px}
+.ledger .lr{display:flex;gap:10px;font-size:11.5px;padding:6px 0;border-top:1px solid #141b1f}
+.ledger .lr b{font-family:var(--mono);font-size:8px;letter-spacing:.16em;color:var(--faint);width:74px;flex:none;font-weight:600;padding-top:2px}
+.ledger .lr span{color:#d5e2e7}
+.ledger .pill{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--amber);
+  border:1px solid rgba(240,160,32,.4);background:rgba(240,160,32,.08);border-radius:999px;padding:2px 8px}
+.ledger.req .pill{color:var(--cyan);border-color:rgba(34,227,255,.4);background:rgba(34,227,255,.06)}
+#sheet .verbs{display:flex;gap:8px;margin-top:14px}
+#sheet .verbs button{flex:1;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.16em;
+  padding:13px 0;border-radius:10px;border:1px solid #232c31;color:#93a5ac;transition:all .25s}
+#sheet .verbs button:hover{border-color:#3a474d;color:#c9d6db}
+#sheet .verbs .go{background:var(--green);border-color:var(--green);color:#03130a}
+#sheet .verbs .go:hover{box-shadow:0 0 24px rgba(47,197,110,.45)}
+
+/* ── toast ──────────────────────────────────────────────────────────────── */
+#toast{position:fixed;top:74px;left:50%;transform:translate(-50%,-12px);z-index:60;opacity:0;pointer-events:none;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:#dff2f7;background:rgba(10,18,24,.92);
+  border:1px solid var(--line2);border-radius:999px;padding:10px 20px;transition:all .35s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.good{color:#bff3d4;border-color:rgba(47,197,110,.5)}
+
+/* ── overlays: intro + sealed ───────────────────────────────────────────── */
+.overlay{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 100% at 50% 20%,rgba(10,18,24,.96),rgba(4,7,9,.98));transition:opacity .6s}
+.overlay.gone{opacity:0;pointer-events:none}
+.ov{max-width:620px;text-align:center;padding:0 30px}
+.ov .delta svg .tri{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linejoin:round;
+  stroke-dasharray:340;stroke-dashoffset:340;animation:draw 1.4s .1s forwards;filter:drop-shadow(0 0 14px rgba(34,227,255,.45))}
+@keyframes draw{to{stroke-dashoffset:0}}
+.ov h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,5.4vw,54px);letter-spacing:-.015em;color:#eef5f7;margin:22px 0 16px;text-wrap:balance}
+.ov p{color:var(--dim);font-size:15px;line-height:1.8;max-width:46ch;margin:0 auto}
+.ov p b{color:var(--txt)}
+.ov .steps{display:flex;justify-content:center;gap:26px;margin:30px 0 6px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--faint)}
+.ov .steps span b{display:block;color:var(--cyan);font-size:16px;margin-bottom:8px;font-weight:600}
+.bigbtn{display:inline-block;margin-top:30px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.3em;
+  color:#03130a;background:var(--cyan);border-radius:999px;padding:17px 40px;box-shadow:0 0 44px rgba(34,227,255,.35);transition:all .3s}
+.bigbtn:hover{transform:translateY(-2px);box-shadow:0 0 70px rgba(34,227,255,.55)}
+
+/* sealed report */
+#doneov .paper{width:min(430px,90vw);margin:26px auto 0;background:#f5f4ef;border-radius:12px;color:#15202a;overflow:hidden;text-align:left;
+  box-shadow:0 50px 120px -30px rgba(0,0,0,.95);transform:scale(.92) rotate(-1deg);opacity:0;transition:all .8s cubic-bezier(.2,.9,.3,1.1)}
+#doneov.reveal .paper{transform:none;opacity:1}
+#doneov .cov{background:linear-gradient(165deg,#0f1e2e,#0b2530 55%,#0f172a);color:#eef4f8;padding:20px 24px;position:relative}
+#doneov .cov .ce{font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:#7fa9b8;line-height:1.9}
+#doneov .cov h3{font-family:var(--serif);font-size:23px;font-weight:600;margin-top:22px}
+#doneov .cov .ad{font-family:var(--mono);font-size:9px;color:#a9c2cf;margin-top:5px;letter-spacing:.06em}
+#doneov .seal{position:absolute;top:18px;right:20px;width:64px;height:64px;border-radius:50%;
+  border:2px solid var(--green);display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:var(--green);text-align:center;line-height:1.5;
+  transform:rotate(12deg) scale(2.4);opacity:0;transition:all .5s .7s cubic-bezier(.2,1.4,.3,1)}
+#doneov.reveal .seal{transform:rotate(-8deg) scale(1);opacity:1}
+#doneov .row{display:flex;border-bottom:1px solid #e2e0d6}
+#doneov .cell{flex:1;padding:12px 15px}
+#doneov .cell+.cell{border-left:1px solid #e2e0d6}
+#doneov .ck{font-family:var(--mono);font-size:7.5px;letter-spacing:.2em;color:#8a8875;text-transform:uppercase}
+#doneov .cv{font-family:var(--serif);font-size:16px;margin-top:4px;color:#1c2a35;font-variant-numeric:tabular-nums}
+#doneov .stats{margin-top:26px;font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--dim);line-height:2.2}
+#doneov .stats b{color:var(--cyan);font-weight:600}
+
+@media(max-width:900px){
+  /* phone: the stage on top, the GATE below — the seal is the point, it never hides */
+  #main{display:flex;flex-direction:column}
+  #stagewrap{flex:1;min-height:0}
+  #rail{border-left:none;border-top:1px solid var(--line);flex:none;max-height:38vh}
+  #rail .sect:nth-child(1){display:none}                 /* mini-plan: the stage IS the plan here */
+  #rail .sect:nth-child(2){display:none}                 /* console: too dense for a phone */
+  #objective{display:none}
+  #hinttxt{font-size:9px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="top">
+    <div class="mark"><b>Δ</b> LEDRIX · FIELD OS</div>
+    <div id="timer">00:00</div>
+    <div id="lvlchip"><i></i><span id="lvltxt">LEVEL 1</span></div>
+    <div id="objective">WALK EVERY ROOM · CLEAR EVERY <b>◈</b> · SEAL THE REPORT</div>
+  </div>
+
+  <div id="main">
+    <div id="stagewrap">
+      <svg id="stage" viewBox="0 0 860 560" role="application" aria-label="Interactive house — tap rooms to walk"></svg>
+      <div id="floorpager">
+        <div class="f cur" id="f1">LEVEL 1</div>
+        <div class="f" id="f2">LEVEL 2</div>
+      </div>
+      <div id="flash"></div>
+      <div id="hinttxt">TAP A ROOM TO WALK THERE — LEDRIX SHOOTS AS YOU GO</div>
+    </div>
+
+    <div id="rail">
+      <div class="sect">
+        <div class="st"><span>FLOOR PLAN · <b>SELF-DRAWING</b></span><span id="covpct">0%</span></div>
+        <svg id="miniplan" viewBox="0 0 300 190"></svg>
+      </div>
+      <div class="sect" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none">
+        <div class="st"><span>LEDRIX · <b>WATCHING</b></span><span id="shotct">0 ▣</span></div>
+        <div id="console"></div>
+      </div>
+      <div class="sect" style="border-top:1px solid var(--line);border-bottom:none">
+        <div class="st"><span>BEFORE YOU SEAL</span></div>
+        <div id="gatechips"></div>
+      </div>
+      <button id="sealbtn">🔒 SEAL REPORT</button>
+    </div>
+  </div>
+</div>
+
+<!-- VAL sheet -->
+<div id="veil">
+  <div id="sheet">
+    <div class="valrow"><div class="orb"></div><div class="vt">VAL · LISTENING</div></div>
+    <div id="stx"></div>
+    <div class="ledger" id="scard"></div>
+    <div class="verbs" id="sverbs" style="display:none">
+      <button id="vskip">NO PHOTO</button>
+      <button class="go" id="vgo">📷 CONFIRM · USE LEDRIX'S SHOT</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- intro -->
+<div class="overlay" id="introov">
+  <div class="ov">
+    <div class="delta"><svg width="72" height="72" viewBox="0 0 100 100"><path class="tri" d="M50 12 L90 84 L10 84 Z"/></svg></div>
+    <h1>Inspect a house in 60 seconds.</h1>
+    <p>You're the inspector. <b>Tap rooms</b> to walk — Ledrix shoots and maps as you move.
+      When something glows, <b>tap it and speak</b>. Clear the gate. Seal the report.
+      The paperwork? Watch it write itself.</p>
+    <div class="steps">
+      <span><b>①</b>WALK</span><span><b>②</b>SPEAK</span><span><b>③</b>SEAL</span>
+    </div>
+    <button class="bigbtn" id="startbtn">START THE CLOCK →</button>
+  </div>
+</div>
+
+<!-- sealed -->
+<div class="overlay gone" id="doneov">
+  <div class="ov">
+    <h1 style="margin-top:0">Sealed<span style="color:var(--cyan)">.</span></h1>
+    <div class="paper">
+      <div class="cov">
+        <div class="seal">INSPECTOR<br>SEALED ✓</div>
+        <div class="ce">LEDRIX INSPECTION REPORT<br>CONFIDENTIAL · CLIENT COPY</div>
+        <h3>1276 N Wayne St</h3>
+        <div class="ad">FULL HOME INSPECTION · GENERATED ON-SITE</div>
+      </div>
+      <div class="row">
+        <div class="cell"><div class="ck">Findings</div><div class="cv" id="df">0</div></div>
+        <div class="cell"><div class="ck">Photos</div><div class="cv" id="dp">0</div></div>
+        <div class="cell"><div class="ck">Floors mapped</div><div class="cv">2</div></div>
+        <div class="cell"><div class="ck">Coverage</div><div class="cv">100%</div></div>
+      </div>
+    </div>
+    <div class="stats">YOUR TIME · <b id="dt">0:58</b> — REPORT WRITING TONIGHT · <b>0:00</b></div>
+    <button class="bigbtn" id="againbtn" style="margin-top:26px">RUN IT AGAIN ↺</button>
+  </div>
+</div>
+
+<script>
+(() => {
+/* ═══ world ══════════════════════════════════════════════════════════════ */
+const NS = 'http://www.w3.org/2000/svg';
+const $  = id => document.getElementById(id);
+const el = (t, at = {}, parent) => { const n = document.createElementNS(NS, t); for (const k in at) n.setAttribute(k, at[k]); parent && parent.appendChild(n); return n; };
+
+/* two floors of rooms — [x,y,w,h] in stage units */
+const FLOORS = {
+  1: [
+    {id:'entry',   name:'ENTRY',       x:330,y:380,w:120,h:120},
+    {id:'living',  name:'LIVING',      x:60, y:180,w:270,h:200},
+    {id:'dining',  name:'DINING',      x:60, y:380,w:270,h:120},
+    {id:'kitchen', name:'KITCHEN',     x:60, y:40, w:270,h:140},
+    {id:'laundry', name:'LAUNDRY',     x:330,y:40, w:150,h:140},
+    {id:'garage',  name:'GARAGE',      x:480,y:40, w:320,h:250},
+    {id:'stair1',  name:'STAIRS ↑',    x:330,y:180,w:120,h:200, stairs:true},
+    {id:'hall1',   name:'HALL',        x:450,y:290,w:350,h:90},
+    {id:'office',  name:'OFFICE',      x:450,y:380,w:350,h:120},
+  ],
+  2: [
+    {id:'stair2',  name:'STAIRS ↓',    x:330,y:180,w:120,h:200, stairs:true},
+    {id:'loft',    name:'LOFT',        x:60, y:180,w:270,h:200},
+    {id:'pbed',    name:'PRIMARY BED', x:450,y:40, w:350,h:190},
+    {id:'pbath',   name:'PRIMARY BATH',x:450,y:230,w:170,h:150},
+    {id:'hbath',   name:'HALL BATH',   x:620,y:230,w:180,h:150},
+    {id:'bed2',    name:'BEDROOM 2',   x:60, y:40, w:270,h:140},
+    {id:'bed3',    name:'BEDROOM 3',   x:330,y:40, w:120,h:140},
+    {id:'hall2',   name:'HALL',        x:450,y:380,w:350,h:120},
+    {id:'closet',  name:'W.I.C.',      x:60, y:380,w:270,h:120},
+  ],
+};
+
+/* the work: findings (amber ◆) + required photos (cyan ◈) */
+const SPOTS = [
+  {id:'tpr',    floor:1, room:'garage',  x:700,y:120, kind:'finding', tag:'WATER HEATER',
+    say:'“Leaking TPR valve on the water heater — garage, northwest corner.”',
+    title:'TPR valve leaking at discharge tube', sys:'Plumbing · Water Heater', loc:'Garage — NW corner', pri:'MAJOR REPAIR'},
+  {id:'damper', floor:1, room:'living',  x:110,y:230, kind:'finding', tag:'FIREPLACE',
+    say:'“Fireplace damper clamp missing — gas log set installed.”',
+    title:'Damper clamp missing at gas fireplace', sys:'Fireplace', loc:'Living room', pri:'SAFETY · REPAIR'},
+  {id:'moist',  floor:2, room:'pbath',   x:530,y:330, kind:'finding', tag:'TUB WALL',
+    say:'“Moisture-damaged wall finish at the tub — primary bath.”',
+    title:'Moisture-damaged wall finish at tub side', sys:'Interior · Bathroom', loc:'Primary bath', pri:'MAINT & IMPROVE'},
+  {id:'dataplate', floor:1, room:'garage', x:600,y:220, kind:'req', tag:'DATA PLATE',
+    say:'Water heater data plate — captured.',
+    title:'Water heater data plate', sys:'Rheem · 50 gal · 2018', loc:'Company required photo', pri:'REQUIRED ✓'},
+  {id:'deadfront', floor:1, room:'laundry', x:400,y:90, kind:'req', tag:'PANEL',
+    say:'Electrical panel, dead front removed — captured.',
+    title:'Panel — dead front removed', sys:'200A · copper branch', loc:'Company required photo', pri:'REQUIRED ✓'},
+  {id:'dish',   floor:1, room:'kitchen', x:150,y:100, kind:'req', tag:'DISHWASHER',
+    say:'Dishwasher running through a cycle — captured.',
+    title:'Dishwasher — running', sys:'Normal cycle observed', loc:'Company required photo', pri:'REQUIRED ✓'},
+];
+
+/* mini-plan geometry (right rail, both floors condensed) */
+const MINI = { 2: {ox:8, oy:14, s:.31}, 1: {ox:8, oy:104, s:.31} };
+
+/* ═══ state ═══════════════════════════════════════════════════════════════ */
+let floor = 1, avatar = {x:390, y:440}, seen = new Set(), shots = 0, t0 = 0, tick = null, moveTimer = null;
+let confirmed = 0, reqDone = 0, activeSpot = null, running = false;
+const TOTAL_ROOMS = FLOORS[1].length + FLOORS[2].length;
+const FINDING_N = SPOTS.filter(s => s.kind === 'finding').length;
+const REQ_N     = SPOTS.filter(s => s.kind === 'req').length;
+
+/* ═══ build the stage ═════════════════════════════════════════════════════ */
+const stage = $('stage');
+const layers = {1: el('g', {}, stage), 2: el('g', {style:'display:none'}, stage)};
+const roomEls = {};
+
+for (const f of [1, 2]) {
+  for (const r of FLOORS[f]) {
+    const g = el('g', {class:'rooml'}, layers[f]);
+    const rect = el('rect', {class:'room', x:r.x, y:r.y, width:r.w, height:r.h, rx:8}, g);
+    el('text', {class:'rlabel', x:r.x + 12, y:r.y + 22}, g).textContent = r.name;
+    if (r.stairs) {
+      const s = el('g', {class:'stairs'}, g);
+      for (let i = 1; i < 8; i++) el('line', {x1:r.x + 14, y1:r.y + i * (r.h / 8), x2:r.x + r.w - 14, y2:r.y + i * (r.h / 8)}, s);
+    }
+    rect.addEventListener('click', () => walkTo(f, r));
+    roomEls[r.id] = {rect, g, r, f};
+  }
+  for (const sp of SPOTS.filter(s => s.floor === f)) {
+    const g = el('g', {class:'hot' + (sp.kind === 'req' ? ' req' : ''), id:'hot_' + sp.id, style:'pointer-events:all'}, layers[f]);
+    // Generous invisible hit disc — the painted dot alone is a ~9px target (untappable on
+    // touch; the "click does nothing" bug). transparent fill still receives pointer events.
+    el('circle', {cx:sp.x, cy:sp.y, r:30, fill:'transparent'}, g);
+    el('circle', {class:'ring', cx:sp.x, cy:sp.y, r:9}, g);
+    el('circle', {class:'core', cx:sp.x, cy:sp.y, r:5}, g);
+    const lb = el('text', {class:'hlabel', x:sp.x + 14, y:sp.y + 3}, layers[f]);
+    lb.textContent = (sp.kind === 'req' ? '◈ ' : '◆ ') + sp.tag;
+    lb.setAttribute('fill', sp.kind === 'req' ? '#7fd4ea' : '#c9a35f');
+    g.addEventListener('click', () => openSpot(sp));
+  }
+}
+/* avatar on top of floor layers */
+const av = el('g', {id:'avatar'}, stage);
+const halo = el('circle', {class:'halo', cx:0, cy:0, r:9}, av);
+const body = el('circle', {class:'body', cx:0, cy:0, r:6}, av);
+function placeAvatar() { av.setAttribute('transform', `translate(${avatar.x},${avatar.y})`); }
+placeAvatar();
+
+/* mini plan */
+const mini = $('miniplan');
+el('text', {class:'mfl', x:MINI[2].ox, y:8}, mini).textContent = '2ND FLOOR';
+el('text', {class:'mfl', x:MINI[1].ox, y:98}, mini).textContent = '1ST FLOOR';
+const miniEls = {};
+for (const f of [1, 2]) {
+  const m = MINI[f];
+  for (const r of FLOORS[f]) {
+    const rr = el('rect', {x:m.ox + r.x * m.s * .9, y:m.oy + (r.y - 30) * m.s * .55, width:r.w * m.s * .9, height:r.h * m.s * .55, rx:3}, mini);
+    const tt = el('text', {x:m.ox + r.x * m.s * .9 + 4, y:m.oy + (r.y - 30) * m.s * .55 + 10}, mini);
+    tt.textContent = r.name.replace(' ↑','').replace(' ↓','');
+    miniEls[r.id] = {rr, tt};
+  }
+}
+
+/* gate chips */
+const gateDefs = [
+  {id:'g_find', label:() => `${FINDING_N - confirmed} finding${FINDING_N - confirmed === 1 ? '' : 's'} to confirm`, done:() => confirmed >= FINDING_N},
+  {id:'g_req',  label:() => `${REQ_N - reqDone} required photo${REQ_N - reqDone === 1 ? '' : 's'}`, done:() => reqDone >= REQ_N},
+  {id:'g_cov',  label:() => `coverage ${pct()}%`, done:() => seen.size >= TOTAL_ROOMS},
+];
+function pct(){ return Math.round(seen.size / TOTAL_ROOMS * 100); }
+function renderGate() {
+  const host = $('gatechips'); host.innerHTML = '';
+  let open = 0;
+  for (const gdef of gateDefs) {
+    const ok = gdef.done(); if (!ok) open++;
+    const d = document.createElement('div');
+    d.className = 'gchip' + (ok ? ' ok' : '');
+    d.innerHTML = `<i></i>${ok ? gdef.id === 'g_cov' ? 'coverage 100%' : gdef.label().replace(/^0 /, 'all ') : gdef.label()}`;
+    host.appendChild(d);
+  }
+  const btn = $('sealbtn');
+  if (open === 0) { btn.classList.add('ready'); btn.textContent = '✓ SEAL REPORT — READY'; }
+  else { btn.classList.remove('ready'); btn.textContent = `🔒 SEAL REPORT · ${open} OPEN`; }
+  $('covpct').textContent = pct() + '%';
+}
+
+/* ═══ movement + capture ══════════════════════════════════════════════════ */
+function walkTo(f, room) {
+  if (!running || activeSpot) return;
+  if (f !== floor) return;
+  const tx = room.x + room.w / 2, ty = room.y + room.h / 2;
+  const fx = avatar.x, fy = avatar.y, d0 = Math.hypot(tx - fx, ty - fy), dur = Math.min(650, 180 + d0 * 1.1);
+  const t0m = performance.now();
+  clearInterval(moveTimer);
+  document.querySelectorAll('.room.here').forEach(n => n.classList.remove('here'));
+  moveTimer = setInterval(() => {
+    const p = Math.min(1, (performance.now() - t0m) / dur), e = 1 - Math.pow(1 - p, 3);
+    avatar.x = fx + (tx - fx) * e; avatar.y = fy + (ty - fy) * e; placeAvatar();
+    if (p >= 1) { clearInterval(moveTimer); arrive(room); }
+  }, 16);
+}
+
+function arrive(room) {
+  roomEls[room.id].rect.classList.add('here');
+  $('hinttxt').style.opacity = 0;
+  if (room.stairs) { switchFloor(floor === 1 ? 2 : 1, room); return; }
+  if (!seen.has(room.id)) {
+    seen.add(room.id);
+    roomEls[room.id].rect.classList.add('seen');
+    roomEls[room.id].g.classList.add('done');
+    shoot(room);
+    miniEls[room.id].rr.classList.add('on');
+    miniEls[room.id].tt.classList.add('on');
+    renderGate();
+  }
+}
+
+function switchFloor(nf, viaRoom) {
+  seen.add(viaRoom.id);
+  miniEls[viaRoom.id].rr.classList.add('on'); miniEls[viaRoom.id].tt.classList.add('on');
+  const chip = $('lvlchip');
+  chip.classList.remove('flip'); void chip.offsetWidth; chip.classList.add('flip');
+  $('lvltxt').textContent = 'LEVEL ' + nf;
+  log(`▲ BAROMETER · −0.34 hPa sustained → <b>LEVEL ${nf}</b>`, 'ai');
+  floor = nf;
+  layers[1].style.display = nf === 1 ? '' : 'none';
+  layers[2].style.display = nf === 2 ? '' : 'none';
+  $('f1').classList.toggle('cur', nf === 1);
+  $('f2').classList.toggle('cur', nf === 2);
+  const land = FLOORS[nf].find(r => r.stairs);
+  avatar.x = land.x + land.w / 2; avatar.y = land.y + land.h / 2; placeAvatar();
+  seen.add(land.id);
+  miniEls[land.id].rr.classList.add('on'); miniEls[land.id].tt.classList.add('on');
+  renderGate();
+}
+
+const SYS_GUESSES = {kitchen:'range · GFCI · disposal', garage:'water heater · opener', laundry:'panel · washer box', living:'fireplace · outlets', pbath:'vanity · tub surround', hbath:'exhaust fan', pbed:'windows · HVAC vent', bed2:'windows · outlets', bed3:'closet · outlet', loft:'railing · skylight', dining:'chandelier circuit', office:'data · outlets', entry:'front door · threshold', hall1:'smoke alarm', hall2:'smoke alarm', closet:'shelving', stair1:'handrail', stair2:'handrail'};
+function shoot(room) {
+  const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  shots++; $('shotct').textContent = shots + ' ▣';
+  log(`▣ <b>${room.name.replace(' ↑','').replace(' ↓','')}</b> · L${floor} — ${SYS_GUESSES[room.id] ?? 'surfaces'}`, 'ai');
+}
+
+function log(html, cls) {
+  const c = $('console'), d = document.createElement('div');
+  d.className = 'ln' + (cls ? ' ' + cls : ''); d.innerHTML = html;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+
+/* ═══ the VAL moment ══════════════════════════════════════════════════════ */
+function openSpot(sp) {
+  if (!running || sp.done) return;
+  const here = FLOORS[floor].find(r => r.id === sp.room);
+  if (!here || Math.hypot(avatar.x - sp.x, avatar.y - sp.y) > Math.max(here.w, here.h)) {
+    walkTo(floor, roomEls[sp.room].r);
+    setTimeout(() => !sp.done && openSpot(sp), 800);
+    return;
+  }
+  activeSpot = sp;
+  $('veil').classList.add('on');
+  const stx = $('stx'), card = $('scard'), verbs = $('sverbs');
+  stx.innerHTML = ''; card.classList.remove('on'); verbs.style.display = 'none';
+  card.className = 'ledger' + (sp.kind === 'req' ? ' req' : '');
+  card.innerHTML = `
+    <div class="lt"><span>LEDRIX ${sp.kind === 'req' ? 'REQUIRED · MATCHED' : 'FINDING · DRAFTED'}</span><span class="c">${sp.kind === 'req' ? 'AUTO-MATCHED' : '94%'}</span></div>
+    <h4>${sp.title}</h4>
+    <div class="lr"><b>SYSTEM</b><span>${sp.sys}</span></div>
+    <div class="lr"><b>LOCATION</b><span>${sp.loc}</span></div>
+    <div class="lr"><b>PRIORITY</b><span><span class="pill">${sp.pri}</span></span></div>`;
+  typewrite(stx, sp.say, () => {
+    setTimeout(() => {
+      const tail = document.createElement('div'); tail.className = 'm';
+      tail.textContent = sp.kind === 'req' ? 'MATCHED AGAINST THE COMPANY REQUIRED LIST' : 'PARSED · ROUTED · AWAITING YOUR CONFIRM';
+      stx.appendChild(tail);
+      card.classList.add('on');
+      verbs.style.display = 'flex';
+    }, 260);
+  });
+}
+function typewrite(host, text, then) {
+  const d = document.createElement('div'); host.appendChild(d);
+  let i = 0;
+  (function step(){ d.textContent = text.slice(0, ++i); if (i < text.length) setTimeout(step, 26); else then(); })();
+}
+function resolveSpot(withPhoto) {
+  const sp = activeSpot; if (!sp) return;
+  sp.done = true; activeSpot = null;
+  $('veil').classList.remove('on');
+  const hot = $('hot_' + sp.id); hot.classList.add('done');
+  if (sp.kind === 'finding') { confirmed++; log(`✓ CONFIRMED — <b>${sp.title}</b>${withPhoto ? ' · photo attached' : ''}`, 'ok'); toast('FINDING CONFIRMED · IN THE REPORT', true); }
+  else { reqDone++; log(`◈ REQUIRED PHOTO VERIFIED — <b>${sp.tag}</b>`, 'ok'); toast('REQUIRED PHOTO · VERIFIED', true); }
+  if (withPhoto) { shots++; $('shotct').textContent = shots + ' ▣'; const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+  renderGate();
+}
+$('vgo').addEventListener('click', () => resolveSpot(true));
+$('vskip').addEventListener('click', () => resolveSpot(false));
+$('veil').addEventListener('click', e => { if (e.target === $('veil')) { activeSpot = null; $('veil').classList.remove('on'); } });
+
+let toastTimer = null;
+function toast(msg, good) {
+  const t = $('toast'); t.textContent = msg; t.className = good ? 'on good' : 'on'; t.id = 'toast';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+/* ═══ clock + seal ════════════════════════════════════════════════════════ */
+function startClock() {
+  t0 = performance.now();
+  tick = setInterval(() => {
+    const s = Math.floor((performance.now() - t0) / 1000);
+    $('timer').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }, 250);
+}
+$('sealbtn').addEventListener('click', () => {
+  if (!$('sealbtn').classList.contains('ready')) {
+    toast('THE GATE IS THE POINT — CLEAR IT FIRST');
+    return;
+  }
+  clearInterval(tick); running = false;
+  const secs = Math.floor((performance.now() - t0) / 1000);
+  $('df').textContent = confirmed; $('dp').textContent = shots;
+  $('dt').textContent = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+  const ov = $('doneov'); ov.classList.remove('gone');
+  requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('reveal')));
+});
+
+/* ═══ boot / reset ════════════════════════════════════════════════════════ */
+$('startbtn').addEventListener('click', () => {
+  $('introov').classList.add('gone');
+  running = true;
+  startClock();
+  log('LEDRIX FIELD OS · SESSION OPEN', 'ai');
+  log('WATCHING FOR: 3 COMPANY-REQUIRED PHOTOS', 'ai');
+  renderGate();
+});
+$('againbtn').addEventListener('click', () => location.reload());
+renderGate();
+})();
+</script>
+
+</body>
+</html>

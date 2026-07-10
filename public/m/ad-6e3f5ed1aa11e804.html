@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Ledrix — 10s Ad</title>
+<style>
+/* ════════════════════════════════════════════════════════════════════════════
+   LEDRIX — the 10-second ad. Auto-plays, loops. Record one loop, post it.
+   Beat sheet (ms):
+      0–1100   Δ draws · LEDRIX
+   1100–1600   camera flash + shutter frame
+   1600–4300   the spoken line types itself
+   4300–6600   the ledger card snaps together · CONFIRM flips green
+   6600–8400   gate chips strike through · the lock springs open
+   8400–10000  "The inspection writes itself." · ledrixlabs.com
+   ════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#05080b; --card:#0b1013; --line:rgba(160,210,235,.3);
+  --txt:#dbe7ec; --dim:#7c909a; --faint:#48606c;
+  --cyan:#22e3ff; --green:#2fc56e; --amber:#f0a020;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#000;overflow:hidden}
+#frame{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;
+  font-family:var(--sans);color:var(--txt);-webkit-font-smoothing:antialiased;
+  background:
+    linear-gradient(rgba(127,180,232,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(127,180,232,.045) 1px,transparent 1px),
+    radial-gradient(120% 100% at 50% 30%,#0b141a,#05080b 72%);
+  background-size:46px 46px,46px 46px,100% 100%}
+#beam{position:absolute;inset:-40%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 44%,rgba(33,123,232,.09) 51%,rgba(140,200,255,.05) 56%,transparent 64%);
+  animation:beam 10s linear infinite}
+@keyframes beam{0%{transform:translateX(-34%)}100%{transform:translateX(26%)}}
+
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  opacity:0;pointer-events:none}
+.scene.on{opacity:1}
+
+/* ── S1 · brand ── */
+#sc1 .tri{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linejoin:round;
+  stroke-dasharray:340;stroke-dashoffset:340;filter:drop-shadow(0 0 16px rgba(34,227,255,.5))}
+#sc1.on .tri{animation:draw .8s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+#sc1 .word{font-family:var(--mono);font-size:clamp(20px,3vw,32px);font-weight:600;letter-spacing:.5em;text-indent:.5em;color:#eef5f7;margin-top:26px;
+  opacity:0;animation:up .5s .35s forwards}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ── S2 · flash + transcript ── */
+#flash{position:absolute;inset:0;background:#dff4ff;opacity:0}
+#flash.go{animation:flash .4s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+#shutter{position:absolute;inset:8vh 10vw;border:1.5px solid rgba(223,244,255,.5);border-radius:18px;opacity:0}
+#shutter::before,#shutter::after{content:"";position:absolute;width:26px;height:26px;border:2.5px solid var(--cyan)}
+#shutter::before{top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:14px 0 0 0}
+#shutter::after{bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 14px 0}
+#sc2.on #shutter{animation:shut .5s ease-out forwards}
+@keyframes shut{0%{opacity:0;transform:scale(1.06)}100%{opacity:1;transform:none}}
+#sc2 .mic{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+#sc2 .orb{width:46px;height:46px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 50% 34%,#123840,#081820);border:1px solid rgba(34,227,255,.55);box-shadow:0 0 20px rgba(34,227,255,.35)}
+#sc2 .orb::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(34,227,255,.5);animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+#sc2 .lab{font-family:var(--mono);font-size:10px;letter-spacing:.34em;color:var(--cyan)}
+#tape{font-family:var(--mono);font-size:clamp(17px,2.5vw,27px);line-height:1.9;color:#eef5f7;
+  max-width:30ch;min-height:3.9em;text-align:center}
+#tape .caret{display:inline-block;width:.55em;height:1.05em;background:var(--cyan);vertical-align:-.14em;margin-left:3px;animation:blink .8s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ── S3 · the card ── */
+.ledger{width:min(430px,86vw);background:var(--card);border:1px solid #1d2b31;border-radius:16px;padding:18px 20px;
+  border-left:3px solid var(--amber);box-shadow:0 40px 100px -30px rgba(0,0,0,.9)}
+.ledger .lt{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--faint);margin-bottom:9px}
+.ledger .lt b{color:var(--green);font-weight:600}
+.ledger h4{font-family:var(--serif);font-size:clamp(17px,2.2vw,22px);font-weight:600;color:#eef3f4;margin-bottom:10px}
+.ledger .lr{display:flex;gap:12px;font-size:12.5px;padding:8px 0;border-top:1px solid #141b1f;
+  opacity:0;transform:translateX(-14px)}
+.ledger .lr b{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;color:var(--faint);width:80px;flex:none;font-weight:600;padding-top:2px}
+.ledger .lr span{color:#d5e2e7}
+.ledger .pill{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--amber);
+  border:1px solid rgba(240,160,32,.4);background:rgba(240,160,32,.08);border-radius:999px;padding:2px 9px}
+.ledger .go{margin-top:14px;text-align:center;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.2em;
+  padding:13px 0;border-radius:10px;background:var(--green);color:#03130a;
+  opacity:0;transform:scale(.94)}
+#sc3.on .ledger{animation:land .55s cubic-bezier(.2,.9,.25,1.15) forwards}
+#sc3{opacity:0}
+@keyframes land{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
+#sc3.on .lr{animation:row .4s cubic-bezier(.2,.9,.3,1) forwards}
+#sc3.on .lr:nth-child(3){animation-delay:.35s}
+#sc3.on .lr:nth-child(4){animation-delay:.55s}
+#sc3.on .lr:nth-child(5){animation-delay:.75s}
+@keyframes row{to{opacity:1;transform:none}}
+#sc3.on .go{animation:gopop .45s 1.25s cubic-bezier(.2,1.3,.3,1) forwards}
+@keyframes gopop{to{opacity:1;transform:none}}
+#sc3 .above{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--faint);margin-bottom:18px;
+  opacity:0;animation:up .4s .1s forwards}
+
+/* ── S4 · the gate ── */
+#sc4 .chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:600px;margin-bottom:34px}
+#sc4 .chip{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--amber);white-space:nowrap;
+  border:1px solid rgba(240,160,32,.4);background:rgba(240,160,32,.07);border-radius:999px;padding:9px 17px;transition:all .3s}
+#sc4 .chip.x{color:var(--faint);border-color:#1c2529;background:transparent;
+  text-decoration:line-through;text-decoration-color:rgba(47,197,110,.75);text-decoration-thickness:2px}
+#sc4 .lock{width:104px;height:104px;border-radius:28px;border:1px solid var(--line);background:var(--card);
+  display:flex;align-items:center;justify-content:center;transition:all .45s;box-shadow:0 24px 70px -30px rgba(0,0,0,.9)}
+#sc4 .lock svg{width:46px;height:46px}
+#sc4 .shk{stroke:#8b9a9f;transition:stroke .4s}
+#sc4 .bod{fill:#8b9a9f;transition:fill .4s}
+#sc4 .lock.open{border-color:rgba(47,197,110,.65);box-shadow:0 0 60px rgba(47,197,110,.3)}
+#sc4 .lock.open .shk{stroke:var(--green)}
+#sc4 .lock.open .bod{fill:var(--green)}
+#sc4 .sealed{margin-top:22px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.44em;color:var(--green);
+  opacity:0;transition:opacity .4s}
+#sc4 .sealed.on{opacity:1}
+
+/* ── S5 · endcard ── */
+#sc5 h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,5.6vw,66px);letter-spacing:-.015em;color:#eef5f7;
+  text-align:center;line-height:1.1;opacity:0;animation:up .55s .05s forwards}
+#sc5 h1 .k{color:var(--cyan)}
+#sc5 .site{margin-top:26px;font-family:var(--mono);font-size:12px;letter-spacing:.4em;color:var(--dim);
+  opacity:0;animation:up .5s .4s forwards}
+#sc5 .dl{margin-bottom:22px;opacity:0;animation:up .5s forwards}
+#sc5 .dl svg .tri{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linejoin:round;filter:drop-shadow(0 0 14px rgba(34,227,255,.5))}
+
+/* recorder aids — hidden during capture via ?clean */
+#loopbar{position:absolute;bottom:0;left:0;height:2px;background:linear-gradient(90deg,#217be8,var(--cyan));width:0%}
+#rec{position:absolute;top:14px;right:18px;font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--faint)}
+body.clean #loopbar,body.clean #rec{display:none}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important}}
+</style>
+</head>
+<body>
+
+<div id="frame">
+  <div id="beam"></div>
+
+  <section class="scene" id="sc1">
+    <svg width="80" height="80" viewBox="0 0 100 100"><path class="tri" d="M50 12 L90 84 L10 84 Z"/></svg>
+    <div class="word">LEDRIX</div>
+  </section>
+
+  <section class="scene" id="sc2">
+    <div id="shutter"></div>
+    <div class="mic"><div class="orb"></div><div class="lab">VAL · LISTENING</div></div>
+    <div id="tape"><span id="tapetxt"></span><span class="caret"></span></div>
+  </section>
+
+  <section class="scene" id="sc3">
+    <div class="above">ONE BREATH → STRUCTURED · ROUTED · FILED</div>
+    <div class="ledger">
+      <div class="lt"><span>LEDRIX FINDING · DRAFTED</span><b>94%</b></div>
+      <h4>TPR valve leaking at discharge tube</h4>
+      <div class="lr"><b>SYSTEM</b><span>Plumbing · Water Heater</span></div>
+      <div class="lr"><b>LOCATION</b><span>Garage — NW corner</span></div>
+      <div class="lr"><b>PRIORITY</b><span><span class="pill">MAJOR REPAIR</span></span></div>
+      <div class="go">CONFIRMED ✓ · PHOTO ATTACHED</div>
+    </div>
+  </section>
+
+  <section class="scene" id="sc4">
+    <div class="chips">
+      <span class="chip">findings to review</span>
+      <span class="chip">required photos</span>
+      <span class="chip">coverage</span>
+      <span class="chip">cover photo</span>
+    </div>
+    <div class="lock" id="lock">
+      <svg viewBox="0 0 48 48" fill="none">
+        <path class="shk" id="shk" d="M15 21v-6a9 9 0 0 1 18 0v6" stroke-width="3.5" stroke-linecap="round"/>
+        <rect class="bod" x="10" y="21" width="28" height="20" rx="5"/>
+      </svg>
+    </div>
+    <div class="sealed" id="sealed">SEALED · ON-SITE</div>
+  </section>
+
+  <section class="scene" id="sc5">
+    <div class="dl"><svg width="52" height="52" viewBox="0 0 100 100"><path class="tri" d="M50 12 L90 84 L10 84 Z"/></svg></div>
+    <h1>The inspection<br><span class="k">writes itself.</span></h1>
+    <div class="site">LEDRIXLABS.COM</div>
+  </section>
+
+  <div id="loopbar"></div>
+  <div id="rec">10s LOOP · ?clean HIDES THIS</div>
+</div>
+
+<script>
+(() => {
+  if (location.search.includes('clean')) document.body.classList.add('clean');
+  const $ = id => document.getElementById(id);
+  const scenes = ['sc1','sc2','sc3','sc4','sc5'].map($);
+  const LINE = '“Leaking TPR valve on the water heater — garage.”';
+  const LOOP = 10000;
+  let timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+  function run() {
+    timers.forEach(clearTimeout); timers = [];
+    scenes.forEach(s => s.classList.remove('on'));
+    /* reset dynamic pieces */
+    $('tapetxt').textContent = '';
+    $('lock').classList.remove('open');
+    $('shk').setAttribute('d', 'M15 21v-6a9 9 0 0 1 18 0v6');
+    $('sealed').classList.remove('on');
+    document.querySelectorAll('#sc4 .chip').forEach(c => c.classList.remove('x'));
+    /* force animation restarts */
+    [ $('sc1'), $('sc3'), $('sc5') ].forEach(s => { s.style.animation = 'none'; void s.offsetWidth; s.style.animation = ''; });
+    const bar = $('loopbar');
+    bar.style.transition = 'none'; bar.style.width = '0%'; void bar.offsetWidth;
+    bar.style.transition = 'width ' + LOOP + 'ms linear'; bar.style.width = '100%';
+
+    /* ── the beat sheet ── */
+    at(0,    () => scenes[0].classList.add('on'));
+    at(1100, () => { scenes[0].classList.remove('on'); scenes[1].classList.add('on');
+                     const f = $('flash'); if (f) { f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); } });
+    at(1250, () => {                                        /* type the line, fast */
+      const t = $('tapetxt'); let i = 0;
+      (function step(){ t.textContent = LINE.slice(0, ++i); if (i < LINE.length) timers.push(setTimeout(step, 24)); })();
+    });
+    at(4300, () => { scenes[1].classList.remove('on'); scenes[2].classList.add('on'); });
+    at(6600, () => { scenes[2].classList.remove('on'); scenes[3].classList.add('on');
+      document.querySelectorAll('#sc4 .chip').forEach((c, i) => timers.push(setTimeout(() => c.classList.add('x'), 150 + i * 220)));
+      at(6600 + 150 + 4 * 220 + 200 - 6600, () => {});      /* (kept explicit below) */
+    });
+    at(7900, () => { $('lock').classList.add('open'); $('shk').setAttribute('d', 'M15 21v-6a9 9 0 0 1 18 0'); $('sealed').classList.add('on'); });
+    at(8400, () => { scenes[3].classList.remove('on'); scenes[4].classList.add('on'); });
+    at(LOOP, run);                                          /* loop forever */
+  }
+
+  /* flash element lives inside sc2 — create once */
+  const flash = document.createElement('div');
+  flash.id = 'flash'; document.getElementById('frame').appendChild(flash);
+
+  run();
+  addEventListener('keydown', e => { if (e.key.toLowerCase() === 'r') run(); });
+})();
+</script>
+
+</body>
+</html>

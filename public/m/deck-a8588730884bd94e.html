@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Ledrix — The Inspection Writes Itself</title>
+<style>
+/* ════════════════════════════════════════════════════════════════════════════
+   LEDRIX — the deck.
+   One idea per screen, staged like a film: blueprint dark, one voice of light.
+   Serif = the report's soul. Mono = the machine talking. Cyan = intelligence,
+   and ONLY intelligence.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#05080b; --ground:#0a1014; --panel:#0d1418; --line:rgba(140,190,220,.13);
+  --line-strong:rgba(160,210,235,.28);
+  --txt:#dbe7ec; --dim:#7c909a; --faint:#48606c;
+  --blue:#217be8; --cyan:#22e3ff; --green:#2fc56e; --amber:#f0a020; --red:#ff5a5a;
+  --paper:#f5f4ef; --rink:#15202a;
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+html,body{background:var(--ink);color:var(--txt);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+::selection{background:rgba(34,227,255,.25)}
+
+/* ── stage & scroll ─────────────────────────────────────────────────────── */
+#deck{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+#deck::-webkit-scrollbar{display:none}
+.slide{position:relative;height:100vh;scroll-snap-align:start;scroll-snap-stop:always;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6vh 7vw}
+.inner{position:relative;width:min(1060px,100%);z-index:3}
+
+/* blueprint ground — the app's own material */
+.slide::before{content:"";position:absolute;inset:0;z-index:0;
+  background:
+    linear-gradient(rgba(127,180,232,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(127,180,232,.05) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(120% 90% at 50% 30%,#000 30%,transparent 78%)}
+.slide::after{content:"";position:absolute;inset:-40%;z-index:1;pointer-events:none;
+  background:linear-gradient(115deg,transparent 42%,rgba(33,123,232,.075) 50%,rgba(140,200,255,.045) 56%,transparent 66%);
+  transform:translateX(-30%);transition:transform 1.6s cubic-bezier(.22,.8,.24,1)}
+.slide.on::after{transform:translateX(12%)}
+
+/* ── shared voice ───────────────────────────────────────────────────────── */
+.eye{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.34em;color:var(--faint);text-transform:uppercase}
+.eye b{color:var(--cyan);font-weight:600}
+h1,h2{font-family:var(--serif);font-weight:600;letter-spacing:-.015em;text-wrap:balance;color:#eef5f7}
+h1{font-size:clamp(44px,7.2vw,96px);line-height:1.02}
+h2{font-size:clamp(34px,4.8vw,62px);line-height:1.08}
+.lede{font-size:clamp(15px,1.5vw,19px);line-height:1.75;color:var(--dim);max-width:56ch}
+.lede strong{color:var(--txt);font-weight:600}
+.rule{height:1px;background:linear-gradient(90deg,var(--line-strong),transparent);margin:26px 0}
+.k{color:var(--cyan)}
+
+/* choreography */
+.s{opacity:0;transform:translateY(26px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.8,.24,1)}
+.slide.on .s{opacity:1;transform:none}
+.slide.on .s.d1{transition-delay:.12s}.slide.on .s.d2{transition-delay:.26s}
+.slide.on .s.d3{transition-delay:.42s}.slide.on .s.d4{transition-delay:.6s}
+.slide.on .s.d5{transition-delay:.8s}
+
+/* ── chrome: progress + nav ─────────────────────────────────────────────── */
+#bar{position:fixed;top:0;left:0;height:2px;width:0%;z-index:50;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .35s ease}
+#dots{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:12px}
+#dots button{width:8px;height:8px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;cursor:pointer;padding:0;transition:all .3s}
+#dots button.cur{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 10px rgba(34,227,255,.6)}
+#hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;
+  font-family:var(--mono);font-size:10px;letter-spacing:.28em;color:var(--faint);transition:opacity .6s}
+#hint.gone{opacity:0}
+#brandmark{position:fixed;top:20px;left:26px;z-index:50;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim)}
+#counter{position:fixed;top:20px;right:26px;z-index:50;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ── Δ mark ─────────────────────────────────────────────────────────────── */
+.delta{display:inline-block}
+.delta svg{display:block;overflow:visible}
+.delta .tri{fill:none;stroke:var(--cyan);stroke-width:5;stroke-linejoin:round;
+  filter:drop-shadow(0 0 14px rgba(34,227,255,.45))}
+.slide.on .delta .tri{stroke-dasharray:340;stroke-dashoffset:340;animation:draw 1.5s .2s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ═══ S1 · COVER ═══ */
+#s1 .inner{text-align:center}
+#s1 .word{font-family:var(--mono);font-weight:600;font-size:clamp(24px,3vw,36px);letter-spacing:.52em;text-indent:.52em;color:#eef5f7;margin-top:34px}
+#s1 h1{margin-top:18px}
+#s1 .sub{margin:26px auto 0;font-family:var(--mono);font-size:12px;letter-spacing:.3em;color:var(--faint);text-transform:uppercase}
+#s1 .node{position:absolute;width:5px;height:5px;background:var(--cyan);opacity:0;border-radius:1px;box-shadow:0 0 12px rgba(34,227,255,.8);animation:ember 5s infinite}
+@keyframes ember{0%,100%{opacity:0}42%,58%{opacity:.85}}
+
+/* ═══ S2 · 9:47 PM ═══ */
+#s2 .clock{font-family:var(--mono);font-size:clamp(70px,13vw,180px);font-weight:600;letter-spacing:-.02em;
+  color:#e8f1f4;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 0 60px rgba(33,123,232,.25)}
+#s2 .clock small{font-size:.32em;color:var(--faint);letter-spacing:.14em;margin-left:14px}
+#s2 .caret{display:inline-block;width:.55em;height:1em;vertical-align:-.12em;background:var(--dim);margin-left:8px;animation:blink 1.05s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+#s2 .stats{display:flex;gap:0;margin-top:44px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#s2 .stat{flex:1;padding:22px 26px 22px 0}
+#s2 .stat+.stat{border-left:1px solid var(--line);padding-left:26px}
+#s2 .num{font-family:var(--serif);font-size:clamp(26px,3.4vw,44px);color:#eef5f7;font-variant-numeric:tabular-nums}
+#s2 .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--faint);text-transform:uppercase;margin-top:8px;line-height:1.7}
+
+/* ═══ S3 · SPEAK ═══ */
+#s3 .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,72px);align-items:center}
+#s3 .transcript{font-family:var(--mono);font-size:clamp(16px,1.7vw,21px);line-height:2;color:#cfe0e7;min-height:8em}
+#s3 .transcript .said{color:#eef5f7}
+#s3 .transcript .machine{color:var(--faint);font-size:.72em;letter-spacing:.18em}
+#s3 .transcript .ok{color:var(--green)}
+#s3 .micline{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+#s3 .orb{width:52px;height:52px;border-radius:50%;position:relative;flex:none;
+  background:radial-gradient(circle at 50% 34%,#123840,#081820);border:1px solid rgba(34,227,255,.5);
+  box-shadow:0 0 24px rgba(34,227,255,.28)}
+#s3 .orb::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(34,227,255,.5);
+  animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.65);opacity:0}}
+#s3 .wave{display:flex;align-items:center;gap:3px;height:26px}
+#s3 .wave i{width:3px;border-radius:2px;background:var(--cyan);animation:wv 1s ease-in-out infinite}
+@keyframes wv{0%,100%{height:6px}50%{height:100%}}
+/* the ledger card — the product's real anatomy */
+.ledger{background:#0b1013;border:1px solid #1d2b31;border-radius:16px;padding:20px 22px;
+  box-shadow:0 34px 80px -30px rgba(0,0,0,.8),0 0 0 1px rgba(34,227,255,.05);
+  border-left:3px solid var(--amber)}
+.ledger .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ledger .prov{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--faint)}
+.ledger .conf{font-family:var(--mono);font-size:10px;color:var(--green);display:flex;gap:6px;align-items:center}
+.ledger .conf::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.ledger h3{font-family:var(--serif);font-size:clamp(17px,1.8vw,22px);color:#eef3f4;font-weight:600;margin-bottom:14px}
+.ledger .row{display:flex;gap:14px;padding:9px 0;border-top:1px solid #141b1f;font-size:13px}
+.ledger .row b{font-family:var(--mono);font-weight:600;font-size:9px;letter-spacing:.18em;color:var(--faint);width:86px;flex:none;padding-top:3px}
+.ledger .row span{color:#d5e2e7}
+.ledger .pill{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;font-weight:600;
+  color:var(--amber);border:1px solid rgba(240,160,32,.4);background:rgba(240,160,32,.08);border-radius:999px;padding:3px 10px}
+.ledger .verbs{display:flex;gap:8px;margin-top:16px}
+.ledger .verbs i{flex:1;text-align:center;font-style:normal;font-family:var(--mono);font-size:9.5px;font-weight:600;
+  letter-spacing:.14em;padding:10px 0;border-radius:9px;border:1px solid #232c31;color:#93a5ac}
+.ledger .verbs i.go{background:var(--green);border-color:var(--green);color:#03130a}
+#s3 .ledger{opacity:0;transform:translateY(30px) scale(.96)}
+#s3.on .ledger{animation:land .9s 2.3s cubic-bezier(.2,.9,.25,1.2) forwards}
+@keyframes land{to{opacity:1;transform:none}}
+
+/* ═══ S4 · THE GATE ═══ */
+#s4 .inner{text-align:center}
+#s4 .lock{width:118px;height:118px;margin:38px auto 0;border-radius:32px;position:relative;
+  border:1px solid var(--line-strong);background:var(--panel);display:flex;align-items:center;justify-content:center;
+  transition:border-color .6s,box-shadow .6s;box-shadow:0 24px 70px -30px rgba(0,0,0,.9)}
+#s4 .lock svg{width:52px;height:52px}
+#s4 .lock .shackle{stroke:#8b9a9f;transition:stroke .5s}
+#s4 .lock .body{fill:#8b9a9f;transition:fill .5s}
+#s4 .lock.open{border-color:rgba(47,197,110,.6);box-shadow:0 0 60px rgba(47,197,110,.25),0 24px 70px -30px rgba(0,0,0,.9)}
+#s4 .lock.open .shackle{stroke:var(--green)}#s4 .lock.open .body{fill:var(--green)}
+#s4 .blockers{display:flex;justify-content:center;gap:10px;margin-top:30px;flex-wrap:wrap}
+#s4 .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--amber);
+  border:1px solid rgba(240,160,32,.4);background:rgba(240,160,32,.07);border-radius:999px;padding:8px 16px;
+  transition:all .5s;white-space:nowrap}
+#s4 .chip.done{color:var(--faint);border-color:#1c2529;background:transparent;text-decoration:line-through;text-decoration-color:rgba(47,197,110,.7);text-decoration-thickness:1.5px}
+#s4 .sealword{margin-top:26px;font-family:var(--mono);font-size:12px;letter-spacing:.4em;color:var(--green);opacity:0;transition:opacity .7s}
+#s4 .sealword.on{opacity:1}
+
+/* ═══ S5 · THE PLAN DRAWS ITSELF ═══ */
+#s5 .split{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(30px,5vw,70px);align-items:center}
+#s5 svg{width:100%;display:block}
+#s5 .room{fill:rgba(255,255,255,.028);stroke:rgba(160,210,235,.4);stroke-width:1.2;opacity:0;transition:opacity .5s}
+#s5 .room.ref{stroke-dasharray:5 5;stroke:rgba(160,210,235,.22)}
+#s5 .rlbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;fill:#9db3bc;opacity:0;transition:opacity .5s}
+#s5 .flr{font-family:var(--mono);font-size:9px;letter-spacing:.3em;fill:#48606c;opacity:0;transition:opacity .5s}
+#s5 .edge{stroke:var(--blue);stroke-width:1.4;stroke-dasharray:4 5;opacity:0;transition:opacity .6s}
+#s5 .pin{fill:var(--cyan);opacity:0}
+#s5 .pin.show{opacity:1;filter:drop-shadow(0 0 6px rgba(34,227,255,.9))}
+#s5 .lvl{position:relative;display:inline-flex;align-items:center;gap:8px;margin-top:20px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:#cfe0e7;
+  border:1px solid var(--line-strong);border-radius:999px;padding:8px 16px;background:rgba(8,18,24,.7)}
+#s5 .lvl i{font-style:normal;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* ═══ S6 · DELIVERABLE ═══ */
+#s6 .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,70px);align-items:center}
+#s6 .paper{background:var(--paper);border-radius:12px;color:var(--rink);overflow:hidden;
+  box-shadow:0 44px 110px -34px rgba(0,0,0,.95);transform:rotate(-1.2deg)}
+#s6 .cover{background:linear-gradient(165deg,#0f1e2e,#0b2530 55%,#0f172a);color:#eef4f8;padding:22px 26px 20px;position:relative}
+#s6 .cover .ceye{font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:#7fa9b8;line-height:1.9}
+#s6 .cover h4{font-family:var(--serif);font-size:22px;font-weight:600;margin-top:26px}
+#s6 .cover .addr{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:#a9c2cf;margin-top:6px}
+#s6 .prow{display:flex;border-bottom:1px solid #e2e0d6}
+#s6 .pcell{flex:1;padding:13px 16px}
+#s6 .pcell+.pcell{border-left:1px solid #e2e0d6}
+#s6 .pk{font-family:var(--mono);font-size:8px;letter-spacing:.2em;color:#8a8875;text-transform:uppercase}
+#s6 .pv{font-family:var(--serif);font-size:14px;margin-top:4px;color:#1c2a35}
+#s6 .pbullets{padding:14px 18px 18px;font-size:11px;line-height:2;color:#3d4a52}
+#s6 .pbullets li{list-style:none;padding-left:16px;position:relative}
+#s6 .pbullets li::before{content:"";position:absolute;left:0;top:.85em;width:5px;height:5px;border-radius:50%;background:#1c2a35}
+
+/* ═══ S7 · PILLARS ═══ */
+#s7 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+#s7 .plate{border:1px solid var(--line);border-radius:16px;padding:26px 26px 24px;background:linear-gradient(160deg,rgba(18,28,34,.6),rgba(8,14,18,.4));
+  position:relative;overflow:hidden;transition:border-color .4s,transform .4s}
+#s7 .plate:hover{border-color:var(--line-strong);transform:translateY(-3px)}
+#s7 .n{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--faint)}
+#s7 .plate h3{font-family:var(--serif);font-size:clamp(18px,2vw,24px);font-weight:600;color:#eef5f7;margin:12px 0 10px}
+#s7 .plate p{font-size:13px;line-height:1.8;color:var(--dim)}
+#s7 .plate::after{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(34,227,255,.5),transparent);opacity:0;transition:opacity .4s}
+#s7 .plate:hover::after{opacity:1}
+
+/* ═══ S8 · LIABILITY ═══ */
+#s8 .inner{text-align:center}
+#s8 h2 .x{color:var(--faint);text-decoration:line-through;text-decoration-color:rgba(255,90,90,.75);text-decoration-thickness:3px}
+#s8 .foot{margin-top:40px;font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:var(--faint);text-transform:uppercase}
+
+/* ═══ S9 · CLOSE ═══ */
+#s9 .inner{text-align:center}
+#s9 .cta{display:inline-flex;align-items:center;gap:12px;margin-top:44px;font-family:var(--mono);
+  font-size:12px;letter-spacing:.3em;color:#03130a;background:var(--cyan);border-radius:999px;padding:16px 34px;
+  text-decoration:none;font-weight:600;box-shadow:0 0 44px rgba(34,227,255,.35);transition:transform .3s,box-shadow .3s}
+#s9 .cta:hover{transform:translateY(-2px);box-shadow:0 0 70px rgba(34,227,255,.5)}
+#s9 .under{margin-top:22px;font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--faint)}
+
+@media(max-width:820px){
+  #s3 .split,#s5 .split,#s6 .split{grid-template-columns:1fr;gap:34px}
+  #s7 .grid{grid-template-columns:1fr}
+  #dots{display:none}
+  .slide{padding:9vh 7vw}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
+  #deck{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="bar"></div>
+<div id="brandmark"><span style="color:var(--cyan)">Δ</span> LEDRIX</div>
+<div id="counter">01 / 09</div>
+<div id="dots"></div>
+<div id="hint">SCROLL · ARROWS · SPACE</div>
+
+<div id="deck">
+
+<!-- ═══ 1 · COVER ═══ -->
+<section class="slide" id="s1">
+  <div class="node" style="top:18%;left:14%"></div>
+  <div class="node" style="top:64%;left:82%;animation-delay:1.4s"></div>
+  <div class="node" style="top:80%;left:24%;animation-delay:2.6s"></div>
+  <div class="node" style="top:26%;left:71%;animation-delay:3.4s"></div>
+  <div class="inner">
+    <div class="s delta"><svg width="86" height="86" viewBox="0 0 100 100"><path class="tri" d="M50 12 L90 84 L10 84 Z"/></svg></div>
+    <div class="s d1 word">LEDRIX</div>
+    <h1 class="s d2">The inspection<br><span class="k">writes itself.</span></h1>
+    <div class="s d3 sub">Point · Speak · Sealed</div>
+  </div>
+</section>
+
+<!-- ═══ 2 · 9:47 PM ═══ -->
+<section class="slide" id="s2">
+  <div class="inner">
+    <div class="s eye">Every inspector knows this hour</div>
+    <div class="s d1 clock" style="margin-top:26px"><span id="clock">9:47</span> <small>PM</small><span class="caret"></span></div>
+    <p class="s d2 lede" style="margin-top:30px">The house was done by 1. The <strong>report</strong> wasn't.
+      Two more hours of typing up what you already saw, already said out loud, already photographed.</p>
+    <div class="s d3 stats">
+      <div class="stat"><div class="num" data-count="600">0</div><div class="lbl">photos per inspection<br>waiting to be filed</div></div>
+      <div class="stat"><div class="num" data-count="3" data-suffix="+ hrs">0</div><div class="lbl">of evening report writing<br>per job</div></div>
+      <div class="stat"><div class="num" data-count="100" data-suffix="%">0</div><div class="lbl">of it — things you<br>already articulated on-site</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3 · SPEAK ═══ -->
+<section class="slide" id="s3">
+  <div class="inner">
+    <div class="s eye">One breath, on-site</div>
+    <div class="rule s d1"></div>
+    <div class="split">
+      <div>
+        <div class="s d1 micline">
+          <div class="orb"></div>
+          <div class="wave" id="wave"></div>
+        </div>
+        <div class="s d2 transcript" id="tape"></div>
+      </div>
+      <div class="ledger" aria-label="A structured Ledrix finding">
+        <div class="top"><span class="prov">LEDRIX FINDING · DRAFTED · 1:12 PM</span><span class="conf">94%</span></div>
+        <h3>TPR valve leaking at discharge tube</h3>
+        <div class="row"><b>SYSTEM</b><span>Plumbing · Water Heater</span></div>
+        <div class="row"><b>LOCATION</b><span>Garage — northwest corner</span></div>
+        <div class="row"><b>PRIORITY</b><span><span class="pill">MAJOR REPAIR</span></span></div>
+        <div class="row"><b>EVIDENCE</b><span>Photo attached — Ledrix's last look</span></div>
+        <div class="verbs"><i>REJECT</i><i>ADJUST</i><i class="go">CONFIRM ✓</i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 · THE GATE ═══ -->
+<section class="slide" id="s4">
+  <div class="inner">
+    <div class="s eye">The part your lawyer will love</div>
+    <h2 class="s d1" style="margin-top:18px">Can't forget.<br>Can't skip.</h2>
+    <div class="s d2 blockers" id="blockers">
+      <span class="chip">3 findings to review</span>
+      <span class="chip">2 specs to verify</span>
+      <span class="chip">water heater data plate</span>
+      <span class="chip">dishwasher running</span>
+      <span class="chip">cover photo</span>
+    </div>
+    <div class="s d3 lock" id="lock">
+      <svg viewBox="0 0 48 48" fill="none">
+        <path class="shackle" id="shk" d="M15 21v-6a9 9 0 0 1 18 0v6" stroke-width="3.5" stroke-linecap="round"/>
+        <rect class="body" x="10" y="21" width="28" height="20" rx="5"/>
+      </svg>
+    </div>
+    <div class="sealword" id="sealword">SEALABLE · REPORT READY</div>
+  </div>
+</section>
+
+<!-- ═══ 5 · THE PLAN ═══ -->
+<section class="slide" id="s5">
+  <div class="inner">
+    <div class="split">
+      <div>
+        <div class="s eye">A byproduct, not a chore</div>
+        <h2 class="s d1" style="margin:16px 0 18px">The floor plan<br>draws itself.</h2>
+        <p class="s d2 lede">Walk the house with the camera running. Ledrix reads the rooms,
+          hears the doorways, feels the stairs through the <strong>barometer</strong> —
+          and a two-story schematic assembles from photos you were taking anyway.</p>
+        <div class="s d3 lvl"><i></i>LEVEL 2 · AUTO-DETECTED</div>
+      </div>
+      <svg viewBox="0 0 460 420" id="plan" role="img" aria-label="A schematic floor plan drawing itself">
+        <text class="flr" x="8" y="18">2ND FLOOR</text>
+        <rect class="room" x="8"  y="30" width="130" height="86"  rx="6"/><text class="rlbl" x="20" y="50">PRIMARY BED</text>
+        <rect class="room" x="138" y="30" width="86" height="86"  rx="6"/><text class="rlbl" x="150" y="50">PRIMARY BATH</text>
+        <rect class="room ref" x="224" y="30" width="60" height="150" rx="6"/><text class="rlbl" x="234" y="50">HALL</text>
+        <rect class="room" x="284" y="30" width="90" height="70" rx="6"/><text class="rlbl" x="296" y="50">HALL BATH</text>
+        <rect class="room ref" x="284" y="100" width="90" height="80" rx="6"/><text class="rlbl" x="296" y="120">LOFT</text>
+        <rect class="room ref" x="8" y="116" width="216" height="64" rx="6"/><text class="rlbl" x="20" y="136">BEDROOM 2</text>
+        <line class="edge" x1="224" y1="73" x2="284" y2="65"/>
+        <line class="edge" x1="224" y1="140" x2="284" y2="140"/>
+        <line class="edge" x1="138" y1="73" x2="224" y2="73"/>
+        <text class="flr" x="8" y="228">1ST FLOOR</text>
+        <rect class="room" x="8" y="240" width="150" height="90" rx="6"/><text class="rlbl" x="20" y="260">KITCHEN</text>
+        <rect class="room" x="158" y="240" width="130" height="140" rx="6"/><text class="rlbl" x="170" y="260">LIVING</text>
+        <rect class="room" x="288" y="240" width="86" height="66" rx="6"/><text class="rlbl" x="300" y="260">LAUNDRY</text>
+        <rect class="room" x="288" y="306" width="86" height="74" rx="6"/><text class="rlbl" x="300" y="326">GARAGE</text>
+        <rect class="room" x="8" y="330" width="150" height="50" rx="6"/><text class="rlbl" x="20" y="350">DINING</text>
+        <line class="edge" x1="158" y1="285" x2="288" y2="273"/>
+        <line class="edge" x1="158" y1="285" x2="8" y2="285" transform="translate(150,0)"/>
+        <circle class="pin" cx="330" cy="273" r="5"/>
+        <circle class="pin" cx="60"  cy="285" r="5"/>
+        <circle class="pin" cx="182" cy="73"  r="5"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6 · DELIVERABLE ═══ -->
+<section class="slide" id="s6">
+  <div class="inner">
+    <div class="split">
+      <div class="s paper">
+        <div class="cover">
+          <div class="ceye">LEDRIX INSPECTION REPORT<br>CONFIDENTIAL · CLIENT COPY</div>
+          <h4>1276 N Wayne St</h4>
+          <div class="addr">FULL HOME INSPECTION · SEALED 4:02 PM · ON-SITE</div>
+        </div>
+        <div class="prow">
+          <div class="pcell"><div class="pk">Findings</div><div class="pv">14 · bulleted</div></div>
+          <div class="pcell"><div class="pk">Specs on file</div><div class="pv">23 verified</div></div>
+          <div class="pcell"><div class="pk">Floor plan</div><div class="pv">2 levels</div></div>
+        </div>
+        <ul class="pbullets">
+          <li>Every finding: system, location, priority, photo</li>
+          <li>Specs and condition — never conflated</li>
+          <li>Certification, scope &amp; AI-assistance disclosure</li>
+        </ul>
+      </div>
+      <div>
+        <div class="s eye">Before you leave the driveway</div>
+        <h2 class="s d1" style="margin:16px 0 18px">A report clients<br>actually read.</h2>
+        <p class="s d2 lede">A clean, legal PDF and a living web report — the same document,
+          one source of truth. The buyer gets a <strong>Home App</strong> that keeps working
+          for them long after closing day. Your brand, on their home screen, for years.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7 · PILLARS ═══ -->
+<section class="slide" id="s7">
+  <div class="inner">
+    <div class="s eye">Four promises — engineered, not aspirational</div>
+    <h2 class="s d1" style="margin-top:16px">Built on four pillars.</h2>
+    <div class="grid">
+      <div class="s d1 plate"><div class="n">I</div><h3>Frictionless intake</h3><p>Photo, speak, move on. The AI parses and files in the background — routing is automatic, never a form.</p></div>
+      <div class="s d2 plate"><div class="n">II</div><h3>Professional output</h3><p>A premium PDF, a living web report, a homeowner portal. The deliverable is the product.</p></div>
+      <div class="s d3 plate"><div class="n">III</div><h3>Inspector-confirmed truth</h3><p>Ledrix proposes; you confirm. Nothing ships without a human — enforced in code, twice over.</p></div>
+      <div class="s d4 plate"><div class="n">IV</div><h3>Field reliability</h3><p>A no-signal basement can't lose a photo. Durable queues, honest retries, one code path online or off.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8 · LIABILITY ═══ -->
+<section class="slide" id="s8">
+  <div class="inner">
+    <div class="s eye">The bottom line, for the owner</div>
+    <h2 class="s d1" style="margin-top:22px">Your liability drops to<br>what they literally miss —<br><span class="x">not what they forgot to&nbsp;add.</span></h2>
+    <div class="s d2 foot">Every requirement gated · Every finding confirmed · Every photo archived</div>
+  </div>
+</section>
+
+<!-- ═══ 9 · CLOSE ═══ -->
+<section class="slide" id="s9">
+  <div class="inner">
+    <div class="s delta"><svg width="72" height="72" viewBox="0 0 100 100"><path class="tri" d="M50 12 L90 84 L10 84 Z"/></svg></div>
+    <h1 class="s d1" style="margin-top:26px;font-size:clamp(36px,5.6vw,72px)">Ledrix owns structures.</h1>
+    <a class="s d2 cta" href="https://www.ledrixlabs.com">SEE IT LIVE → LEDRIXLABS.COM</a>
+    <div class="s d3 under">BUILT BY AN INSPECTOR · 25 YEARS ON THE ROOF</div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(() => {
+  const deck   = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const dots   = document.getElementById('dots');
+  const bar    = document.getElementById('bar');
+  const hint   = document.getElementById('hint');
+  const counter= document.getElementById('counter');
+  const pad    = n => String(n + 1).padStart(2, '0');
+
+  slides.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.setAttribute('aria-label', 'Slide ' + (i + 1));
+    b.addEventListener('click', () => slides[i].scrollIntoView({behavior:'smooth'}));
+    dots.appendChild(b);
+  });
+  const dotEls = [...dots.children];
+
+  let cur = 0, played = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const i = slides.indexOf(e.target);
+    cur = i;
+    e.target.classList.add('on');
+    dotEls.forEach((d, j) => d.classList.toggle('cur', j === i));
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    counter.textContent = pad(i) + ' / ' + pad(slides.length - 1);
+    if (i > 0) hint.classList.add('gone');
+    if (!played.has(i)) { played.add(i); play(i); }
+  }), {threshold: .55});
+  slides.forEach(s => io.observe(s));
+
+  addEventListener('keydown', e => {
+    if (['ArrowDown','ArrowRight',' ','PageDown','j'].includes(e.key)) { e.preventDefault(); slides[Math.min(cur+1, slides.length-1)].scrollIntoView({behavior:'smooth'}); }
+    if (['ArrowUp','ArrowLeft','PageUp','k'].includes(e.key))          { e.preventDefault(); slides[Math.max(cur-1, 0)].scrollIntoView({behavior:'smooth'}); }
+    if (e.key === 'Home') slides[0].scrollIntoView({behavior:'smooth'});
+    if (e.key === 'End')  slides[slides.length-1].scrollIntoView({behavior:'smooth'});
+  });
+
+  /* waveform bars */
+  const wave = document.getElementById('wave');
+  for (let i = 0; i < 22; i++) {
+    const b = document.createElement('i');
+    b.style.animationDelay = (i * .06) + 's';
+    b.style.animationDuration = (.7 + Math.abs(Math.sin(i * 1.7)) * .7) + 's';
+    wave.appendChild(b);
+  }
+
+  /* per-slide set pieces */
+  function play(i) {
+    if (i === 1) countUp();
+    if (i === 2) typeTape();
+    if (i === 3) gate();
+    if (i === 4) drawPlan();
+  }
+
+  /* S2 · odometer stats */
+  function countUp() {
+    document.querySelectorAll('#s2 .num').forEach(el => {
+      const target = +el.dataset.count, suffix = el.dataset.suffix || '';
+      const t0 = performance.now(), dur = 1600;
+      (function tick(t) {
+        const p = Math.min(1, (t - t0) / dur), ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * ease) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+    });
+  }
+
+  /* S3 · the spoken line becomes the card */
+  function typeTape() {
+    const tape = document.getElementById('tape');
+    const lines = [
+      {t:'“Add a finding —',                     c:'said', d:300},
+      {t:'leaking TPR valve on the water heater,', c:'said', d:60},
+      {t:'garage, northwest corner.”',           c:'said', d:60},
+      {t:'PARSED · ROUTED · PLUMBING/WATER-HEATER', c:'machine', d:900},
+      {t:'✓ DRAFTED — AWAITING YOUR CONFIRM',    c:'machine ok', d:500},
+    ];
+    let li = 0;
+    (function nextLine() {
+      if (li >= lines.length) return;
+      const L = lines[li++];
+      const div = document.createElement('div');
+      div.className = L.c;
+      tape.appendChild(div);
+      let ci = 0;
+      setTimeout(function typeChar() {
+        div.textContent = L.t.slice(0, ++ci);
+        if (ci < L.t.length) setTimeout(typeChar, L.c === 'said' ? 34 : 12);
+        else nextLine();
+      }, L.d);
+    })();
+  }
+
+  /* S4 · blockers clear, the lock opens */
+  function gate() {
+    const chips = [...document.querySelectorAll('#s4 .chip')];
+    chips.forEach((c, i) => setTimeout(() => c.classList.add('done'), 1100 + i * 520));
+    setTimeout(() => {
+      document.getElementById('lock').classList.add('open');
+      document.getElementById('shk').setAttribute('d', 'M15 21v-6a9 9 0 0 1 18 0');
+      document.getElementById('sealword').classList.add('on');
+    }, 1100 + chips.length * 520 + 400);
+  }
+
+  /* S5 · rooms materialize, edges connect, pins land */
+  function drawPlan() {
+    const rooms = [...document.querySelectorAll('#s5 .room')];
+    const lbls  = [...document.querySelectorAll('#s5 .rlbl')];
+    const flrs  = [...document.querySelectorAll('#s5 .flr')];
+    const edges = [...document.querySelectorAll('#s5 .edge')];
+    const pins  = [...document.querySelectorAll('#s5 .pin')];
+    flrs.forEach((f, i) => setTimeout(() => f.style.opacity = 1, 300 + i * 1800));
+    rooms.forEach((r, i) => setTimeout(() => { r.style.opacity = 1; lbls[i] && (lbls[i].style.opacity = 1); }, 600 + i * 330));
+    edges.forEach((e, i) => setTimeout(() => e.style.opacity = .8, 600 + rooms.length * 330 + i * 260));
+    pins.forEach((p, i)  => setTimeout(() => p.classList.add('show'), 1200 + rooms.length * 330 + i * 300));
+  }
+})();
+</script>
+
+</body>
+</html>
