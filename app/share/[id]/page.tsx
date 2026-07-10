@@ -68,14 +68,14 @@ const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
 const GREEN    = '#16A34A';   // satisfactory / resolved
 const INFO     = '#5B7183';   // slate — maintenance + in-progress
 const PURPLE   = INFO;        // legacy alias → muted (no rainbow)
-const BG       = '#F5F6F3';   // light paper
+const BG       = '#F6F2EA';   // warm stone paper (Rivian register, 2026-07-10)
 // Surfaces: clean white cards on the paper ground.
 const CARD     = '#FFFFFF';
 const CARD2    = '#FBFCFB';
 const BORDER   = 'rgba(16,24,28,0.10)';
-const DIM      = '#97A4A8';   // faint muted (was dark) — light secondary
-const MED      = '#64757B';   // muted body/secondary
-const TEXT     = '#16242A';   // dark ink text
+const DIM      = '#A3988A';   // faint muted — warm stone secondary
+const MED      = '#75695C';   // muted body/secondary — warm
+const TEXT     = '#262016';   // warm dark ink
 
 // Shared type voices — mirrors the inspection report's system: serif display for titles,
 // sans body, mono for tracked-caps labels. One definition; tabs reuse instead of redeclaring.
@@ -1162,7 +1162,7 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
     <>
       {/* Row inside the dark Ledrix Intelligence card — matches the Ask Ledrix row above it. */}
       <button onClick={pick} style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
-        <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35)' }}>
+        <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 38%, #3A2A16, #201710)', boxShadow: '0 0 0 1px rgba(217,142,74,0.4)' }}>
           <LedrixEye size={34} color="#217BE8" />
         </span>
         <span style={{ minWidth: 0 }}>
@@ -1207,7 +1207,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const urgent = critical.concat(deficien).slice(0, 3);
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
-  const P = { paper: '#F5F6F3', ink: '#0E1518', card: '#FFFFFF', text: '#16242A', muted: '#64757B', faint: '#97A4A8', line: '#E6E9E5', blue: '#1A63C8', bright: '#2BC8E0' };   // bright = the SCORE teal-cyan (metric readout only — interactive stays blue)
+  const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#1A63C8', bright: '#D98E4A' };   // bright = the SCORE amber (Rivian register — metric readout only; interactive stays Ledrix blue)
   const cover = photoUrl(record.cover_url);
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Reports', ''],
@@ -1224,8 +1224,16 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       <div style={{ position: 'relative', color: '#fff', overflow: 'hidden',
         background: cover
           ? `linear-gradient(180deg, rgba(6,11,14,0.60) 0%, rgba(6,11,14,0.18) 34%, rgba(6,11,14,0.22) 52%, rgba(4,9,12,0.88) 100%), url(${cover}) center/cover`
-          : 'radial-gradient(120% 90% at 78% 8%, rgba(34,227,255,0.14), transparent 55%), linear-gradient(168deg,#1B2C34,#0E1518 62%,#0A1013)' }}>
-        <div style={{ padding: desk ? `40px ${gut}px 36px` : '28px 20px 26px' }}>
+          : 'radial-gradient(120% 90% at 78% 8%, rgba(217,142,74,0.16), transparent 55%), linear-gradient(168deg,#2A241C,#171310 62%,#100D0A)' }}>
+        {/* Rivian topo — terrain contours, fallback hero only (never over the inspector's cover photo) */}
+        {!cover && (
+          <svg viewBox="0 0 800 300" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.5, pointerEvents: 'none' }} fill="none" stroke="#D98E4A" strokeOpacity="0.10" strokeWidth="1">
+            <path d="M-20 70 Q 200 20 400 72 T 820 60" /><path d="M-20 110 Q 200 55 400 112 T 820 100" />
+            <path d="M-20 150 Q 200 92 400 152 T 820 140" /><path d="M-20 230 Q 260 285 480 230 T 820 250" />
+            <path d="M-20 268 Q 260 325 480 268 T 820 290" />
+          </svg>
+        )}
+        <div style={{ padding: desk ? `40px ${gut}px 36px` : '28px 20px 26px', position: 'relative' }}>
           <div style={{ ...eyebrow('rgba(255,255,255,0.88)') }}>Your Home Record · Verified</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginTop: desk ? 66 : 42 }}>
             <div style={{ minWidth: 0 }}>
@@ -1304,7 +1312,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
           display: desk ? 'grid' : 'block', gridTemplateColumns: desk ? '1fr 1px 1fr' : undefined, columnGap: desk ? 28 : undefined, alignItems: 'center' }}>
           <button onClick={onAsk} aria-label="Ask Ledrix" style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
             <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center',
-              background: 'radial-gradient(circle at 50% 38%, #123840, #0a1e24)', boxShadow: '0 0 0 1px rgba(34,227,255,0.35), 0 0 18px rgba(34,227,255,0.22)' }}>
+              background: 'radial-gradient(circle at 50% 38%, #3A2A16, #201710)', boxShadow: '0 0 0 1px rgba(217,142,74,0.4), 0 0 18px rgba(217,142,74,0.25)' }}>
               <ValMark size={38} color="#217BE8" sheen />
             </span>
             <span style={{ minWidth: 0 }}>
