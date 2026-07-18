@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: 'Does it catch duplicate or overlapping findings?',
-    a: 'Yes. After analysis, Ledrix automatically flags likely duplicates and related findings across your photos for you to review — never merged silently. You decide what combines and what stays separate.',
+    a: 'Yes. After analysis, Ledrix automatically flags likely duplicate photos and related findings across your inspection for you to review — never merged silently. You decide what combines and what stays separate. (This is photo/finding-level review, not automatic detection of separate physical equipment — that stays a judgment call for the inspector.)',
   },
   {
     q: 'Who owns my data, and is it secure?',

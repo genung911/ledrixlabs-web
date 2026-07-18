@@ -23,7 +23,7 @@ const ROWS: { legacy: string; ledrix: string }[] = [
   },
   {
     legacy: 'You catch duplicate photos and contradictions yourself, manually.',
-    ledrix: 'Ledrix flags likely duplicates and connections — you decide, nothing merges silently.',
+    ledrix: 'Ledrix flags likely duplicate photos and related findings — you decide, nothing merges silently.',
   },
   {
     legacy: '"AI" means canned phrases pulled from a template library.',
