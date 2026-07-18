@@ -17,7 +17,7 @@ const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=repor
 const PORTAL_POINTS = [
   'The living portal your buyer keeps — health score, findings in plain language.',
   'A maintenance schedule and property records.',
-  'Tap any finding: local cost estimate, pros to call, repair videos, and Ask Ledrix.',
+  'Tap any finding: top-rated local pros, repair videos, and Ask Ledrix.',
 ];
 const PDF_POINTS = [
   'An at-a-glance summary, then every finding grouped by system.',
