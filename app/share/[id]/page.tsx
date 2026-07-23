@@ -95,6 +95,9 @@ type Anomaly = {
 };
 type Spec = {
   category?: string; material?: string; status?: string;
+  system?: string; room?: string; structureId?: string;
+  instanceLabel?: string;
+  attributes?: { key: string; value: string; unit?: string }[];
   manual_url?: string;
   manual_verified_at?: string;
   manual_maintenance?: { task: string; intervalDays: number; notes?: string }[];
@@ -149,10 +152,10 @@ type FloorPlanRow = { inspection_id: string; layout: FPLayout | null; fingerprin
 // earlier testing; flip to true to restore.
 const FLOORPLAN_ENABLED = false;
 
-type Tab = 'home' | 'findings' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
+type Tab = 'home' | 'findings' | 'specs' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
 // User-facing tab names — the lifecycle standard (internal Tab ids never change).
 const TAB_LABEL: Record<Tab, string> = {
-  home: 'Home', findings: 'Repairs Needed', repairs: 'Repair Request', projects: 'Repair Status',
+  home: 'Home', findings: 'Repairs Needed', specs: 'Systems & Specs', repairs: 'Repair Request', projects: 'Repair Status',
   reminders: 'Maintenance', docs: 'Docs', report: 'Reports', ethix: 'Ethix',
 };
 
@@ -433,7 +436,7 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
 // ─── Icon ─────────────────────────────────────────────────────────────────────
 // Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
 // look — replaces the inconsistent unicode/emoji glyphs.
-type IconName = 'home' | 'findings' | 'projects' | 'reminders' | 'docs' | 'camera';
+type IconName = 'home' | 'findings' | 'specs' | 'projects' | 'reminders' | 'docs' | 'camera';
 function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number; color?: string }) {
   const common = {
     width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color,
@@ -450,6 +453,8 @@ function Icon({ name, size = 22, color = TEXT }: { name: IconName; size?: number
       return (<svg {...common}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>);
     case 'docs':
       return (<svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8M16 17H8M10 9H8" /></svg>);
+    case 'specs':
+      return (<svg {...common}><rect x="3" y="3" width="8" height="8" rx="1.4" /><rect x="13" y="3" width="8" height="8" rx="1.4" /><rect x="3" y="13" width="8" height="8" rx="1.4" /><rect x="13" y="13" width="8" height="8" rx="1.4" /></svg>);
     case 'camera':
       return (<svg {...common}><path d="M3 8a2 2 0 0 1 2-2h1.6L8 3.8h8L17.4 6H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><circle cx="12" cy="13" r="3.4" /></svg>);
   }
@@ -1209,9 +1214,11 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
   const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#1A63C8', bright: '#D98E4A' };   // bright = the SCORE amber (Rivian register — metric readout only; interactive stays Ledrix blue)
   const cover = photoUrl(record.cover_url);
+  const confirmedSpecs = (Array.isArray(record.specs) ? record.specs : []).filter(s => s.status === 'confirmed');
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Reports', ''],
     ['findings', 'findings', 'Repairs Needed', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
+    ['specs', 'specs', 'Systems & Specs', confirmedSpecs.length],
     ['repairs', 'projects', 'Repair Request', includedRepairs],
     ['projects', 'projects', 'Repair Status', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
     ['reminders', 'reminders', 'Maintenance', dueReminders.length],
@@ -1649,6 +1656,118 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
           </div>
         ))
       )}
+    </div>
+  );
+}
+
+// ─── SPECS TAB — the property's recorded systems/components inventory ─────────
+// Findings-only was the pattern this mirrors (sort/group + search); specs have no
+// severity, so there's no priority filter row — just Search + Sort by System/Room.
+// Only 'confirmed' specs surface here (same rule the PDF/report and the maintenance
+// schedule already use — pending/dismissed rows never reach the homeowner).
+function titleCaseLabel(s: string): string {
+  return (s ?? '').trim().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+function SpecCard({ s }: { s: Spec }) {
+  const attrs = Array.isArray(s.attributes) ? s.attributes : [];
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px', marginBottom: 8 }}>
+      <div style={{ marginBottom: attrs.length || s.system || s.room ? 10 : 0 }}>
+        <FLabel>{s.category ? titleCaseLabel(s.category) : 'SPEC'}{s.instanceLabel ? ` · ${s.instanceLabel}` : ''}</FLabel>
+        <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{s.material || '—'}</div>
+      </div>
+      {(s.system || s.room) && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: attrs.length ? 10 : 0 }}>
+          {s.system && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <FLabel>SYSTEM</FLabel>
+              <div style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{titleCaseLabel(s.system)}</div>
+            </div>
+          )}
+          {s.room && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <FLabel>ROOM</FLabel>
+              <div style={{ color: TEXT, fontSize: 12, fontWeight: 500 }}>{s.room}</div>
+            </div>
+          )}
+        </div>
+      )}
+      {attrs.length > 0 && (
+        <div>
+          {attrs.map((a, i) => (
+            <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
+              <span style={{ color: DIM, flexShrink: 0, lineHeight: 1.55 }}>•</span>
+              <span style={{ color: '#33454B', fontSize: 12, lineHeight: 1.55 }}><strong style={{ color: TEXT }}>{titleCaseLabel(a.key)}:</strong> {a.unit ? `${a.value} ${a.unit}` : a.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+function SpecsTab({ specs }: { specs: Spec[] }) {
+  const [search, setSearch] = useState('');
+  const [sort, setSort]     = useState<'system' | 'room'>('system');
+
+  const confirmed = specs.filter(s => s.status === 'confirmed');
+  const filtered = confirmed.filter(s => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (s.category ?? '').toLowerCase().includes(q) || (s.material ?? '').toLowerCase().includes(q) || (s.room ?? '').toLowerCase().includes(q) || (s.system ?? '').toLowerCase().includes(q);
+  });
+
+  const groups = (() => {
+    const m = new Map<string, Spec[]>();
+    for (const s of filtered) {
+      const k = ((sort === 'system' ? s.system : s.room) || '').trim() || 'Other';
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(s);
+    }
+    return Array.from(m.entries())
+      .map(([key, items]) => ({ key, items: items.slice().sort((a, b) => (a.category ?? '').localeCompare(b.category ?? '')) }))
+      .sort((a, b) => (a.key === 'Other' ? 1 : b.key === 'Other' ? -1 : a.key.localeCompare(b.key)));
+  })();
+
+  return (
+    <div style={{ padding: '16px 16px 0' }}>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Systems &amp; Specs</div>
+
+      <div style={{ position: 'relative', marginBottom: 14 }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 12 }}>⌕</span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search specs…" style={{
+          width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
+          padding: '10px 12px 10px 30px', color: TEXT, fontSize: 12, outline: 'none',
+          fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+        }} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 2 }}>
+        <span style={{ ...eyebrow(DIM, 8), flexShrink: 0 }}>Sort</span>
+        {(['system', 'room'] as const).map(key => (
+          <button key={key} onClick={() => setSort(key)} style={{
+            background: sort === key ? TEXT : CARD, border: `1px solid ${sort === key ? TEXT : BORDER}`,
+            color: sort === key ? '#fff' : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
+            fontWeight: 600, letterSpacing: '0.12em', fontFamily: MONO,
+            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, textTransform: 'capitalize',
+          }}>{key}</button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
+          <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
+          <div style={{ ...eyebrow(DIM, 9) }}>{search ? 'NO SPECS MATCH YOUR SEARCH' : 'NO SPECS RECORDED'}</div>
+        </div>
+      ) : groups.map(g => (
+        <div key={g.key} style={{ marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 2px 8px' }}>
+            <span style={{ fontFamily: SERIF, color: TEXT, fontSize: 14, fontWeight: 600 }}>{g.key === 'Other' ? 'Other' : titleCaseLabel(g.key)}</span>
+            <span style={{ fontFamily: MONO, color: DIM, fontSize: 9.5, fontWeight: 500 }}>({g.items.length})</span>
+          </div>
+          {g.items.map((s, i) => <SpecCard key={i} s={s} />)}
+        </div>
+      ))}
     </div>
   );
 }
@@ -2777,7 +2896,7 @@ export default function SharePage() {
   useEffect(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
-      if (t && ['report', 'findings', 'repairs', 'projects', 'reminders', 'docs', 'ethix'].includes(t)) setTab(t);
+      if (t && ['report', 'findings', 'specs', 'repairs', 'projects', 'reminders', 'docs', 'ethix'].includes(t)) setTab(t);
     } catch { /* no-op */ }
   }, []);
   const [copied,    setCopied]    = useState(false);
@@ -2993,6 +3112,7 @@ export default function SharePage() {
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
+      {tab === 'specs'     && <SpecsTab specs={specs} />}
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} anomalies={anomalies} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
