@@ -81,9 +81,11 @@ export function HowItWorks() {
               ].join(' ')}
             >
 
-              {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel */}
-              <div className="relative mb-5 flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee]">
-                <PhoneBezel className="aspect-[9/19.5] h-[20.5rem]">
+              {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel.
+                  Scales up through the breakpoints so it reads as a real screenshot on a desktop
+                  monitor, not a thumbnail — it was pinned to one small fixed size before. */}
+              <div className="relative mb-5 flex h-[24rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee] sm:h-[27rem] lg:h-[30rem] xl:h-[34rem]">
+                <PhoneBezel className="aspect-[9/19.5] h-[22.5rem] sm:h-[25.5rem] lg:h-[28.5rem] xl:h-[32.5rem]">
                   <Image
                     src={s.img}
                     alt={s.title}
@@ -92,7 +94,7 @@ export function HowItWorks() {
                       'transition-transform duration-500 group-hover:scale-[1.03]',
                       s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain',
                     ].join(' ')}
-                    sizes="220px"
+                    sizes="(min-width: 1280px) 300px, (min-width: 1024px) 265px, (min-width: 640px) 235px, 220px"
                   />
                 </PhoneBezel>
               </div>

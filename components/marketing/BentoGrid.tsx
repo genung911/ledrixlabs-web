@@ -34,14 +34,14 @@ type Tile = {
 function StaticValOrb() {
   return (
     <div
-      className="flex h-20 w-20 items-center justify-center rounded-full"
+      className="flex h-28 w-28 items-center justify-center rounded-full lg:h-32 lg:w-32"
       style={{
         background: 'radial-gradient(125% 130% at 50% 0%, rgba(255,255,255,0.96), rgba(238,244,251,0.86))',
         border: '1.25px solid rgba(33,123,232,0.4)',
         boxShadow: '0 10px 30px rgba(12,28,54,0.14), 0 2px 8px rgba(12,28,54,0.08), 0 0 20px rgba(33,123,232,0.2)',
       }}
     >
-      <LedrixDelta size={30} sheen />
+      <LedrixDelta size={44} sheen />
     </div>
   );
 }
@@ -51,7 +51,7 @@ function StaticValOrb() {
 // brain/delta is the one place blue belongs here (it's the AI).
 function DevicesOneBrain() {
   return (
-    <div className="relative" style={{ width: 180, height: 72 }}>
+    <div className="relative scale-125 lg:scale-150" style={{ width: 180, height: 72 }}>
       <svg width="180" height="72" viewBox="0 0 180 72" fill="none" aria-hidden className="absolute inset-0">
         {/* connecting lines */}
         <path d="M46 36 H80" stroke="#C7D0D6" strokeWidth="1.5" strokeDasharray="3 4" />
@@ -80,40 +80,40 @@ function StructuredFindingCard() {
   const row = (label: string, value: ReactNode) => (
     // Stacks label-over-value when the tile is narrow; side-by-side once there's room —
     // the fixed label column was clipping ("LOCATIO…") on small screens.
-    <div className="flex flex-col gap-1 border-t border-hairline py-2.5 first:border-t-0 sm:flex-row sm:items-baseline sm:gap-3">
-      <span className="flex-shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted sm:w-[82px]">{label}</span>
-      <span className="min-w-0 text-[13px] leading-snug text-ink">{value}</span>
+    <div className="flex flex-col gap-1 border-t border-hairline py-3.5 first:border-t-0 sm:flex-row sm:items-baseline sm:gap-4">
+      <span className="flex-shrink-0 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted sm:w-[100px]">{label}</span>
+      <span className="min-w-0 text-base leading-snug text-ink">{value}</span>
     </div>
   );
   return (
-    <div className="rounded-xl border border-hairline bg-[#F7F9FB] p-4 sm:p-5">
-      <div className="rounded-lg border border-hairline bg-surface p-5 shadow-[0_16px_44px_-30px_rgba(10,15,20,0.5)]">
+    <div className="rounded-xl border border-hairline bg-[#F7F9FB] p-5 sm:p-6">
+      <div className="rounded-lg border border-hairline bg-surface p-6 shadow-[0_16px_44px_-30px_rgba(10,15,20,0.5)] sm:p-7">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted">Ledrix Finding · Drafted</span>
-          <span className="flex items-center gap-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#22C55E]">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted">Ledrix Finding · Drafted</span>
+          <span className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[#22C55E]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" /> Live
           </span>
         </div>
-        <div className="mt-3 text-[15px] font-bold leading-snug text-ink">Moisture-damaged wall finish at tub side</div>
-        <div className="mt-4">
+        <div className="mt-4 text-xl font-bold leading-snug text-ink">Moisture-damaged wall finish at tub side</div>
+        <div className="mt-5">
           {row('System', 'Interior · Bathroom')}
           {row('Location', 'Wall adjacent to tub/shower')}
           {row('Priority', (
-            <span className="rounded-full border px-2 py-0.5 font-mono text-[9.5px] font-bold" style={{ color: '#64748B', borderColor: '#64748B55', backgroundColor: '#64748B14' }}>
+            <span className="rounded-full border px-3 py-1 font-mono text-xs font-bold" style={{ color: '#64748B', borderColor: '#64748B55', backgroundColor: '#64748B14' }}>
               MAINT &amp; IMPROVE
             </span>
           ))}
           {row('Spec', 'Painted drywall — wet-area side')}
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-hairline pt-4">
+        <div className="mt-5 grid grid-cols-3 gap-3 border-t border-hairline pt-5">
           {['Reject', 'Adjust', 'Confirm'].map((v) => (
-            <span key={v} className={`rounded-lg border py-1.5 text-center font-mono text-[10px] font-bold uppercase tracking-[0.1em] ${v === 'Confirm' ? 'border-ink bg-ink text-white' : 'border-hairline text-muted'}`}>
+            <span key={v} className={`rounded-lg border py-2.5 text-center font-mono text-xs font-bold uppercase tracking-[0.1em] ${v === 'Confirm' ? 'border-ink bg-ink text-white' : 'border-hairline text-muted'}`}>
               {v}
             </span>
           ))}
         </div>
       </div>
-      <div className="mt-3 text-center font-mono text-[9px] uppercase tracking-[0.16em] text-muted">One shutter press · zero typing</div>
+      <div className="mt-4 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-muted">One shutter press · zero typing</div>
     </div>
   );
 }
@@ -181,60 +181,60 @@ export function BentoGrid() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.15 }}
-          className="mt-16 grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-[minmax(11rem,auto)]"
+          className="mt-16 grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-[minmax(15rem,auto)]"
         >
           {TILES.map((t, i) => (
             <motion.div
               key={i}
               variants={fadeUp}
-              className={`group relative flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 ${t.className}`}
+              className={`group relative flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface p-7 shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 lg:p-8 ${t.className}`}
             >
               {(t.kicker || t.stat) && (
                 <div className="relative">
                   {t.kicker && (
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">{t.kicker}</span>
+                    <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-muted">{t.kicker}</span>
                   )}
                   {t.stat && (
-                    <div className="text-5xl font-bold tracking-tight text-ink">
+                    <div className="text-6xl font-bold tracking-tight text-ink lg:text-7xl">
                       {t.stat}
                     </div>
                   )}
                 </div>
               )}
 
-              <div className={`relative flex min-h-0 flex-1 flex-col ${t.kicker || t.stat ? 'mt-4' : ''}`}>
-                <h3 className="text-lg font-bold text-ink">{t.title}</h3>
-                {t.body && <p className="mt-2 text-sm leading-relaxed text-body">{t.body}</p>}
+              <div className={`relative flex min-h-0 flex-1 flex-col justify-center ${t.kicker || t.stat ? 'mt-5' : ''}`}>
+                <h3 className="text-xl font-bold text-ink lg:text-2xl">{t.title}</h3>
+                {t.body && <p className="mt-3 text-base leading-relaxed text-body">{t.body}</p>}
                 {t.pills && (
-                  <div className="mt-3 flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-1.5">
+                  <div className="mt-5 flex flex-1 flex-col justify-center gap-4">
+                    <div className="flex flex-wrap gap-2">
                       {t.pills.map((p) => (
                         <span
                           key={p.label}
-                          className="rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.02em]"
+                          className="rounded-full border px-3.5 py-1.5 font-mono text-xs font-bold tracking-[0.02em]"
                           style={{ color: p.color, borderColor: `${p.color}55`, backgroundColor: `${p.color}14` }}
                         >
                           {p.label}
                         </span>
                       ))}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <span
-                        className="rounded-full border border-dashed px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.02em]"
+                        className="rounded-full border border-dashed px-3.5 py-1.5 font-mono text-xs font-bold tracking-[0.02em]"
                         style={{ color: SAFETY_COLOR, borderColor: `${SAFETY_COLOR}70`, backgroundColor: `${SAFETY_COLOR}14` }}
                       >
                         + SAFETY
                       </span>
-                      <span className="text-xs text-muted">flagged separately — orthogonal to priority</span>
+                      <span className="text-sm text-muted">flagged separately — orthogonal to priority</span>
                     </div>
                   </div>
                 )}
                 {t.points && (
-                  <ul className="mt-3 flex flex-col gap-2">
+                  <ul className="mt-4 flex flex-col gap-3">
                     {t.points.map((p) => (
-                      <li key={p} className="flex items-start gap-2.5">
-                        <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ink" />
-                        <span className="text-sm leading-relaxed text-body">{p}</span>
+                      <li key={p} className="flex items-start gap-3">
+                        <span className="mt-[9px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ink" />
+                        <span className="text-base leading-relaxed text-body">{p}</span>
                       </li>
                     ))}
                   </ul>
@@ -263,7 +263,7 @@ export function BentoGrid() {
                   /* Vertically centered in the leftover row-span space — the artifact floats in
                      the tile instead of leaving a dead band beneath it. */
                   <div className="flex flex-1 items-center justify-center py-6">
-                    <div className="w-full max-w-[440px]">
+                    <div className="w-full max-w-[440px] lg:max-w-[540px]">
                       <StructuredFindingCard />
                     </div>
                   </div>

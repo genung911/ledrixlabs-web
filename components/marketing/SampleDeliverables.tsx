@@ -73,13 +73,14 @@ export function SampleDeliverables() {
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
           >
-            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-6">
-              <PhoneBezel className="aspect-[1000/2053] w-full max-w-[220px] transition-transform duration-500 group-hover:scale-[1.03]">
+            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-8 sm:p-10">
+              <PhoneBezel className="aspect-[1000/2053] w-full max-w-[220px] transition-transform duration-500 group-hover:scale-[1.03] sm:max-w-[260px] lg:max-w-[300px]">
                 <Image
                   src="/sample-home-portal.jpg"
                   alt="The live Ledrix client home portal"
                   fill
                   className="object-contain"
+                  sizes="(min-width: 1024px) 300px, (min-width: 640px) 260px, 220px"
                 />
               </PhoneBezel>
             </div>
@@ -102,9 +103,15 @@ export function SampleDeliverables() {
             rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[0_18px_50px_-38px_rgba(10,15,20,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-ink/25"
           >
-            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-6">
-              <div className="relative aspect-[772/1000] w-full max-w-[220px] overflow-hidden rounded-md shadow-[0_14px_34px_-16px_rgba(10,15,20,0.4)] ring-1 ring-black/10 transition-transform duration-500 group-hover:scale-[1.03]">
-                <Image src="/sample-pdf-cover.jpg" alt="The Ledrix inspection report cover page" fill className="object-contain" />
+            <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-8 sm:p-10">
+              <div className="relative aspect-[772/1000] w-full max-w-[220px] overflow-hidden rounded-md shadow-[0_14px_34px_-16px_rgba(10,15,20,0.4)] ring-1 ring-black/10 transition-transform duration-500 group-hover:scale-[1.03] sm:max-w-[260px] lg:max-w-[300px]">
+                <Image
+                  src="/sample-pdf-cover.jpg"
+                  alt="The Ledrix inspection report cover page"
+                  fill
+                  className="object-contain"
+                  sizes="(min-width: 1024px) 300px, (min-width: 640px) 260px, 220px"
+                />
               </div>
             </div>
             <div className="flex flex-1 flex-col p-7">

@@ -6,6 +6,7 @@ import { HowItWorks } from '@/components/marketing/HowItWorks';
 import { BentoGrid } from '@/components/marketing/BentoGrid';
 import { LegacyVsLedrix } from '@/components/marketing/LegacyVsLedrix';
 import { SampleDeliverables } from '@/components/marketing/SampleDeliverables';
+import { ForHomeowners } from '@/components/marketing/ForHomeowners';
 import { VisionManifesto } from '@/components/marketing/VisionManifesto';
 import { FAQ } from '@/components/marketing/FAQ';
 import { ContactCTA } from '@/components/marketing/ContactCTA';
@@ -22,6 +23,7 @@ export default function Home() {
         <BentoGrid />
         <LegacyVsLedrix />
         <SampleDeliverables />
+        <ForHomeowners />
         <Hero />
         <FAQ />
         <ContactCTA />

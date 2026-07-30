@@ -12,6 +12,7 @@ import { LedrixDelta } from '@/components/LedrixDelta';
 const LINKS = [
   { href: '/#how', label: 'How it works' },
   { href: '/#features', label: 'Why Ledrix' },
+  { href: '/#homeowners', label: 'For Homeowners' },
   { href: '/about', label: 'About' },
   { href: '/ethix', label: 'Ethix' },
   { href: '/#faq', label: 'FAQ' },
