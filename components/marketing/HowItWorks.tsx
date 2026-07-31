@@ -55,7 +55,7 @@ const STEPS: Array<{
 export function HowItWorks() {
   return (
     <section id="how" className="relative bg-ground py-28">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-7xl px-6">
         <SectionHeading
           eyebrow="How it works"
           title="From the photo to the report, in one pass."
@@ -67,25 +67,23 @@ export function HowItWorks() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
-          className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3"
+          className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3"
         >
           {STEPS.map((s) => (
             <motion.li
               key={s.n}
               variants={fadeUp}
               className={[
-                'group relative flex flex-col overflow-hidden rounded-2xl border p-5 transition-all duration-300',
+                'group relative flex flex-col overflow-hidden rounded-2xl border p-6 transition-all duration-300',
                 s.featured
                   ? 'border-ink/20 bg-surface shadow-[0_20px_60px_-34px_rgba(10,15,20,0.5)]'
                   : 'border-hairline bg-surface shadow-[0_18px_50px_-36px_rgba(10,15,20,0.4)] hover:-translate-y-1 hover:border-ink/20',
               ].join(' ')}
             >
 
-              {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel.
-                  Scales up through the breakpoints so it reads as a real screenshot on a desktop
-                  monitor, not a thumbnail — it was pinned to one small fixed size before. */}
-              <div className="relative mb-5 flex h-[24rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee] sm:h-[27rem] lg:h-[30rem] xl:h-[34rem]">
-                <PhoneBezel className="aspect-[9/19.5] h-[22.5rem] sm:h-[25.5rem] lg:h-[28.5rem] xl:h-[32.5rem]">
+              {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel. */}
+              <div className="relative mb-6 flex h-[26rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee] sm:h-[30rem] lg:h-[34rem] xl:h-[38rem]">
+                <PhoneBezel className="aspect-[9/19.5] h-[24.5rem] sm:h-[28.5rem] lg:h-[32.5rem] xl:h-[36.5rem]">
                   <Image
                     src={s.img}
                     alt={s.title}
@@ -94,15 +92,15 @@ export function HowItWorks() {
                       'transition-transform duration-500 group-hover:scale-[1.03]',
                       s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain',
                     ].join(' ')}
-                    sizes="(min-width: 1280px) 300px, (min-width: 1024px) 265px, (min-width: 640px) 235px, 220px"
+                    sizes="(min-width: 1280px) 270px, (min-width: 1024px) 240px, (min-width: 640px) 210px, 185px"
                   />
                 </PhoneBezel>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold tracking-widest text-muted">{s.n}</span>
+                <span className="font-mono text-sm font-bold tracking-widest text-muted">{s.n}</span>
                 <svg
-                  width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  width="32" height="32" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
                   className="text-ink transition-transform duration-300 group-hover:scale-110"
                 >
@@ -110,8 +108,8 @@ export function HowItWorks() {
                 </svg>
               </div>
 
-              <h3 className="mt-5 text-xl font-bold text-ink">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-body">{s.body}</p>
+              <h3 className="mt-5 text-2xl font-bold text-ink">{s.title}</h3>
+              <p className="mt-3 text-base leading-relaxed text-body">{s.body}</p>
             </motion.li>
           ))}
         </motion.ol>
