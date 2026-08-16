@@ -109,7 +109,7 @@ export function LedrixDelta({
           <linearGradient id={sheenId} x1="0" y1="0" x2="0.4" y2="1">
             <stop offset="0" stopColor="#C9E2FF" />
             <stop offset="0.45" stopColor="#217BE8" />
-            <stop offset="1" stopColor="#1A63C8" />
+            <stop offset="1" stopColor="#217BE8" />
           </linearGradient>
         )}
       </defs>

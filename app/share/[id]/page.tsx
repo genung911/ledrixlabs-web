@@ -60,9 +60,19 @@ async function supaDelete(table: string, filter: string) {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 // Blue + dark-glass — matches the Ledrix inspector app's GradientCard aesthetic.
 // Blue is the primary UI accent; color is still reserved for MEANING (severity).
-// Stage 2: light theme. Accent is a readable brand blue (deep #1A63C8 stays legible on the light ground).
-const BLUE     = '#1A63C8';   // readable brand blue accent on light
-const ACCENT   = '#1A63C8';   // primary UI accent — the Ledrix blue (owner call: blue, not the report teal)
+// Stage 2: light theme. Accent is THE Ledrix blue, #217BE8 (owner ruling 2026-08-16: one blue
+// across Ledrix, Home and Intelligence — the marks had drifted to a deeper #1A63C8).
+//
+// CONTRAST NOTE, deliberately recorded rather than silently worked around: #217BE8 on this warm
+// paper (#F6F2EA) measures 3.71:1. That clears WCAG AA for large text (18px+), for bold 14px+ and
+// for UI borders, and it does NOT clear the 4.5:1 needed for small body text. The deeper blue it
+// replaced measured 5.13:1, which is why it was here.
+//
+// So: use this for marks, buttons, borders and headings. If a small link or caption needs the
+// blue, #1D6DCE is the same hue at 89% and measures 4.55:1 — the minimum shift that passes.
+const BLUE     = '#217BE8';   // the Ledrix blue — see the contrast note above
+const ACCENT   = '#217BE8';   // primary UI accent — the Ledrix blue (owner call: blue, not the report teal)
+const BLUE_TEXT = '#1D6DCE';  // AA-safe variant for SMALL text on paper (4.55:1); same hue, 89%
 const CRITICAL = '#DC2626';   // safety (readable on light)
 const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
 const GREEN    = '#16A34A';   // satisfactory / resolved
@@ -1212,7 +1222,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const urgent = critical.concat(deficien).slice(0, 3);
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
-  const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#1A63C8', bright: '#D98E4A' };   // bright = the SCORE amber (Rivian register — metric readout only; interactive stays Ledrix blue)
+  const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#217BE8', bright: '#D98E4A' };   // bright = the SCORE amber (Rivian register — metric readout only; interactive stays Ledrix blue)
   const cover = photoUrl(record.cover_url);
   const confirmedSpecs = (Array.isArray(record.specs) ? record.specs : []).filter(s => s.status === 'confirmed');
   const pillars: [Tab, IconName, string, number | string][] = [
