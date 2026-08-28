@@ -39,10 +39,19 @@ export default function PublicRepairsPage() {
     if (!routeId) { setLoading(false); return; }
     (async () => {
       // Resolve the record by share_token first, then fall back to the legacy share_id.
-      const SEL = 'select=share_id,address,city,state,zip,inspection_date&limit=1';
-      let recs = await pget<Rec>(`home_records?share_token=eq.${encodeURIComponent(routeId)}&${SEL}`);
-      if (recs.length === 0) recs = await pget<Rec>(`home_records?share_id=eq.${encodeURIComponent(routeId)}&${SEL}`);
-      const rec = recs[0] ?? null;
+      // Same authorized read as the main report page: /api/share/<token> holds the service
+      // role server-side and resolves exactly one row by token. This used to read
+      // home_records straight through the anon proxy, which only worked because the table
+      // was world-readable. The legacy share_id fallback is gone with it — the token is the
+      // only credential.
+      let rec: Rec | null = null;
+      try {
+        const r = await fetch(`/api/share/${encodeURIComponent(routeId)}`, { cache: 'no-store' });
+        if (r.ok) {
+          const d = await r.json();
+          if (d?.share_id) rec = d as Rec;
+        }
+      } catch { /* leave rec null — the page renders its empty state */ }
       setRecord(rec);
       // Repairs key on the canonical share_id (insp_ id), not the token.
       const canonicalId = rec?.share_id ?? routeId;
