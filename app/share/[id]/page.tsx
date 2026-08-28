@@ -3038,10 +3038,21 @@ export default function SharePage() {
   useEffect(() => {
     if (!routeId) { setLoading(false); setNotFound(true); return; }
     (async () => {
-      let rows = await supaGet<HomeRecord>(`home_records?share_token=eq.${encodeURIComponent(routeId)}&limit=1`);
-      if (rows.length === 0) rows = await supaGet<HomeRecord>(`home_records?share_id=eq.${encodeURIComponent(routeId)}&limit=1`);
-      if (rows.length === 0) { setNotFound(true); return; }
-      const rec = rows[0];
+      // ── ONE AUTHORIZED READ ──────────────────────────────────────────────────────
+      // This used to be two anon reads straight through /api/proxy, which worked only
+      // because home_records was `select using (true)` — i.e. every client's report was
+      // world-readable, share_token included. /api/share/<token> holds the service role
+      // server-side, resolves exactly one row by token, and never returns the token.
+      //
+      // A LEGACY insp_ id answers with { redirectTo } instead of a record: the route
+      // resolved the old link and is sending the browser to its token URL. Migration only —
+      // the fallback is removed once the four legacy reports are re-issued.
+      const res = await fetch(`/api/share/${encodeURIComponent(routeId)}`, { cache: 'no-store' });
+      if (!res.ok) { setNotFound(true); return; }
+      const payload = await res.json();
+      if (payload?.redirectTo) { window.location.replace(payload.redirectTo); return; }
+      const rec = payload as HomeRecord;
+      if (!rec?.share_id) { setNotFound(true); return; }
       const canonicalId = rec.share_id;
       setRecord(rec);
       setShareId(canonicalId);
