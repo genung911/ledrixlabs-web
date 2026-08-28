@@ -22,16 +22,11 @@
 //  5. The service role never reaches the client. It is read here and used here.
 //  6. Errors are opaque. No PostgREST message, no URL, no key fragment is echoed back.
 //
-// ── LEGACY `share_id` FALLBACK — MIGRATION ONLY, NOT AUTHORIZATION ──────────────────
-// Links delivered before `share_token` existed carry the enumerable `insp_<timestamp>`.
-// Four such reports exist (verified 2026-08-28). Those links must not break, so a legacy id
-// resolves and REDIRECTS to its token URL — the browser lands on the token form and the id
-// stops being used.
-//
-// This is a MIGRATION MECHANISM WITH AN END DATE, not permanent product behaviour. An
-// `insp_<timestamp>` is time-ordered and guessable; leaving it a valid credential would
-// reintroduce exactly what this route closes. Once the four reports have been re-issued and
-// verified, DELETE the `legacyRedirect` branch below and this comment with it.
+// ── THE TOKEN IS THE ONLY CREDENTIAL ────────────────────────────────────────────────
+// A `share_id` (`insp_<timestamp>`) is time-ordered and guessable and is NOT accepted here.
+// Four reports predating `share_token` were served through a temporary redirect while their
+// links were re-issued; that migration completed 2026-08-28 and the fallback was removed.
+// Do not reintroduce it — an id-addressable report is exactly the hole this route closes.
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -49,7 +44,7 @@ const FIELDS = [
 /** One body for every miss, so a wrong token cannot be told from an unknown one. */
 const notFound = () => NextResponse.json({ error: 'Not found.' }, { status: 404 });
 
-async function selectOne(column: 'share_token' | 'share_id', value: string) {
+async function selectOne(column: 'share_token', value: string) {
   const url = `${SUPA_URL}/rest/v1/home_records`
     + `?${column}=eq.${encodeURIComponent(value)}`
     + `&select=${encodeURIComponent(FIELDS + ',share_token')}`   // token read internally, stripped below
@@ -80,16 +75,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       return NextResponse.json(safe, { headers: { 'Cache-Control': 'private, no-store' } });
     }
 
-    // 2 · LEGACY MIGRATION ONLY — resolve an old id and send the browser to the token URL.
-    //     REMOVE THIS BLOCK once the four legacy reports have been re-issued and verified.
-    const legacyRedirect = await selectOne('share_id', slug);
-    if (legacyRedirect?.share_token) {
-      return NextResponse.json(
-        { redirectTo: `/share/${legacyRedirect.share_token}`, legacy: true },
-        { status: 200, headers: { 'Cache-Control': 'private, no-store' } },
-      );
-    }
-
+    // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old
+    // insp_<timestamp> link and redirected to its token URL while the four pre-token reports
+    // were re-issued. That migration is complete and verified, so the enumerable id is no
+    // longer an access credential — which was the entire point of removing it.
     return notFound();
   } catch {
     // Opaque on purpose — no PostgREST text, no URL, no key fragment.
