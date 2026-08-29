@@ -18,9 +18,14 @@ const SEV_LABEL: Record<string, string> = { critical: 'SAFETY', anomaly: 'DEFICI
 type Repair = { id: string; item?: string; location?: string; severity?: string; generated_text?: string; edited_text?: string; status: string; sort_order?: number };
 type Rec = { share_id: string; address?: string; city?: string; state?: string; zip?: string; inspection_date?: string };
 
-async function pget<T>(path: string): Promise<T[]> {
+// Reads through /api/portal — service role, token -> share_id, scoped to one share (fix
+// 2026-08-29). Was an anon /api/proxy read that any public key could aim at any share.
+async function pget<T>(token: string, table: string, filter: string, order?: string): Promise<T[]> {
   try {
-    const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
+    const r = await fetch('/api/portal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, table, op: 'select', filter, order }),
+    });
     if (!r.ok) return [];
     const d = await r.json();
     return Array.isArray(d) ? d : [];
@@ -55,7 +60,7 @@ export default function PublicRepairsPage() {
       setRecord(rec);
       // Repairs key on the canonical share_id (insp_ id), not the token.
       const canonicalId = rec?.share_id ?? routeId;
-      const reps = await pget<Repair>(`home_repairs?share_id=eq.${encodeURIComponent(canonicalId)}&status=eq.included&order=sort_order.asc`);
+      const reps = await pget<Repair>(routeId, 'home_repairs', 'status=eq.included', 'sort_order.asc');
       setRepairs(reps);
       setLoading(false);
     })();

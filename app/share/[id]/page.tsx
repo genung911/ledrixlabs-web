@@ -25,36 +25,58 @@ function useDesk(): boolean {
   return desk;
 }
 
+// ─── PORTAL DATA, THROUGH THE TOKEN (security fix 2026-08-29) ─────────────────────────
+// These four helpers used to hit /api/proxy with the anon key, which is how the portal's tables
+// were world-readable and world-deletable. They now go through /api/portal, which holds the
+// service role server-side, resolves the token to a share_id, and confines every read and write to
+// that one share. The token is the URL slug, set once when the record loads (setPortalToken).
+//
+// Call sites are UNCHANGED — same names, same arguments. The share_id filter they still pass is
+// harmless: /api/portal drops any client share_id and injects its own.
+let PORTAL_TOKEN = '';
+function setPortalToken(t: string) { PORTAL_TOKEN = t; }
+
+function splitPath(path: string): { table: string; filter: string; select?: string; order?: string; limit?: number } {
+  const [table, query = ''] = path.split('?');
+  const filterParts: string[] = [];
+  let select: string | undefined, order: string | undefined, limit: number | undefined;
+  for (const part of query.split('&').filter(Boolean)) {
+    const key = part.split('=')[0];
+    if (key === 'select') select = decodeURIComponent(part.slice('select='.length));
+    else if (key === 'order') order = decodeURIComponent(part.slice('order='.length));
+    else if (key === 'limit') limit = Number(part.slice('limit='.length)) || undefined;
+    else filterParts.push(part);
+  }
+  return { table, filter: filterParts.join('&'), select, order, limit };
+}
+
+async function portal(op: string, table: string, extra: Record<string, unknown>): Promise<Response> {
+  return fetch('/api/portal', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: PORTAL_TOKEN, table, op, ...extra }),
+  });
+}
+
 async function supaGet<T>(path: string): Promise<T[]> {
   try {
-    const r = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`);
+    const { table, filter, select, order, limit } = splitPath(path);
+    const r = await portal('select', table, { filter, select, order, limit });
     if (!r.ok) return [];
     const data = await r.json();
     return Array.isArray(data) ? data : [];
   } catch { return []; }
 }
 async function supaPost(table: string, body: object | object[]) {
-  try {
-    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch { return new Response(null, { status: 500 }); }
+  try { return await portal('insert', table, { body }); }
+  catch { return new Response(null, { status: 500 }); }
 }
 async function supaPatch(table: string, filter: string, body: object) {
-  try {
-    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch { return new Response(null, { status: 500 }); }
+  try { return await portal('update', table, { filter, body }); }
+  catch { return new Response(null, { status: 500 }); }
 }
 async function supaDelete(table: string, filter: string) {
-  try {
-    return await fetch(`/api/proxy?path=${encodeURIComponent(table)}&filter=${encodeURIComponent(filter)}`, {
-      method: 'DELETE',
-    });
-  } catch { return new Response(null, { status: 500 }); }
+  try { return await portal('delete', table, { filter }); }
+  catch { return new Response(null, { status: 500 }); }
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -3046,6 +3068,9 @@ export default function SharePage() {
       //
       // The token is the only credential. The temporary legacy-id redirect was removed once
       // the four pre-token reports were re-issued (2026-08-28).
+      // The URL slug IS the portal's credential from here on — every child-table read and write
+      // goes through /api/portal carrying it (security fix 2026-08-29).
+      setPortalToken(routeId);
       const res = await fetch(`/api/share/${encodeURIComponent(routeId)}`, { cache: 'no-store' });
       if (!res.ok) { setNotFound(true); return; }
       const rec = await res.json() as HomeRecord;
