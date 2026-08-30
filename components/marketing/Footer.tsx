@@ -1,7 +1,20 @@
-// Footer — minimal: mark + wordmark, tagline, and a hairline-separated baseline.
+// Footer — minimal: mark + wordmark, tagline, and a hairline-separated baseline. Tagline and links
+// default to the parent-brand (two products); /inspect passes its own inspector line + section nav.
 import { LedrixDelta } from '@/components/LedrixDelta';
 
-export function Footer() {
+type FooterLink = { href: string; label: string };
+
+const DEFAULT_LINKS: FooterLink[] = [
+  { href: '/home', label: 'Ledrix Home' },
+  { href: '/inspect', label: 'Ledrix Inspect' },
+  { href: '/about', label: 'About' },
+  { href: '/ethix', label: 'Ethix' },
+];
+
+export function Footer({
+  tagline = '— intelligence for every structure.',
+  links = DEFAULT_LINKS,
+}: { tagline?: string; links?: FooterLink[] } = {}) {
   const year = new Date().getFullYear();
   return (
     <footer className="border-t border-white/[0.08] bg-dark py-12 text-slate-500">
@@ -9,16 +22,15 @@ export function Footer() {
         <div className="flex items-center gap-2.5">
           <LedrixDelta size={18} sheen />
           <span className="text-sm font-bold text-white">Ledrix</span>
-          <span className="text-sm text-slate-600">— the AI backup for home inspectors.</span>
+          <span className="text-sm text-slate-600">{tagline}</span>
         </div>
 
         <div className="flex items-center gap-6 text-xs">
-          <a href="/#how" className="transition-colors hover:text-white">How it works</a>
-          <a href="/#features" className="transition-colors hover:text-white">Why Ledrix</a>
-          <a href="/about" className="transition-colors hover:text-white">About</a>
-          <a href="/ethix" className="transition-colors hover:text-white">Ethix</a>
-          <a href="/#faq" className="transition-colors hover:text-white">FAQ</a>
-          <a href="/#demo" className="transition-colors hover:text-white">Request a demo</a>
+          {links.map((l) => (
+            <a key={l.href} href={l.href} className="transition-colors hover:text-white">
+              {l.label}
+            </a>
+          ))}
         </div>
       </div>
       <div className="mx-auto mt-8 flex max-w-6xl flex-col items-center gap-2 px-6 text-xs text-slate-700 sm:flex-row sm:justify-between">

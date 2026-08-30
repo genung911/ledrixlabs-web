@@ -22,7 +22,7 @@ const LINKS = [
 // `overLight` — the opener is now a LIGHT stage (the isometric dollhouse), so the
 // unscrolled nav must render in ink to stay legible. Dark-hero pages (about, ethix)
 // omit the prop and keep the white-over-dark treatment.
-export function Navbar({ overLight = false }: { overLight?: boolean }) {
+export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo' }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -66,7 +66,7 @@ export function Navbar({ overLight = false }: { overLight?: boolean }) {
         </a>
 
         <div className="hidden items-center gap-8 md:flex">
-          {LINKS.map((l) => (
+          {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
@@ -80,7 +80,7 @@ export function Navbar({ overLight = false }: { overLight?: boolean }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <GlowButton href="/#demo" variant="primary" tone={inkChrome ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
+          <GlowButton href={ctaHref} variant="primary" tone={inkChrome ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
             Request a demo
           </GlowButton>
 
@@ -116,7 +116,7 @@ export function Navbar({ overLight = false }: { overLight?: boolean }) {
             className="border-t border-hairline bg-white/95 backdrop-blur-xl md:hidden"
           >
             <div className="flex flex-col px-6 py-4">
-              {LINKS.map((l) => (
+              {links.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
