@@ -6,25 +6,25 @@ import { LedrixEye } from '@/components/LedrixEye';
 export const metadata: Metadata = {
   title: 'About — Ledrix',
   description:
-    'Ledrix Labs builds the intelligence layer for structures — starting with the home inspection, the highest-stakes moment in a home’s life.',
+    'Ledrix Labs builds the intelligence layer for structures, starting with the home inspection, the highest-stakes moment in a home’s life.',
 };
 
 const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: 'What it does',
-    body: "In the field, the inspector captures evidence by photo and voice; Ledrix drafts the finding — system attribution, priority, written narrative, and recommended action — and surfaces defects a tired eye might miss. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a legally-formatted PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
+    body: "In the field, the inspector captures evidence by photo and voice; Ledrix drafts the finding (system attribution, priority, written narrative, and recommended action) and surfaces defects a tired eye might miss. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a legally-formatted PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
   },
   {
     heading: "How it's different",
-    body: "Three things set Ledrix apart: a human-in-the-loop truth engine — AI drafts, the inspector verifies — making output both fast and defensible; a vision-first workflow that keeps the inspector's attention on the house, not a checklist; and the Home Portal, which turns a one-time report into an enduring homeowner asset — and a durable channel to the buyer that no PDF-based competitor offers.",
+    body: "Three things set Ledrix apart: a human-in-the-loop truth engine, where Ledrix doesn't decide what's a defect but surfaces the pattern of evidence and drafts the finding, and the inspector's confirmation is what makes it real, so output is both fast and defensible; a vision-first workflow that keeps the inspector's attention on the house, not a checklist; and the Home Portal, which turns a one-time report into an enduring homeowner asset — and a durable channel to the buyer that no PDF-based competitor offers.",
   },
   {
     heading: 'Technology',
-    body: 'Ledrix runs on a cloud-baseline AI architecture so every device — new or old — shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery.',
+    body: "Ledrix runs on a cloud-baseline AI architecture so every device, new or old, shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery. Every confirmed fact belongs to the property, not to any single document — the PDF report and the Home Portal are two views of the same underlying record, not two things to keep in sync by hand.",
   },
   {
     heading: 'Market & model',
-    body: 'Ledrix serves the large, highly fragmented U.S. home-inspection market — millions of inspections a year — through a subscription for inspectors, with integrated client booking and payments. The Home Portal extends reach to every buyer an inspector touches, creating a homeowner-facing surface for future services: repair estimates, contractor connections, and ongoing home-intelligence features.',
+    body: 'Ledrix serves the large, highly fragmented U.S. home inspection market, millions of inspections a year, through a subscription for inspectors, with integrated client booking and payments. The Home Portal extends reach to every buyer an inspector touches, creating a homeowner-facing surface for future services: top-rated local pros, contractor connections, and ongoing home-intelligence features.',
   },
 ];
 
@@ -76,7 +76,9 @@ export default function About() {
           <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-400 md:text-lg">
             Ledrix is building the intelligence layer for structures — starting with the inspection, the
             highest-stakes moment in a home&apos;s life — and expanding into the ongoing understanding,
-            maintenance, and stewardship of the built world.
+            maintenance, and stewardship of the built world. The property is the product. The report, the
+            Home Portal, and everything that comes after are just different ways of presenting what&apos;s
+            true about it.
           </p>
         </section>
       </main>
