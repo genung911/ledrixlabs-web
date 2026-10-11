@@ -5,3 +5,5 @@ out/
 *.node
 eas.json
 app.json
+.DS_Store
+*.tsbuildinfo
