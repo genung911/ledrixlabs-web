@@ -671,7 +671,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
       const seeded = [{ role: 'user' as const, content: `About the finding "${a.unit ?? ''}: ${a.description ?? ''}"${a.location ? ` (${a.location})` : ''} — ${q}` }];
       const r = await fetch('/api/ledrix', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ shareId, mode: 'chat', messages: seeded }),
+        body: JSON.stringify({ shareId, token: PORTAL_TOKEN, mode: 'chat', messages: seeded }),
       });
       const j = await r.json();
       setMsgs(m => [...m, { role: 'ledrix', text: r.ok ? (j.text ?? '…') : (j.error ?? 'Ledrix is unavailable.') }]);
@@ -1187,7 +1187,7 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
       const resp = await fetch('/api/ledrix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
-        body: JSON.stringify({ mode: 'analyze', image: img, shareId }),
+        body: JSON.stringify({ mode: 'analyze', image: img, shareId, token: PORTAL_TOKEN }),
       });
       const j = await resp.json().catch(() => ({}));
       if (resp.ok && j.text) setResult(String(j.text));
@@ -2553,7 +2553,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
       setLoading(true);
       try {
         const { data } = await supabase.auth.getSession();
-        const resp = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify({ shareId, mode: 'insight' }) });
+        const resp = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` }, body: JSON.stringify({ shareId, token: PORTAL_TOKEN, mode: 'insight' }) });
         const j = await resp.json().catch(() => ({}));
         if (!live) return;
         if (resp.ok && j.text) {
@@ -2636,7 +2636,7 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
       const resp = await fetch('/api/ledrix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
-        body: JSON.stringify({ shareId, mode: 'chat', messages: next.map(m => ({ role: m.role === 'ledrix' ? 'assistant' : 'user', content: m.text })) }),
+        body: JSON.stringify({ shareId, token: PORTAL_TOKEN, mode: 'chat', messages: next.map(m => ({ role: m.role === 'ledrix' ? 'assistant' : 'user', content: m.text })) }),
       });
       const j = await resp.json().catch(() => ({}));
       setMsgs(m => [...m, { role: 'ledrix', text: resp.ok ? (j.text || '…') : (j.error || 'Ledrix is unavailable.') }]);
@@ -3009,7 +3009,7 @@ export default function SharePage() {
             // Is it a "we had X done" statement? Parse it; if so, confirm + log to the Carfax. Else → chat.
             try {
               const { data: sess } = await supabase.auth.getSession();
-              const lr = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token ?? ''}` }, body: JSON.stringify({ mode: 'logparse', question: spoken, shareId }) });
+              const lr = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token ?? ''}` }, body: JSON.stringify({ mode: 'logparse', question: spoken, shareId, token: PORTAL_TOKEN }) });
               const lj = await lr.json().catch(() => ({}));
               if (lr.ok && lj.log?.isLog && lj.log?.title) { setValLog({ ...lj.log, transcript: spoken }); return; }
             } catch { /* fall through to chat */ }

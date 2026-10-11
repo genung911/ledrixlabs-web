@@ -1,7 +1,9 @@
 // ─── /api/ledrix ─────────────────────────────────────────────────────────────
 // The gated AI endpoint for the Home App's Ledrix chat + live Insight.
 // - Requires a signed-in Supabase user (magic-link auth). No session → 401.
-// - Pulls the property context server-side (authoritative) by share_id.
+// - Pulls the property context server-side (authoritative) for the home the caller's SHARE TOKEN
+//   names. The token is the portal's credential (same rule as /api/share and /api/portal); a bare
+//   or guessed share_id authorizes nothing (security S-16, 2026-10-10).
 // - Forwards to the Railway gateway with the x-ledrix-key header. The gateway
 //   routes text-only requests to the cheap model, which suits homeowner Q&A.
 // Phase 3 adds the per-user token ledger (real metering). For now: auth-gate +
@@ -19,6 +21,27 @@ const SUPA_URL    = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest
 const SERVICE     = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
+
+/** The token resolves to exactly one share_id, or to nothing. Same shape gate and lookup as
+ *  /api/portal (kept inline so this route does not depend on any other change). */
+async function shareIdForToken(token: unknown): Promise<string | null> {
+  // A token is a primitive string or nothing. Arrays, objects, numbers and booleans are refused here,
+  // before any lookup — never coerced (String(["<token>"]) would otherwise read as that token).
+  if (typeof token !== 'string') return null;
+  const slug = token.trim();
+  if (!slug || slug.length > 128 || !/^[A-Za-z0-9._-]+$/.test(slug)) return null;
+  try {
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/home_records?share_token=eq.${encodeURIComponent(slug)}&select=share_id&limit=1`,
+      { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` }, cache: 'no-store' },
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return Array.isArray(rows) && rows.length ? String(rows[0]?.share_id ?? '') || null : null;
+  } catch {
+    return null;
+  }
+}
 
 function buildContext(rec: any, log: any[] = []): string {
   if (!rec) return 'No inspection record is available for this property.';
@@ -54,15 +77,27 @@ export async function POST(req: NextRequest) {
   // Premium gate — dormant until Stripe is configured + BILLING_ENABLED=1 (then requires a subscription).
   if (!(await isEntitled(user.id))) return NextResponse.json({ error: 'Subscribe to unlock Ledrix.' }, { status: 402 });
 
-  // Free-beta cap: bound per-user daily AI calls (cost safety).
+  let payload: { shareId?: string; token?: string; mode?: 'chat' | 'insight' | 'analyze' | 'logparse'; messages?: Msg[]; image?: string; question?: string };
+  try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
+  const { mode = 'chat', messages = [], image = '', question = '' } = payload;
+  // Which home — proven by the share TOKEN, resolved here. A request that names a home (token or
+  // shareId) must carry a token that resolves; a shareId alone, or one the token does not name,
+  // is the same opaque 404 and reaches neither the data nor the model. No home named = no context,
+  // exactly as before.
+  let shareId: string | null = null;
+  if (payload.token || payload.shareId) {
+    shareId = await shareIdForToken(payload.token);
+    if (!shareId || (payload.shareId && payload.shareId !== shareId)) {
+      return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    }
+  }
+
+  // Free-beta cap: bound per-user daily AI calls (cost safety). Counted only for requests that
+  // will actually run.
   const used = await bumpUsage(admin, user.id);
   if (used > DAILY_CAP) {
     return NextResponse.json({ error: `You've used today's free Ledrix questions (${DAILY_CAP}). It resets tomorrow.` }, { status: 429 });
   }
-
-  let payload: { shareId?: string; mode?: 'chat' | 'insight' | 'analyze' | 'logparse'; messages?: Msg[]; image?: string; question?: string };
-  try { payload = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
-  const { shareId, mode = 'chat', messages = [], image = '', question = '' } = payload;
   if (mode === 'analyze' && !/^data:image\/|^https?:\/\//.test(image)) return NextResponse.json({ error: 'No photo to analyze.' }, { status: 400 });
 
   // 2) Property context — fetched server-side, never trusted from the client. Includes the owner's
@@ -93,7 +128,9 @@ export async function POST(req: NextRequest) {
     ? `You are Ledrix, the homeowner's home assistant for this property. ${honesty} The homeowner has photographed something in or around their home. In plain language: say what it is, assess its condition from what's visible, flag any safety or maintenance concern, and give one practical next step. Be honest about what you can't tell from a photo, and recommend a licensed pro when it warrants one. 3-5 sentences, never alarmist.\n\n${ctx}`
     : mode === 'logparse'
     ? `You extract a home SERVICE-HISTORY entry from what a homeowner said aloud. If they are reporting COMPLETED work/service/improvement on their home (e.g. "we had a new roof put on", "flushed the water heater", "painted the exterior", "replaced the dishwasher"), return {"isLog":true,"title":"<short past-tense summary, e.g. New roof installed>","system":"<Roof|HVAC|Water Heater|Plumbing|Electrical|Exterior|Interior|Appliance|Safety|Other>","kind":"<service|repair|improvement>"}. If it is a QUESTION, a plan for the future, or anything that is NOT a report of completed work, return {"isLog":false}. Return ONLY the JSON object, no prose.`
-    : `You are Ledrix, the friendly assistant for THIS home. ${honesty} Speak about "your home"; you can answer from the inspection AND the service history below (what's been done and when). Keep answers concise and practical.\n\n${ctx}`;
+    : `You are Ledrix, the friendly assistant for THIS home. ${honesty} Speak about "your home"; you can answer from the inspection AND the service history below (what's been done and when). Keep answers concise and practical. ` +
+      // The model only ever answers a signed-in user (no session = 401 above), so "already signed in" is true.
+      `If asked about signing in, accounts, or a sign-in link: you can't send links or change accounts. Say they're already signed in on this device, and that to use Ledrix on another device or browser they open Ask Ledrix there, enter their email, and open the sign-in link from that email on that same device.\n\n${ctx}`;
 
   const userMsgs: any[] =
     mode === 'insight' ? [{ role: 'user', content: 'Give me a short insight about my home.' }]
