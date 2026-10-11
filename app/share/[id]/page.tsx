@@ -9,6 +9,7 @@ import ValOrbVoice from '@/components/ValOrbVoice';
 import { ValMark } from '@/components/ValMark';
 import { LedrixEye } from '@/components/LedrixEye';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
+import { assetUrl, withTokenInHtml, defaultReportHtmlPaths, loadFirstReport } from '@/lib/portalAssets';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 // Desktop breakpoint — the page is inline-styled, so responsiveness is driven by this
@@ -531,10 +532,11 @@ function photoUrl(uri?: string | null): string | null {
   if (/^https?:\/\//.test(uri)) {
     // Finding photos live in the inspection-pdfs bucket (may be private) → sign server-side.
     // Any other absolute URL is already public/external and passes through untouched.
-    return uri.includes('/inspection-pdfs/') ? `/api/report-asset?path=${encodeURIComponent(uri)}` : uri;
+    return uri.includes('/inspection-pdfs/') ? assetUrl('report-asset', uri, PORTAL_TOKEN) : uri;
   }
   if (uri.startsWith('file')) return null;
-  return `/api/photo?path=${encodeURIComponent(uri)}`;
+  // Both signing routes require the share token (Phase 0b, 2026-10-10) — see lib/portalAssets.ts.
+  return assetUrl('photo', uri, PORTAL_TOKEN);
 }
 
 // Fullscreen image viewer — tap anywhere or ✕ to close.
@@ -566,7 +568,7 @@ function FLabel({ children }: { children: ReactNode }) {
 // public inspection-pdfs URL, the proxy normalizes it back to the object path and signs it.
 function pdfHref(record: HomeRecord): string | null {
   const src = record.pdf_url || (record.share_id ? `${record.share_id}/report.pdf` : '');
-  return src ? `/api/report-asset?path=${encodeURIComponent(src)}` : null;
+  return src ? assetUrl('report-asset', src, PORTAL_TOKEN) : null;
 }
 
 function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string; cityState?: string; shareId: string }) {
@@ -2046,20 +2048,23 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   const selected = histSel ? history.find(h => h.version === histSel) : null;
   // Signed via /api/report-asset so it resolves whether the inspection-pdfs bucket is public
   // or private (fetch below follows the 302 redirect and reads the HTML text).
-  const reportUrl = selected?.html_path
-    ? `/api/report-asset?path=${encodeURIComponent(selected.html_path)}`
-    : record.share_id
-    ? `/api/report-asset?path=${encodeURIComponent(`${record.share_id}/report.html`)}`
-    : '';
+  // A history version reads its own snapshot. The DEFAULT (latest) reads the html of the version
+  // `pdf_url` names, then the legacy fixed report.html — so the web report switches together with
+  // the record and PDF (S-14, 2026-10-10; see defaultReportHtmlPaths in lib/portalAssets.ts).
+  const reportUrls: string[] = selected?.html_path
+    ? [assetUrl('report-asset', selected.html_path, PORTAL_TOKEN)]
+    : defaultReportHtmlPaths(record.share_id, record.pdf_url).map(p => assetUrl('report-asset', p, PORTAL_TOKEN));
+  const reportKey = reportUrls.join('\n');
   useEffect(() => {
-    if (!reportUrl) { setDoc('none'); return; }
+    if (!reportKey) { setDoc('none'); return; }
     let alive = true;
     setDoc(null);
-    fetch(reportUrl).then(r => (r.ok ? r.text() : Promise.reject(r.status)))
-      .then(t => { if (alive) setDoc(t && t.length > 300 ? t : 'none'); })
+    loadFirstReport(reportKey.split('\n'), url => fetch(url))
+      // The stored HTML's own <img> URLs were written without a token; add it before rendering.
+      .then(t => { if (alive) setDoc(t ? withTokenInHtml(t, PORTAL_TOKEN) : 'none'); })
       .catch(() => { if (alive) setDoc('none'); });
     return () => { alive = false; };
-  }, [reportUrl]);
+  }, [reportKey]);
   const reportReady = typeof doc === 'string' && doc !== 'none';
 
   // Live ToC sidebar: the report HTML carries sec-* anchors; we render it in a same-origin srcDoc
@@ -2168,7 +2173,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
               ))}
             </select>
           )}
-          {(selected?.pdf_path || pdfHref(record)) ? <a href={selected?.pdf_path ? `/api/report-asset?path=${encodeURIComponent(selected.pdf_path)}` : pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 600, padding: '8px 14px', borderRadius: 8, textDecoration: 'none', fontFamily: MONO, letterSpacing: '0.08em' }}>⤓ PRINT / PDF</a> : null}
+          {(selected?.pdf_path || pdfHref(record)) ? <a href={selected?.pdf_path ? assetUrl('report-asset', selected.pdf_path, PORTAL_TOKEN) : pdfHref(record)!} target="_blank" rel="noreferrer" style={{ background: 'none', color: C.ink, border: `1px solid ${C.line}`, fontSize: 11, fontWeight: 600, padding: '8px 14px', borderRadius: 8, textDecoration: 'none', fontFamily: MONO, letterSpacing: '0.08em' }}>⤓ PRINT / PDF</a> : null}
         </div>
 
         <div style={{ padding: '0 24px 90px', background: '#fff' }}>

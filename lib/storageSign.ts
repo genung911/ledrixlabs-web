@@ -19,7 +19,7 @@ const BUCKET   = 'inspection-pdfs';
 // Accepts either a bare object path (`insp_x/report.pdf`) or a full public URL
 // (`…/object/public/inspection-pdfs/insp_x/report.pdf`, the format older records
 // stored) and normalizes to the bucket-relative object path.
-function normalizePath(input: string): string | null {
+export function normalizePath(input: string): string | null {
   let p = (input ?? '').trim();
   if (!p) return null;
   const marker = '/inspection-pdfs/';
