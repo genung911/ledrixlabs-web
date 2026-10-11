@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
 
@@ -24,12 +25,38 @@ const FOOTER_TEMPLATE = `
     <span>PAGE <span class="pageNumber"></span> OF <span class="totalPages"></span></span>
   </div>`;
 
+// AUTH (Security C1, 2026-10-11). The route used to skip the key check entirely when
+// RENDER_PDF_SECRET was unset — which is how production ran: anyone could drive the paid remote
+// browser with arbitrary HTML. Now it FAILS CLOSED: no secret configured → 503, nothing rendered.
+//
+// The key the app sends (EXPO_PUBLIC_RENDER_PDF_KEY) is compiled into every app bundle, so it
+// identifies the app, not a person, and anyone who extracts it passes. This check is containment,
+// not authorization; durable auth needs the app to send the user's Supabase session (a later,
+// coordinated app + route change).
+//
+// Constant-time compare over fixed-length digests, so neither the key's contents nor its length
+// leak through response timing.
+function keyMatches(given: string | null, expected: string): boolean {
+  if (!given || !expected) return false;
+  const a = createHash('sha256').update(given, 'utf8').digest();
+  const b = createHash('sha256').update(expected, 'utf8').digest();
+  return timingSafeEqual(a, b);
+}
+
+// Generic bodies only: no configuration names, no upstream messages (those go to the server log).
+const UNAVAILABLE = () => NextResponse.json({ error: 'render unavailable' }, { status: 503 });
+
 export async function POST(req: NextRequest) {
-  if (SECRET && req.headers.get('x-render-key') !== SECRET) {
+  if (!SECRET) {
+    console.error('[render-pdf] refused: RENDER_PDF_SECRET is not configured');
+    return UNAVAILABLE();
+  }
+  if (!keyMatches(req.headers.get('x-render-key'), SECRET)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
   if (!BROWSER_WS) {
-    return NextResponse.json({ error: 'BROWSERLESS_WS_ENDPOINT not configured' }, { status: 500 });
+    console.error('[render-pdf] refused: BROWSERLESS_WS_ENDPOINT is not configured');
+    return UNAVAILABLE();
   }
 
   let html: unknown;
@@ -40,17 +67,23 @@ export async function POST(req: NextRequest) {
   }
 
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
+  // Which step failed — logged instead of the exception text (see the catch below).
+  let phase: 'connect' | 'open' | 'load' | 'images' | 'print' = 'connect';
   try {
     browser = await puppeteer.connect({ browserWSEndpoint: BROWSER_WS });
+    phase = 'open';
     const page = await browser.newPage();
     // domcontentloaded is instant; networkidle0 hangs forever when a report has several images.
+    phase = 'load';
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
     // Then wait for images to load — but NEVER hang on slow/broken ones (cap at 8s).
+    phase = 'images';
     await page.evaluate(() => Promise.race([
       Promise.all(Array.from(document.images).map(img =>
         img.complete ? null : new Promise(res => { img.addEventListener('load', res); img.addEventListener('error', res); }))),
       new Promise(res => setTimeout(res, 8000)),
     ]));
+    phase = 'print';
     const pdf = await page.pdf({
       format: 'Letter',
       printBackground: true,
@@ -65,8 +98,12 @@ export async function POST(req: NextRequest) {
       { status: 200, headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (e: unknown) {
-    const detail = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: 'render failed', detail }, { status: 500 });
+    // Never log the exception's message or the error object: a connect failure's message carries the
+    // browser WebSocket URL with its token, and render errors can quote report HTML. The step and
+    // the error's class name (e.g. TimeoutError, ProtocolError) are enough to diagnose.
+    const kind = e instanceof Error && /^[A-Za-z]{1,40}$/.test(e.name) ? e.name : 'Error';
+    console.error(`[render-pdf] render failed at step "${phase}" (${kind})`);
+    return NextResponse.json({ error: 'render failed' }, { status: 500 });
   } finally {
     await browser?.close().catch(() => {});
   }
