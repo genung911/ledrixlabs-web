@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Illustration of a sample tankless water heater data plate with fictional values">
+  <title>Tankless water heater data plate — fictional sample</title>
+  <rect width="400" height="300" fill="#EEF0F2"/>
+  <g fill="none" stroke="#5B636B" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="70" y="52" width="260" height="206" rx="8" fill="#F7F8F9"/>
+    <circle cx="84" cy="66" r="3" fill="#8A939B"/><circle cx="316" cy="66" r="3" fill="#8A939B"/>
+    <circle cx="84" cy="244" r="3" fill="#8A939B"/><circle cx="316" cy="244" r="3" fill="#8A939B"/>
+    <line x1="86" y1="96" x2="314" y2="96"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.5">
+    <text x="200" y="84" fill="#3A4047" text-anchor="middle" font-size="11" letter-spacing="1.5">EXAMPLE APPLIANCE CO.</text>
+    <text x="86" y="118" fill="#5B636B">MODEL</text><text x="160" y="118" fill="#3A4047">EX-TL-0000</text>
+    <line x1="86" y1="124" x2="314" y2="124" stroke="#C3C9CF" stroke-width="1"/>
+    <text x="86" y="138" fill="#5B636B">SERIAL</text><text x="160" y="138" fill="#3A4047">SAMPLE-000000</text>
+    <line x1="86" y1="144" x2="314" y2="144" stroke="#C3C9CF" stroke-width="1"/>
+    <text x="86" y="158" fill="#5B636B">MFD</text><text x="160" y="158" fill="#3A4047">20XX</text>
+    <line x1="86" y1="164" x2="314" y2="164" stroke="#C3C9CF" stroke-width="1"/>
+    <text x="86" y="178" fill="#5B636B">TYPE</text><text x="160" y="178" fill="#3A4047">TANKLESS · POINT OF USE</text>
+    <line x1="86" y1="184" x2="314" y2="184" stroke="#C3C9CF" stroke-width="1"/>
+    <text x="86" y="198" fill="#5B636B">INPUT</text><text x="160" y="198" fill="#3A4047">0.0 kW · 000 V</text>
+    <line x1="86" y1="204" x2="314" y2="204" stroke="#C3C9CF" stroke-width="1"/>
+    <text x="86" y="218" fill="#5B636B">RATING</text><text x="160" y="218" fill="#3A4047">EXAMPLE VALUES ONLY</text>
+    <line x1="86" y1="224" x2="314" y2="224" stroke="#C3C9CF" stroke-width="1"/>
+  </g>
+  <g transform="rotate(-18 200 160)" font-family="ui-monospace, Menlo, Consolas, monospace">
+    <rect x="118" y="130" width="164" height="54" rx="6" fill="none" stroke="#3A4047" stroke-width="4" opacity="0.55"/>
+    <text x="200" y="171" fill="#3A4047" opacity="0.55" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="6">SAMPLE</text>
+  </g>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="1">
+    <rect x="0" y="0" width="400" height="26" fill="#3A4047"/>
+    <text x="200" y="17" fill="#FFFFFF" text-anchor="middle">ILLUSTRATION — NOT INSPECTION EVIDENCE</text>
+  </g>
+</svg>

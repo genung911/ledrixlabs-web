@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Illustration of a fireplace with a mantel and gas logs">
+  <title>Fireplace — illustration</title>
+  <rect width="400" height="300" fill="#EEF0F2"/>
+  <g fill="none" stroke="#5B636B" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <line x1="0" y1="246" x2="400" y2="246"/>
+    <rect x="96" y="68" width="208" height="16" rx="2" fill="#DCE0E4"/>
+    <rect x="110" y="84" width="180" height="152" fill="#E3E6E9"/>
+    <path d="M146 236 V138 a54 50 0 0 1 108 0 V236 Z" fill="#C9CED3"/>
+    <rect x="86" y="236" width="228" height="12" rx="2" fill="#DCE0E4"/>
+    <rect x="160" y="210" width="80" height="12" rx="6" fill="#B7BEC5"/>
+    <rect x="168" y="198" width="64" height="12" rx="6" fill="#B7BEC5"/>
+    <path d="M182 198 q-10 -26 8 -44 q-2 18 10 26 q4 -22 18 -30 q-4 24 6 34 q2 8 -2 14" fill="#F7F8F9"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="1">
+    <rect x="0" y="0" width="400" height="26" fill="#3A4047"/>
+    <text x="200" y="17" fill="#FFFFFF" text-anchor="middle">ILLUSTRATION — NOT INSPECTION EVIDENCE</text>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Illustration of a bay window with a window seat">
+  <title>Bay window — illustration</title>
+  <rect width="400" height="300" fill="#EEF0F2"/>
+  <g fill="none" stroke="#5B636B" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <line x1="0" y1="232" x2="400" y2="232"/>
+    <polygon points="60,70 130,58 130,200 60,212" fill="#D6E2EC"/>
+    <rect x="130" y="58" width="140" height="142" fill="#D6E2EC"/>
+    <polygon points="270,58 340,70 340,212 270,200" fill="#D6E2EC"/>
+    <line x1="95" y1="64" x2="95" y2="206"/><line x1="200" y1="58" x2="200" y2="200"/><line x1="305" y1="64" x2="305" y2="206"/>
+    <line x1="60" y1="140" x2="130" y2="128"/><line x1="130" y1="128" x2="270" y2="128"/><line x1="270" y1="128" x2="340" y2="140"/>
+    <polygon points="48,212 130,200 270,200 352,212 352,224 48,224" fill="#F7F8F9"/>
+    <polygon points="56,224 344,224 330,248 70,248" fill="#E3E6E9"/>
+    <path d="M86 236 h60 M170 236 h60 M254 236 h60"/>
+    <path d="M146 112 l18 -22 M156 116 l12 -15 M216 112 l18 -22" stroke="#9AA3AB" stroke-width="1.5"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" letter-spacing="1">
+    <rect x="0" y="0" width="400" height="26" fill="#3A4047"/>
+    <text x="200" y="17" fill="#FFFFFF" text-anchor="middle">ILLUSTRATION — NOT INSPECTION EVIDENCE</text>
+  </g>
+</svg>
