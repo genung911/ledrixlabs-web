@@ -25,17 +25,49 @@ const FOOTER_TEMPLATE = `
     <span>PAGE <span class="pageNumber"></span> OF <span class="totalPages"></span></span>
   </div>`;
 
-// AUTH (Security C1, 2026-10-11). The route used to skip the key check entirely when
-// RENDER_PDF_SECRET was unset — which is how production ran: anyone could drive the paid remote
-// browser with arbitrary HTML. Now it FAILS CLOSED: no secret configured → 503, nothing rendered.
+// AUTH (Security C1 2026-10-11, C1b 2026-10-11). Two credentials, either of which lets a render run:
 //
-// The key the app sends (EXPO_PUBLIC_RENDER_PDF_KEY) is compiled into every app bundle, so it
-// identifies the app, not a person, and anyone who extracts it passes. This check is containment,
-// not authorization; durable auth needs the app to send the user's Supabase session (a later,
-// coordinated app + route change).
+//   1. A SIGNED-IN INSPECTOR (durable, C1b). `Authorization: Bearer <Supabase access token>` is verified
+//      by Supabase Auth itself (GET /auth/v1/user — signature, expiry, revoked sessions), and then, AS
+//      that user (RLS applies): the user must have an inspector profile, and the body's `inspectionId`
+//      must be one they may create content under (can_create_under_inspection — owner / assignee /
+//      same-company editor of an existing inspection, or an id the server has not seen yet, e.g. a
+//      preview before the first sync). A homeowner account, a stranger's inspection, a malformed id:
+//      refused. Identity is never taken from the body.
+//      ⚠ POLICY PENDING (owner decision, 2026-10-11): sign-up is open, any non-homeowner account can
+//      create its own inspector profile and inspection rows, and an unseen id passes
+//      can_create_under_inspection — so this check bounds WHICH existing inspections a caller may name,
+//      not WHO may render. Which helper applies, and whether a per-user render budget is required, is
+//      not yet decided; this is the C1b candidate, unchanged.
+//   2. The app's static key (`x-render-key` = RENDER_PDF_SECRET), C1's containment, kept ONLY so builds
+//      already installed keep rendering — and honoured only on a request that presents NO session. That key is compiled into every app bundle — it identifies the
+//      app, not a person. It is accepted only while RENDER_PDF_SECRET is set; removing that env var
+//      (once the session-sending build is installed everywhere) turns the static key off entirely.
 //
-// Constant-time compare over fixed-length digests, so neither the key's contents nor its length
-// leak through response timing.
+// Nothing renders without one of them; misconfiguration fails closed. The key is compared in constant
+// time over fixed-length digests. Responses and logs carry no token, configuration or upstream detail.
+//
+// PRESENTING an Authorization header at all commits the request to the session path (W1, 2026-10-11):
+// a header that is malformed, not Bearer, the public anon key, or a token Supabase rejects is refused
+// with 401 — it never falls back to the static key, whatever else the request carries.
+//
+// INVARIANT — this route renders the HTML it is SENT. It never reads report data. `inspectionId` is an
+// authorization subject, not a lookup key: nothing here (or in a future change) may fetch inspection,
+// finding or photo data by a caller-supplied id, because the id is not bound to the HTML and the
+// authorization below would then become the only thing standing between a caller and someone else's
+// report. Report contents reach the browser only inside the submitted HTML.
+//
+// THE BROWSER IS UNTRUSTED-CONTENT SAFE (W1). Page JavaScript is disabled (the report's only script
+// drives the web report's screen-width view switcher; every rule it toggles sits inside
+// `@media screen`, and page.pdf prints `print` media, so the PDF is identical without it). Every
+// request the page makes is aborted unless it is data:/about:/blob:, the project's Supabase host (the
+// photos arrive as storage URLs signed by the inspector's session), or Google Fonts. The renderer can
+// no longer be pointed at arbitrary hosts.
+const SUPA_URL  = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const INSPECTION_ID = /^[A-Za-z0-9._-]{1,128}$/;
+const MAX_HTML_CHARS = 6_000_000;   // above Vercel's ~4.5 MB body cap; a hard ceiling if that ever moves
+
 function keyMatches(given: string | null, expected: string): boolean {
   if (!given || !expected) return false;
   const a = createHash('sha256').update(given, 'utf8').digest();
@@ -43,27 +75,120 @@ function keyMatches(given: string | null, expected: string): boolean {
   return timingSafeEqual(a, b);
 }
 
+/** null = no Authorization header. '' = a header that carries no usable session (malformed, not
+ *  Bearer, or the public anon key — which is not a session). Otherwise the bearer token. */
+function bearerToken(req: NextRequest): string | null {
+  const header = req.headers.get('authorization');
+  if (header === null) return null;
+  const m = /^Bearer\s+(\S+)\s*$/i.exec(header);
+  return m && m[1] !== SUPA_ANON ? m[1] : '';
+}
+
+// Hosts the report legitimately loads from (see the header comment). Anything else is aborted.
+const SUPA_HOST = (() => { try { return SUPA_URL ? new URL(SUPA_URL).host : ''; } catch { return ''; } })();
+const ALLOWED_HOSTS = new Set([SUPA_HOST, 'fonts.googleapis.com', 'fonts.gstatic.com'].filter(Boolean));
+function requestAllowed(url: string): boolean {
+  if (/^(data|about|blob):/i.test(url)) return true;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && ALLOWED_HOSTS.has(u.host);
+  } catch {
+    return false;
+  }
+}
+
+type Verdict = 'ok' | 'unauthorized' | 'forbidden' | 'unavailable';
+
+/** Who is this? Supabase Auth decides. 'unavailable' = we could not find out (fail closed). */
+async function verifySession(token: string): Promise<{ verdict: Verdict; userId?: string }> {
+  if (!SUPA_URL || !SUPA_ANON) return { verdict: 'unavailable' };
+  try {
+    const r = await fetch(`${SUPA_URL}/auth/v1/user`, {
+      headers: { apikey: SUPA_ANON, Authorization: `Bearer ${token}` }, cache: 'no-store',
+    });
+    if (r.status === 401 || r.status === 403) return { verdict: 'unauthorized' };
+    if (!r.ok) return { verdict: 'unavailable' };
+    const u: unknown = await r.json();
+    const id = (u as { id?: unknown } | null)?.id;
+    return typeof id === 'string' && id ? { verdict: 'ok', userId: id } : { verdict: 'unauthorized' };
+  } catch {
+    return { verdict: 'unavailable' };
+  }
+}
+
+/** May this verified user render for this inspection? Asked AS the user, so RLS decides. */
+async function mayRender(token: string, userId: string, inspectionId: string): Promise<Verdict> {
+  const h = { apikey: SUPA_ANON, Authorization: `Bearer ${token}` };
+  try {
+    const [profile, allowed] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/inspector_profiles?id=eq.${encodeURIComponent(userId)}&select=id`, { headers: h, cache: 'no-store' }),
+      fetch(`${SUPA_URL}/rest/v1/rpc/can_create_under_inspection`, {
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_inspection_id: inspectionId }), cache: 'no-store',
+      }),
+    ]);
+    if (!profile.ok || !allowed.ok) return 'unavailable';
+    const rows: unknown = await profile.json();
+    const ok: unknown = await allowed.json();
+    if (!Array.isArray(rows) || rows.length !== 1) return 'forbidden';   // not an inspector account
+    return ok === true ? 'ok' : 'forbidden';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 // Generic bodies only: no configuration names, no upstream messages (those go to the server log).
-const UNAVAILABLE = () => NextResponse.json({ error: 'render unavailable' }, { status: 503 });
+const UNAVAILABLE  = () => NextResponse.json({ error: 'render unavailable' }, { status: 503 });
+const UNAUTHORIZED = () => NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+const FORBIDDEN    = () => NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
 export async function POST(req: NextRequest) {
-  if (!SECRET) {
-    console.error('[render-pdf] refused: RENDER_PDF_SECRET is not configured');
-    return UNAVAILABLE();
+  const token = bearerToken(req);
+  const keyOk = !!SECRET && keyMatches(req.headers.get('x-render-key'), SECRET);
+
+  // 1 · Who is asking — decided before the body is read. A PRESENTED session is decisive: if it does
+  // not verify, the request is refused even when the static key is also sent (final review,
+  // 2026-10-11) — an invalid or unverifiable identity never falls back to the app-wide key. Only a
+  // request that presents no session at all (builds that predate C1b) may use the key, and only
+  // while RENDER_PDF_SECRET is set.
+  let session: { token: string; userId: string } | null = null;
+  if (token === '') {
+    return UNAUTHORIZED();   // a header was presented and carries no session: never the key
+  } else if (token) {
+    const v = await verifySession(token);
+    if (v.verdict === 'unavailable') { console.error('[render-pdf] refused: session verification unavailable'); return UNAVAILABLE(); }
+    if (v.verdict !== 'ok' || !v.userId) return UNAUTHORIZED();
+    session = { token, userId: v.userId };
+  } else if (!keyOk) {
+    return UNAUTHORIZED();
   }
-  if (!keyMatches(req.headers.get('x-render-key'), SECRET)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  }
+
   if (!BROWSER_WS) {
     console.error('[render-pdf] refused: BROWSERLESS_WS_ENDPOINT is not configured');
     return UNAVAILABLE();
   }
 
-  let html: unknown;
-  try { ({ html } = await req.json()); }
+  // 2 · What is being asked for.
+  let body: { html?: unknown; inspectionId?: unknown };
+  try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'invalid json body' }, { status: 400 }); }
+  const html = body?.html;
   if (typeof html !== 'string' || !html.trim()) {
     return NextResponse.json({ error: 'missing html' }, { status: 400 });
+  }
+  if (html.length > MAX_HTML_CHARS) {
+    return NextResponse.json({ error: 'html too large' }, { status: 413 });
+  }
+
+  // 3 · A signed-in caller must be allowed to render for THIS inspection.
+  if (session) {
+    const inspectionId = body?.inspectionId;
+    if (typeof inspectionId !== 'string' || !INSPECTION_ID.test(inspectionId)) {
+      return NextResponse.json({ error: 'missing inspectionId' }, { status: 400 });
+    }
+    const v = await mayRender(session.token, session.userId, inspectionId);
+    if (v === 'unavailable') { console.error('[render-pdf] refused: authorization check unavailable'); return UNAVAILABLE(); }
+    if (v !== 'ok') return FORBIDDEN();
   }
 
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
@@ -73,6 +198,13 @@ export async function POST(req: NextRequest) {
     browser = await puppeteer.connect({ browserWSEndpoint: BROWSER_WS });
     phase = 'open';
     const page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on('request', r => {
+      if (r.isInterceptResolutionHandled()) return;
+      if (requestAllowed(r.url())) r.continue().catch(() => {});
+      else r.abort('blockedbyclient').catch(() => {});
+    });
     // domcontentloaded is instant; networkidle0 hangs forever when a report has several images.
     phase = 'load';
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });

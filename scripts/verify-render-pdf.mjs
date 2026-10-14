@@ -9,7 +9,7 @@
 //
 //   node scripts/verify-render-pdf.mjs
 //   WEB_SRC=<dir> node scripts/verify-render-pdf.mjs   # run against another checkout (e.g. HEAD)
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -27,7 +27,9 @@ const ok = (label, cond, detail) => { checks++; if (!cond) failures.push(detail 
 const WS = 'wss://browser.example.invalid/?token=WS-SECRET-TOKEN';
 const PDF_BYTES = Uint8Array.from(Buffer.from('%PDF-1.7 fake-render'));
 let log, fault;
-const reset = () => { log = { connects: [], content: [], pdfOpts: [], closed: 0 }; fault = null; };
+const reset = () => { log = { connects: [], content: [], pdfOpts: [], closed: 0, js: [], intercept: [], requests: [] }; fault = null; };
+// Every URL the submitted HTML would make a browser fetch (src / href attributes).
+const urlsIn = (html) => [...html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]);
 const fakePuppeteer = {
   async connect({ browserWSEndpoint }) {
     log.connects.push(browserWSEndpoint);
@@ -36,9 +38,24 @@ const fakePuppeteer = {
     if (fault === 'non-error') throw `raw string ${browserWSEndpoint} INTERNAL-UPSTREAM-DETAIL`;
     return {
       async newPage() {
+        // The page enforces what a real one does: JavaScript and interception state are recorded at
+        // load time, and every URL in the HTML is offered to the route's request handler, whose
+        // continue/abort decision is recorded. (A real Chrome run of the same settings is in the
+        // W1 report; this fake proves the ROUTE configures them and decides correctly.)
+        let jsEnabled = true, intercepting = false, onRequest = null;
         return {
+          async setJavaScriptEnabled(v) { log.js.push(v); jsEnabled = v; },
+          async setRequestInterception(v) { log.intercept.push(v); intercepting = v; },
+          on(ev, fn) { if (ev === 'request') onRequest = fn; },
           async setContent(html, opts) {
-            log.content.push({ html, opts });
+            log.content.push({ html, opts, jsAtLoad: jsEnabled, interceptAtLoad: intercepting });
+            for (const u of urlsIn(html)) {
+              const req = { decision: null, url: () => u, isInterceptResolutionHandled() { return this.decision !== null; },
+                continue() { this.decision = 'continue'; return Promise.resolve(); },
+                abort(reason) { this.decision = `abort:${reason}`; return Promise.resolve(); } };
+              if (intercepting && onRequest) onRequest(req); else req.decision = 'NOT INTERCEPTED';
+              log.requests.push({ url: u, decision: req.decision });
+            }
             if (fault === 'load') { const e = new Error(`Navigation failed: ${html.slice(0, 80)} via ${WS}`); e.name = 'TimeoutError'; throw e; }
           },
           async evaluate() { return null; },
@@ -53,6 +70,37 @@ const fakePuppeteer = {
     };
   },
 };
+// ── Fake Supabase (C1b): Auth verifies sessions; REST answers AS the user (RLS) ─────────────────
+const SUPA = 'https://supa.test', ANON = 'anon-public-key';
+const SESSIONS = { 'jwt-inspector': 'u-insp', 'jwt-homeowner': 'u-home', 'jwt-rpcdown': 'u-rpcdown' };
+const PROFILES = new Set(['u-insp', 'u-rpcdown']);
+let supaLog = [];
+globalThis.fetch = async (url, init = {}) => {
+  const u = new URL(String(url));
+  // No network: anything but the fake Supabase origin is a test failure, never a real request.
+  if (u.origin !== SUPA) throw new Error(`unexpected network request to ${u.origin}`);
+  const h = init.headers ?? {}; const tok = String(h.Authorization ?? '').replace(/^Bearer /, '');
+  supaLog.push({ path: u.pathname, apikey: h.apikey, auth: h.Authorization });
+  const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  if (u.pathname === '/auth/v1/user') {
+    if (tok === 'jwt-expired') return json(401, { msg: 'JWT expired' });
+    if (tok === 'jwt-revoked') return json(403, { msg: 'session_not_found' });
+    if (tok === 'jwt-authdown') return json(500, { msg: 'INTERNAL-UPSTREAM-DETAIL auth db down' });
+    return SESSIONS[tok] ? json(200, { id: SESSIONS[tok], aud: 'authenticated' }) : json(401, { msg: 'invalid JWT' });
+  }
+  const uid = SESSIONS[tok];
+  if (!uid) return json(401, { msg: 'invalid JWT' });
+  if (u.pathname === '/rest/v1/inspector_profiles') {
+    const want = /^eq\.(.*)$/.exec(u.searchParams.get('id') ?? '')?.[1];
+    return json(200, want === uid && PROFILES.has(uid) ? [{ id: uid }] : []);   // RLS: own row only
+  }
+  if (u.pathname === '/rest/v1/rpc/can_create_under_inspection') {
+    if (uid === 'u-rpcdown') return json(500, { msg: 'INTERNAL-UPSTREAM-DETAIL rpc' });
+    const { p_inspection_id } = JSON.parse(init.body);
+    return json(200, uid === 'u-insp' && p_inspection_id === 'insp_ok');
+  }
+  return json(404, {});
+};
 const realLoad = Module._load;
 Module._load = function (request, ...rest) {
   if (request === 'puppeteer-core') return { __esModule: true, default: fakePuppeteer };
@@ -61,32 +109,34 @@ Module._load = function (request, ...rest) {
 
 // ── Load the real route once per environment configuration ─────────────────────────────
 function build(tag, env) {
-  const out = join(repo, 'node_modules/.cache/verify-render-pdf', tag);
-  rmSync(out, { recursive: true, force: true });
-  const js = ts.transpileModule(readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8'), {
+  // Transpiled and compiled IN MEMORY — the harness writes and deletes nothing.
+  const file = join(src, 'app/api/render-pdf/route.ts');
+  const js = ts.transpileModule(readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
   }).outputText;
-  const to = join(out, 'route.js');
-  mkdirSync(dirname(to), { recursive: true });
-  writeFileSync(to, js);
   const saved = { ...process.env };
-  delete process.env.RENDER_PDF_SECRET; delete process.env.BROWSERLESS_WS_ENDPOINT;
+  delete process.env.RENDER_PDF_SECRET; delete process.env.BROWSERLESS_WS_ENDPOINT; delete process.env.NEXT_PUBLIC_SUPABASE_URL; delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   Object.assign(process.env, env);
-  const mod = require(to);
+  const mod = new Module(`${file}#${tag}`);
+  mod.filename = join(repo, `route.${tag}.js`);   // resolution base only — never written
+  mod.paths = Module._nodeModulePaths(repo);
+  mod._compile(js, mod.filename);
   process.env = saved;
-  return mod;
+  return mod.exports;
 }
 const KEY = 'app-render-key-19ch';   // same length as the shipped key; the value is a stand-in
-const live  = build('live',  { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT: WS });
-const nokey = build('nokey', { BROWSERLESS_WS_ENDPOINT: WS });
-const nows  = build('nows',  { RENDER_PDF_SECRET: KEY });
+const SUPA_ENV = { NEXT_PUBLIC_SUPABASE_URL: `${SUPA}/rest/v1`, NEXT_PUBLIC_SUPABASE_ANON_KEY: ANON };   // suffix as in production
+const live   = build('live',   { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT: WS, ...SUPA_ENV });
+const nokey  = build('nokey',  { BROWSERLESS_WS_ENDPOINT: WS, ...SUPA_ENV });
+const nows   = build('nows',   { RENDER_PDF_SECRET: KEY, ...SUPA_ENV });
+const nosupa = build('nosupa', { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT: WS });
 
 const { NextRequest } = require('next/server');
 // Everything the route logs, per call and across the whole run.
 const allLogs = [];
 const realConsoleError = console.error;
 const call = async (mod, { key, headers = {}, body = JSON.stringify({ html: '<h1>REPORT-CONTENT</h1>' }), withFault = null } = {}) => {
-  reset(); fault = withFault;
+  reset(); fault = withFault; supaLog = [];
   const logs = [];
   console.error = (...args) => { const line = args.map(a => (typeof a === 'string' ? a : (() => { try { return JSON.stringify(a) ?? String(a); } catch { return String(a); } })())).join(' '); logs.push(line); allLogs.push(line); };
   const h = { 'Content-Type': 'application/json', ...headers };
@@ -104,12 +154,15 @@ const LEAKS = /RENDER_PDF|BROWSERLESS|SECRET|INTERNAL-UPSTREAM|WS-SECRET|token=|
 const LOG_LEAKS = /INTERNAL-UPSTREAM|WS-SECRET|token=|wss:|browser\.example|REPORT-CONTENT|<h1|raw string/i;
 
 // ── 1. Fails closed when the server secret is missing ──────────────────────────────────
+// C1b: with no RENDER_PDF_SECRET the static-key path is OFF (that is how the key is retired); without
+// a verified session nothing renders — 401, generic, browser never reached. (C1 answered 503 here; a
+// missing secret no longer means "nothing can authenticate", since sessions now can.)
 for (const key of [undefined, '', KEY, 'anything']) {
   const r = await call(nokey, { key });
-  ok(`no RENDER_PDF_SECRET → 503 and the browser is never reached (key ${JSON.stringify(key)})`,
-    r.status === 503 && r.reached === 0, `status ${r.status}, reached ${r.reached}`);
-  ok(`no RENDER_PDF_SECRET → generic body naming no configuration (key ${JSON.stringify(key)})`,
-    JSON.stringify(r.json) === '{"error":"render unavailable"}' && !LEAKS.test(r.text), r.text);
+  ok(`no RENDER_PDF_SECRET, no session → 401 and the browser is never reached (key ${JSON.stringify(key)})`,
+    r.status === 401 && r.reached === 0, `status ${r.status}, reached ${r.reached}`);
+  ok(`no RENDER_PDF_SECRET, no session → generic body naming no configuration (key ${JSON.stringify(key)})`,
+    JSON.stringify(r.json) === '{"error":"unauthorized"}' && !LEAKS.test(r.text), r.text);
 }
 
 // ── 2. Missing / incorrect credentials ─────────────────────────────────────────────────
@@ -196,6 +249,129 @@ for (const [f, step, kind] of [['connect', 'connect', 'Error'], ['load', 'load',
 // ── 5c. Across every call in this run, nothing sensitive was ever logged ───────────────
 ok(`no log line in the whole run carries a URL, token, upstream text or report HTML (${allLogs.length} lines)`,
   allLogs.length > 0 && !allLogs.some(l => LOG_LEAKS.test(l)), JSON.stringify(allLogs.filter(l => LOG_LEAKS.test(l))));
+
+// ── 7. C1b · a signed-in INSPECTOR session renders; nothing else does ─────────────────────────
+const bearer = (t) => ({ Authorization: `Bearer ${t}` });
+const ok200 = (r) => r.status === 200 && r.reached === 1 && !!r.json?.pdf;
+{
+  const r = await call(nokey, { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<h1>REPORT-CONTENT</h1>', inspectionId: 'insp_ok' }) });
+  ok('C1b: inspector session + own inspection → renders, with NO static key configured (durable path)', ok200(r), `${r.status} ${r.text.slice(0, 80)}`);
+  ok('C1b: the route asks Supabase AS the user (apikey = anon, bearer = the user\'s token — never a service key)',
+    r.log && supaLog.length === 3 && supaLog.every(x => x.apikey === ANON && x.auth === 'Bearer jwt-inspector'), JSON.stringify(supaLog));
+}
+for (const [label, opts, want] of [
+  // The database's verdict is SIMULATED here (insp_other → false). This proves the route REFUSES when
+  // the authorization check says no — not that the check says no for another company: the real
+  // helper's semantics are exercised against real SQL by ledrix-app/scripts/verify-render-authz-sql.mjs.
+  ['the authorization check answers false (simulated)', { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_other' }) }, 403],
+  ['a homeowner account (no inspector profile)',     { headers: bearer('jwt-homeowner'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 403],
+  ['identity claimed in the BODY is ignored',        { headers: bearer('jwt-homeowner'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok', userId: 'u-insp' }) }, 403],
+  ['an expired session',                             { headers: bearer('jwt-expired'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['a revoked session',                              { headers: bearer('jwt-revoked'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['a forged / unknown token',                       { headers: bearer('not-a-session'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['the public anon key presented as a session',     { headers: bearer(ANON), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['a malformed Authorization header',               { headers: { Authorization: 'Bearer jwt-inspector extra' }, body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['Basic instead of Bearer',                        { headers: { Authorization: 'Basic jwt-inspector' }, body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 401],
+  ['missing inspectionId',                           { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<p>x</p>' }) }, 400],
+  ['a path-shaped inspectionId',                     { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp/../x' }) }, 400],
+  ['a non-string inspectionId',                      { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 42 }) }, 400],
+  ['oversized html',                                 { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: 'x'.repeat(6_000_001), inspectionId: 'insp_ok' }) }, 413],
+  ['Supabase Auth down',                             { headers: bearer('jwt-authdown'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 503],
+  ['the authorization check down',                   { headers: bearer('jwt-rpcdown'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) }, 503],
+]) {
+  const r = await call(nokey, opts);
+  ok(`C1b: ${label} → ${want}, browser never reached, generic body`, r.status === want && r.reached === 0 && !LEAKS.test(r.text) && !/jwt-|u-insp|u-home/.test(r.text),
+    `${r.status} ${r.text.slice(0, 120)}`);
+}
+{
+  const r = await call(nosupa, { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) });
+  ok('C1b: session but NO Supabase config (and no key) → 503, never reached', r.status === 503 && r.reached === 0, `${r.status}`);
+}
+// Transition: installed builds send the key (and, once updated, a session too).
+{
+  // Final review (2026-10-11): a PRESENTED session is decisive — an invalid or unverifiable one is
+  // refused even with the valid static key (the client then refreshes once, or falls back on-device).
+  const r = await call(live, { key: KEY, headers: bearer('jwt-expired') });
+  ok('C1b: an EXPIRED session cannot fall back to the static key (401, never reached)', r.status === 401 && r.reached === 0, `${r.status}`);
+  const rf = await call(live, { key: KEY, headers: bearer('not-a-session') });
+  ok('C1b: a FORGED session cannot fall back to the static key (401, never reached)', rf.status === 401 && rf.reached === 0, `${rf.status}`);
+  const ra = await call(live, { key: KEY, headers: bearer('jwt-authdown') });
+  ok('C1b: an UNVERIFIABLE session (Auth down) cannot fall back to the static key (503, never reached)', ra.status === 503 && ra.reached === 0, `${ra.status}`);
+  const rk = await call(live, { key: KEY });
+  ok('C1b transition: NO session + the valid static key (secret still set) → renders (pre-C1b builds)', ok200(rk), `${rk.status}`);
+  const r2 = await call(nokey, { key: KEY, headers: bearer('jwt-expired'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) });
+  ok('C1b retirement: the same request once RENDER_PDF_SECRET is removed → 401', r2.status === 401 && r2.reached === 0, `${r2.status}`);
+  const r3 = await call(live, { key: KEY, headers: bearer('jwt-homeowner'), body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) });
+  ok('C1b: a VERIFIED session that is not allowed is refused even if the static key is also sent', r3.status === 403 && r3.reached === 0, `${r3.status}`);
+}
+ok('C1b: no log line in the whole run carries a session token or user id',
+  !allLogs.some(l => /jwt-|u-insp|u-home|u-rpcdown/.test(l)), JSON.stringify(allLogs.filter(l => /jwt-|u-/.test(l))));
+
+// ── 8. W1 · a PRESENTED Authorization header is decisive — even with the valid static key ────────
+// These run on `live` (RENDER_PDF_SECRET set) on purpose: with no secret configured the key path is
+// off anyway, so a 401 there cannot show that the key was refused. Each row sends the VALID key too.
+for (const [label, value] of [
+  ['a malformed Bearer header ("Bearer a b")',  'Bearer jwt-inspector extra'],
+  ['Basic instead of Bearer',                    'Basic jwt-inspector'],
+  ['a scheme with no token ("Bearer")',          'Bearer'],
+  ['an EMPTY Authorization header',              ''],
+  ['the public anon key as the bearer',          `Bearer ${ANON}`],
+  ['a forged bearer token',                      'Bearer not-a-session'],
+  ['an expired bearer token',                    'Bearer jwt-expired'],
+]) {
+  const r = await call(live, { key: KEY, headers: { Authorization: value }, body: JSON.stringify({ html: '<p>x</p>', inspectionId: 'insp_ok' }) });
+  ok(`W1: ${label} + the VALID static key → 401, never the key path, browser never reached`,
+    r.status === 401 && r.reached === 0 && JSON.stringify(r.json) === '{"error":"unauthorized"}', `${r.status} ${r.text.slice(0, 80)}`);
+}
+{
+  const r = await call(live, { key: KEY });
+  ok('W1 transition: NO Authorization header + the valid static key → still renders (installed pre-D4 builds)', ok200(r), `${r.status}`);
+}
+
+// ── 9. W1 · the browser runs the submitted HTML with no JavaScript and an allowlisted network ────
+{
+  const html = [
+    '<html><head><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">',
+    '<link rel="stylesheet" href="https://fonts.gstatic.com/s/inter.woff2"></head><body>',
+    '<script src="https://evil.example/x.js"></script>',
+    '<img src="data:image/png;base64,iVBORw0KGgo=">',
+    '<img src="https://supa.test/storage/v1/object/sign/inspection-pdfs/a.jpg?token=SIGNED">',
+    '<img src="http://supa.test/storage/v1/object/sign/inspection-pdfs/a.jpg">',
+    '<img src="https://www.ledrixlabs.com/api/report-asset?path=insp_1/a.jpg">',
+    '<img src="http://169.254.169.254/latest/meta-data/">',
+    '<img src="http://10.0.0.1/admin">',
+    '<iframe src="https://example.com/"></iframe>',
+    '<img src="file:///etc/passwd">',
+    '<img src="https://supa.test.evil.example/a.jpg">',
+    '</body></html>'].join('');
+  const r = await call(live, { key: KEY, body: JSON.stringify({ html }) });
+  const c = r.log.content[0] ?? {};
+  ok('W1: renders (200) with the browser restricted', ok200(r), `${r.status}`);
+  ok('W1: page JavaScript is DISABLED before the HTML is loaded', c.jsAtLoad === false && r.log.js[0] === false, JSON.stringify(r.log.js));
+  ok('W1: request interception is ON before the HTML is loaded', c.interceptAtLoad === true, JSON.stringify(r.log.intercept));
+  const d = Object.fromEntries(r.log.requests.map(x => [x.url, x.decision]));
+  const allowed = ['https://fonts.googleapis.com/css2?family=Inter', 'https://fonts.gstatic.com/s/inter.woff2', 'data:image/png;base64,iVBORw0KGgo=',
+    'https://supa.test/storage/v1/object/sign/inspection-pdfs/a.jpg?token=SIGNED'];
+  const blocked = ['https://evil.example/x.js', 'http://supa.test/storage/v1/object/sign/inspection-pdfs/a.jpg', 'https://www.ledrixlabs.com/api/report-asset?path=insp_1/a.jpg',
+    'http://169.254.169.254/latest/meta-data/', 'http://10.0.0.1/admin', 'https://example.com/', 'file:///etc/passwd', 'https://supa.test.evil.example/a.jpg'];
+  ok('W1: the report\'s own resources load — signed Supabase storage photos, Google Fonts, data: images',
+    allowed.every(u => d[u] === 'continue'), JSON.stringify(allowed.map(u => [u.slice(0, 40), d[u]])));
+  ok('W1: everything else is aborted — other hosts, plain http, cloud metadata, LAN, file:, look-alike hosts, the token-less proxy',
+    blocked.every(u => d[u] === 'abort:blockedbyclient'), JSON.stringify(blocked.map(u => [u.slice(0, 40), d[u]])));
+  ok('W1: every request the page made was decided by the route (none slipped past interception)',
+    r.log.requests.length === allowed.length + blocked.length && r.log.requests.every(x => x.decision && x.decision !== 'NOT INTERCEPTED'), String(r.log.requests.length));
+}
+{
+  // Same restrictions on the session path, not only the key path.
+  const r = await call(nokey, { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<img src="https://evil.example/a.png">', inspectionId: 'insp_ok' }) });
+  ok('W1: the session path renders under the same restrictions', ok200(r) && r.log.content[0]?.jsAtLoad === false && r.log.requests[0]?.decision === 'abort:blockedbyclient',
+    JSON.stringify(r.log.requests));
+}
+{
+  const s = readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8');
+  ok('[doc] the route states the invariant: it renders submitted HTML and never reads report data by inspectionId',
+    /INVARIANT/.test(s) && /never reads report data/i.test(s));
+}
 
 // ── 6. Source: the comparison is constant-time and the fail-open shape is gone ─────────
 {
