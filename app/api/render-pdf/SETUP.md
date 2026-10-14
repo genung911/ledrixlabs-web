@@ -35,8 +35,16 @@ Auth or authorization **unverifiable** (Supabase down, env missing) → 503. Not
 > ⚠ **Which inspections a session may render for is pending an owner decision (2026-10-11).** The
 > route currently uses `can_create_under_inspection` (the C1b candidate). Sign-up is open and any
 > non-homeowner account can create its own inspector profile and inspection rows, so no
-> inspection-level check limits *who* can render; a per-user render budget is not implemented. See
+> inspection-level check limits *who* can render. A per-user daily budget now bounds the cost (below). See
 > `ledrix-app/docs/security/OPEN_SECURITY_FINDINGS.md` F1.
+
+## Daily render budget (owner ruling 2026-10-14)
+
+A signed-in inspector gets **20 server renders per UTC day** (`RENDERS_PER_DAY`). Counted atomically by
+`increment_render_usage` (`supabase_render_usage.sql`, service role only), after authorization — refused
+requests spend nothing. Over budget → **429**, and the app falls back to on-device rendering, so a report
+can always be delivered (footer-less). A counter error fails **open** (logged). The static-key path has no
+user to count; it ends when `RENDER_PDF_SECRET` is removed. Requires `supabase_render_usage.sql` applied.
 
 The static key is compiled into every app bundle (`EXPO_PUBLIC_RENDER_PDF_KEY`): it identifies the app,
 not a person, and anyone who extracts it passes. **Retiring it = removing `RENDER_PDF_SECRET` from
@@ -58,7 +66,8 @@ sends the session. Rotating it does not help — every new build ships the new v
 | Variable | Needed for |
 |---|---|
 | `BROWSERLESS_WS_ENDPOINT` | every render (full `wss://…?token=…` URL; server only, never logged) |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the session path and the network allowlist (no service-role key is used) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the session path and the network allowlist |
+| `SUPABASE_SERVICE_ROLE_KEY` | the daily render budget counter only (`increment_render_usage`); unset → renders are not counted |
 | `RENDER_PDF_SECRET` | the transition key path only; remove it to retire the static key |
 
 App `.env` (ledrix-app): `EXPO_PUBLIC_RENDER_PDF_URL=https://<domain>/api/render-pdf` (and, during the
@@ -67,7 +76,7 @@ with `-c`. If the URL is unset the app renders on the device.
 
 ## Failure behaviour
 
-- Responses are generic (`unauthorized`, `forbidden`, `missing html`, `html too large`,
+- Responses are generic (`unauthorized`, `forbidden`, `daily render limit reached`, `missing html`, `html too large`,
   `render unavailable`, `render failed`); logs record the failing step and the error class only —
   never a token, the browser URL, upstream text or report HTML.
 - The app gives up after 65 s (the route's `maxDuration` is 60 s) and on any non-200 **rebuilds the report

@@ -75,6 +75,9 @@ const SUPA = 'https://supa.test', ANON = 'anon-public-key';
 const SESSIONS = { 'jwt-inspector': 'u-insp', 'jwt-homeowner': 'u-home', 'jwt-rpcdown': 'u-rpcdown' };
 const PROFILES = new Set(['u-insp', 'u-rpcdown']);
 let supaLog = [];
+// Daily render budget (2026-10-14): the service-role counter. renderCounts[uid] = today's count.
+const SERVICE_KEY = 'service-role-key';
+let renderCounts = {}; let counterDown = false;
 globalThis.fetch = async (url, init = {}) => {
   const u = new URL(String(url));
   // No network: anything but the fake Supabase origin is a test failure, never a real request.
@@ -87,6 +90,14 @@ globalThis.fetch = async (url, init = {}) => {
     if (tok === 'jwt-revoked') return json(403, { msg: 'session_not_found' });
     if (tok === 'jwt-authdown') return json(500, { msg: 'INTERNAL-UPSTREAM-DETAIL auth db down' });
     return SESSIONS[tok] ? json(200, { id: SESSIONS[tok], aud: 'authenticated' }) : json(401, { msg: 'invalid JWT' });
+  }
+  if (u.pathname === '/rest/v1/rpc/increment_render_usage') {
+    if (tok !== SERVICE_KEY || h.apikey !== SERVICE_KEY) return json(401, { msg: 'permission denied' });   // service role only
+    if (counterDown) return json(500, { msg: 'INTERNAL-UPSTREAM-DETAIL counter' });
+    const { uid: who, d } = JSON.parse(init.body);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return json(400, {});
+    renderCounts[who] = (renderCounts[who] ?? 0) + 1;
+    return json(200, renderCounts[who]);
   }
   const uid = SESSIONS[tok];
   if (!uid) return json(401, { msg: 'invalid JWT' });
@@ -115,7 +126,7 @@ function build(tag, env) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
   }).outputText;
   const saved = { ...process.env };
-  delete process.env.RENDER_PDF_SECRET; delete process.env.BROWSERLESS_WS_ENDPOINT; delete process.env.NEXT_PUBLIC_SUPABASE_URL; delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  delete process.env.RENDER_PDF_SECRET; delete process.env.BROWSERLESS_WS_ENDPOINT; delete process.env.NEXT_PUBLIC_SUPABASE_URL; delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   Object.assign(process.env, env);
   const mod = new Module(`${file}#${tag}`);
   mod.filename = join(repo, `route.${tag}.js`);   // resolution base only — never written
@@ -130,6 +141,7 @@ const live   = build('live',   { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT
 const nokey  = build('nokey',  { BROWSERLESS_WS_ENDPOINT: WS, ...SUPA_ENV });
 const nows   = build('nows',   { RENDER_PDF_SECRET: KEY, ...SUPA_ENV });
 const nosupa = build('nosupa', { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT: WS });
+const budget = build('budget', { RENDER_PDF_SECRET: KEY, BROWSERLESS_WS_ENDPOINT: WS, ...SUPA_ENV, SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY });
 
 const { NextRequest } = require('next/server');
 // Everything the route logs, per call and across the whole run.
@@ -371,6 +383,46 @@ for (const [label, value] of [
   const s = readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8');
   ok('[doc] the route states the invariant: it renders submitted HTML and never reads report data by inspectionId',
     /INVARIANT/.test(s) && /never reads report data/i.test(s));
+}
+
+// ── 5b. Daily render budget (owner ruling 2026-10-14: 20 per inspector per day) ──────────────
+{
+  const sess = () => ({ headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<h1>R</h1>', inspectionId: 'insp_ok' }) });
+  const routeSrc = readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8');
+  ok('[budget] the limit is 20', /^const RENDERS_PER_DAY = 20;$/m.test(routeSrc));
+  ok('[source] the route exports nothing but Next route members (Next rejects other exports)',
+    [...routeSrc.matchAll(/^export\s+(?:const|async function|function)\s+(\w+)/gm)].every(m => ['runtime', 'maxDuration', 'dynamic', 'POST'].includes(m[1])));
+  renderCounts = {}; counterDown = false;
+  let allOk = true;
+  for (let i = 0; i < 20; i++) { const r = await call(budget, sess()); if (!ok200(r)) allOk = false; }
+  ok('[budget] renders 1..20 succeed', allOk);
+  const over = await call(budget, sess());
+  ok('[budget] render 21 → 429 and the browser is never opened', over.status === 429 && over.reached === 0 && over.log.connects.length === 0, `${over.status} reached=${over.reached}`);
+  ok('[budget] the 429 body is generic', over.status === 429 && /daily render limit/.test(over.json?.error ?? '') && !/u-insp|service/i.test(JSON.stringify(over.json)));
+  ok('[budget] counted per user, not globally', renderCounts['u-insp'] === 21 && Object.keys(renderCounts).length === 1, JSON.stringify(renderCounts));
+
+  renderCounts = {};
+  await call(budget, { headers: bearer('jwt-inspector'), body: JSON.stringify({ html: '<h1>R</h1>', inspectionId: 'insp_other' }) });
+  await call(budget, { headers: bearer('jwt-homeowner'), body: JSON.stringify({ html: '<h1>R</h1>', inspectionId: 'insp_ok' }) });
+  await call(budget, { headers: bearer('jwt-expired'), body: JSON.stringify({ html: '<h1>R</h1>', inspectionId: 'insp_ok' }) });
+  ok('[budget] refused requests (403/401) spend nothing', Object.keys(renderCounts).length === 0, JSON.stringify(renderCounts));
+
+  renderCounts = {};
+  const k = await call(budget, { key: KEY });
+  ok('[budget] the static-key path is not counted (no user) and still renders', ok200(k) && Object.keys(renderCounts).length === 0);
+
+  counterDown = true;
+  const down = await call(budget, sess());
+  counterDown = false;
+  ok('[budget] counter error fails OPEN — the render proceeds', ok200(down), String(down.status));
+  ok('[budget] counter error is logged without upstream detail', down.logs.some(l => /render budget unavailable/.test(l)) && !down.logs.some(l => /INTERNAL-UPSTREAM-DETAIL/.test(l)));
+
+  renderCounts = {};
+  const unconf = await call(nokey, sess());
+  ok('[budget] no service key configured → renders, counter never called', ok200(unconf) && !supaLog.some(x => /increment_render_usage/.test(x.path)) && Object.keys(renderCounts).length === 0);
+
+  const s = readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8');
+  ok('[source] the counter runs after mayRender (refused requests spend nothing)', s.indexOf('bumpRenders(session.userId)') > s.indexOf('mayRender(session.token'));
 }
 
 // ── 6. Source: the comparison is constant-time and the fail-open shape is gone ─────────

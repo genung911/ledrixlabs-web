@@ -65,6 +65,7 @@ const FOOTER_TEMPLATE = `
 // no longer be pointed at arbitrary hosts.
 const SUPA_URL  = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const SERVICE   = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const INSPECTION_ID = /^[A-Za-z0-9._-]{1,128}$/;
 const MAX_HTML_CHARS = 6_000_000;   // above Vercel's ~4.5 MB body cap; a hard ceiling if that ever moves
 
@@ -137,6 +138,31 @@ async function mayRender(token: string, userId: string, inspectionId: string): P
   }
 }
 
+// DAILY BUDGET (owner ruling 2026-10-14): a signed-in inspector gets RENDERS_PER_DAY server renders per
+// UTC day, counted atomically by increment_render_usage (supabase_render_usage.sql, service role only).
+// Counted after authorization, so refused requests spend nothing. Over budget → 429, and the app falls
+// back to rendering on the device, so an inspector is never blocked from delivering a report. Fails
+// OPEN on a counter error (like lib/usage.ts): a usage-table hiccup must not take PDFs down. The
+// static-key path has no user to count; it ends when RENDER_PDF_SECRET is removed.
+const RENDERS_PER_DAY = 20;
+async function bumpRenders(userId: string): Promise<number> {
+  if (!SUPA_URL || !SERVICE) return 0;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/increment_render_usage`, {
+      method: 'POST',
+      headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: userId, d: new Date().toISOString().slice(0, 10) }),
+      cache: 'no-store',
+    });
+    if (!r.ok) { console.error('[render-pdf] render budget unavailable'); return 0; }
+    const n: unknown = await r.json();
+    return typeof n === 'number' ? n : 0;
+  } catch {
+    console.error('[render-pdf] render budget unavailable');
+    return 0;
+  }
+}
+
 // Generic bodies only: no configuration names, no upstream messages (those go to the server log).
 const UNAVAILABLE  = () => NextResponse.json({ error: 'render unavailable' }, { status: 503 });
 const UNAUTHORIZED = () => NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -189,6 +215,9 @@ export async function POST(req: NextRequest) {
     const v = await mayRender(session.token, session.userId, inspectionId);
     if (v === 'unavailable') { console.error('[render-pdf] refused: authorization check unavailable'); return UNAVAILABLE(); }
     if (v !== 'ok') return FORBIDDEN();
+    if (await bumpRenders(session.userId) > RENDERS_PER_DAY) {
+      return NextResponse.json({ error: `daily render limit reached (${RENDERS_PER_DAY})` }, { status: 429 });
+    }
   }
 
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
