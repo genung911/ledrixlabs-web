@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '7. Homeowner and Client Portal Data',
-            body: `When you deliver an inspection to a client through the Ledrix Home App portal, that client receives access to a read-only view of their property's inspection findings, health score, maintenance schedule, and uploaded evidence. Client portal data is tied to the property record you created and is accessible only to the client you designate. Clients do not have access to your inspector account, other inspections, or any data beyond their specific property. We retain homeowner portal data for as long as the associated inspector account is active. If your account is deleted, associated homeowner portal records are removed within 90 days.`,
+            body: `When you deliver an inspection to a client through the Ledrix Home App portal, that client receives access to a read-only view of their property's inspection findings, maintenance schedule, and uploaded evidence. Client portal data is tied to the property record you created and is accessible only to the client you designate. Clients do not have access to your inspector account, other inspections, or any data beyond their specific property. We retain homeowner portal data for as long as the associated inspector account is active. If your account is deleted, associated homeowner portal records are removed within 90 days.`,
           },
           {
             title: '8. Data Storage, Retention, and Security',

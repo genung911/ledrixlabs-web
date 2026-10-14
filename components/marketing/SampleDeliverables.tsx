@@ -15,7 +15,7 @@ const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';   // the featured sample home (12
 const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report';
 
 const PORTAL_POINTS = [
-  'The living portal your buyer keeps — health score, findings in plain language.',
+  'The living portal your buyer keeps — every finding in plain language.',
   'A maintenance schedule and property records.',
   'Tap any finding: top-rated local pros, repair videos, and Ask Ledrix.',
 ];

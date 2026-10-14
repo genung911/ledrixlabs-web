@@ -422,13 +422,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .ha-hero .eyebrow{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#7fc6e8;font-weight:800;margin-bottom:8px}
 .ha-hero h2{font-family:var(--sans);font-size:24px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
 .ha-hero p{font-size:12px;color:#a8bdd2;max-width:52ch;line-height:1.65}
-.ha-score{position:absolute;right:40px;top:32px;text-align:center}
-.ha-score .ring{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:conic-gradient(var(--green) 0 311deg,rgba(255,255,255,.12) 311deg 360deg);position:relative}
-.ha-score .ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:#0f1e33}
-.ha-score .ring b{position:relative;z-index:1;font-family:var(--mono);font-size:19px;color:#fff}
-.ha-score em{display:block;font-style:normal;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#7fc6e8;margin-top:6px}
-@media(max-width:640px){.ha-score{display:none}}
 .ha-grid{padding:24px 40px 10px;display:grid;grid-template-columns:1fr 1fr;gap:13px}
 @media(max-width:640px){.ha-grid{grid-template-columns:1fr}}
 .ha-card{border:1px solid var(--paper-line);border-radius:10px;padding:15px 16px;background:var(--paper)}
@@ -805,7 +798,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
           <div class="eyebrow">After closing, the report doesn't die in a drawer</div>
           <h2>Your Home, On Record.</h2>
           <p>The inspection becomes the <b>living baseline of the house</b> — maintenance reminders generated from the actual equipment we documented, not generic checklists. Your inspector's brand stays on the homeowner's phone for the life of the home: that's the referral engine.</p>
-          <div class="ha-score"><div class="ring"><b>86</b></div><em>Home Health</em></div>
         </div>
         <div class="ha-grid">
           <div class="ha-card alert">

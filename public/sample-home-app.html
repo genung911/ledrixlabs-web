@@ -72,24 +72,6 @@
     .section { padding: 20px 16px; border-top: 1px solid #0d0d0d; }
     .section-label { font-size: 9px; font-weight: 900; letter-spacing: 3px; color: var(--accent); font-family: 'Roboto Mono', monospace; margin-bottom: 14px; }
 
-    /* Health score */
-    .score-block { display: flex; align-items: center; gap: 20px; margin-bottom: 16px; }
-    .score-ring {
-      width: 76px; height: 76px; border-radius: 50%; flex-shrink: 0;
-      background: conic-gradient(#22C55E 0deg 241deg, #1a1a1a 241deg);
-      display: flex; align-items: center; justify-content: center; position: relative;
-    }
-    .score-ring::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: #080808; }
-    .score-num { position: relative; font-size: 20px; font-weight: 900; color: #22C55E; z-index: 1; }
-    .score-text h3 { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
-    .score-text p { font-size: 11px; color: #333; line-height: 1.6; }
-
-    .score-bars { display: flex; flex-direction: column; gap: 9px; }
-    .score-bar-row { display: flex; align-items: center; gap: 10px; }
-    .score-bar-label { font-size: 10px; color: #555; width: 90px; flex-shrink: 0; }
-    .score-bar-track { flex: 1; height: 4px; background: #141414; border-radius: 2px; overflow: hidden; }
-    .score-bar-fill { height: 100%; border-radius: 2px; }
-    .score-bar-val { font-size: 10px; font-weight: 700; width: 30px; text-align: right; }
 
     /* Findings */
     .finding-card {
@@ -187,51 +169,6 @@
     <div class="stat-box">
       <div class="stat-num" style="color:#FACC15">2</div>
       <div class="stat-label">URGENT</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-label">HOME HEALTH SCORE</div>
-    <div class="score-block">
-      <div class="score-ring">
-        <div class="score-num">67</div>
-      </div>
-      <div class="score-text">
-        <h3>Grade B — Good</h3>
-        <p>Above-average condition. 2 items require prompt attention. 3 cosmetic findings.</p>
-      </div>
-    </div>
-    <div class="score-bars">
-      <div class="score-bar-row">
-        <div class="score-bar-label">Structural</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:80%; background:#22C55E"></div></div>
-        <div class="score-bar-val" style="color:#22C55E">80</div>
-      </div>
-      <div class="score-bar-row">
-        <div class="score-bar-label">Electrical</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:42%; background:#FF3B3B"></div></div>
-        <div class="score-bar-val" style="color:#FF3B3B">42</div>
-      </div>
-      <div class="score-bar-row">
-        <div class="score-bar-label">HVAC</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:55%; background:#FACC15"></div></div>
-        <div class="score-bar-val" style="color:#FACC15">55</div>
-      </div>
-      <div class="score-bar-row">
-        <div class="score-bar-label">Roofing</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:61%; background:#FACC15"></div></div>
-        <div class="score-bar-val" style="color:#FACC15">61</div>
-      </div>
-      <div class="score-bar-row">
-        <div class="score-bar-label">Plumbing</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:88%; background:#22C55E"></div></div>
-        <div class="score-bar-val" style="color:#22C55E">88</div>
-      </div>
-      <div class="score-bar-row">
-        <div class="score-bar-label">Interior</div>
-        <div class="score-bar-track"><div class="score-bar-fill" style="width:74%; background:#22C55E"></div></div>
-        <div class="score-bar-val" style="color:#22C55E">74</div>
-      </div>
     </div>
   </div>
 

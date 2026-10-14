@@ -328,14 +328,6 @@ function addDays(n: number): string {
   const d = new Date(); d.setDate(d.getDate() + n);
   return d.toISOString().split('T')[0];
 }
-function scoreCalc(anomalies: Anomaly[]) {
-  const c = anomalies.filter(a => a.severity === 'critical').length;
-  const w = anomalies.filter(a => a.severity === 'anomaly').length;
-  const o = anomalies.filter(a => a.severity !== 'critical' && a.severity !== 'anomaly').length;
-  const s = Math.max(0, Math.round(100 - c * 15 - w * 5 - o * 1));
-  return { score: s, grade: s >= 90 ? 'A' : s >= 75 ? 'B' : s >= 60 ? 'C' : s >= 45 ? 'D' : 'F',
-    color: s >= 75 ? GREEN : s >= 60 ? WARN : CRITICAL };
-}
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000, dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
@@ -501,26 +493,6 @@ function Logo({ size = 32 }: { size?: number }) {
       border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <ValDeltaSVG size={Math.round(size * 0.82)} color={BLUE} sheen />
     </div>
-  );
-}
-
-// ─── ScoreRing ────────────────────────────────────────────────────────────────
-function ScoreRing({ score, grade, color, size = 80 }: { score: number; grade: string; color: string; size?: number }) {
-  const r = size * 0.375; const circ = +(2 * Math.PI * r).toFixed(1);
-  const dashOff = +((1 - score / 100) * circ).toFixed(1);
-  const cx = size / 2; const cy = size / 2;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={BORDER} strokeWidth={size * 0.1} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={size * 0.1}
-        strokeDasharray={circ} strokeDashoffset={dashOff}
-        strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
-        style={{ filter: `drop-shadow(0 0 ${(size * 0.06).toFixed(1)}px ${color})` }} />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize={size * 0.24} fontWeight="900"
-        fill={color} fontFamily="Inter,system-ui,sans-serif">{score}</text>
-      <text x={cx} y={cy + 10} textAnchor="middle" fontSize={size * 0.13} fontWeight="900"
-        fill={color} fontFamily="Inter,system-ui,sans-serif" letterSpacing="2">{grade}</text>
-    </svg>
   );
 }
 
@@ -1236,7 +1208,6 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 }) {
   const desk = useDesk();
   const gut = desk ? 40 : 18;   // side gutter — one value so every section stays flush
-  const { score } = scoreCalc(anomalies);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
   const deficien = anomalies.filter(a => a.severity === 'anomaly');
@@ -1246,7 +1217,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const urgent = critical.concat(deficien).slice(0, 3);
 
   // ── Stage-1 light theme tokens (Home tab is self-contained light + dark hero; other tabs stay dark until Stage 2) ──
-  const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#217BE8', bright: '#D98E4A' };   // bright = the SCORE amber (Rivian register — metric readout only; interactive stays Ledrix blue)
+  const P = { paper: '#F6F2EA', ink: '#141009', card: '#FFFFFF', text: '#262016', muted: '#75695C', faint: '#A3988A', line: '#EAE3D6', blue: '#217BE8' };
   const cover = photoUrl(record.cover_url);
   const confirmedSpecs = (Array.isArray(record.specs) ? record.specs : []).filter(s => s.status === 'confirmed');
   const pillars: [Tab, IconName, string, number | string][] = [
@@ -1261,7 +1232,8 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
 
   return (
     <div style={{ background: P.paper, minHeight: '100%', color: P.text, fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif' }}>
-      {/* ── DARK HERO — cover photo, address, health ring ── */}
+      {/* ── DARK HERO — cover photo and address. No overall home score or rating: Ledrix does not rate
+           a home with a single number (owner decision 2026-10-13; scripts/verify-no-health-score.mjs). ── */}
       <div style={{ position: 'relative', color: '#fff', overflow: 'hidden',
         background: cover
           ? `linear-gradient(180deg, rgba(6,11,14,0.60) 0%, rgba(6,11,14,0.18) 34%, rgba(6,11,14,0.22) 52%, rgba(4,9,12,0.88) 100%), url(${cover}) center/cover`
@@ -1281,25 +1253,6 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
               <div style={{ fontFamily: SERIF, fontSize: desk ? 44 : 30, fontWeight: 600, lineHeight: 1.08, letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>{record.address ?? 'Address pending'}</div>
               <div style={{ fontFamily: MONO, fontSize: desk ? 11.5 : 10.5, color: 'rgba(255,255,255,0.76)', marginTop: 10, letterSpacing: '0.06em' }}>{[subAddress, record.inspection_date ? `Inspected ${fmtDate(record.inspection_date)}` : ''].filter(Boolean).join('  ·  ')}</div>
             </div>
-            {(() => { const R = desk ? 112 : 84; const c = R / 2; const r = c - 3;
-              return (
-            <div style={{ flexShrink: 0, position: 'relative', width: R, height: R }}>
-              {/* frosted disc — integrated with the photo, not floating over it */}
-              <div style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'rgba(8,14,17,0.42)', backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }} />
-              {/* pristine ring: hairline track + exact arc */}
-              <svg width={R} height={R} viewBox={`0 0 ${R} ${R}`} style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
-                <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
-                <circle cx={c} cy={c} r={r} fill="none" stroke={P.bright} strokeWidth={2.5} strokeLinecap="round"
-                  strokeDasharray={`${(2 * Math.PI * r * Math.max(0, Math.min(100, score)) / 100).toFixed(1)} ${(2 * Math.PI * r).toFixed(1)}`} />
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-                <div>
-                  <div style={{ fontFamily: SERIF, fontSize: desk ? 33 : 25, fontWeight: 600, lineHeight: 1 }}>{score}</div>
-                  <div style={{ ...eyebrow(P.bright, desk ? 8 : 7), marginTop: 3 }}>Health</div>
-                </div>
-              </div>
-            </div>
-              ); })()}
           </div>
         </div>
       </div>
@@ -1493,7 +1446,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
 // Renders ONLY when a floor_plans row exists for this inspection (a byproduct of the
 // inspector's coverage-photo walkthrough) — no row = no section at all, no placeholder,
 // no empty header. One block per floor. Rooms drawn as SVG rects (consistent with this
-// file's existing SVG usage in Icon/ScoreRing); labels + count-pin badges are absolutely
+// file's existing SVG usage in Icon); labels + count-pin badges are absolutely
 // positioned HTML on top so typography stays crisp regardless of the room grid's scale.
 function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
   label: string; rooms: FPRoom[]; pins?: Record<string, { fx: number; fy: number }>;

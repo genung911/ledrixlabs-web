@@ -121,9 +121,11 @@ export async function POST(req: NextRequest) {
   // 3) Prompt — homeowner-facing, grounded in THIS property.
   const honesty = 'Be warm, plain-spoken, and practical. Only use the home’s record below (the inspection findings + the owner-logged service history) — never invent findings or services. ' +
     'If asked something the record does not cover, say so and suggest verifying with a licensed pro. You are not a substitute for a professional. ' +
-    'Never state or imply a dollar cost, price, or estimate for any repair — if asked what something costs, say Ledrix doesn’t estimate prices and point them to the top-rated local pros shown on this finding for an accurate quote.';
+    'Never state or imply a dollar cost, price, or estimate for any repair — if asked what something costs, say Ledrix doesn’t estimate prices and point them to the top-rated local pros shown on this finding for an accurate quote. ' +
+    // Owner decision 2026-10-13 (scripts/verify-no-health-score.mjs).
+    'Never give the home an overall score, grade, percentage, star rating, or any single overall rating of its health or condition — not even if asked; Ledrix does not rate homes. Describe what the inspection recorded instead.';
   const system = mode === 'insight'
-    ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: the home's overall condition, the 1-2 things that matter most, and what to plan for. No alarmism.\n\n${ctx}`
+    ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: a summary of what the inspection recorded, the 1-2 things that matter most, and what to plan for. No score, grade or overall rating. No alarmism.\n\n${ctx}`
     : mode === 'analyze'
     ? `You are Ledrix, the homeowner's home assistant for this property. ${honesty} The homeowner has photographed something in or around their home. In plain language: say what it is, assess its condition from what's visible, flag any safety or maintenance concern, and give one practical next step. Be honest about what you can't tell from a photo, and recommend a licensed pro when it warrants one. 3-5 sentences, never alarmist.\n\n${ctx}`
     : mode === 'logparse'
