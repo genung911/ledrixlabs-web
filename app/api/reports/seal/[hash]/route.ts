@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SOP_SYSTEMS, systemForUnit, severityMeta, SOP_TEMPLATE_VERSION } from '../../../../../lib/sopTemplate';
+import { forHomeowner } from '../../../../../lib/homeownerRecommendation';
 
 // ─── /api/reports/seal/[hash] ────────────────────────────────────────────────
 // Renders a FROZEN inspection report from a sealed entry in `report_seals`.
@@ -77,13 +78,24 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
     const s = (f.severity ?? 'deficiency').toLowerCase(); m[s] = (m[s] ?? 0) + 1; return m;
   }, {});
 
+  let neutralised = false;   // set while rendering; drives the disclosure line below
   const sectionsHtml = SOP_SYSTEMS
     .filter(sys => bySystem.has(sys.key))
     .map(sys => {
       const rows = (bySystem.get(sys.key) ?? [])
         .sort((a, b) => severityMeta(a.severity).rank - severityMeta(b.severity).rank)
         .map(f => {
+          // No "Recommended: <pros_to_call>" line (owner decision 2026-10-13): the stored value is, for
+          // historical findings, the model's guess from the system, not the inspector's.
+          // The sealed payload and its hash are untouched; only this rendering drops the line.
           const m = severityMeta(f.severity);
+          // The finding text as a homeowner reads it — a classified specialist recommendation becomes the
+          // owner's "Further Evaluation Recommended" wording (lib/homeownerRecommendation.ts).
+          // Computed for this rendering only: the sealed payload, and therefore its hash, is never written.
+          const hv = forHomeowner({ ...f, prosToCall: f.prosToCall ?? f.pros_to_call });
+          // Either the text was corrected, or a stored professional (pros_to_call) became the evaluation
+          // block — both make this view differ from what was sealed, so both trigger the disclosure.
+          if (hv.changed || hv.evaluation) neutralised = true;
           const loc = f.room || f.location;
           return `
           <div class="finding">
@@ -91,11 +103,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
               <span class="chip" style="--c:${m.color}">${esc(m.label)}</span>
               ${loc ? `<span class="loc">${esc(loc)}</span>` : ''}
             </div>
-            <p class="desc">${esc(f.description) || 'No description provided.'}</p>
+            <p class="desc">${esc(hv.description) || (hv.evaluation ? '' : 'No description provided.')}</p>
+            ${hv.evaluation ? `<p class="desc"><strong>${esc(hv.evaluation.heading)}</strong> — ${esc(hv.evaluation.text)}</p>` : ''}
             ${f._photo ? `<img class="photo" src="${esc(f._photo)}" alt="evidence" loading="lazy"/>` : ''}
-            <div class="meta">
-              ${f.pros_to_call ? `<span>Recommended: ${esc(f.pros_to_call)}</span>` : ''}
-            </div>
           </div>`;
         }).join('');
       return `<section><h2>${esc(sys.label)}</h2>${rows}</section>`;
@@ -150,7 +160,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
   </header>
   <div class="summary">${summary || '<span class="sumchip" style="--c:#22c55e">No defects logged</span>'}</div>
   ${sectionsHtml || '<p class="empty">No confirmed findings in this seal.</p>'}
-  <footer>Sealed snapshot · template ${SOP_TEMPLATE_VERSION} · ${esc(seal.hash)}</footer>
+  <footer>Sealed snapshot · template ${SOP_TEMPLATE_VERSION} · ${esc(seal.hash)}${neutralised ? '<br/>In this view, recommendations that named a specific professional are shown as further evaluation or work by a qualified professional. The sealed record and its hash are unchanged.' : ''}</footer>
 </div></body></html>`;
 
   return new NextResponse(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });

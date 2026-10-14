@@ -10,6 +10,7 @@ import { ValMark } from '@/components/ValMark';
 import { LedrixEye } from '@/components/LedrixEye';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
 import { assetUrl, withTokenInHtml, defaultReportHtmlPaths, loadFirstReport } from '@/lib/portalAssets';
+import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 // Desktop breakpoint — the page is inline-styled, so responsiveness is driven by this
@@ -524,6 +525,13 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 
 // Split a prose observation into short bullets at sentence boundaries — mirrors the app's proseToBullets
 // so a legacy finding (no observationBullets) still renders in the canonical bulleted format.
+// What a homeowner reads of a finding's text (owner decision 2026-10-13). Every render of a finding's
+// description, bullets or legacy recommendation goes through this; the stored record is never
+// changed, and identity uses (repair fingerprints, project de-duplication) keep the raw text.
+// `LOCATION:` header lines are stripped first, as every render here already did.
+const homeView = (a: Anomaly) => forHomeowner({ ...a, description: (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim(), issue: a.issueTitle });
+// home_projects carry a priority, not a severity; map it so the same rule applies to their copied text.
+const projectSeverity = (priority?: string) => priority === 'critical' ? 'critical' : priority === 'high' ? 'deficiency' : 'maintenance';
 function splitBullets(text: string): string[] {
   const t = (text ?? '').trim();
   if (!t) return [];
@@ -580,12 +588,15 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
         </div>
         <div>
           <FLabel>OBSERVATIONS</FLabel>
-          {(a.observationBullets && a.observationBullets.length ? a.observationBullets : splitBullets(a.description ?? '')).map((b, i) => (
+          {(() => { const hv = homeView(a); return (<>
+          {hv.observations.map((b, i) => (
             <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
               <span style={{ color: DIM, flexShrink: 0, lineHeight: 1.55 }}>•</span>
               <span style={{ color: '#33454B', fontSize: 12, lineHeight: 1.55 }}>{b}</span>
             </div>
           ))}
+          {hv.evaluation && <div style={{ ...eyebrow(TEXT, 7.5), marginTop: 8 }}>{hv.evaluation.heading}</div>}
+          </>); })()}
         </div>
         <div style={{ ...eyebrow(MED, 8), marginTop: 12 }}>Tap for details →</div>
       </div>
@@ -609,9 +620,14 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
   const [zoom, setZoom] = useState<string | null>(null);
   const img = photoUrl(a.imageUri);
 
-  const trade = (a.prosToCall && a.prosToCall !== 'N/A' ? a.prosToCall : a.unit) || 'home repair contractor';
+  // The stored prosToCall is never the search term or a recommendation here — for historical findings it
+  // is the model's guess from the system (owner decision 2026-10-13, lib/homeownerRecommendation.ts).
+  // The search names the THING the finding is about; null = no pros list at all.
+  const search = neutralProSearch(a);
+  const hv = homeView(a);
+  const evaluation = hv.evaluation;
   const where = zip || cityState || '';
-  const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${a.unit ?? ''} ${(a.description ?? '').slice(0, 60)} how to fix`)}`;
+  const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${a.unit ?? ''} ${homeView(a).description.slice(0, 60)} how to fix`)}`;
 
   const [pros, setPros] = useState<{ name: string; rating?: number; reviews?: number; phone?: string; website?: string }[]>([]);
   const [prosLoading, setProsLoading] = useState(false);
@@ -623,15 +639,15 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
   // Top-3 local pros (by reviews) — tappable call list, fetched server-side from Places.
   useEffect(() => {
     let alive = true;
-    if (!where) return;
+    if (!where || !search) { setPros([]); return; }
     setProsLoading(true);
-    fetch(`/api/pros?zip=${encodeURIComponent(where)}&trade=${encodeURIComponent(trade)}`)
+    fetch(`/api/pros?zip=${encodeURIComponent(where)}&trade=${encodeURIComponent(search)}`)
       .then(r => r.json())
       .then(j => { if (alive) setPros(Array.isArray(j.pros) ? j.pros : []); })
       .catch(() => {})
       .finally(() => { if (alive) setProsLoading(false); });
     return () => { alive = false; };
-  }, [where, trade]);
+  }, [where, search]);
 
   const ask = async () => {
     const q = input.trim(); if (!q || busy) return;
@@ -640,7 +656,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) { setMsgs(m => [...m, { role: 'ledrix', text: 'Sign in (top-right) to ask Ledrix about this finding.' }]); return; }
-      const seeded = [{ role: 'user' as const, content: `About the finding "${a.unit ?? ''}: ${a.description ?? ''}"${a.location ? ` (${a.location})` : ''} — ${q}` }];
+      const seeded = [{ role: 'user' as const, content: `About the finding "${a.unit ?? ''}: ${hv.description}"${a.location ? ` (${a.location})` : ''} — ${q}` }];
       const r = await fetch('/api/ledrix', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ shareId, token: PORTAL_TOKEN, mode: 'chat', messages: seeded }),
@@ -670,10 +686,16 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
         {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
         <h3 style={{ fontFamily: SERIF, color: TEXT, fontSize: 19, fontWeight: 600, margin: '0 0 4px' }}>{a.unit ?? 'Finding'}</h3>
         {a.location && <div style={{ ...eyebrow(DIM, 8), marginBottom: 12 }}>{a.location}</div>}
-        <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{a.description}</p>
-        {a.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{a.recommendation}</p>}
+        <p style={{ color: TEXT, fontSize: 13, lineHeight: 1.65, margin: '0 0 8px' }}>{hv.description}</p>
+        {hv.recommendation && <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{hv.recommendation}</p>}
+        {evaluation && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ ...eyebrow(TEXT, 8), marginBottom: 4 }}>{evaluation.heading}</div>
+            <p style={{ color: MED, fontSize: 12, lineHeight: 1.6, margin: 0 }}>{evaluation.text}</p>
+          </div>
+        )}
 
-        <CardSection label="TOP-RATED LOCAL PROS · MIN. 20 REVIEWS">
+        {search && <CardSection label="TOP-RATED LOCAL PROS · MIN. 20 REVIEWS">
           {pros.length > 0 ? pros.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', marginBottom: 7 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -686,7 +708,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
           )) : (
             <div style={{ color: DIM, fontSize: 11 }}>{prosLoading ? 'Finding local pros…' : 'No local pros found for this area yet.'}</div>
           )}
-        </CardSection>
+        </CardSection>}
 
         <CardSection label="REPAIR VIDEOS">
           <a href={ytUrl} target="_blank" rel="noreferrer" style={cta}>▶ Watch how-to videos</a>
@@ -718,6 +740,14 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_COLOR[p.status] ?? DIM;
   const pc = p.priority === 'critical' ? CRITICAL : p.priority === 'high' ? WARN : p.priority === 'low' ? GREEN : INFO;
+  // The project's title and recommendation were COPIED from a finding, so they carry its legacy
+  // specialist text; same homeowner rule (owner 2026-10-13). The stored row is not changed.
+  const pvRaw = forHomeowner({ severity: projectSeverity(p.priority), description: p.title ?? '', recommendation: p.recommendation });
+  // When the whole title was an unsupported specialist recommendation the corrected text is empty, and
+  // falling back to p.title would put it straight back — so a CHANGED title falls back to the neutral
+  // heading. An unchanged title (including an empty one) falls back to p.title exactly as before.
+  const pv = { title: pvRaw.description || (pvRaw.changed ? (pvRaw.evaluation?.heading ?? FURTHER_EVALUATION_HEADING) : p.title),
+               recommendation: pvRaw.recommendation, evaluation: pvRaw.evaluation };
 
   const advance = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -751,7 +781,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
                 whiteSpace: 'nowrap' }}>{STATUS_LABEL[p.status] ?? p.status.toUpperCase()}</span>
               {p.system && <span style={{ color: DIM, fontSize: 8, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{p.system.toUpperCase()}</span>}
             </div>
-            <div style={{ color: TEXT, fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{p.title}</div>
+            <div style={{ color: TEXT, fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{pv.title}</div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             {p.budget_estimate && p.budget_estimate !== 'N/A' && (
@@ -765,12 +795,10 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
 
         {expanded && (
           <div onClick={e => e.stopPropagation()} style={{ paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
-            {p.recommendation && <p style={{ color: MED, fontSize: 11, lineHeight: 1.6, marginBottom: 10 }}>{p.recommendation}</p>}
-            {p.contractor_type && p.contractor_type !== 'N/A' && (
-              <div style={{ color: MED, fontSize: 9, fontWeight: 600, marginBottom: 10, fontFamily: 'Roboto Mono, monospace' }}>
-                CONTRACTOR: {p.contractor_type}
-              </div>
-            )}
+            {pv.recommendation && <p style={{ color: MED, fontSize: 11, lineHeight: 1.6, marginBottom: 10 }}>{pv.recommendation}</p>}
+            {pv.evaluation && <p style={{ color: MED, fontSize: 11, lineHeight: 1.6, marginBottom: 10 }}><b>{pv.evaluation.heading}</b> — {pv.evaluation.text}</p>}
+            {/* No CONTRACTOR line: contractor_type was only ever copied from a finding's prosToCall — the
+                model's guess from the system — so it is not shown as a recommendation (owner 2026-10-13). */}
 
             {/* Photo thumbnails */}
             {p.photos?.length > 0 && (
@@ -1273,7 +1301,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
             <div key={i} onClick={() => onTabChange('findings')} style={{ background: P.card, border: `1px solid ${P.line}`, borderLeft: `2px solid ${pr.report}`, borderRadius: 8, padding: '12px 15px', marginBottom: desk ? 0 : 8, cursor: 'pointer' }}>
               <div style={{ ...eyebrow(pr.report, 8.5) }}>{pr.label}</div>
               <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>{a.unit ?? 'Component'}{a.location ? ` · ${a.location}` : ''}</div>
-              <div style={{ color: '#33454B', fontSize: 12.5, lineHeight: 1.55, marginTop: 3 }}>{(a.description ?? '').substring(0, 96)}{(a.description?.length ?? 0) > 96 ? '…' : ''}</div>
+              <div style={{ color: '#33454B', fontSize: 12.5, lineHeight: 1.55, marginTop: 3 }}>{(() => { const d = homeView(a).description; return <>{d.substring(0, 96)}{d.length > 96 ? '…' : ''}</>; })()}</div>
             </div>
             );
           })}
@@ -1784,7 +1812,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
       share_id: shareId, title: (a.description ?? 'Finding').slice(0, 100), system: a.unit ?? null,
       priority: a.severity === 'critical' ? 'critical' : a.severity === 'anomaly' ? 'high' : 'low',
       status: 'identified', description: a.description ?? null, recommendation: a.recommendation ?? null,
-      contractor_type: a.prosToCall ?? null, photos: [], seeded: false,
+      contractor_type: null, photos: [], seeded: false,   // never a guessed specialist (owner 2026-10-13)
     });
     setBusy(false); onRefresh();
   };
@@ -1829,7 +1857,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
                   <span style={{ color: priorityOf(a).color, fontSize: 16, flexShrink: 0, lineHeight: 1 }}>+</span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ color: TEXT, fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.unit ?? 'Finding'}</div>
-                    <div style={{ color: DIM, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.description ?? ''}</div>
+                    <div style={{ color: DIM, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeView(a).description}</div>
                   </div>
                 </div>
               ))}
@@ -1857,7 +1885,8 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
   const p = priorityOf(a);
   const color = p.report;
   const label = p.label;
-  const desc  = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
+  const hv    = homeView(a);
+  const desc  = hv.description;
   return (
     <div style={{ background: '#fff', border: '1px solid #eef0f3', borderLeft: `2px solid ${color}`, borderRadius: 10, padding: 16, marginBottom: 12, display: 'flex', gap: 14 }}>
       {photoUrl(a.imageUri) ? <img src={photoUrl(a.imageUri)!} alt="" style={{ width: 104, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} /> : null}
@@ -1869,7 +1898,8 @@ function ReportRow({ a, C }: { a: Anomaly; C: RC }) {
         </div>
         {a.unit ? <div style={{ fontFamily: SERIF, color: C.ink, fontSize: 15, fontWeight: 600 }}>{a.unit}</div> : null}
         {desc ? <div style={{ color: '#4b5563', fontSize: 13.5, lineHeight: 1.55, marginTop: 3 }}>{desc}</div> : null}
-        {a.recommendation ? <div style={{ color: C.accent, fontSize: 12.5, fontWeight: 500, marginTop: 6, borderTop: `1px solid ${C.line}`, paddingTop: 6 }}>Recommendation: {a.recommendation}</div> : null}
+        {hv.recommendation ? <div style={{ color: C.accent, fontSize: 12.5, fontWeight: 500, marginTop: 6, borderTop: `1px solid ${C.line}`, paddingTop: 6 }}>Recommendation: {hv.recommendation}</div> : null}
+        {hv.evaluation ? <div style={{ color: C.accent, fontSize: 12.5, fontWeight: 500, marginTop: 6, borderTop: `1px solid ${C.line}`, paddingTop: 6 }}><b>{hv.evaluation.heading}</b> — {hv.evaluation.text}</div> : null}
       </div>
     </div>
   );
@@ -1894,7 +1924,7 @@ function ReportSummary({ anomalies, C }: { anomalies: Anomaly[]; C: RC }) {
             <div key={a.id ?? j} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '8px 0', borderBottom: `1px solid ${C.line}` }}>
               <span style={{ width: 14, flexShrink: 0, color: '#dc2626', fontSize: 12 }}>{isSafetyFinding(a) ? '⚠' : ''}</span>
               <span style={{ fontWeight: 600, color: C.ink, fontSize: 13, minWidth: 110, flexShrink: 0 }}>{reportSystem(a)}</span>
-              <span style={{ color: '#4b5563', fontSize: 13, flex: 1 }}>{a.unit ? `${a.unit} — ` : ''}{(a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim().slice(0, 130)}</span>
+              <span style={{ color: '#4b5563', fontSize: 13, flex: 1 }}>{a.unit ? `${a.unit} — ` : ''}{homeView(a).description.slice(0, 130)}</span>
             </div>
           ))}
         </section>
@@ -1921,14 +1951,15 @@ function WhatMatters({ anomalies, C, onOpen }: { anomalies: Anomaly[]; C: RC; on
           <div style={{ color: '#16a34a', fontSize: 14, fontWeight: 600 }}>✓ No safety or immediate-attention items — nothing urgent.</div>
         ) : matters.map((a, i) => {
           const safety = isSafetyFinding(a);
-          const desc = (a.description ?? '').replace(/^LOCATION:.*\n?/i, '').trim();
+          const hv = homeView(a);
+          const desc = hv.description;
           return (
             <div key={a.id ?? i} style={{ display: 'flex', gap: 12, padding: '9px 0', borderTop: i ? '1px solid #fde3c4' : 'none' }}>
               <span style={{ ...eyebrow(safety ? PRIO.safety.report : PRIO.major.report, 8), flexShrink: 0, paddingTop: 4, width: 88 }}>{safety ? '⚠ Safety' : PRIO.major.label}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: C.ink, fontSize: 14, fontWeight: 600 }}>{a.unit ?? 'Finding'}</div>
                 <div style={{ color: '#4b5563', fontSize: 13, lineHeight: 1.5 }}>{desc.slice(0, 170)}{desc.length > 170 ? '…' : ''}</div>
-                {a.prosToCall ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{a.prosToCall}</div> : null}
+                {hv.evaluation ? <div style={{ color: C.accent, fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{hv.evaluation.heading}</div> : null /* never the stored prosToCall (owner 2026-10-13) */}
               </div>
             </div>
           );
@@ -2689,7 +2720,7 @@ async function draftRepairRequest(a: Anomaly): Promise<{ item: string; remedy: s
     if (!token) return null;
     const r = await fetch('/api/ledrix/repair', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ finding: { unit: a.unit, location: a.location, severity: a.severity, description: a.description } }),
+      body: JSON.stringify({ finding: { unit: a.unit, location: a.location, severity: a.severity, description: homeView(a).description } }),
     });
     if (!r.ok) return null;
     const j = await r.json();
@@ -2734,7 +2765,7 @@ function AddFindingRow({ a, busy, onAdd }: { a: Anomaly; busy: boolean; onAdd: (
       <span style={{ width: 6, height: 6, borderRadius: 3, background: tagColor, flexShrink: 0 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ color: TEXT, fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.unit || 'Finding'}{a.location ? ` · ${a.location}` : ''}</div>
-        <div style={{ color: DIM, fontSize: 9.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.description ?? ''}</div>
+        <div style={{ color: DIM, fontSize: 9.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{homeView(a).description}</div>
       </div>
       <button onClick={onAdd} disabled={busy} style={{ flexShrink: 0, background: busy ? CARD2 : 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '6px 12px', fontSize: 8, fontWeight: 600, letterSpacing: 1, cursor: busy ? 'default' : 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{busy ? '…' : 'ADD'}</button>
     </div>

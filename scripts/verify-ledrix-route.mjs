@@ -88,7 +88,7 @@ globalThis.fetch = (url, init = {}) => { const { cache, ...rest } = init; return
 // ── Load the real route ────────────────────────────────────────────────────────────────
 const out = join(repo, 'node_modules/.cache/verify-ledrix-route');
 rmSync(out, { recursive: true, force: true });
-for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts']) {
+for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts', 'lib/homeownerRecommendation.ts']) {
   const from = join(src, rel);
   if (!existsSync(from)) continue;
   const js = ts.transpileModule(readFileSync(from, 'utf8'), {

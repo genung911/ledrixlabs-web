@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SOP_SYSTEMS, systemForUnit, severityMeta, SOP_TEMPLATE_VERSION } from '../../../lib/sopTemplate';
+import { forHomeowner } from '../../../lib/homeownerRecommendation';
 import { shareIdForToken, pathInShare, shareAccessConfigured } from '../../../lib/shareAccess';
 
 // ─── /api/reports?token=<share token>[&inspectionId=…] ───────────────────────
@@ -93,7 +94,12 @@ export async function GET(req: NextRequest) {
       const rows = (bySystem.get(sys.key) ?? [])
         .sort((a, b) => severityMeta(a.severity).rank - severityMeta(b.severity).rank)
         .map(f => {
+          // No "Recommended: <pros_to_call>" line (owner decision 2026-10-13): the stored value is, for
+          // historical findings, the model's guess from the system, not the inspector's.
           const m = severityMeta(f.severity);
+          // The finding text as a homeowner reads it — a classified specialist recommendation becomes the
+          // owner's "Further Evaluation Recommended" wording (lib/homeownerRecommendation.ts).
+          const hv = forHomeowner({ ...f, prosToCall: f.prosToCall ?? f.pros_to_call });
           const loc = f.room || f.location;
           return `
           <div class="finding">
@@ -101,11 +107,9 @@ export async function GET(req: NextRequest) {
               <span class="chip" style="--c:${m.color}">${esc(m.label)}</span>
               ${loc ? `<span class="loc">${esc(loc)}</span>` : ''}
             </div>
-            <p class="desc">${esc(f.description) || 'No description provided.'}</p>
+            <p class="desc">${esc(hv.description) || (hv.evaluation ? '' : 'No description provided.')}</p>
+            ${hv.evaluation ? `<p class="desc"><strong>${esc(hv.evaluation.heading)}</strong> — ${esc(hv.evaluation.text)}</p>` : ''}
             ${f._photo ? `<img class="photo" src="${esc(f._photo)}" alt="evidence" loading="lazy"/>` : ''}
-            <div class="meta">
-              ${f.pros_to_call ? `<span>Recommended: ${esc(f.pros_to_call)}</span>` : ''}
-            </div>
           </div>`;
         }).join('');
       return `<section><h2>${esc(sys.label)}</h2>${rows}</section>`;

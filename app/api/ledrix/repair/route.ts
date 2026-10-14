@@ -24,11 +24,13 @@ const REPAIR_SYSTEM =
   'You convert a home-inspection finding into a single neutral REPAIR REQUEST line a home ' +
   'BUYER may optionally include in a request to the seller. The buyer decides what to ask for — ' +
   'you only draft clear, fair wording. Return ONLY valid JSON, no markdown:\n' +
-  '{"item":"Electrical panel","remedy":"Have a licensed electrician correct the double-tapped breaker","request":"Request that the seller have a licensed electrician evaluate and correct the double-tapped breaker at the main electrical panel prior to closing."}\n' +
+  '{"item":"Electrical panel","remedy":"Have a qualified professional correct the double-tapped breaker","request":"Request that the seller have a qualified professional evaluate and correct the double-tapped breaker at the main electrical panel prior to closing."}\n' +
   'Rules:\n' +
   '- Factual and neutral: describe the deficiency and the requested correction. NO alarmist language, NO legal conclusions, NO demands or ultimatums, NO dollar amounts.\n' +
   '- Request/conditional voice ("Request that the seller…"). The buyer is asking, not ordering.\n' +
-  '- Severity guides the ask: safety/deficiency → correction by a licensed trade; maintenance → "monitor or optionally address".\n' +
+  '- Severity guides the ask: safety/deficiency → evaluation and correction by a qualified professional; maintenance → "monitor or optionally address".\n' +
+  // Owner decision 2026-10-13 (scripts/verify-recommendation-language.mjs).
+  '- Do NOT name a specific trade or specialist (structural engineer, roofer, electrician, plumber, HVAC contractor, …) because of the finding\'s system or category — say "a qualified professional". Do not turn the observation into a diagnosis, and do not call anything unsafe that the finding does not.\n' +
   '- request: 1–2 sentences. item: short component label. remedy: the corrective action, concise.';
 
 type Finding = { unit?: string; location?: string; severity?: string; description?: string };

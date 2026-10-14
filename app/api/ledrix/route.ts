@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
 import { isEntitled } from '../../../lib/entitlement';
+import { forHomeowner } from '../../../lib/homeownerRecommendation';
 
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? '').replace(/\/$/, '');
 const GATEWAY_KEY = process.env.GATEWAY_KEY ?? '';
@@ -48,9 +49,14 @@ function buildContext(rec: any, log: any[] = []): string {
   const anomalies: any[] = Array.isArray(rec.anomalies) ? rec.anomalies : [];
   const specs: any[]     = Array.isArray(rec.specs) ? rec.specs : [];
   const sev = (s?: string) => s === 'critical' ? 'SAFETY' : s === 'anomaly' ? 'DEFICIENCY' : 'MAINTENANCE';
-  const findings = anomalies.slice(0, 40).map(a =>
-    `- [${sev(a.severity)}] ${a.unit ?? 'General'}${a.location ? ` (${a.location})` : ''}: ${(a.description ?? '').slice(0, 240)}`,
-  ).join('\n');
+  // The finding text the model sees is the text a homeowner reads (owner decision 2026-10-13): a
+  // stored "A structural engineer should evaluate…" bullet is a guessed specialist, and the model
+  // would repeat it as fact. lib/homeownerRecommendation.ts; the stored record is unchanged.
+  const findings = anomalies.slice(0, 40).map(a => {
+    const hv = forHomeowner(a);
+    const text = `${hv.description}${hv.evaluation ? ` ${hv.evaluation.text}` : ''}`;
+    return `- [${sev(a.severity)}] ${a.unit ?? 'General'}${a.location ? ` (${a.location})` : ''}: ${text.slice(0, 240)}`;
+  }).join('\n');
   const material = specs.slice(0, 30).map(s => `- ${s.category ?? 'Item'}: ${s.material ?? ''}`).filter(Boolean).join('\n');
   const history = (log ?? []).slice(0, 20).map((e: any) =>
     `- ${e.done_date}: ${e.title}${e.system ? ` (${e.system})` : ''}${e.note ? ` — ${e.note}` : ''}`).join('\n');
@@ -122,8 +128,9 @@ export async function POST(req: NextRequest) {
   const honesty = 'Be warm, plain-spoken, and practical. Only use the home’s record below (the inspection findings + the owner-logged service history) — never invent findings or services. ' +
     'If asked something the record does not cover, say so and suggest verifying with a licensed pro. You are not a substitute for a professional. ' +
     'Never state or imply a dollar cost, price, or estimate for any repair — if asked what something costs, say Ledrix doesn’t estimate prices and point them to the top-rated local pros shown on this finding for an accurate quote. ' +
-    // Owner decision 2026-10-13 (scripts/verify-no-health-score.mjs).
-    'Never give the home an overall score, grade, percentage, star rating, or any single overall rating of its health or condition — not even if asked; Ledrix does not rate homes. Describe what the inspection recorded instead.';
+    // Owner decision 2026-10-13 (scripts/verify-no-health-score.mjs, verify-recommendation-language.mjs).
+    'Never give the home an overall score, grade, percentage, star rating, or any single overall rating of its health or condition — not even if asked; Ledrix does not rate homes. Describe what the inspection recorded instead. ' +
+    'Do not name a specific trade or specialist (structural engineer, roofer, electrician, plumber, HVAC contractor, …) for a finding because of its system or category; where a finding warrants it, recommend further evaluation by a qualified professional. Do not turn an observation into a diagnosis or call something unsafe the record does not.';
   const system = mode === 'insight'
     ? `You are Ledrix, the homeowner's AI for this property. ${honesty}\n\nWrite a short (4-6 sentence) plain-language INSIGHT: a summary of what the inspection recorded, the 1-2 things that matter most, and what to plan for. No score, grade or overall rating. No alarmism.\n\n${ctx}`
     : mode === 'analyze'

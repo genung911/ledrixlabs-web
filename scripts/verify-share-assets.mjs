@@ -72,7 +72,7 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = (url, init = {}) => { const { cache, ...rest } = init; return realFetch(url, rest); };
 
 // ── Load the real route handlers ─────────────────────────────────────────────────────
-const FILES = ['app/api/photo/route.ts', 'app/api/report-asset/route.ts', 'app/api/reports/route.ts', 'lib/portalAssets.ts'];
+const FILES = ['app/api/photo/route.ts', 'app/api/report-asset/route.ts', 'app/api/reports/route.ts', 'lib/portalAssets.ts', 'lib/homeownerRecommendation.ts'];
 function build(tag, env) {
   const out = join(repo, 'node_modules/.cache/verify-share-assets', tag);
   rmSync(out, { recursive: true, force: true });
