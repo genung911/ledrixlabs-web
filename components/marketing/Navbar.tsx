@@ -22,7 +22,9 @@ const LINKS = [
 // `overLight` — the opener is now a LIGHT stage (the isometric dollhouse), so the
 // unscrolled nav must render in ink to stay legible. Dark-hero pages (about, ethix)
 // omit the prop and keep the white-over-dark treatment.
-export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo' }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string }) {
+// `signInHref` — the inspector sign-in (/app/login). Opt-in per page: only the Inspect product page
+// passes it, since homeowners never sign in here (they open their portal from the inspector's link).
+export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo', signInHref }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string; signInHref?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -80,6 +82,16 @@ export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo' }:
         </div>
 
         <div className="flex items-center gap-3">
+          {signInHref && (
+            <a
+              href={signInHref}
+              className={`hidden text-sm font-medium transition-colors duration-200 md:inline ${
+                inkChrome ? 'text-body hover:text-ink' : 'text-white/80 hover:text-white'
+              }`}
+            >
+              Sign in
+            </a>
+          )}
           <GlowButton href={ctaHref} variant="primary" tone={inkChrome ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
             Request a demo
           </GlowButton>
@@ -126,6 +138,15 @@ export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo' }:
                   {l.label}
                 </a>
               ))}
+              {signInHref && (
+                <a
+                  href={signInHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="py-3.5 text-base font-semibold text-ink"
+                >
+                  Sign in
+                </a>
+              )}
             </div>
           </motion.div>
         )}

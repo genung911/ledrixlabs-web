@@ -33,7 +33,7 @@ export const metadata = {
 export default function InspectPage() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
-      <Navbar links={INSPECT_LINKS} ctaHref="/inspect#demo" />
+      <Navbar links={INSPECT_LINKS} ctaHref="/inspect#demo" signInHref="/app/login" />
       <main>
         <VisionManifesto />
         <HowItWorks />
