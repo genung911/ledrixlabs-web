@@ -140,10 +140,21 @@ export async function loadMembers(): Promise<MemberRow[]> {
 export type TemplateRow = { id: string; name: string; base: string | null; is_default: boolean | null; updated_at: string | null };
 
 export async function loadTemplates(companyId: string): Promise<TemplateRow[]> {
-  // Metadata only — the systems tree stays in the app's Template Builder.
+  // Metadata only — the list never needs the systems tree.
   return must('Templates could not be loaded', await workspace.from('company_templates')
     .select('id, name, base, is_default, updated_at').eq('company_id', companyId)
     .order('name', { ascending: true })) as TemplateRow[];
+}
+
+export type TemplateTreeRow = TemplateRow & { template: unknown };
+
+/** One company template WITH its systems tree — the live template the Template Builder copies into a private
+ *  draft. Read only: the builder never writes company_templates. Null when the row is not visible or absent. */
+export async function loadTemplateTree(companyId: string, id: string): Promise<TemplateTreeRow | null> {
+  const res = await workspace.from('company_templates')
+    .select('id, name, base, is_default, updated_at, template').eq('company_id', companyId).eq('id', id).maybeSingle();
+  if (res.error) throw new WorkspaceError('This template could not be loaded', res.error);
+  return (res.data as TemplateTreeRow | null) ?? null;
 }
 
 /** Short-lived signed URL for an evidence photo, as the signed-in user — the Phase 0 scoped storage
