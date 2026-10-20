@@ -4,7 +4,7 @@
 // supabase_company_templates.sql). A draft never reaches company_templates — publishing is a later increment —
 // but whoever shapes the company's template is the same person who will one day publish it.
 //
-// The server route (app/api/template-authoring) enforces this against the database; the page only uses it to
+// The server route (app/api/template-assistant) and the database enforce this; the pages only use it to
 // decide what to show.
 
 export const TEMPLATE_AUTHOR_ROLES = ['owner', 'admin'] as const;

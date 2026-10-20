@@ -7,7 +7,7 @@
 // accepted entries are applied to the PRIVATE draft, all or nothing; any applied change can be undone.
 //
 // Two things differ from the app, and only these: the draft is kept in this browser (./draftStore), and the model
-// is reached through the signed-in server route /api/template-authoring (the browser never holds a model key).
+// is reached through a signed-in server route (desktop: /api/template-assistant; the browser never holds a model key).
 //
 // WHAT THIS NEVER DOES: write company_templates, an inspection, an inspection's template snapshot, or anything on
 // the server. There is no publish here — that is a later increment. (scripts/verify-template-builder.mjs)

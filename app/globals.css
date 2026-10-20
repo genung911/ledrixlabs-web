@@ -4,6 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colour tokens (tailwind.config.ts) as RGB channels so opacity modifiers (bg-ink/5) keep working. These are the
+   light values every page has always used. The inspector workspace may switch to dark (lib/workspace/theme.ts):
+   only inside .ws-root, so the marketing site and the homeowner portal never change. */
+:root {
+  --c-ground: 246 248 250;
+  --c-surface: 255 255 255;
+  --c-hairline: 228 233 238;
+  --c-ink: 10 15 20;
+  --c-body: 72 88 106;
+  --c-muted: 138 152 165;
+  --c-accent-ink: 26 99 200;
+}
+html[data-ws-theme="dark"] .ws-root {
+  --c-ground: 11 16 21;
+  --c-surface: 18 26 33;
+  --c-hairline: 38 50 61;
+  --c-ink: 232 237 242;
+  --c-body: 169 182 194;
+  --c-muted: 116 132 146;
+  --c-accent-ink: 127 180 240;
+  color-scheme: dark;
+}
+html[data-ws-theme="dark"] body { background-color: rgb(11 16 21); }
+
 * {
   box-sizing: border-box;
   margin: 0;

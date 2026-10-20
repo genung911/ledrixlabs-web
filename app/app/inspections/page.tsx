@@ -66,7 +66,7 @@ export default function InspectionsPage() {
         <div role="tablist" aria-label="Status" className="flex flex-wrap gap-1.5">
           {FILTERS.map(f => (
             <button key={f.id} role="tab" aria-selected={filter === f.id} onClick={() => setFilter(f.id)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${filter === f.id ? 'bg-ink text-white' : 'bg-surface text-body ring-1 ring-hairline hover:text-ink'}`}>{f.label}</button>
+              className={`rounded-full px-3 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${filter === f.id ? 'bg-ink text-surface' : 'bg-surface text-body ring-1 ring-hairline hover:text-ink'}`}>{f.label}</button>
           ))}
         </div>
         <input ref={search} type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search address or type   /"

@@ -1,0 +1,213 @@
+// ─── phonePreviewModel — pure helpers behind <PhonePreview> ────────────────────────────────────────────────
+//
+// Everything here reads the DRAFT tree and nothing else. No React, no store, no clock: the same tree always
+// gives the same screens, so the phone can never show something the draft does not say.
+//
+// The rules are the Ledrix Inspect app's, ported (not imported — the app's modules pull in React Native and the
+// taxonomy runtime). Each helper names the app file it follows.
+import type { ComponentAttribute, InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
+
+/** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
+ *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
+export const LIMITATION_REASONS: readonly string[] = [
+  'Not visible during inspection',
+  'Inaccessible — blocked by storage/furnishings',
+  'Inaccessible — structural or safety restriction',
+  'Weather prevented full assessment',
+  'Beyond the scope of a general home inspection',
+];
+
+/** ledrix-app src/core/taxonomy/canonicalSystems.ts — `DEFAULT_ACTIVE_SYSTEMS`. Used only for a template that
+ *  marks no system `defaultActive: true` (blank / imported), exactly as the app's offering rule does. */
+export const DEFAULT_ACTIVE_SYSTEMS: readonly string[] = [
+  'safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling',
+];
+
+// ── WHICH SYSTEMS A NEW INSPECTION SHOWS ───────────────────────────────────────────────────────────────────────
+// Conclusion from ledrix-app src/core/services/inspectionOffering.ts (offeringForNewSnapshot + normalizeOffering)
+// and src/components/inspect/CoverageGrid.tsx / ScopeScreen.tsx:
+//   · The Scope landing tiles are the snapshot's systems with `inScope === true` (isInScope / inScopeSystemIds).
+//   · A COMPANY template never carries `inScope`: when a new inspection is created, `offeringForNewSnapshot`
+//     DROPS any stray `inScope` and sets it from `defaultActive === true`. If no system in the template has
+//     `defaultActive: true`, the fallback is DEFAULT_ACTIVE_SYSTEMS.
+//   · A system that is not in scope is still in the snapshot — offered through "+ Add system" — just not a tile.
+// So for the draft (a company template) the deciding flag is `defaultActive`; `inScope` is honoured only when the
+// tree is already an inspection snapshot (`offeringModel === 1`).
+export function systemShown(tree: InspectionTemplate, sys: TemplateNode): boolean {
+  if (tree.offeringModel === 1) return sys.inScope === true;
+  const flagged = (tree.systems ?? []).some(s => s.defaultActive === true);
+  return flagged ? sys.defaultActive === true : DEFAULT_ACTIVE_SYSTEMS.indexOf(sys.id) >= 0;
+}
+
+export function shownSystems(tree: InspectionTemplate): TemplateNode[] {
+  return (tree.systems ?? []).filter(s => systemShown(tree, s));
+}
+
+/** ledrix-app ScopeScreen.tsx `tileNodesOf`: a system's cards are its SUBSYSTEMS; a system with none is one card,
+ *  itself. (As in the app, components sitting directly under a system that also has subsystems get no card.) */
+export function tilesOf(sys: TemplateNode): TemplateNode[] {
+  const subs = (sys.children ?? []).filter(c => c.kind === 'subsystem');
+  return subs.length ? subs : [sys];
+}
+
+/** Every component under a card, depth-first. `trimmed` is a separate pocket and is never walked. */
+export function leavesOf(tile: TemplateNode): TemplateNode[] {
+  const out: TemplateNode[] = [];
+  const walk = (n: TemplateNode) => {
+    for (const c of n.children ?? []) {
+      if (c.kind === 'component') out.push(c);
+      if (c.children?.length) walk(c);
+    }
+  };
+  walk(tile);
+  return out;
+}
+
+// ── WHAT A COMPONENT ASKS (ledrix-app src/core/taxonomy/conditionMatch.ts `componentAxes`) ───────────────────
+// New shape: authored, nothing inferred — condition defaults to TRUE. Old shape (pre-S4 company templates): one
+// unnamed attribute from `options` minus condition/limitation/absence words, condition unless facet is 'spec'.
+const CONDITION_WORDS = ['improper', 'damaged', 'leak', 'defect', 'corroded', 'corrosion', 'rust', 'hazard'];
+const NEGATED_BEFORE = /(?:\b(?:no|none|not|free\s+of|without)\b[\s\-—–,:/]*)$/i;
+const AUTHORED_SUFFIX = /\((?:flag|limitation)\b[^)]*\)/i;
+const LIMITATION_RE = /\b(?:limitation|not visible|inaccessible|no access|not removed|could ?n'?t inspect|not inspected|unable)\b/i;
+const ABSENCE_RE = /^none$|^n\/?a$/i;
+const stripSuffix = (v: string) => v.replace(/\s*\((?:flag|limitation)\b[^)]*\)\s*$/i, '').trim();
+
+function isConditionOption(v: string): boolean {
+  if (!v) return false;
+  if (AUTHORED_SUFFIX.test(v)) return true;
+  for (let i = 0; i < CONDITION_WORDS.length; i++) {
+    const re = new RegExp('\\b' + CONDITION_WORDS[i] + '\\w{0,3}\\b', 'gi');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(v)) !== null) {
+      if (!NEGATED_BEFORE.test(v.slice(0, m.index))) return true;
+    }
+  }
+  return false;
+}
+const isLimitationValue = (v: string) => !!v && LIMITATION_RE.test(v);
+
+export type Axes = { attributes: ComponentAttribute[]; condition: boolean; limitations: string[]; method: string[] };
+
+export function axesOf(n: TemplateNode): Axes {
+  if (n.attributes || n.condition !== undefined || n.limitations || n.method) {
+    return { attributes: n.attributes ?? [], condition: n.condition ?? true, limitations: n.limitations ?? [], method: n.method ?? [] };
+  }
+  const opts = n.options ?? [];
+  const facet = n.facet ?? (opts.length > 0 ? 'both' : 'condition');
+  const values = opts.filter(o => !isConditionOption(o) && !isLimitationValue(o) && !ABSENCE_RE.test(o.trim()));
+  return {
+    attributes: facet !== 'condition' && values.length >= 2 ? [{ id: 'spec', label: n.label, values }] : [],
+    condition: facet !== 'spec',
+    limitations: (n.limitationOptions ?? []).concat(opts.filter(isLimitationValue)).map(stripSuffix).filter(Boolean),
+    method: [],
+  };
+}
+
+/** The LIMIT sheet's list (customTemplateService `limitationReasonsFor`): the node's own reasons first, then the
+ *  general ones, de-duplicated case-insensitively. */
+export function limitationReasonsFor(n: TemplateNode): string[] {
+  const seen: Record<string, true> = {};
+  const out: string[] = [];
+  axesOf(n).limitations.concat(LIMITATION_REASONS as string[]).forEach(r => {
+    const k = r.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = true; out.push(r);
+  });
+  return out;
+}
+
+/** Finding shortcuts. The template shape has no field for them today (the app keeps them in code,
+ *  src/core/templates/findingIntents.ts, keyed by node id), so this reads an optional `findingShortcuts` array
+ *  when the draft carries one and otherwise returns none — the sheet then shows the app's own empty state. */
+export function findingShortcutsOf(n: TemplateNode): Array<{ id: string; label: string }> {
+  const raw = (n as unknown as { findingShortcuts?: unknown }).findingShortcuts;
+  if (!Array.isArray(raw)) return [];
+  const out: Array<{ id: string; label: string }> = [];
+  raw.forEach((x, i) => {
+    if (x && typeof x === 'object' && typeof (x as { label?: unknown }).label === 'string') {
+      const id = (x as { id?: unknown }).id;
+      out.push({ id: typeof id === 'string' ? id : 'sc' + i, label: (x as { label: string }).label });
+    }
+  });
+  return out;
+}
+
+// ── THE INDEX: where every node the phone can show lives ────────────────────────────────────────────────────
+export type Loc = { systemId: string; tileId: string | null; node: TemplateNode; kind: 'system' | 'tile' | 'leaf' | 'inner' };
+export type PreviewIndex = { byId: Record<string, Loc>; shown: Record<string, true>; allSystems: Record<string, TemplateNode> };
+
+export function buildIndex(tree: InspectionTemplate): PreviewIndex {
+  const byId: Record<string, Loc> = {};
+  const shown: Record<string, true> = {};
+  const allSystems: Record<string, TemplateNode> = {};
+  (tree.systems ?? []).forEach(sys => {
+    allSystems[sys.id] = sys;
+    if (systemShown(tree, sys)) shown[sys.id] = true;
+    byId[sys.id] = { systemId: sys.id, tileId: null, node: sys, kind: 'system' };
+    tilesOf(sys).forEach(tile => {
+      if (tile.id !== sys.id) byId[tile.id] = { systemId: sys.id, tileId: tile.id, node: tile, kind: 'tile' };
+      const walk = (n: TemplateNode) => {
+        for (const c of n.children ?? []) {
+          if (!byId[c.id]) byId[c.id] = { systemId: sys.id, tileId: tile.id, node: c, kind: c.kind === 'component' ? 'leaf' : 'inner' };
+          if (c.children?.length) walk(c);
+        }
+      };
+      walk(tile);
+    });
+  });
+  return { byId, shown, allSystems };
+}
+
+// ── PROGRESS (a simplified subtreeProgress: one checkpoint per value field, per method, per condition) ────────
+export type Picks = Record<string, string[]>;
+export type CondPick = 'ok' | 'lim' | 'fnd';
+export const pickKey = (nodeId: string, attrId: string) => nodeId + '::' + attrId;
+export const METHOD_ATTR = '__method';
+
+export function leafProgress(n: TemplateNode, picks: Picks, cond: Record<string, CondPick>, readings: Record<string, string>) {
+  const ax = axesOf(n);
+  let met = 0, total = 0;
+  ax.attributes.forEach(a => { total++; if ((picks[pickKey(n.id, a.id)] ?? []).length) met++; });
+  if (ax.method.length) { total++; if ((picks[pickKey(n.id, METHOD_ATTR)] ?? []).length) met++; }
+  if (n.freeFormValue) { total++; if ((readings[n.id] ?? '').trim()) met++; }
+  if (ax.condition) { total++; if (cond[n.id]) met++; }
+  return { met, total, finding: cond[n.id] === 'fnd', limited: cond[n.id] === 'lim' };
+}
+
+export function sumProgress(leaves: TemplateNode[], picks: Picks, cond: Record<string, CondPick>, readings: Record<string, string>) {
+  const acc = { met: 0, total: 0, finding: false, limited: false };
+  leaves.forEach(l => {
+    if (l.pointsTo) return;
+    const p = leafProgress(l, picks, cond, readings);
+    acc.met += p.met; acc.total += p.total; acc.finding = acc.finding || p.finding; acc.limited = acc.limited || p.limited;
+  });
+  return acc;
+}
+
+/** Keep only picks whose value the draft still offers (an option renamed or removed in the editor). */
+/*  Values typed on the phone ("Add a material") live in `typed` and are kept unless the field itself is gone. */
+export function fieldValues(index: PreviewIndex, key: string): string[] | null {
+  const cut = key.lastIndexOf('::');
+  const loc = index.byId[key.slice(0, cut)];
+  if (!loc) return null;
+  const attrId = key.slice(cut + 2);
+  const ax = axesOf(loc.node);
+  if (attrId === METHOD_ATTR) return ax.method.length ? ax.method : null;
+  const a = ax.attributes.find(x => x.id === attrId);
+  return a ? a.values : null;
+}
+export function prunePicks(picks: Picks, typed: Picks, index: PreviewIndex): { picks: Picks; typed: Picks; changed: boolean } {
+  const outP: Picks = {}, outT: Picks = {};
+  let changed = false;
+  Object.keys(picks).forEach(k => {
+    const values = fieldValues(index, k);
+    if (!values) { changed = true; return; }
+    const extra = typed[k] ?? [];
+    const kept = picks[k].filter(v => values.indexOf(v) >= 0 || extra.indexOf(v) >= 0);
+    if (kept.length !== picks[k].length) changed = true;
+    if (kept.length) outP[k] = kept;
+  });
+  Object.keys(typed).forEach(k => { if (fieldValues(index, k)) outT[k] = typed[k]; else changed = true; });
+  return { picks: outP, typed: outT, changed };
+}

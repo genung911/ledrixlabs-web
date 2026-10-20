@@ -316,7 +316,7 @@ function ReportsPanel({ reports, seals, portal, phase }: { reports: ReportRow[];
             {portal ? (
               <>
                 <p className="text-body">The client’s living record of this home.</p>
-                <a href={portal} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white hover:bg-ink/85">Open portal</a>
+                <a href={portal} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full bg-ink px-4 py-2 text-xs font-semibold text-surface hover:bg-ink/85">Open portal</a>
               </>
             ) : <p className="text-muted">No portal link is available to your account for this inspection.</p>}
           </div>
