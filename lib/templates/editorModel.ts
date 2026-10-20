@@ -95,8 +95,19 @@ const listOrNull = (xs: string[]) => { const v = xs.map(s => s.trim()).filter(Bo
 export const ops = {
   rename: (nodeId: string, label: string): TemplateOp[] => (label.trim() ? [setField(nodeId, 'label', label.trim())] : []),
   describe: (nodeId: string, text: string): TemplateOp[] => [setField(nodeId, 'description', text.trim() ? text : null)],
-  /** Whether a new inspection covers this system (the template's `defaultActive`). */
-  coverByDefault: (systemId: string, on: boolean): TemplateOp[] => [setField(systemId, 'defaultActive', on ? null : false)],
+  /** Whether a new inspection covers this system. The app's rule (ledrix-app inspectionOffering.ts, mirrored by
+   *  isCovered below): covered = `defaultActive === true`; a template that switches NONE on uses Ledrix's default
+   *  list instead. So the first switch in such a template writes every system's current state explicitly — otherwise
+   *  turning one system on would silently turn every other default system off. */
+  coverByDefault: (tree: InspectionTemplate, systemId: string, on: boolean): TemplateOp[] => {
+    const explicit = tree.systems.some(s => s.defaultActive === true);
+    const out: TemplateOp[] = [];
+    for (const s of tree.systems) {
+      const want = s.id === systemId ? on : isCovered(tree, s);
+      if (s.id === systemId || !explicit) { if ((s.defaultActive === true) !== want || s.defaultActive === undefined) out.push(setField(s.id, 'defaultActive', want)); }
+    }
+    return out;
+  },
   assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on ? true : null)],
   limitations: (nodeId: string, reasons: string[]): TemplateOp[] => [setField(nodeId, 'limitations', listOrNull(reasons))],
   findingShortcuts: (node: TemplateNode, labels: string[], now: number): TemplateOp[] => {
@@ -113,7 +124,11 @@ export const ops = {
   },
   addSystem: (tree: InspectionTemplate, label: string): TemplateOp[] => {
     const id = newNodeId(tree, null, label);
-    return [{ op: 'addNode', parentId: null, node: { id, label: label.trim(), kind: 'system', children: [] } }];
+    // A new system is covered — the owner added it to inspect it. In a template still on Ledrix's default list,
+    // the others are written explicitly first, so the new `defaultActive: true` doesn't switch them all off.
+    const keep: TemplateOp[] = tree.systems.some(s => s.defaultActive === true) ? []
+      : tree.systems.map(s => setField(s.id, 'defaultActive', isCovered(tree, s)));
+    return [...keep, { op: 'addNode', parentId: null, node: { id, label: label.trim(), kind: 'system', defaultActive: true, children: [] } }];
   },
   addItem: (tree: InspectionTemplate, systemId: string, parentId: string, label: string, kind: 'component' | 'subsystem' = 'component'): TemplateOp[] => {
     const id = newNodeId(tree, systemId, label);
@@ -135,6 +150,15 @@ export const ops = {
     [{ op: 'setAttributeField', nodeId, attrId: a.id, field: 'allowTyped', value: on }],
   removeField: (nodeId: string, a: ComponentAttribute): TemplateOp[] => [{ op: 'removeAttribute', nodeId, attrId: a.id }],
 };
+
+/** Ledrix's default coverage when a template switches no system on (ledrix-app inspectionOffering.ts). */
+export const DEFAULT_COVERED = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling'];
+
+/** Is this system covered when an inspection starts? The app's rule, exactly (offeringForNewSnapshot). */
+export function isCovered(tree: InspectionTemplate, sys: TemplateNode): boolean {
+  if (tree.offeringModel === 1) return sys.inScope === true;
+  return tree.systems.some(s => s.defaultActive === true) ? sys.defaultActive === true : DEFAULT_COVERED.includes(sys.id);
+}
 
 /** A blank template for "New template → Blank". */
 export const blankTree = (name: string): InspectionTemplate => ({ id: 'custom', name, version: 1, systems: [] });

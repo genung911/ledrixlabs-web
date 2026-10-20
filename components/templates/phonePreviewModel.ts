@@ -6,6 +6,7 @@
 // The rules are the Ledrix Inspect app's, ported (not imported — the app's modules pull in React Native and the
 // taxonomy runtime). Each helper names the app file it follows.
 import type { ComponentAttribute, InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
+import { DEFAULT_COVERED, isCovered } from '@/lib/templates/editorModel';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
  *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
@@ -19,9 +20,7 @@ export const LIMITATION_REASONS: readonly string[] = [
 
 /** ledrix-app src/core/taxonomy/canonicalSystems.ts — `DEFAULT_ACTIVE_SYSTEMS`. Used only for a template that
  *  marks no system `defaultActive: true` (blank / imported), exactly as the app's offering rule does. */
-export const DEFAULT_ACTIVE_SYSTEMS: readonly string[] = [
-  'safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling',
-];
+export const DEFAULT_ACTIVE_SYSTEMS: readonly string[] = DEFAULT_COVERED;
 
 // ── WHICH SYSTEMS A NEW INSPECTION SHOWS ───────────────────────────────────────────────────────────────────────
 // Conclusion from ledrix-app src/core/services/inspectionOffering.ts (offeringForNewSnapshot + normalizeOffering)
@@ -33,10 +32,9 @@ export const DEFAULT_ACTIVE_SYSTEMS: readonly string[] = [
 //   · A system that is not in scope is still in the snapshot — offered through "+ Add system" — just not a tile.
 // So for the draft (a company template) the deciding flag is `defaultActive`; `inScope` is honoured only when the
 // tree is already an inspection snapshot (`offeringModel === 1`).
+// One rule for the editor's switches and this preview: lib/templates/editorModel.isCovered.
 export function systemShown(tree: InspectionTemplate, sys: TemplateNode): boolean {
-  if (tree.offeringModel === 1) return sys.inScope === true;
-  const flagged = (tree.systems ?? []).some(s => s.defaultActive === true);
-  return flagged ? sys.defaultActive === true : DEFAULT_ACTIVE_SYSTEMS.indexOf(sys.id) >= 0;
+  return isCovered(tree, sys);
 }
 
 export function shownSystems(tree: InspectionTemplate): TemplateNode[] {

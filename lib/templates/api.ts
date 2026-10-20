@@ -17,6 +17,7 @@ import { workspace } from '@/lib/workspace/client';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { createDraft, isTemplateDraft, type TemplateDraft } from '@/lib/templateBuilder/core/templateDraft';
 import { templateHash } from '@/lib/templateBuilder/core/templateOps';
+import { isCovered } from './editorModel';
 
 export type Backend = 'server' | 'local';
 
@@ -269,7 +270,7 @@ export async function removeInspectionType(type: InspectionType): Promise<void> 
 
 /** Systems a new inspection covers by default, as the template defines them. */
 export const systemCount = (tree: InspectionTemplate | null): number =>
-  (tree?.systems ?? []).filter(s => s.defaultActive !== false).length;
+  tree ? tree.systems.filter(s => isCovered(tree, s)).length : 0;
 
 export const BASE_LABEL: Record<string, string> = { internachi: 'Ledrix Default', fourpoint: '4-Point', custom: 'Custom', blank: 'Blank' };
 export const baseLabel = (b: string | null) => (b ? BASE_LABEL[b] ?? b.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Custom');

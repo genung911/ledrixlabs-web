@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
-import { buildAssistantPrompt, normalizeAnswer, summarizeCompany, isGradeChange, GRADE_REFUSAL, type AssistantRequest } from '../../../lib/templates/assistant';
+import { buildAssistantPrompt, normalizeAnswer, normalizeChanges, summarizeCompany, isGradeChange, GRADE_REFUSAL, type AssistantRequest } from '../../../lib/templates/assistant';
 import { canAuthorTemplates, TEMPLATE_AUTHORING_MODEL } from '../../../lib/templateBuilder/access';
 
 export const runtime = 'nodejs';
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   if (!parsed || typeof parsed !== 'object') return fail(502, 'Ledrix did not return a usable answer. Try again, or reword the question.');
 
   const answer = normalizeAnswer(parsed);
-  const all = prompt.proposesFor && Array.isArray((parsed as { changes?: unknown }).changes) ? (parsed as { changes: unknown[] }).changes : [];
+  const all = prompt.proposesFor && Array.isArray((parsed as { changes?: unknown }).changes) ? normalizeChanges((parsed as { changes: unknown[] }).changes) : [];
   const changes = all.filter(c => !isGradeChange(c));
   const notes = changes.length < all.length ? [GRADE_REFUSAL] : [];
   const summary = typeof (parsed as { summary?: unknown }).summary === 'string' ? String((parsed as { summary: string }).summary).slice(0, 300) : '';

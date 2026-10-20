@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { flatItems, isCovered, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -36,7 +36,7 @@ const Arrow = ({ dir }: { dir: 'up' | 'down' }) => (
 
 export function SystemsColumn({ tree, sel, onSelect, onOps, disabled }: { tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; disabled: boolean }) {
   const [adding, setAdding] = useState('');
-  const covered = tree.systems.filter(s => s.defaultActive !== false).length;
+  const covered = tree.systems.filter(s => isCovered(tree, s)).length;
   return (
     <section aria-label="Systems" className="flex min-h-0 flex-col rounded-xl border border-hairline bg-surface">
       <header className="flex items-center justify-between border-b border-hairline px-3 py-2.5">
@@ -53,8 +53,8 @@ export function SystemsColumn({ tree, sel, onSelect, onOps, disabled }: { tree: 
                 <button aria-label={`Move ${s.label} down`} disabled={disabled || i === tree.systems.length - 1} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i + 1))}><Arrow dir="down" /></button>
               </div>
               <button onClick={() => onSelect({ systemId: s.id, nodeId: null })} aria-current={on ? 'true' : undefined}
-                className={`min-w-0 flex-1 truncate py-2 text-left text-sm ${on ? 'font-semibold text-accent-ink' : s.defaultActive === false ? 'text-muted' : 'text-ink'}`}>{s.label}</button>
-              <Toggle on={s.defaultActive !== false} disabled={disabled} label={`${s.label} is covered when an inspection starts`} onChange={v => onOps(ops.coverByDefault(s.id, v))} />
+                className={`min-w-0 flex-1 truncate py-2 text-left text-sm ${on ? 'font-semibold text-accent-ink' : !isCovered(tree, s) ? 'text-muted' : 'text-ink'}`}>{s.label}</button>
+              <Toggle on={isCovered(tree, s)} disabled={disabled} label={`${s.label} is covered when an inspection starts`} onChange={v => onOps(ops.coverByDefault(tree, s.id, v))} />
               <Menu label={`More for ${s.label}`} items={[{ label: 'Set aside', disabled: disabled && 'The draft can’t change right now.', onSelect: () => onOps(ops.setAside(s.id)) }]} />
             </li>
           );

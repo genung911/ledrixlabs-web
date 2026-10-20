@@ -79,7 +79,9 @@ ANSWER rules:
 
 CHANGES rules:
 - Propose changes only when the request asks for changes. For explanations and general questions, "changes" is [].
-- Fewest changes that help most; never more than 12. Each needs a "why" the owner can read.`;
+- Fewest changes that help most; never more than 12. Each needs a "why" the owner can read.
+- Each change WRAPS its operation: {"op":{"op":"addAttribute","nodeId":"…","attribute":{…}},"why":"…"} — never put the
+  operation's fields beside "why".`;
 
 const TEMPLATE_GRAMMAR_NOTE = `The owner is asking about the WHOLE template. Answer only: "changes" must be [] (changes are proposed one system
 at a time — suggest which system to open).`;
@@ -212,3 +214,23 @@ export function isGradeChange(change: unknown): boolean {
   return false;
 }
 export const GRADE_REFUSAL = 'Ledrix suggested a condition grade. Condition is always Satisfactory, Limitation or Finding, so it was left out.';
+
+// ── reply shape, tolerated ────────────────────────────────────────────────────────────────────────────────
+// The grammar asks for {"op": {...}, "why": "..."}. Models sometimes flatten it to {"op": "addAttribute", "nodeId": ...,
+// "why": ...} or name it "operation". That is the same change in a different envelope, so it is re-wrapped here
+// and then checked exactly like any other (strict parse, scope, validation) — re-wrapping never makes a bad
+// operation acceptable, it only stops a good one being refused for its envelope.
+export function normalizeChanges(raw: unknown[]): unknown[] {
+  return raw.map(c => {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return c;
+    const x = c as Record<string, unknown>;
+    const why = typeof x.why === 'string' ? x.why : typeof x.reason === 'string' ? x.reason : typeof x.rationale === 'string' ? x.rationale : undefined;
+    if (x.op && typeof x.op === 'object' && !Array.isArray(x.op)) return why !== undefined && x.why === undefined ? { ...x, why } : c;
+    if (x.operation && typeof x.operation === 'object' && !Array.isArray(x.operation)) return { op: x.operation, ...(why !== undefined ? { why } : {}) };
+    if (typeof x.op === 'string') {
+      const { why: _w, reason: _r, rationale: _ra, ...op } = x;
+      return { op, ...(why !== undefined ? { why } : {}) };
+    }
+    return c;
+  });
+}

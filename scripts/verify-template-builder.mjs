@@ -216,10 +216,10 @@ async function runDesktop(files) {
       node().limitations?.[0] === 'Concealed by roof covering' && node().findingShortcuts?.length === 1 && node().findingShortcuts[0].id === firstId);
     step(E.ops.assessed(node().id, false), 4600);
     r('hand edit: turning assessment off removes it (never a grade)', node().condition === undefined);
-    step(E.ops.coverByDefault('hvac', false), 4700);
+    step(E.ops.coverByDefault(d.tree, 'hvac', false), 4700);
     const off = d.tree.systems.find(s => s.id === 'hvac').defaultActive === false;
-    step(E.ops.coverByDefault('hvac', true), 4800);
-    r('hand edit: a system can be left out of new inspections and put back', off && d.tree.systems.find(s => s.id === 'hvac').defaultActive === undefined);
+    step(E.ops.coverByDefault(d.tree, 'hvac', true), 4800);
+    r('hand edit: a system can be left out of new inspections and put back', off && d.tree.systems.find(s => s.id === 'hvac').defaultActive === true);
     step(E.ops.setAside('roofing__flashing_2'), 4900);
     const aside = !E.locate(d.tree, 'roofing__flashing_2') && (d.tree.systems[0].trimmed ?? []).some(n => n.id === 'roofing__flashing_2');
     step(E.ops.restore('roofing__flashing_2'), 5000);
@@ -253,6 +253,24 @@ async function runDesktop(files) {
     const fine = { op: { op: 'addAttribute', nodeId: 'x', attribute: { id: 'm', label: 'Material', values: ['Asphalt', 'Metal', 'Tile'] } }, why: 'x' };
     r('assistant: grades are caught wherever they hide', A.isGradeChange(grade) && A.isGradeChange(hidden) && A.isGradeChange(inNode));
     r('assistant: an ordinary spec field is not mistaken for a grade', !A.isGradeChange(fine));
+    const flat = A.normalizeChanges([{ op: 'addAttribute', nodeId: 'roof_cover', attribute: { id: 'vent', label: 'Ventilation type', values: ['Ridge', 'Soffit'] }, why: 'Asked for.' },
+      { operation: { op: 'setNodeField', nodeId: 'roof_cover', field: 'description', value: 'x' }, reason: 'Clearer.' }, { op: { op: 'trimNode', nodeId: 'a' }, why: 'w' }, 'junk']);
+    r('assistant: a flattened or renamed change is re-wrapped, a correct one is untouched, junk stays junk',
+      flat[0]?.op?.op === 'addAttribute' && flat[0]?.op?.nodeId === 'roof_cover' && flat[0]?.why === 'Asked for.' && flat[0]?.op?.why === undefined
+      && flat[1]?.op?.op === 'setNodeField' && flat[1]?.why === 'Clearer.' && flat[2]?.op?.op === 'trimNode' && flat[3] === 'junk');
+    // coverage switches follow the app's rule
+    const cov = clone(LIVE);
+    r('coverage: a template that switches none on uses Ledrix\'s default list (as the app does)', E.isCovered(cov, cov.systems[0]) === true && E.isCovered({ ...cov, systems: [{ id: 'pools', label: 'P', kind: 'system' }] }, { id: 'pools' }) === false);
+    let cd = T.createDraft({ companyId: 'co_1', templateId: 'tpl_1', live: cov, now: 1 });
+    const c1 = E.applyManual(cd, E.ops.coverByDefault(cd.tree, 'hvac', false), OWNER, 2); cd = c1.ok ? c1.draft : cd;
+    r('coverage: the first switch writes every system explicitly, so turning one off keeps the others on',
+      c1.ok && cd.tree.systems.find(s => s.id === 'roofing').defaultActive === true && cd.tree.systems.find(s => s.id === 'hvac').defaultActive === false);
+    const c2 = E.applyManual(cd, E.ops.coverByDefault(cd.tree, 'hvac', true), OWNER, 3); cd = c2.ok ? c2.draft : cd;
+    let cn = T.createDraft({ companyId: 'co_1', templateId: 'tpl_1', live: clone(LIVE), now: 1 });
+    const an = E.applyManual(cn, E.ops.addSystem(cn.tree, 'Pools'), OWNER, 2); cn = an.ok ? an.draft : cn;
+    r('coverage: a new system is covered, and adding it keeps the default systems covered',
+      an.ok && E.isCovered(cn.tree, cn.tree.systems.find(s => s.label === 'Pools')) && E.isCovered(cn.tree, cn.tree.systems.find(s => s.id === 'roofing')));
+    r('coverage: switching a system on makes it covered (defaultActive true, not merely "not false")', c2.ok && cd.tree.systems.find(s => s.id === 'hvac').defaultActive === true && E.isCovered(cd.tree, cd.tree.systems.find(s => s.id === 'hvac')));
   } catch (e) {
     r(`desktop scenario completed (${e?.message})`, false);
   }
@@ -310,6 +328,7 @@ const RULES = {
     const cap = s.indexOf('bumpUsage(admin, user.id)'), model = s.indexOf('await askModel(');
     return cap > 0 && model > cap && /used > DAILY_CAP/.test(s) ? [] : [ROUTE];
   },
+  'route: the reply shape is normalized before grades are filtered and the browser checks it': all => /normalizeChanges\(\(parsed as \{ changes: unknown\[\] \}\)\.changes\)/.test(strip(all[ROUTE] ?? '')) ? [] : [ROUTE],
   'route: grades are filtered out before the owner sees them': all => /\.filter\(c => !isGradeChange\(c\)\)/.test(strip(all[ROUTE] ?? '')) ? [] : [ROUTE],
   'pages: editing is for owners and admins only': all => {
     const list = all[LIST] ?? '', edit = all[EDIT] ?? '';
@@ -347,6 +366,8 @@ const MUT = {
   "route: owner/admin, working on their own company's template or draft": rep(ROUTE, ".eq('id', templateId as string).eq('company_id', profile.company_id)", ".eq('id', templateId as string)"),
   'route: the prompt is built on the server': rep(ROUTE, 'askModel(prompt.system, prompt.user)', 'askModel(String((body as any).system), prompt.user)'),
   'route: the cost cap is counted before the model is called': rep(ROUTE, 'const used = await bumpUsage(admin, user.id);', 'const used = 0;'),
+  'route: the reply shape is normalized before grades are filtered and the browser checks it': all => /normalizeChanges\(\(parsed as \{ changes: unknown\[\] \}\)\.changes\)/.test(strip(all[ROUTE] ?? '')) ? [] : [ROUTE],
+  'route: the reply shape is normalized before grades are filtered and the browser checks it': rep(ROUTE, 'normalizeChanges((parsed as { changes: unknown[] }).changes)', '(parsed as { changes: unknown[] }).changes'),
   'route: grades are filtered out before the owner sees them': rep(ROUTE, '.filter(c => !isGradeChange(c))', '.filter(Boolean)'),
   'pages: editing is for owners and admins only': rep(EDIT, 'if (!access.companyId || !author)', 'if (!access.companyId)'),
   'pages: publish, rename, delete and type assignment are owner-only in the UI': rep(LIST, 'disabled={!owner || busy}', 'disabled={busy}'),
@@ -364,6 +385,8 @@ const EXEC_MUT = [
   { name: 'hand edits skip the change-set log', file: 'editorModel.ts', from: "  const r = applyToDraft(d, cs, now);\n  return r.ok ? { ok: true, draft: r.draft } : { ok: false, error: r.error };", to: "  const r = applyToDraft(d, cs, now);\n  return r.ok ? { ok: true, draft: { ...r.draft, log: d.log } } : { ok: false, error: r.error };", check: 'hand edit: every edit is undoable', run: runDesktop },
   { name: 'a whole-template question may propose changes', file: 'assistant.ts', from: "return { system, user, promptRef: hashOf({ system, user }), proposesFor: null };", to: "return { system, user, promptRef: hashOf({ system, user }), proposesFor: req.tree.systems[0]?.id ?? null };", check: 'assistant: a whole-template question proposes nothing', run: runDesktop },
   { name: 'grades hidden in a value list slip through', file: 'assistant.ts', from: "if (op.op === 'setAttributeField') return", to: "if (op.op === 'setAttributeField') return false &&", check: 'assistant: grades are caught wherever they hide', run: runDesktop },
+  { name: 'flattened changes are not re-wrapped', file: 'assistant.ts', from: "    if (typeof x.op === 'string') {", to: "    if (false) {", check: 'assistant: a flattened or renamed change is re-wrapped, a correct one is untouched, junk stays junk', run: runDesktop },
+  { name: 'switching on only clears the off flag', file: 'editorModel.ts', from: "const want = s.id === systemId ? on : isCovered(tree, s);", to: "const want = s.id === systemId ? (on ? (undefined as any) : false) : isCovered(tree, s);", check: 'coverage: switching a system on makes it covered (defaultActive true, not merely "not false")', run: runDesktop },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 for (const m of EXEC_MUT) {
