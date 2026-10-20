@@ -26,7 +26,7 @@ export default function TermsOfService() {
         {[
           {
             title: '1. Acceptance of Terms',
-            body: `By downloading or using the Ledrix application, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, do not download or use the app. Ledrix is intended for use by professional home inspectors in the course of their work. Use of the platform for fraudulent or deceptive inspection activity is prohibited.`,
+            body: `By downloading or using the Ledrix application, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, do not download or use the app. Ledrix is intended for use by professional home inspectors in the course of their work. Homeowners and clients who use a home portal agree to these terms as described in Section 8.2. Use of the platform for fraudulent or deceptive inspection activity is prohibited.`,
           },
           {
             title: '2. Professional Responsibility',
@@ -54,7 +54,7 @@ export default function TermsOfService() {
           },
           {
             title: '8. Client Data and the Homeowner Portal',
-            body: `When you deliver inspection data to clients through the Ledrix Home App portal, you represent that: (a) you conducted the inspection under a lawful professional engagement with the property owner or their authorized agent, (b) you have the right to share the information contained in the delivery, and (c) all data was collected lawfully. You remain responsible for obtaining any necessary client consents for data sharing and for the accuracy of all content delivered.`,
+            body: `8.1 Inspectors. When you deliver inspection data to clients through the Ledrix Home App portal, you represent that: (a) you conducted the inspection under a lawful professional engagement with the property owner or their authorized agent, (b) you have the right to share the information contained in the delivery, and (c) all data was collected lawfully. You remain responsible for obtaining any necessary client consents for data sharing and for the accuracy of all content delivered.\n\n8.2 Homeowners and clients. If you use a home portal as a homeowner or client:\n\n(a) The inspection findings are your inspector's professional observations as of the inspection date. Questions about them should go to your inspector.\n\n(b) Ask Ledrix answers, photo analysis, repair-request drafts, and maintenance schedules are AI-assisted information, not professional advice, and do not replace a licensed contractor, inspector, or engineer. For anything urgent or unsafe, contact a qualified professional or emergency services.\n\n(c) Ledrix does not provide cost estimates. Local pros shown are drawn from public Google ratings and are not endorsed, vetted, or guaranteed by Ledrix Labs.\n\n(d) Your portal link works like a key: anyone who has it can view and change your home record. Keep it private.\n\n(e) You are responsible for what you upload and must have the right to share it. Do not upload other people's private information.\n\n(f) Sections 3, 12, 14, 16, and 17 apply to you as well. The inspector obligations in Sections 2, 4 through 7, and 9 through 11 do not.`,
           },
           {
             title: '9. License',
