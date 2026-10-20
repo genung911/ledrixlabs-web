@@ -10,7 +10,7 @@ import { SectionHeading } from './ui/SectionHeading';
 const FAQS = [
   {
     q: 'What is Ledrix?',
-    a: 'Ledrix is an AI-assisted platform for home inspectors. It drafts a structured finding the moment you capture a photo — system, location, priority, and the spec behind it — then compiles a clean, legal PDF and a live client home portal. You inspect the house; Ledrix handles the write-up.',
+    a: 'Ledrix is an AI-assisted platform for home inspectors. It drafts a structured finding the moment you capture a photo — system, location, priority, and the spec behind it — then compiles a clean, professional PDF and a live client home portal. You inspect the house; Ledrix handles the write-up.',
   },
   {
     q: 'Does Ledrix replace the inspector?',

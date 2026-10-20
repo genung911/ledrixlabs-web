@@ -49,7 +49,7 @@ const PILLARS = [
 export default function LedrixHomePage() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
-      <Navbar overLight links={HOME_LINKS} ctaHref="/home#get" />
+      <Navbar overLight links={HOME_LINKS} ctaHref="/inspect#homeowners" ctaLabel="Get notified" />
 
       <main>
         {/* ── HERO (light, homeowner-warm) ── */}
@@ -71,6 +71,10 @@ export default function LedrixHomePage() {
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-body [text-wrap:balance]">
                 Every home tells a story. Ledrix keeps it — a living record from the inspection
                 baseline through every repair, upgrade, and season.
+              </p>
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-body">
+                Ledrix Home isn’t open to homeowners yet. Today it arrives as the home portal your
+                Ledrix inspector delivers with your report.
               </p>
               <div id="get" className="mt-9 flex flex-wrap gap-3">
                 <GlowButton href="/inspect" variant="ghost" tone="light" className="!px-6 !py-3">

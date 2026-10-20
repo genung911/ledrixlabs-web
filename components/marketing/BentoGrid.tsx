@@ -152,7 +152,7 @@ const TILES: Tile[] = [
     className: '',
     kicker: 'Deliverable',
     title: 'A report clients read',
-    body: 'A clean, legal PDF and a live client home portal — generated, not assembled.',
+    body: 'A clean, professional PDF and a live client home portal — generated, not assembled.',
     shot: { src: '/sample-pdf-cover.jpg', alt: 'The Ledrix inspection report cover page' },
   },
   {

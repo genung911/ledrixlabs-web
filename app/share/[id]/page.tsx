@@ -1238,7 +1238,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const gut = desk ? 40 : 18;   // side gutter — one value so every section stays flush
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const critical = anomalies.filter(a => a.severity === 'critical');
-  const deficien = anomalies.filter(a => a.severity === 'anomaly');
+  const deficien = anomalies.filter(a => a.severity === 'deficiency' || a.severity === 'anomaly');   // 'anomaly' = legacy rows
   const prioCount = anomalies.reduce((m, a) => { const k = priorityOf(a).key; m[k] = (m[k] ?? 0) + 1; return m; }, {} as Record<PrioKey, number>);
   const dueReminders = reminders.filter(r => !r.completed);
   const includedRepairs = repairs.filter(r => r.status === 'included').length;
@@ -1810,7 +1810,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
     setBusy(true);
     await supaPost('home_projects', {
       share_id: shareId, title: (a.description ?? 'Finding').slice(0, 100), system: a.unit ?? null,
-      priority: a.severity === 'critical' ? 'critical' : a.severity === 'anomaly' ? 'high' : 'low',
+      priority: a.severity === 'critical' ? 'critical' : (a.severity === 'deficiency' || a.severity === 'anomaly') ? 'high' : 'low',
       status: 'identified', description: a.description ?? null, recommendation: a.recommendation ?? null,
       contractor_type: null, photos: [], seeded: false,   // never a guessed specialist (owner 2026-10-13)
     });
@@ -2720,7 +2720,7 @@ async function draftRepairRequest(a: Anomaly): Promise<{ item: string; remedy: s
     if (!token) return null;
     const r = await fetch('/api/ledrix/repair', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ finding: { unit: a.unit, location: a.location, severity: a.severity, description: homeView(a).description } }),
+      body: JSON.stringify({ finding: { unit: a.unit, location: a.location, severity: a.severity, isSafety: !!a.isSafety, description: homeView(a).description } }),
     });
     if (!r.ok) return null;
     const j = await r.json();

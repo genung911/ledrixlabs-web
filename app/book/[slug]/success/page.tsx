@@ -8,7 +8,7 @@ const CARD   = '#0e0e0e';
 const BORDER = '#1a1a1a';
 const GREEN  = '#22C55E';
 
-const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? '';
+const SUPA_URL  = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const API_HEADERS = {
   apikey:         SUPA_ANON,

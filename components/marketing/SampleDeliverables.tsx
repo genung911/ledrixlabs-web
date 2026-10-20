@@ -21,8 +21,8 @@ const PORTAL_POINTS = [
 ];
 const PDF_POINTS = [
   'An at-a-glance summary, then every finding grouped by system.',
-  'Every finding backed by timestamped, GPS-anchored photo proof.',
-  'Checklists that adapt to your jurisdiction — no generic noise.',
+  'Every finding backed by the inspector’s own timestamped photos.',
+  'Checklists built from your company’s own template — no generic noise.',
   'Verified and signed by the inspector.',
 ];
 
@@ -59,7 +59,7 @@ export function SampleDeliverables() {
             Open a real one.
           </motion.h2>
           <motion.p variants={fadeUp} className="mt-5 max-w-xl text-lg leading-relaxed text-body [text-wrap:balance]">
-            Every inspection delivers two things — a clean, legal PDF and a live home portal the buyer keeps.
+            Every inspection delivers two things — a clean, professional PDF and a live home portal the buyer keeps.
             Click either to open a real sample.
           </motion.p>
         </motion.div>

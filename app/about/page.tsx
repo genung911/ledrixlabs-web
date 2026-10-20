@@ -20,7 +20,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: 'Technology',
-    body: "Ledrix runs on a cloud-baseline AI architecture so every device, new or old, shares one brain. Findings are grounded in timestamped, GPS-anchored evidence, and a synthesis and verification pass reviews each report for consistency before delivery. Every confirmed fact belongs to the property, not to any single document — the PDF report and the Home Portal are two views of the same underlying record, not two things to keep in sync by hand.",
+    body: "Ledrix runs on a cloud-baseline AI architecture so every device, new or old, shares one brain. Findings are grounded in the inspector's own timestamped photo evidence, and a synthesis and verification pass reviews each report for consistency before delivery. Every confirmed fact belongs to the property, not to any single document — the PDF report and the Home Portal are two views of the same underlying record, not two things to keep in sync by hand.",
   },
   {
     heading: 'Market & model',

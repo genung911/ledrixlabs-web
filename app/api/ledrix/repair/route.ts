@@ -16,8 +16,14 @@ const SUPA_URL    = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest
 const SERVICE     = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 // Report severity vocab → plain label the buyer/seller read.
-function sevLabel(s?: string): string {
-  return s === 'critical' ? 'safety issue' : s === 'anomaly' ? 'deficiency' : 'maintenance item';
+// 'critical' is Major Repair, not Safety (Safety is the separate isSafety flag);
+// 'anomaly' is the legacy spelling of 'deficiency'.
+function sevLabel(f: { severity?: string; isSafety?: boolean }): string {
+  const s = String(f.severity ?? '').toLowerCase();
+  const tier = s === 'critical' ? 'major repair'
+    : s === 'deficiency' || s === 'anomaly' ? 'minor repair'
+    : s === 'characteristic' ? 'typical wear' : 'maintenance item';
+  return f.isSafety ? `safety issue (${tier})` : tier;
 }
 
 const REPAIR_SYSTEM =
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
   const user_msg =
     `Finding:\n- System/component: ${f.unit || 'Not specified'}\n` +
     `- Location: ${f.location || 'Not specified'}\n` +
-    `- Type: ${sevLabel(f.severity)}\n` +
+    `- Type: ${sevLabel(f)}\n` +
     `- Observation: ${String(f.description || 'Not specified').slice(0, 600)}`;
 
   const body = {

@@ -24,7 +24,7 @@ const LINKS = [
 // omit the prop and keep the white-over-dark treatment.
 // `signInHref` — the inspector sign-in (/app/login). Opt-in per page: only the Inspect product page
 // passes it, since homeowners never sign in here (they open their portal from the inspector's link).
-export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo', signInHref }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string; signInHref?: string }) {
+export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo', ctaLabel = 'Request a demo', signInHref }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string; ctaLabel?: string; signInHref?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -93,7 +93,7 @@ export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo', s
             </a>
           )}
           <GlowButton href={ctaHref} variant="primary" tone={inkChrome ? 'light' : 'dark'} className="!px-5 !py-2.5 !text-xs">
-            Request a demo
+            {ctaLabel}
           </GlowButton>
 
           {/* Mobile menu toggle — the LINKS above are md:flex-only, so this is the only way

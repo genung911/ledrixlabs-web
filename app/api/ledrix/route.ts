@@ -48,14 +48,18 @@ function buildContext(rec: any, log: any[] = []): string {
   if (!rec) return 'No inspection record is available for this property.';
   const anomalies: any[] = Array.isArray(rec.anomalies) ? rec.anomalies : [];
   const specs: any[]     = Array.isArray(rec.specs) ? rec.specs : [];
-  const sev = (s?: string) => s === 'critical' ? 'SAFETY' : s === 'anomaly' ? 'DEFICIENCY' : 'MAINTENANCE';
+  // The app's priority tiers, with Safety as a separate overlay flag (SeverityConfig.ts) —
+  // 'critical' is Major Repair, not Safety; 'anomaly' is the legacy spelling of 'deficiency'.
+  const TIER: Record<string, string> = { critical: 'MAJOR REPAIR', deficiency: 'MINOR REPAIR', anomaly: 'MINOR REPAIR',
+    maintenance: 'MAINTENANCE', cosmetic: 'MAINTENANCE', characteristic: 'TYPICAL WEAR', spec: 'GOOD' };
+  const sev = (a: any) => `${a.isSafety ? 'SAFETY · ' : ''}${TIER[String(a.severity ?? '').toLowerCase()] ?? 'MINOR REPAIR'}`;
   // The finding text the model sees is the text a homeowner reads (owner decision 2026-10-13): a
   // stored "A structural engineer should evaluate…" bullet is a guessed specialist, and the model
   // would repeat it as fact. lib/homeownerRecommendation.ts; the stored record is unchanged.
   const findings = anomalies.slice(0, 40).map(a => {
     const hv = forHomeowner(a);
     const text = `${hv.description}${hv.evaluation ? ` ${hv.evaluation.text}` : ''}`;
-    return `- [${sev(a.severity)}] ${a.unit ?? 'General'}${a.location ? ` (${a.location})` : ''}: ${text.slice(0, 240)}`;
+    return `- [${sev(a)}] ${a.unit ?? 'General'}${a.location ? ` (${a.location})` : ''}: ${text.slice(0, 240)}`;
   }).join('\n');
   const material = specs.slice(0, 30).map(s => `- ${s.category ?? 'Item'}: ${s.material ?? ''}`).filter(Boolean).join('\n');
   const history = (log ?? []).slice(0, 20).map((e: any) =>

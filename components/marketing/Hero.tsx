@@ -13,7 +13,7 @@ import { GridBackground } from './ui/GridBackground';
 const POINTS = [
   'Ledrix drafts the finding the moment you capture the photo — you confirm, adjust, or reject.',
   'Always inspector-verified findings.',
-  'An instant legal report and a client home portal to blow agents and clients away.',
+  'An instant professional report and a client home portal to blow agents and clients away.',
 ];
 
 export function Hero() {
