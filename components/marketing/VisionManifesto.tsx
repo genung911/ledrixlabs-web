@@ -1,13 +1,12 @@
 'use client';
 
-// VisionManifesto — the opener: a full-bleed black-and-white "dollhouse" cutaway of a home
-// (every room and system seen at once) behind minimal, Tesla-clean text. The image is dark
-// (night exterior) so the type is white over a top-weighted legibility scrim, and the pills
-// use tone="dark". Copy stays minimal on purpose — the photo carries the section.
-import Image from 'next/image';
+// VisionManifesto — the opener: the Ledrix mark over a soft blue glow, above minimal,
+// Tesla-clean white text on dark. (Owner 2026-10-19: the dollhouse cutaway read as a 3D house,
+// which the site doesn't show — the logo stands in until a replacement image is chosen.)
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { GlowButton } from './ui/GlowButton';
+import { LedrixDelta } from '@/components/LedrixDelta';
 
 export function VisionManifesto() {
   return (
@@ -15,21 +14,19 @@ export function VisionManifesto() {
       id="vision"
       className="relative isolate flex min-h-[86vh] flex-col items-center justify-start overflow-hidden bg-dark text-white"
     >
-      {/* full-bleed dollhouse cutaway — the whole home as a system */}
-      <Image
-        src="/dollhouse-cutaway.jpg"
-        alt="A cutaway of a home — every room and system, seen at once"
-        fill
-        priority
-        sizes="100vw"
-        className="-z-20 object-cover object-center md:object-contain"
+      {/* soft brand glow behind the mark */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{ background: 'radial-gradient(ellipse 60% 45% at 50% 34%, rgba(33,123,232,0.20), transparent 70%)' }}
       />
-      {/* legibility scrim — stays dark through the whole text zone (top ~65%) so white type never
-          washes out over the bright lit rooms, then lifts to reveal the lower rooms + settles at the base */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(8,11,13,0.9)_0%,rgba(8,11,13,0.74)_26%,rgba(8,11,13,0.64)_46%,rgba(8,11,13,0.42)_66%,rgba(8,11,13,0.55)_100%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-28 text-center sm:pt-32">
         <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center">
+          <motion.div variants={fadeUp} className="mb-10">
+            <LedrixDelta size={168} sheen className="h-[120px] w-[120px] sm:h-[168px] sm:w-[168px]" />
+          </motion.div>
+
           <motion.span
             variants={fadeUp}
             className="mb-6 inline-flex items-center gap-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.32em] text-white/70"
