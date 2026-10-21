@@ -28,6 +28,7 @@
 // links were re-issued; that migration completed 2026-08-28 and the fallback was removed.
 // Do not reintroduce it — an id-addressable report is exactly the hole this route closes.
 import { NextRequest, NextResponse } from 'next/server';
+import { resolvePortalToken } from '../../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
 
@@ -44,10 +45,13 @@ const FIELDS = [
 /** One body for every miss, so a wrong token cannot be told from an unknown one. */
 const notFound = () => NextResponse.json({ error: 'Not found.' }, { status: 404 });
 
-async function selectOne(column: 'share_token', value: string) {
+/** A repairs link sees only what a repair request needs (2026-10-19) — not the report. */
+const REPAIRS_FIELDS = ['address', 'city', 'state', 'zip', 'inspection_date'] as const;
+
+async function selectOne(column: 'share_id', value: string) {
   const url = `${SUPA_URL}/rest/v1/home_records`
     + `?${column}=eq.${encodeURIComponent(value)}`
-    + `&select=${encodeURIComponent(FIELDS + ',share_token')}`   // token read internally, stripped below
+    + `&select=${encodeURIComponent(FIELDS)}`
     + `&limit=1`;
   const r = await fetch(url, {
     headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` },
@@ -68,11 +72,21 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
   if (!slug || slug.length > 128 || !/^[A-Za-z0-9._-]+$/.test(slug)) return notFound();
 
   try {
-    // 1 · THE TOKEN PATH — the only one that returns a report.
-    const byToken = await selectOne('share_token', slug);
-    if (byToken) {
-      const { share_token, ...safe } = byToken;   // never leaves the server
-      return NextResponse.json(safe, { headers: { 'Cache-Control': 'private, no-store' } });
+    // 1 · THE TOKEN PATH — the only one that returns a report. The token resolves to a share and
+    // a scope (lib/shareAccess.ts, 2026-10-19): the original share_token edits, a minted link is
+    // view-only or repairs-only, a revoked one resolves to nothing. The record is then read by
+    // share_id, so share_token is never selected and cannot leave the server.
+    const access = await resolvePortalToken(slug);
+    if (access) {
+      const rec = await selectOne('share_id', access.shareId);
+      if (!rec) return notFound();
+      const headers = { 'Cache-Control': 'private, no-store' };
+      if (access.scope === 'repairs') {
+        const out: Record<string, unknown> = { access: 'repairs' };
+        for (const f of REPAIRS_FIELDS) out[f] = rec[f] ?? null;
+        return NextResponse.json(out, { headers });
+      }
+      return NextResponse.json({ ...rec, access: access.scope }, { headers });
     }
 
     // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old

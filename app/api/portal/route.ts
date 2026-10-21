@@ -32,6 +32,8 @@
 // Once every client call goes through here, anon is revoked on all seven tables
 // (`supabase_portal_lockdown.sql`) and there is no path to them except a valid token.
 import { NextRequest, NextResponse } from 'next/server';
+import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, type Op } from '../../../lib/portalPolicy';
+import { resolvePortalToken } from '../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
 
@@ -40,54 +42,18 @@ const SERVICE  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const svc = { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json' };
 
-type Op = 'select' | 'insert' | 'update' | 'delete';
-
 // ── THE ALLOW-LIST IS THE POLICY ────────────────────────────────────────────────────
-// One entry per table the portal legitimately uses, and only the operations its real call sites
-// perform (counted from app/share/[id]/page.tsx + repairs/page.tsx on 2026-08-29). A table absent
-// here is unreachable through this route; an operation absent for a table is refused. This is what
-// replaces `for all to anon` — least privilege, expressed as data.
-const ALLOW: Record<string, ReadonlySet<Op>> = {
-  home_reminders:       new Set<Op>(['select', 'insert', 'update', 'delete']),
-  home_projects:        new Set<Op>(['select', 'insert', 'update', 'delete']),
-  home_repairs:         new Set<Op>(['select', 'insert', 'update', 'delete']),
-  home_documents:       new Set<Op>(['select', 'insert', 'delete']),
-  home_maintenance_log: new Set<Op>(['select', 'insert']),
-  home_reports:         new Set<Op>(['select']),
-  floor_plans:          new Set<Op>(['select']),
-};
+// Tables, operations, writable columns and the filter grammar live in lib/portalPolicy.ts
+// (2026-10-19), derived from the portal's real call sites. A table absent there is unreachable
+// through this route; an operation absent for a table is refused; a column absent from a table's
+// write list is dropped; a filter, select or order outside the plain grammar is refused.
 
 const fail = (status: number, error: string) => NextResponse.json({ error }, { status });
 const notFound = () => fail(404, 'Not found.');
 
-/** The token resolves to exactly one share, or to nothing. Same shape gate as /api/share. */
-async function shareIdForToken(token: string): Promise<string | null> {
-  const slug = String(token ?? '').trim();
-  if (!slug || slug.length > 128 || !/^[A-Za-z0-9._-]+$/.test(slug)) return null;
-  const url = `${SUPA_URL}/rest/v1/home_records`
-    + `?share_token=eq.${encodeURIComponent(slug)}&select=share_id&limit=1`;
-  const r = await fetch(url, { headers: svc, cache: 'no-store' });
-  if (!r.ok) return null;
-  const rows = await r.json();
-  return Array.isArray(rows) && rows.length ? String(rows[0].share_id ?? '') || null : null;
-}
-
-/**
- * A caller-supplied PostgREST filter, stripped of anything that could reach another share.
- *
- * The share_id scope is added by us and is NON-NEGOTIABLE: any share_id the client tried to set is
- * dropped first, so `share_id=eq.<someone-else>` cannot be smuggled in. Everything else is passed
- * through — the portal filters by `id`, `seeded`, `order`, `limit` and those are all safe once the
- * row set is already confined to one share.
- */
-function scopedFilter(rawFilter: string, shareId: string): string {
-  const parts = (rawFilter ?? '')
-    .split('&')
-    .map(s => s.trim())
-    .filter(Boolean)
-    .filter(p => !/^share_id=/i.test(p.split('=')[0] + '=')); // drop any client share_id
-  parts.unshift(`share_id=eq.${encodeURIComponent(shareId)}`);
-  return parts.join('&');
+/** The share scope is added by us and is NON-NEGOTIABLE; the client's terms are AND-ed after it. */
+function scoped(terms: string[], shareId: string): string {
+  return [`share_id=eq.${encodeURIComponent(shareId)}`, ...terms].join('&');
 }
 
 export async function POST(req: NextRequest) {
@@ -100,19 +66,32 @@ export async function POST(req: NextRequest) {
   const { token, table, op } = payload;
   if (!token || !table || !op) return fail(400, 'Bad request.');
 
-  const allowed = ALLOW[table];
-  if (!allowed || !allowed.has(op)) return notFound(); // unknown table or op: indistinguishable from a miss
+  const policy = Object.prototype.hasOwnProperty.call(PORTAL_POLICY, table) ? PORTAL_POLICY[table] : undefined;
+  if (!policy || !policy.ops.has(op)) return notFound(); // unknown table or op: indistinguishable from a miss
 
-  const shareId = await shareIdForToken(String(token));
-  if (!shareId) return notFound(); // bad/unknown token: same 404 as everything else
+  const terms = cleanFilter(payload.filter, op);
+  if (!terms) return fail(400, 'Bad request.');
+  // An update or delete must name its rows. Without a term of its own it ran against the whole share.
+  if ((op === 'update' || op === 'delete') && terms.length === 0) return fail(400, 'Bad request.');
+
+  // The token resolves to one share AND a scope (lib/shareAccess.ts): the original link edits, a
+  // minted view-only link reads, a repairs link reads only the repair request. A scope that does
+  // not cover this table/op is the same 404 as a bad token.
+  const access = await resolvePortalToken(token);
+  if (!access || !scopeAllows(access.scope, table, op)) return notFound();
+  const shareId = access.shareId;
+  if (access.scope === 'repairs') terms.push(REPAIRS_SCOPE_TERM);
 
   try {
     const base = `${SUPA_URL}/rest/v1/${table}`;
 
     if (op === 'select') {
-      const qp: string[] = [scopedFilter(payload.filter ?? '', shareId)];
-      if (payload.select) qp.push(`select=${encodeURIComponent(payload.select)}`);
-      if (payload.order)  qp.push(`order=${encodeURIComponent(payload.order)}`);
+      const select = cleanSelect(payload.select);
+      const order  = cleanOrder(payload.order);
+      if (select === null || order === null) return fail(400, 'Bad request.');
+      const qp: string[] = [scoped(terms, shareId)];
+      if (select) qp.push(`select=${encodeURIComponent(select)}`);
+      if (order)  qp.push(`order=${encodeURIComponent(order)}`);
       if (payload.limit)  qp.push(`limit=${Math.min(500, Math.max(1, Number(payload.limit) || 200))}`);
       const r = await fetch(`${base}?${qp.join('&')}`, { headers: svc, cache: 'no-store' });
       const data = await r.json().catch(() => []);
@@ -122,9 +101,11 @@ export async function POST(req: NextRequest) {
     if (op === 'insert') {
       // share_id is FORCED onto every row, overriding whatever the client sent — a row cannot be
       // filed under a share the caller does not hold.
-      const rows = (Array.isArray(payload.body) ? payload.body : [payload.body])
-        .filter(Boolean)
-        .map((row) => ({ ...(row as Record<string, unknown>), share_id: shareId }));
+      const raw = (Array.isArray(payload.body) ? payload.body : [payload.body]).filter(Boolean);
+      if (raw.length === 0 || raw.length > MAX_ROWS) return fail(400, 'Bad request.');
+      const cleaned = raw.map(row => cleanRow(table, 'insert', row));
+      if (cleaned.some(r => !r)) return fail(400, 'Bad request.');
+      const rows = cleaned.map(row => ({ ...row, share_id: shareId }));
       const r = await fetch(base, {
         method: 'POST', headers: { ...svc, Prefer: 'return=minimal' }, body: JSON.stringify(rows),
       });
@@ -132,11 +113,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (op === 'update') {
-      const url = `${base}?${scopedFilter(payload.filter ?? '', shareId)}`;
-      // share_id is stripped from the patch body too, so an update cannot move a row to another
-      // share even though the WHERE already confines which rows it can see.
-      const patch = { ...(payload.body as Record<string, unknown>) };
-      delete patch.share_id;
+      const url = `${base}?${scoped(terms, shareId)}`;
+      // Only allow-listed columns survive — share_id and id never do, so an update can neither move
+      // a row to another share nor re-key it.
+      const patch = cleanRow(table, 'update', payload.body);
+      if (!patch) return fail(400, 'Bad request.');
       const r = await fetch(url, {
         method: 'PATCH', headers: { ...svc, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
       });
@@ -144,7 +125,8 @@ export async function POST(req: NextRequest) {
     }
 
     // delete
-    const url = `${base}?${scopedFilter(payload.filter ?? '', shareId)}`;
+    const guard = policy.deleteGuard ? [policy.deleteGuard] : [];
+    const url = `${base}?${scoped([...terms, ...guard], shareId)}`;
     const r = await fetch(url, { method: 'DELETE', headers: { ...svc, Prefer: 'return=minimal' } });
     return new NextResponse(null, { status: r.ok ? 204 : r.status });
   } catch {

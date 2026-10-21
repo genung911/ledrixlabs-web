@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
+import { shareIdForToken } from '../../../lib/shareAccess';
 import { isEntitled } from '../../../lib/entitlement';
 import { forHomeowner } from '../../../lib/homeownerRecommendation';
 
@@ -23,26 +24,9 @@ const SERVICE     = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-/** The token resolves to exactly one share_id, or to nothing. Same shape gate and lookup as
- *  /api/portal (kept inline so this route does not depend on any other change). */
-async function shareIdForToken(token: unknown): Promise<string | null> {
-  // A token is a primitive string or nothing. Arrays, objects, numbers and booleans are refused here,
-  // before any lookup — never coerced (String(["<token>"]) would otherwise read as that token).
-  if (typeof token !== 'string') return null;
-  const slug = token.trim();
-  if (!slug || slug.length > 128 || !/^[A-Za-z0-9._-]+$/.test(slug)) return null;
-  try {
-    const r = await fetch(
-      `${SUPA_URL}/rest/v1/home_records?share_token=eq.${encodeURIComponent(slug)}&select=share_id&limit=1`,
-      { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` }, cache: 'no-store' },
-    );
-    if (!r.ok) return null;
-    const rows = await r.json();
-    return Array.isArray(rows) && rows.length ? String(rows[0]?.share_id ?? '') || null : null;
-  } catch {
-    return null;
-  }
-}
+// The token resolves to the share it may READ (lib/shareAccess.ts): the original link or a view-only
+// link; a repairs-only or revoked link resolves to nothing. Non-strings are refused there, before
+// any lookup — never coerced (String(["<token>"]) would otherwise read as that token).
 
 function buildContext(rec: any, log: any[] = []): string {
   if (!rec) return 'No inspection record is available for this property.';

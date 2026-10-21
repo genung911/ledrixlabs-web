@@ -25,6 +25,11 @@ const routeCode = strip(route);
 const page    = read('app/share/[id]/page.tsx');
 const repairs = read('app/share/[id]/repairs/page.tsx');
 const sql     = read('supabase_portal_lockdown.sql');
+// The allow-list and filter grammar moved here 2026-10-19; the route enforces them.
+const policy  = read('lib/portalPolicy.ts');
+// Token resolution (with scopes and revocation) moved here 2026-10-19; every route calls it.
+const access  = strip(read('lib/shareAccess.ts'));
+const policyCode = strip(policy);
 
 // ── 1. THE OPEN PASSTHROUGH IS GONE ─────────────────────────────────────────────────
 ok('A1 /api/proxy is deleted', !existsSync(join(root, 'app/api/proxy/route.ts')),
@@ -46,37 +51,45 @@ if (route) {
     'reaching for the anon key in CODE (comments explaining the old hole are fine) would be ' +
     'rebuilding the proxy');
   ok('A2 the token is resolved to a share_id server-side',
-    /home_records[\s\S]{0,80}share_token=eq\./.test(route),
+    !!access && /home_records\?share_token=eq\./.test(access)
+      && /const access = await resolvePortalToken\(token\);/.test(routeCode),
     'a caller must not be able to assert which share they are — the server decides from the token');
   ok('A2 a bad or unknown token is a 404, indistinguishable from a miss',
-    /shareIdForToken[\s\S]{0,120}return notFound\(\)/.test(route),
+    /if \(!access \|\| !scopeAllows\(access\.scope, table, op\)\) return notFound\(\);/.test(routeCode),
     'telling a wrong token from an unknown one is an enumeration oracle');
 }
 
 // ── 3. EVERY OPERATION IS CONFINED TO THE RESOLVED SHARE ───────────────────────────
 if (route) {
   ok('A3 a client-supplied share_id is stripped, not trusted',
-    /filter\(p => !\/\^share_id=\/i\.test/.test(route),
+    !!policyCode && /if \(col === 'share_id'\) continue;/.test(policyCode)
+      && /const terms = cleanFilter\(payload\.filter, op\);/.test(routeCode),
     'accepting the client share_id is exactly the harvestable-token hole, reopened one layer up');
   ok('A3 the resolved share_id is forced onto the filter',
-    /parts\.unshift\(`share_id=eq\.\$\{encodeURIComponent\(shareId\)\}`\)/.test(route),
+    /return \[`share_id=eq\.\$\{encodeURIComponent\(shareId\)\}`, \.\.\.terms\]\.join\('&'\)/.test(routeCode)
+      && (routeCode.match(/scoped\(terms, shareId\)/g) ?? []).length === 2
+      && /scoped\(\[\.\.\.terms, \.\.\.guard\], shareId\)/.test(routeCode),
     'a read or a delete with no scope is a read or delete of every share');
   ok('A3 an insert is forced under the resolved share',
-    /share_id: shareId \}\)\)/.test(route),
+    /\(\{ \.\.\.row, share_id: shareId \}\)\)/.test(routeCode),
     'without this a homeowner could file a row under someone else\'s share');
+  // Updates keep only allow-listed columns; no table's update list may name share_id or id.
+  const updateLists = [...(policyCode ?? '').matchAll(/update: set\(([^)]*)\)/g)].map(m => m[1]);
   ok('A3 an update cannot move a row to another share',
-    /delete patch\.share_id/.test(route),
+    /const patch = cleanRow\(table, 'update', payload\.body\);/.test(routeCode)
+      && updateLists.length >= 3 && updateLists.every(l => !/'share_id'|'id'/.test(l)),
     'the WHERE confines which rows change; this stops the change itself relocating one');
 
   // ── 4. LEAST PRIVILEGE, NOT `for all` ────────────────────────────────────────────
   ok('A4 only known tables are reachable',
-    /const ALLOW: Record<string, ReadonlySet<Op>>/.test(route) &&
-    /if \(!allowed \|\| !allowed\.has\(op\)\) return notFound\(\)/.test(route),
+    /export const PORTAL_POLICY: Record<string, TablePolicy>/.test(policyCode ?? '') &&
+    /Object\.prototype\.hasOwnProperty\.call\(PORTAL_POLICY, table\)/.test(routeCode) &&
+    /if \(!policy \|\| !policy\.ops\.has\(op\)\) return notFound\(\)/.test(routeCode),
     'an unlisted table or an operation a table does not need must be refused');
   // The read-only tables really are read-only.
   ok('A4 home_reports and floor_plans are select-only',
-    /home_reports:\s*new Set<Op>\(\['select'\]\)/.test(route) &&
-    /floor_plans:\s*new Set<Op>\(\['select'\]\)/.test(route),
+    /home_reports: \{ ops: set<Op>\('select'\) \}/.test(policyCode ?? '') &&
+    /floor_plans:  \{ ops: set<Op>\('select'\) \}/.test(policyCode ?? ''),
     'the portal never writes these; granting more would be privilege it does not use');
 }
 

@@ -54,7 +54,8 @@ export default function PublicRepairsPage() {
         const r = await fetch(`/api/share/${encodeURIComponent(routeId)}`, { cache: 'no-store' });
         if (r.ok) {
           const d = await r.json();
-          if (d?.share_id) rec = d as Rec;
+          // A repairs-only link (2026-10-19) gets address and date only — no share_id.
+          if (d?.share_id || d?.access === 'repairs') rec = d as Rec;
         }
       } catch { /* leave rec null — the page renders its empty state */ }
       setRecord(rec);

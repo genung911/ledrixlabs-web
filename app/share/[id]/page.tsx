@@ -11,6 +11,8 @@ import { LedrixEye } from '@/components/LedrixEye';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
 import { assetUrl, withTokenInHtml, defaultReportHtmlPaths, loadFirstReport } from '@/lib/portalAssets';
 import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
+import { portalShareUrl } from '@/lib/portalShareLink';
+import { portalCan, type PortalAction } from '@/lib/portalActions';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 // Desktop breakpoint — the page is inline-styled, so responsiveness is driven by this
@@ -37,6 +39,18 @@ function useDesk(): boolean {
 // harmless: /api/portal drops any client share_id and injects its own.
 let PORTAL_TOKEN = '';
 function setPortalToken(t: string) { PORTAL_TOKEN = t; }
+// What this link may do (/api/share returns it; lib/shareAccess.ts). The server enforces it on every
+// call — this only stops the page offering changes a view-only link cannot make.
+let PORTAL_SCOPE: 'edit' | 'read' = 'edit';
+const canEdit = () => PORTAL_SCOPE === 'edit';
+/** Whether this page offers an action (lib/portalActions.ts). Every write handler checks it first. */
+const can = (a: PortalAction) => portalCan(PORTAL_SCOPE, a);
+
+/** The link a Share button may hand out (lib/portalShareLink.ts) — never the edit link. */
+const shareUrlFor = (kind: 'read' | 'repairs') => portalShareUrl({
+  fetchFn: (u, i) => fetch(u, i), origin: window.location.origin, token: PORTAL_TOKEN,
+  pageScope: PORTAL_SCOPE, kind, currentHref: window.location.href,
+});
 
 function splitPath(path: string): { table: string; filter: string; select?: string; order?: string; limit?: number } {
   const [table, query = ''] = path.split('?');
@@ -417,6 +431,7 @@ function buildMaintenanceReminders(shareId: string, specs: Spec[], anomalies: An
 // manual for. Dedupe strictly by URL (not title) — a homeowner's own upload has no "seeded" flag
 // to lean on, so matching the exact link is the only safe way to avoid duplicating their work.
 async function seedManualDocs(shareId: string, specs: Spec[]) {
+  if (!can('seed')) return;
   const withManual = specs.filter(s => s.manual_url);
   if (withManual.length === 0) return;
   const existing = await supaGet<{ url: string }>(`home_documents?share_id=eq.${encodeURIComponent(shareId)}&select=url`);
@@ -436,6 +451,7 @@ async function seedManualDocs(shareId: string, specs: Spec[]) {
 
 // ─── Seeding ─────────────────────────────────────────────────────────────────
 async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[]) {
+  if (!can('seed')) return;
   // Projects + repair requests start EMPTY — the homeowner adds items themselves (manually or from a
   // finding). Only the spec-conditional maintenance schedule is auto-derived below.
   const existRem = await supaGet<{id:string;title:string}>(`home_reminders?share_id=eq.${encodeURIComponent(shareId)}&select=id,title&limit=200`);
@@ -751,6 +767,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
 
   const advance = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!can('project.update')) return;
     if (p.status === 'resolved') return;
     setSaving(true);
     await supaPatch('home_projects', `id=eq.${p.id}`, { status: STATUS_NEXT[p.status] });
@@ -759,6 +776,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
 
   const fileRef = useRef<HTMLInputElement>(null);
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!can('project.update')) return;
     const file = e.target.files?.[0]; if (!file) return;
     setSaving(true);
     const b64 = await compressPhoto(file);
@@ -818,7 +836,7 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {can('project.update') && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {p.status !== 'resolved' && (
                 <button onClick={advance} disabled={saving} style={{
                   background: `${sc}15`, border: `1px solid ${sc}44`, color: sc,
@@ -840,15 +858,15 @@ function ProjectCard({ p, onUpdate, shareId, address }: { p: Project; onUpdate: 
                   letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace',
                 }}>REPLACE APPLIANCE</button>
               )}
-            </div>
+            </div>}
             <input ref={fileRef} type="file" accept="image/*" capture="environment"
               onChange={handlePhoto} style={{ display: 'none' }} />
           </div>
         )}
-        {!expanded && <div style={{ marginTop: 4, color: DIM, fontSize: 9, fontWeight: 700 }}>TAP FOR ACTIONS</div>}
+        {!expanded && <div style={{ marginTop: 4, color: DIM, fontSize: 9, fontWeight: 700 }}>{can('project.update') ? 'TAP FOR ACTIONS' : 'TAP FOR DETAILS'}</div>}
       </div>
 
-      {showAppliance && (
+      {showAppliance && can('project.update') && (
         <ApplianceModal
           project={p}
           shareId={shareId}
@@ -915,6 +933,7 @@ function ApplianceModal({ project, shareId, address, onClose, onSave }: {
   };
 
   const handleSave = async () => {
+    if (!can('project.update')) return;
     setSaving(true);
     let photos = project.photos ?? [];
     if (photo) photos = [...photos, photo];
@@ -1023,6 +1042,7 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
 
   const complete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!can('reminder.update')) return;
     if (!access) { onUnlock(); return; }
     setSaving(true);
     // Record the completion to the permanent service history (Carfax) before advancing the schedule.
@@ -1036,7 +1056,9 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
     onUpdate(); setSaving(false);
   };
   const snooze = async (e: React.MouseEvent) => {
-    e.stopPropagation(); setSaving(true);
+    e.stopPropagation();
+    if (!can('reminder.update')) return;
+    setSaving(true);
     await supaPatch('home_reminders', `id=eq.${r.id}`, { snoozed_until: addDays(7), due_date: addDays(7) });
     onUpdate(); setSaving(false);
   };
@@ -1064,7 +1086,7 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
           </div>
         </div>
       </div>
-      {!r.completed && (
+      {!r.completed && can('reminder.update') && (
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <button onClick={complete} disabled={saving} style={{
             background: `${GREEN}10`, border: `1px solid ${GREEN}30`, color: GREEN,
@@ -1800,12 +1822,14 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
   const fromFindings = anomalies.filter(a => !existingTitles.has((a.description ?? '').trim().slice(0, 100).toLowerCase()));
 
   const addManual = async () => {
+    if (!can('project.add')) return;
     const t = title.trim(); if (!t || busy) return;
     setBusy(true);
     await supaPost('home_projects', { share_id: shareId, title: t.slice(0, 100), status: 'identified', photos: [], seeded: false });
     setTitle(''); setBusy(false); onRefresh();
   };
   const addFromFinding = async (a: Anomaly) => {
+    if (!can('project.add')) return;
     if (busy) return;
     setBusy(true);
     await supaPost('home_projects', {
@@ -1842,8 +1866,8 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         </div>
       )}
       {/* Add a project — manually or from a finding */}
-      <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Track a repair or project'}</button>
-      {showAdd && (
+      {can('project.add') && <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Track a repair or project'}</button>}
+      {showAdd && can('project.add') && (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 13, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: fromFindings.length ? 14 : 0 }}>
             <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addManual()} placeholder="New project…" style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', color: TEXT, fontSize: 13, outline: 'none' }} />
@@ -2222,11 +2246,13 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
   const [saving, setSaving] = useState(false);
   const inp: React.CSSProperties = { width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '11px 13px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
   const save = async () => {
+    if (!can('log.add')) return;
     if (!title.trim()) return;
     setSaving(true);
     await supaPost('home_maintenance_log', [{ share_id: shareId, title: title.trim(), system: system.trim() || null, kind: 'service', note: note.trim() || null, done_date: date, source: 'manual' }]).catch(() => {});
     setTitle(''); setSystem(''); setNote(''); setSaving(false); setOpen(false); onSaved();
   };
+  if (!can('log.add')) return null;
   if (!open) return (
     <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 14, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>+ Log a service or improvement</button>
   );
@@ -2290,6 +2316,14 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
                   {(e.system || e.note) && <div style={{ fontSize: 12, color: MED, marginTop: 2 }}>{[e.system, e.note].filter(Boolean).join(' · ')}</div>}
                 </div>
                 {e.source === 'voice' && <div style={{ fontFamily: MONO, fontSize: 8, color: MED, flexShrink: 0, alignSelf: 'center' }}>VOICE</div>}
+                {canEdit() && ['manual', 'task', 'voice'].includes(e.source ?? '') && (
+                  <button aria-label="Delete entry" onClick={async () => {
+                    if (!can('log.delete')) return;
+                    if (!window.confirm('Delete this entry from your service history?')) return;
+                    await supaDelete('home_maintenance_log', `id=eq.${encodeURIComponent(e.id)}`);
+                    onRefresh();
+                  }} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 14, flexShrink: 0, alignSelf: 'center', lineHeight: 1 }}>✕</button>
+                )}
               </div>
             ))}
           </div>
@@ -2313,18 +2347,35 @@ function DocsTab({ record }: { record: HomeRecord }) {
   }, [shareId]);
   useEffect(() => { loadDocs(); }, [loadDocs]);
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!can('doc.upload')) return;
     const f = e.target.files?.[0]; if (!f) return; e.target.value = '';
     const kind = openCat === 'manual' ? 'manual' : 'document';
     setUploading(true);
     try {
-      const fd = new FormData(); fd.append('file', f); fd.append('shareId', shareId);
-      const r = await fetch('/api/docs', { method: 'POST', body: fd });
-      const j = await r.json().catch(() => ({}));
-      if (r.ok && j.url) { await supaPost('home_documents', [{ share_id: shareId, name: j.name, url: j.url, path: j.path, kind, size: j.size }]); await loadDocs(); }
-    } catch { /* noop */ }
-    setUploading(false);
+      // Three steps, so the file never passes through Vercel (4.5 MB request cap): /api/docs signs an
+      // upload for one fresh path under this home, the browser sends the file straight to storage,
+      // then /api/docs checks what was stored and writes the row itself.
+      const post = (body: object) => fetch('/api/docs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: PORTAL_TOKEN, ...body }) });
+      const fail = async (r: Response) => { const j = await r.json().catch(() => ({})); window.alert(j.error || 'Upload failed.'); };
+      const signed = await post({ action: 'upload-url', name: f.name, size: f.size, kind });
+      if (!signed.ok) { await fail(signed); return; }
+      const { uploadUrl, path, contentType } = await signed.json();
+      const put = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType, 'x-upsert': 'false' }, body: f });
+      if (!put.ok) { window.alert('Upload failed.'); return; }
+      const done = await post({ action: 'complete', path, name: f.name, kind });
+      if (done.ok) await loadDocs(); else await fail(done);
+    } catch { /* noop */ } finally { setUploading(false); }   // also after a refused step's early return
   };
-  const removeDoc = async (d: any) => { await supaDelete('home_documents', `id=eq.${d.id}`); await loadDocs(); };
+  // Removes the stored file and its row together (/api/docs), not just the row.
+  const removeDoc = async (d: any) => {
+    if (!can('doc.delete')) return;
+    await fetch('/api/docs', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: PORTAL_TOKEN, id: d.id }) }).catch(() => {});
+    await loadDocs();
+  };
+  // A stored file opens through a short-lived signed link; a manufacturer-manual row is an outside link.
+  const docHref = (d: any): string | undefined =>
+    d.path ? `/api/docs?t=${encodeURIComponent(PORTAL_TOKEN)}&id=${encodeURIComponent(d.id)}`
+      : /^https?:\/\//i.test(String(d.url ?? '')) ? d.url : undefined;
 
   const manuals   = docs.filter(d => d.kind === 'manual');
   const documents = docs.filter(d => d.kind !== 'manual' && d.kind !== 'report');
@@ -2339,11 +2390,11 @@ function DocsTab({ record }: { record: HomeRecord }) {
         <button onClick={() => setOpenCat(null)} style={{ background: 'none', border: 'none', color: TEXT, fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', padding: '2px 0', marginBottom: 12, fontFamily: 'Roboto Mono, monospace' }}>← DOCS</button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ color: TEXT, fontSize: 12, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{label.toUpperCase()}</div>
-          {openCat !== 'reports' && (
+          {openCat !== 'reports' && canEdit() && (
             <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '8px 12px', fontSize: 9, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
           )}
         </div>
-        <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.heic" style={{ display: 'none' }} />
+        <input ref={fileRef} type="file" onChange={onFile} accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.heic,.heif" style={{ display: 'none' }} />
         {openCat === 'reports' ? (
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '16px 18px' }}>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>Your full inspection report — a permanent record of this property&apos;s condition at the time of inspection.</p>
@@ -2360,8 +2411,8 @@ function DocsTab({ record }: { record: HomeRecord }) {
         ) : items.map(d => (
           <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 11, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
             <Icon name="docs" size={18} color={TEXT} />
-            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
-            <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>
+            <a href={docHref(d)} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, color: TEXT, fontSize: 12.5, fontWeight: 700, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</a>
+            {canEdit() && <button onClick={() => removeDoc(d)} aria-label="Delete document" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 15, flexShrink: 0, lineHeight: 1 }}>✕</button>}
           </div>
         ))}
       </div>
@@ -2728,7 +2779,7 @@ async function draftRepairRequest(a: Anomaly): Promise<{ item: string; remedy: s
   } catch { return null; }
 }
 
-function RepairItemCard({ r, index, busy, onRemove, onSave }: { r: RepairRow; index: number; busy: boolean; onRemove: () => void; onSave: (t: string) => void }) {
+function RepairItemCard({ r, index, busy, onRemove, onSave, readOnly }: { r: RepairRow; index: number; busy: boolean; onRemove: () => void; onSave: (t: string) => void; readOnly?: boolean }) {
   const [text, setText] = useState(repairText(r));
   useEffect(() => { setText(repairText(r)); }, [r.generated_text, r.edited_text]);
   const sev = (r.severity ?? '').toLowerCase();
@@ -2741,10 +2792,12 @@ function RepairItemCard({ r, index, busy, onRemove, onSave }: { r: RepairRow; in
         <span style={{ color: tagColor, fontSize: 7.5, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', border: `1px solid ${tagColor}44`, borderRadius: 6, padding: '2px 6px' }}>{tagLabel}</span>
         {r.item && <span style={{ color: MED, fontSize: 9, fontWeight: 700, letterSpacing: 0.3, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.item}{r.location ? ` · ${r.location}` : ''}</span>}
         <span style={{ flex: 1 }} />
-        <button onClick={onRemove} title="Remove from request" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 17, lineHeight: 1 }}>×</button>
+        {!readOnly && <button onClick={onRemove} title="Remove from request" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 17, lineHeight: 1 }}>×</button>}
       </div>
       {busy && !r.generated_text ? (
         <div style={{ color: DIM, fontSize: 10, fontStyle: 'italic', animation: 'pulse 1.4s infinite', padding: '4px 2px' }}>Ledrix is drafting the request…</div>
+      ) : readOnly ? (
+        <div style={{ color: TEXT, fontSize: 12.5, lineHeight: 1.55, padding: '4px 2px', whiteSpace: 'pre-wrap' }}>{repairText(r)}</div>
       ) : (
         <textarea
           value={text}
@@ -2785,6 +2838,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
   const available = anomalies.map((a, i) => ({ a, ref: repairRefOf(a, i) })).filter(({ ref }) => !byRef.has(ref));
 
   const addOne = async (a: Anomaly, ref: string) => {
+    if (!can('repair.edit')) return;
     if (busy.has(ref)) return;
     setBusyRef(ref, true);
     try {
@@ -2801,9 +2855,10 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
       }
     } finally { setBusyRef(ref, false); }
   };
-  const addAll = async () => { for (const { a, ref } of available) await addOne(a, ref); };
-  const remove = async (r: RepairRow) => { await supaDelete('home_repairs', `id=eq.${encodeURIComponent(r.id)}`); await onRefresh(); };
+  const addAll = async () => { if (!can('repair.edit')) return; for (const { a, ref } of available) await addOne(a, ref); };
+  const remove = async (r: RepairRow) => { if (!can('repair.edit')) return; await supaDelete('home_repairs', `id=eq.${encodeURIComponent(r.id)}`); await onRefresh(); };
   const saveText = async (r: RepairRow, text: string) => {
+    if (!can('repair.edit')) return;
     const v = text.trim();
     if (v === repairText(r)) return;
     await supaPatch('home_repairs', `id=eq.${encodeURIComponent(r.id)}`, { edited_text: v || null, updated_at: new Date().toISOString() });
@@ -2814,7 +2869,12 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
   };
   // The public, no-login hand-off link the buyer sends the seller/agent.
   const shareLink = async () => {
-    const url = `${window.location.origin}/share/${shareId}/repairs`;
+    if (!can('repair.share')) return;
+    // A repairs-only link (/api/portal-links): the recipient sees the request, not the report, and
+    // cannot change anything. The old link was built from the share_id, which no route accepts.
+    const link = await shareUrlFor('repairs');
+    if (!link.ok) { window.alert(`${link.message} You can use Copy text instead.`); return; }
+    const url = link.url;
     try {
       if (navigator.share) await navigator.share({ title: 'Repair Request', url });
       else { await navigator.clipboard.writeText(url); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }
@@ -2840,7 +2900,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
       {included.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : TEXT, border: `1px solid ${linkCopied ? GREEN + '55' : TEXT}`, color: linkCopied ? GREEN : '#fff', borderRadius: 8, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>
+          {can('repair.share') && <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : TEXT, border: `1px solid ${linkCopied ? GREEN + '55' : TEXT}`, color: linkCopied ? GREEN : '#fff', borderRadius: 8, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : 'none', border: `1px solid ${copied ? GREEN + '44' : BORDER}`, color: copied ? GREEN : TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
             <button onClick={() => window.print()} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>
@@ -2852,12 +2912,13 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
         <div style={{ textAlign: 'center', padding: '20px 0 26px', color: DIM }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>📝</div>
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace' }}>NOTHING REQUESTED YET</div>
-          <div style={{ fontSize: 10.5, marginTop: 6, color: MED }}>Add findings below to build your request.</div>
+          <div style={{ fontSize: 10.5, marginTop: 6, color: MED }}>{can('repair.edit') ? 'Add findings below to build your request.' : 'This view-only link cannot change the request.'}</div>
         </div>
       ) : included.map((r, i) => (
-        <RepairItemCard key={r.id} r={r} index={i + 1} busy={busy.has(r.anomaly_ref ?? '')} onRemove={() => remove(r)} onSave={t => saveText(r, t)} />
+        <RepairItemCard key={r.id} r={r} index={i + 1} busy={busy.has(r.anomaly_ref ?? '')} onRemove={() => remove(r)} onSave={t => saveText(r, t)} readOnly={!can('repair.edit')} />
       ))}
 
+      {can('repair.edit') && <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '22px 0 12px' }}>
         <div style={{ color: MED, fontSize: 9, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>ADD FROM FINDINGS</div>
         {available.length > 0 && (
@@ -2869,6 +2930,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
       ) : available.map(({ a, ref }) => (
         <AddFindingRow key={ref} a={a} busy={busy.has(ref)} onAdd={() => addOne(a, ref)} />
       ))}
+      </>}
       <div style={{ height: 28 }} />
 
       {/* Print/PDF document — off-screen on screen; @media print reveals only this. */}
@@ -2963,6 +3025,7 @@ export default function SharePage() {
   const [valSeed, setValSeed] = useState<string | null>(null);
   const [valLog, setValLog] = useState<any>(null);   // voice-parsed "log this work" pending confirm
   const confirmVoiceLog = async () => {
+    if (!can('log.add')) return;
     if (!valLog) return;
     await supaPost('home_maintenance_log', [{ share_id: shareId, title: valLog.title, system: valLog.system ?? null, kind: valLog.kind ?? 'improvement', source: 'voice', done_date: new Date().toISOString().split('T')[0] }]).catch(() => {});
     setValLog(null); loadLog();
@@ -2991,7 +3054,8 @@ export default function SharePage() {
           if (resp.ok && j.text) {
             const spoken = String(j.text);
             // Is it a "we had X done" statement? Parse it; if so, confirm + log to the Carfax. Else → chat.
-            try {
+            // A view-only link cannot log, so its speech always goes to the chat.
+            if (can('log.add')) try {
               const { data: sess } = await supabase.auth.getSession();
               const lr = await fetch('/api/ledrix', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token ?? ''}` }, body: JSON.stringify({ mode: 'logparse', question: spoken, shareId, token: PORTAL_TOKEN }) });
               const lj = await lr.json().catch(() => ({}));
@@ -3062,13 +3126,16 @@ export default function SharePage() {
       setPortalToken(routeId);
       const res = await fetch(`/api/share/${encodeURIComponent(routeId)}`, { cache: 'no-store' });
       if (!res.ok) { setNotFound(true); return; }
-      const rec = await res.json() as HomeRecord;
+      const rec = await res.json() as HomeRecord & { access?: string };
+      // A repairs-only link has its own page and never sees the report.
+      if (rec?.access === 'repairs') { window.location.replace(`/share/${encodeURIComponent(routeId)}/repairs`); return; }
       if (!rec?.share_id) { setNotFound(true); return; }
+      PORTAL_SCOPE = rec.access === 'read' ? 'read' : 'edit';
       const canonicalId = rec.share_id;
       setRecord(rec);
       setShareId(canonicalId);
       await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId), loadFloorPlan(canonicalId)]).catch(() => {});
-      if (!seeded.current) {
+      if (!seeded.current && canEdit()) {
         seeded.current = true;
         seedIfEmpty(canonicalId, rec.anomalies ?? [], rec.specs ?? [])
           .then(() => Promise.all([loadProjects(canonicalId), loadReminders(canonicalId)]).catch(() => {}))
@@ -3085,7 +3152,11 @@ export default function SharePage() {
   }, [record]);
 
   const handleShare = async () => {
-    const url = window.location.href;
+    // Share a VIEW-ONLY link, never this page's own link when it is the edit link. If one cannot be
+    // made (portal_links not applied, a database error), say so and share nothing.
+    const link = await shareUrlFor('read');
+    if (!link.ok) { window.alert(link.message); return; }
+    const url = link.url;
     if (navigator.share) {
       await navigator.share({ title: `${record?.address} — Ledrix Home Record`, url }).catch(() => {});
     } else {
@@ -3141,6 +3212,11 @@ export default function SharePage() {
       `}</style>
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
+      {!canEdit() && (
+        <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
+          View-only link — you can look, but changes are turned off.
+        </div>
+      )}
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
@@ -3166,7 +3242,7 @@ export default function SharePage() {
           <ValOrbVoice size={46} tone="light" quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
         </div>
       )}
-      {valLog && (
+      {valLog && can('log.add') && (
         <div onClick={() => setValLog(null)} style={{ position: 'fixed', inset: 0, zIndex: 320, background: 'rgba(14,21,24,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 430, background: CARD, borderRadius: '18px 18px 0 0', padding: '22px 20px 28px' }}>
             <div style={{ ...eyebrow(ACCENT), marginBottom: 10 }}>Log to your home record?</div>

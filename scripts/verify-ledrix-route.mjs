@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src  = process.env.WEB_SRC ? join(process.env.WEB_SRC) : repo;
@@ -33,6 +34,9 @@ const HOMES = {
   [B]: { share_id: B, share_token: TB, address: '2 BRAVO ROAD', anomalies: [{ severity: 'critical', unit: 'Panel', description: 'BRAVO-SECRET-FINDING' }] },
 };
 let usageBumps = 0, modelCalls = [], dataReads = [], tokenLookups = 0;
+// portal_links (supabase_portal_links.sql). null = table not applied (PostgREST 404), as in production today.
+let LINKS = null;
+const sha = (t) => createHash('sha256').update(t).digest('hex');
 // Fault switches for the failure-path tests: 'http500' | 'drop' (connection destroyed) | 'badjson'.
 const faults = { lookup: null, data: null, gateway: null };
 const GW_INTERNAL = 'GW-INTERNAL-DETAIL upstream=openai stack=at handler (/srv/gateway.js:42)';
@@ -53,6 +57,11 @@ const supa = createServer(async (req, res) => {
     if (mode === 'badjson') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('<html>not json'); return true; }
     return false;
   };
+  if (u.pathname === '/rest/v1/portal_links') {
+    if (!LINKS) return send(404, { code: 'PGRST205' });
+    const h = /^eq\.(.*)$/.exec(u.searchParams.get('token_hash') ?? '')?.[1];
+    return send(200, LINKS.filter(l => l.token_hash === h));
+  }
   if (u.pathname === '/rest/v1/home_records') {
     const tok = /^eq\.(.*)$/.exec(u.searchParams.get('share_token') ?? '')?.[1];
     const sid = /^eq\.(.*)$/.exec(u.searchParams.get('share_id') ?? '')?.[1];
@@ -88,7 +97,7 @@ globalThis.fetch = (url, init = {}) => { const { cache, ...rest } = init; return
 // ── Load the real route ────────────────────────────────────────────────────────────────
 const out = join(repo, 'node_modules/.cache/verify-ledrix-route');
 rmSync(out, { recursive: true, force: true });
-for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts', 'lib/homeownerRecommendation.ts']) {
+for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts', 'lib/homeownerRecommendation.ts', 'lib/shareAccess.ts']) {
   const from = join(src, rel);
   if (!existsSync(from)) continue;
   const js = ts.transpileModule(readFileSync(from, 'utf8'), {
@@ -234,6 +243,26 @@ for (const mode of ['http500', 'drop', 'badjson']) {
   const padded = await call({ token: `  ${TA}  `, shareId: A, mode: 'insight' });
   ok('ALLOW valid string token with surrounding spaces (trimmed, as before): home A only',
     padded.status === 200 && padded.sent.includes('ALPHA-SECRET-FINDING') && !leaked(padded, B), `status ${padded.status}`);
+}
+
+// ── 6 · Scoped and revoked links (portal_links applied) ───────────────────────────────
+{
+  const READ = 'r'.repeat(43), REP = 'p'.repeat(43);
+  LINKS = [
+    { id: '1', share_id: A, token_hash: sha(TA), scope: 'edit', revoked_at: '2026-10-19T00:00:00Z' },
+    { id: '2', share_id: A, token_hash: sha(READ), scope: 'read', revoked_at: null },
+    { id: '3', share_id: A, token_hash: sha(REP), scope: 'repairs', revoked_at: null },
+  ];
+  const rv = await call({ token: TA, shareId: A, mode: 'insight' });
+  ok('REVOKED original link → 404, no data read, no model call, no cap used',
+    rv.status === 404 && rv.reads.length === 0 && rv.modelCalls === 0 && rv.bumps === 0, `status ${rv.status}`);
+  const rd = await call({ token: READ, mode: 'insight' });
+  ok('VIEW-ONLY link may ask about its own home', rd.status === 200 && rd.sent.includes('ALPHA-SECRET-FINDING') && !leaked(rd, B), `status ${rd.status}`);
+  const rp = await call({ token: REP, mode: 'insight' });
+  ok('REPAIRS-only link cannot ask about the home', rp.status === 404 && rp.reads.length === 0 && rp.modelCalls === 0, `status ${rp.status}`);
+  const other = await call({ token: TB, mode: 'insight' });
+  ok('another home is unaffected by A\'s revocation', other.status === 200 && other.sent.includes('BRAVO'), `status ${other.status}`);
+  LINKS = null;
 }
 
 // ── 5 · AI gateway failure: opaque 502, nothing internal leaks ────────────────────────
