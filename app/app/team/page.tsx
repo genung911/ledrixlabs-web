@@ -152,7 +152,7 @@ export default function TeamPage() {
                                 <select id={`role-${m.id}`} value={m.role ?? 'inspector'} disabled={busy}
                                   onChange={e => { if (e.target.value !== m.role) setPending({ member: m, role: e.target.value }); }}
                                   className="h-9 min-w-[150px] rounded-lg border border-hairline bg-surface px-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20">
-                                  {[...new Set([...(m.role ? [m.role] : []), ...roles])].map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+                                  {(m.role && !roles.includes(m.role) ? [m.role, ...roles] : roles).map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
                                 </select>
                               </>
                             ) : (
