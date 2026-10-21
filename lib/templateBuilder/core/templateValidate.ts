@@ -10,6 +10,7 @@
 // PURE. Type-only imports.
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import { parseOp, applyOp, runtimePendingFields, classifyOp, allIds, storageFields, type TemplateOp, type Predicate, type OpClass } from './templateOps';
+import { ruleShapeError } from './templateRules';
 
 export type Issue = { code: string; severity: 'error' | 'warning'; nodeId?: string; message: string };
 
@@ -90,6 +91,10 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
     if (x.appliesWhen !== undefined) {
       const p = x.appliesWhen as Predicate;
       const deps: string[] = [];
+      // A rule the runtime cannot express is refused here, before it can reach an inspection (templateRules: an
+      // uncompilable rule would leave the item always shown — permissive, but not what the company wrote).
+      const shape = ruleShapeError(p);
+      if (shape) add('error', 'rule_unsupported', `"${n.label}": this rule can't be used in inspections — ${shape}.`, n.id);
       for (const f of fieldsOf(p)) {
         const { w, a } = attrOf(f);
         if (!w) { add('error', 'rule_missing_item', `"${n.label}" loads on "${f}", which is not in the template.`, n.id); continue; }

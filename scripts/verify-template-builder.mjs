@@ -41,7 +41,9 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules'];
+// 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
+const TAXONOMY_CORE = ['applicability'];
 
 // ── 1. Parity ─────────────────────────────────────────────────────────────────────────────────────────────
 console.log('parity with the app');
@@ -53,6 +55,19 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
     const mine = read(`lib/templateBuilder/core/${f}.ts`);
     const theirs = readFileSync(join(APP, `src/core/templates/${f}.ts`), 'utf8');
     ok(`core/${f}.ts is byte-identical to the app's`, mine === theirs, 'copy it again from ledrix-app src/core/templates');
+  }
+  for (const f of TAXONOMY_CORE) {
+    ok(`core/${f}.ts is byte-identical to the app's taxonomy/${f}.ts (the preview runs the phone's resolver)`,
+      read(`lib/templateBuilder/core/${f}.ts`) === readFileSync(join(APP, `src/core/taxonomy/${f}.ts`), 'utf8'), 'copy it again from ledrix-app src/core/taxonomy');
+  }
+  // Ledrix's own rules: exactly the rule fields of the app's bundled pack, node for node.
+  {
+    const pack = JSON.parse(readFileSync(join(APP, 'src/core/taxonomy/ledrix.core.json'), 'utf8'));
+    const want = {};
+    for (const sys of pack.systems) for (const n of sys.nodes) if (n.requires || n.dependsOnSpec) want[n.id] = { ...(n.requires ? { requires: n.requires } : {}), ...(n.dependsOnSpec ? { dependsOnSpec: n.dependsOnSpec } : {}) };
+    const mine = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json'));
+    ok(`core/ledrixRules.json carries exactly the app pack's rule fields (${Object.keys(want).length} nodes, pack ${pack.packVersion})`,
+      JSON.stringify(mine.nodes) === JSON.stringify(want) && mine.packVersion === pack.packVersion, 're-export it from ledrix-app src/core/taxonomy/ledrix.core.json');
   }
   const fieldsOf = (src, type) => {
     const a = src.indexOf(`export type ${type} = {`);
@@ -95,6 +110,7 @@ function stage(files) {
 }
 const sourceFiles = () => Object.fromEntries([
   ...CORE.map(f => [`core/${f}.ts`, read(`lib/templateBuilder/core/${f}.ts`)]),
+  ...TAXONOMY_CORE.map(f => [`core/${f}.ts`, read(`lib/templateBuilder/core/${f}.ts`)]),
   ['core/InspectionTemplate.ts', read('lib/templateBuilder/core/InspectionTemplate.ts')],
   ...BUILDER.map(f => [`${f}.ts`, read(`lib/templateBuilder/${f}.ts`)]),
   ...DESKTOP.map(f => [`${f}.ts`, read(`lib/templates/${f}.ts`)]),

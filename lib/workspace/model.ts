@@ -157,6 +157,13 @@ export function addDays(ymd: string, days: number): string {
   return localDate(new Date(y, m - 1, d + days));
 }
 
+/** The newest `updated_at` among these rows — when a phone's work last reached the server — or null for none. */
+export function latestUpdate(rows: ReadonlyArray<{ updated_at?: string | null }>): string | null {
+  let out: string | null = null;
+  for (const r of rows) if (r.updated_at && (!out || r.updated_at > out)) out = r.updated_at;
+  return out;
+}
+
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export type ReportRow = { share_id: string; version: string | null; published_at: string | null; pdf_path: string | null; html_path: string | null };
@@ -220,6 +227,32 @@ export function buildDashboard(input: DashboardInput): Dashboard {
     }
   }
   return { today, upcoming, attention, inProgress, delivered, totals: { inspections: live.length, proposed } };
+}
+
+// ─── Reports page (2026-10-21, approved parity mockup) ──────────────────────────
+// The same rule the dashboard and the phone use (ledrix-app src/core/services/reportDelivery.ts): a completed
+// inspection with a published report is SENT; without one it is TO SEND, or — while it still holds proposed findings —
+// waiting on REVIEW first. In-progress inspections are not reports and are left to the Inspections page.
+export type ReportsList = {
+  toSend: InspectionRow[];
+  review: InspectionRow[];
+  sent: { inspection: InspectionRow; latest: ReportRow; versions: number }[];
+};
+
+export function buildReportsList(inspections: InspectionRow[], reports: ReportRow[], findings: Record<string, FindingCounts>): ReportsList {
+  const byInspection = new Map<string, ReportRow[]>();
+  for (const r of reports) byInspection.set(r.share_id, [...(byInspection.get(r.share_id) ?? []), r]);
+  const out: ReportsList = { toSend: [], review: [], sent: [] };
+  const recent = (a: InspectionRow, b: InspectionRow) => (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
+  for (const i of inspections.filter(x => !x.deleted_at && inspectionPhase(x) === 'completed').sort(recent)) {
+    const rs = byInspection.get(i.id) ?? [];
+    if (rs.length) {
+      const latest = rs.reduce((a, b) => ((b.published_at ?? '') > (a.published_at ?? '') ? b : a));
+      out.sent.push({ inspection: i, latest, versions: rs.length });
+    } else if (findings[i.id]?.proposed) out.review.push(i);
+    else out.toSend.push(i);
+  }
+  return out;
 }
 
 // ─── Evidence ────────────────────────────────────────────────────────────────

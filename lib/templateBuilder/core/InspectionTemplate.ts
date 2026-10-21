@@ -75,6 +75,8 @@ export type InspectionTemplate = {
   trimmedSystems?: TemplateNode[];
   retained?: Array<{ node: TemplateNode; parentId: string | null; at?: number }>;
   unitDefinitions?: Record<string, { node: TemplateNode; parentId: string | null }>;
+  /** Inspection snapshots only (app 2026-10-21): the frozen applicability rules. Never on a company template. */
+  ruleDefinitions?: import('./templateRules').RuleDefinitions;
   offeringModel?: 1;
   advisories?: unknown[];
 };

@@ -129,11 +129,15 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   );
 
   const { access, companyName } = gate;
+  // ONE VOCABULARY WITH THE PHONE (2026-10-21, approved parity mockup): Today · Inspections · Reports · Templates · Team
+  // · Company, with Account in the footer. "Dashboard" became Today (the phone's home is the same question).
   const nav = [
-    { href: '/app', label: 'Dashboard', show: true },
+    { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
+    { href: '/app/reports', label: 'Reports', show: true },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
     { href: '/app/team', label: 'Team', show: !!access.companyId },
+    { href: '/app/company', label: 'Company', show: !!access.companyId },
   ].filter(n => n.show);
   const isActive = (href: string) => href === '/app' ? pathname === '/app' : pathname.startsWith(href);
 

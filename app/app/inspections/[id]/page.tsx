@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PhasePill, PriorityPill, ReadOnlyNotice, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Loading, Page, PhasePill, PriorityPill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import {
   loadFindings, loadInspection, loadMembers, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
   type FindingRow, type SealRow, type SpecRow,
@@ -135,8 +135,8 @@ export default function InspectionPage() {
           <button onClick={load} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5">Refresh</button>
         </div>
       </div>
-      <ReadOnlyNotice />
-      <p className="-mt-3 mb-6 text-xs text-muted">Last synced from the app {formatWhen(inspection.updated_at)}. Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet.</p>
+      <SyncLine lastSync={inspection.updated_at ?? null} />
+      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">

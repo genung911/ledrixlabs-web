@@ -7,6 +7,9 @@
 // taxonomy runtime). Each helper names the app file it follows.
 import type { ComponentAttribute, InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { DEFAULT_COVERED, isCovered } from '@/lib/templates/editorModel';
+import { captureRuleDefinitions, frozenRuleNode, type PackRules, type RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
+import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/core/applicability';
+import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
  *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
@@ -48,17 +51,64 @@ export function tilesOf(sys: TemplateNode): TemplateNode[] {
   return subs.length ? subs : [sys];
 }
 
-/** Every component under a card, depth-first. `trimmed` is a separate pocket and is never walked. */
-export function leavesOf(tile: TemplateNode): TemplateNode[] {
+/** Every component under a card, depth-first. `trimmed` is a separate pocket and is never walked. `applies`
+ *  (rulesFor + itemApplies below) drops an item the inspection's rules say does not apply right now — the same
+ *  verdict Scope reaches, so the preview never shows a row the phone would hide. */
+export function leavesOf(tile: TemplateNode, applies?: (nodeId: string) => boolean): TemplateNode[] {
   const out: TemplateNode[] = [];
   const walk = (n: TemplateNode) => {
     for (const c of n.children ?? []) {
-      if (c.kind === 'component') out.push(c);
+      if (c.kind === 'component' && (!applies || applies(c.id))) out.push(c);
       if (c.children?.length) walk(c);
     }
   };
   walk(tile);
   return out;
+}
+
+// ── WHICH ITEMS APPLY (2026-10-21, one rule model) ───────────────────────────────────────────────────────────
+// ledrix-app src/core/services/inspectionRules.ts + src/core/taxonomy/nodeApplicability.ts. Not ported — the SAME
+// modules: templateRules.ts and applicability.ts are byte-identical copies (scripts/verify-template-builder.mjs),
+// and Ledrix's own rules come from the app's bundled pack (ledrixRules.json, generated, parity-checked). A new
+// inspection captures exactly this set from the published template, so the preview and the phone agree:
+//   · the company's rule (`appliesWhen`, exact values) and "hide until answered" (`whenUnknown: 'hide'`);
+//   · Ledrix's inherited rules (gas venting only on a gas appliance, …);
+//   · an unanswered rule shows the item unless it says to hide it.
+// What the preview cannot know is RULE 0 (recorded work keeps an item) — nothing is recorded here.
+const PACK = (LEDRIX_RULES as { nodes: Record<string, PackRules> }).nodes;
+
+/** The rules a new inspection would capture from this draft. Answers are keyed `<nodeId>::<attrId>` (pickKey). */
+export function rulesFor(tree: InspectionTemplate): RuleDefinitions {
+  const byId: Record<string, TemplateNode> = {};
+  const walk = (n: TemplateNode) => { if (!byId[n.id]) byId[n.id] = n; (n.children ?? []).forEach(walk); };
+  (tree.systems ?? []).forEach(walk);
+  const attrOf = (nodeId: string, attrId: string) => axesOf(byId[nodeId] ?? ({} as TemplateNode)).attributes.find(a => a.id === attrId);
+  return captureRuleDefinitions(tree.systems as never, (b) => PACK[b], {
+    keyFor: (nodeId, attrId) => (byId[nodeId] && attrOf(nodeId, attrId) ? pickKey(nodeId, attrId) : null),
+    optionsFor: (nodeId, attrId) => attrOf(nodeId, attrId)?.values ?? null,
+  });
+}
+
+/** The phone stores a single-field item's answer under its bare id; the preview always uses `<id>::<attr>`. */
+export function previewSpecValue(index: PreviewIndex, picks: Picks, typed: Picks) {
+  return (key: string): string | undefined => {
+    let k = key;
+    if (k.indexOf('::') < 0) {
+      const loc = index.byId[k];
+      const attrs = loc ? axesOf(loc.node).attributes : [];
+      if (attrs.length !== 1) return undefined;
+      k = pickKey(k, attrs[0].id);
+    }
+    const all = (picks[k] ?? []).concat(typed[k] ?? []);
+    return all.length ? all.join(', ') : undefined;
+  };
+}
+
+/** Does this item apply with these answers? `not_applicable` hides it; unknown and blocked stay shown. */
+export function itemApplies(defs: RuleDefinitions, nodeId: string, specValue: (key: string) => string | undefined): boolean {
+  const node = frozenRuleNode(defs, nodeId);
+  if (!node) return true;
+  return collapseToActive(resolveApplicability(node as never, { specValue }).state);
 }
 
 // ── WHAT A COMPONENT ASKS (ledrix-app src/core/taxonomy/conditionMatch.ts `componentAxes`) ───────────────────

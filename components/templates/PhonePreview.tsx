@@ -24,8 +24,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
-  axesOf, buildIndex, findingShortcutsOf, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  prunePicks, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
+  previewSpecValue, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
@@ -88,6 +88,14 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
+  // THE RULES A NEW INSPECTION WOULD CAPTURE from this draft, evaluated against the answers tapped here — the same
+  // compiler and resolver the phone runs (phonePreviewModel.rulesFor / itemApplies), so a rule-gated item appears
+  // and disappears here exactly when it would on the phone.
+  const rules = useMemo(() => rulesFor(tree), [tree]);
+  const applies = useMemo(() => {
+    const sv = previewSpecValue(index, picks, typed);
+    return (id: string) => itemApplies(rules, id, sv);
+  }, [rules, index, picks, typed]);
   const [limReason, setLimReason] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState<Record<string, string>>({});
   const [readings, setReadings] = useState<Record<string, string>>({});
@@ -204,7 +212,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
 
   const progressOfSystem = (sys: TemplateNode) => {
     const leaves: TemplateNode[] = [];
-    tilesOf(sys).forEach(t => leavesOf(t).forEach(l => leaves.push(l)));
+    tilesOf(sys).forEach(t => leavesOf(t, applies).forEach(l => leaves.push(l)));
     return sumProgress(leaves, picks, cond, readings);
   };
 
@@ -243,7 +251,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const sys = index.allSystems[sysId]; if (!sys) return null;
     const tiles = tilesOf(sys);
     const p = progressOfSystem(sys);
-    const done = tiles.filter(t => { const q = sumProgress(leavesOf(t), picks, cond, readings); return q.total > 0 && q.met >= q.total; }).length;
+    const done = tiles.filter(t => { const q = sumProgress(leavesOf(t, applies), picks, cond, readings); return q.total > 0 && q.met >= q.total; }).length;
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
@@ -257,7 +265,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <div className="pv-bar3"><i style={{ width: `${tiles.length ? Math.round((done / tiles.length) * 100) : 0}%` }} /></div>
         <div className="pv-cards">
           {tiles.map(t => {
-            const leaves = leavesOf(t);
+            const leaves = leavesOf(t, applies);
             const q = sumProgress(leaves, picks, cond, readings); const c = toneOf(q);
             const specs: Array<{ k: string; label: string; v: string }> = [];
             leaves.forEach(l => axesOf(l).attributes.forEach(a => specs.push({ k: pickKey(l.id, a.id), label: a.label, v: (picks[pickKey(l.id, a.id)] ?? []).join(', ') })));
@@ -397,7 +405,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const sys = index.allSystems[sysId]; const loc = index.byId[tileId];
     if (!sys || !loc) return null;
     const tile = loc.node;
-    const leaves = leavesOf(tile);
+    const leaves = leavesOf(tile, applies);
     const q = sumProgress(leaves, picks, cond, readings); const c = toneOf(q);
     const isSys = tile.id === sys.id;
     return (

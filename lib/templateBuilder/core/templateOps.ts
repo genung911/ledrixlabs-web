@@ -99,8 +99,9 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   defaultActive:    { check: bool, class: 'policy', why: 'what a new inspection covers' },
   appliesToTypes:   { check: strList, class: 'policy', why: 'when this item is inspected (legacy Equipment Types)' },
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },
-  appliesWhen:      { check: (v) => checkPredicate(v), class: 'policy', pending: true, why: 'when this item is inspected' },
-  whenUnknown:      { check: oneOf('show', 'hide'), class: 'policy', pending: true, why: 'whether an unanswered rule shows the item' },
+  // LIVE since 2026-10-21 (one rule model): compiled into the inspection's frozen rules at creation (templateRules.ts).
+  appliesWhen:      { check: (v) => checkPredicate(v), class: 'policy', why: 'when this item is inspected' },
+  whenUnknown:      { check: oneOf('show', 'hide'), class: 'policy', why: 'whether an unanswered rule shows the item' },
   methodPrompt:     { check: nonEmpty, class: 'content', pending: true, why: 'the method question wording' },
   findingShortcuts: { check: checkShortcuts, class: 'content', pending: true, why: 'finding shortcuts' },
   titleFrom:        { check: (v) => (obj(v) ? onlyKeys(v, ['attrId', 'map']) ?? nonEmpty(v.attrId) ?? (v.map === undefined || (obj(v.map) && Object.values(v.map).every(x => typeof x === 'string')) ? null : 'map must be {value: title}') : 'must be {attrId, map?}'), class: 'content', pending: true, why: 'title from an answer' },
