@@ -8,14 +8,15 @@ const config: Config = {
         // Signature royal blue — used SPARINGLY, in the Tesla-red spirit (the delta mark,
         // link hover/active). `.ink` is the legible deeper blue for link text on the light
         // ground. The interface is otherwise monochrome; color comes from the photography.
-        accent: { DEFAULT: '#217BE8', soft: '#7FB4F0', ink: '#1A63C8' },
-        // Light-forward system
-        ground:   '#F6F8FA', // cool off-white page ground
-        surface:  '#FFFFFF', // cards
-        hairline: '#E4E9EE', // thin borders
-        ink:      '#0A0F14', // near-black cool — headings (also the dark bg on out-of-scope pages)
-        body:     '#48586A', // slate body copy
-        muted:    '#8A98A5', // muted meta
+        accent: { DEFAULT: '#217BE8', soft: '#7FB4F0', ink: 'rgb(var(--c-accent-ink) / <alpha-value>)' },
+        // Light-forward system. Values are CSS variables (app/globals.css) holding the SAME light colours on every
+        // page; only the inspector workspace (/app, .ws-root) redefines them, for its optional dark theme.
+        ground:   'rgb(var(--c-ground) / <alpha-value>)', // cool off-white page ground
+        surface:  'rgb(var(--c-surface) / <alpha-value>)', // cards
+        hairline: 'rgb(var(--c-hairline) / <alpha-value>)', // thin borders
+        ink:      'rgb(var(--c-ink) / <alpha-value>)', // near-black cool — headings (also the dark bg on out-of-scope pages)
+        body:     'rgb(var(--c-body) / <alpha-value>)', // slate body copy
+        muted:    'rgb(var(--c-muted) / <alpha-value>)', // muted meta
         dark:     '#0A0F11', // near-black — the full-bleed dark "hero moments"
         safety: '#FF3B3B',
         warn:   '#FACC15',

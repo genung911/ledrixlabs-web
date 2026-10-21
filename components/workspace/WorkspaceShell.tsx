@@ -9,6 +9,7 @@ import { LedrixDelta } from '@/components/LedrixDelta';
 import { workspace } from '@/lib/workspace/client';
 import { loadCompanyName, loadProfile } from '@/lib/workspace/data';
 import { decideAccess, type Access } from '@/lib/workspace/model';
+import { THEME_PREFS, applyTheme, effectiveTheme, readThemePref, systemPrefersDark, writeThemePref, type ThemePref } from '@/lib/workspace/theme';
 
 type Ctx = { access: Extract<Access, { ok: true }>; companyName: string | null; signOut: () => Promise<void> };
 const WorkspaceCtx = createContext<Ctx | null>(null);
@@ -27,8 +28,43 @@ type Gate =
 
 export function WorkspaceRoot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
-  if (pathname === '/app/login') return <>{children}</>;
-  return <WorkspaceShell>{children}</WorkspaceShell>;
+  // .ws-root scopes the optional dark theme to the workspace (app/globals.css).
+  return <div className="ws-root">{pathname === '/app/login' ? children : <WorkspaceShell>{children}</WorkspaceShell>}</div>;
+}
+
+/** The saved appearance, applied; Auto follows the computer's setting live. */
+function useThemePref(): [ThemePref, (p: ThemePref) => void] {
+  const [pref, setPref] = useState<ThemePref>('light');
+  useEffect(() => { setPref(readThemePref()); }, []);
+  useEffect(() => {
+    applyTheme(effectiveTheme(pref, systemPrefersDark()));
+    if (pref !== 'system') return;
+    let mql: MediaQueryList | null = null;
+    try { mql = window.matchMedia('(prefers-color-scheme: dark)'); } catch { return; }
+    const on = () => applyTheme(effectiveTheme('system', mql!.matches));
+    mql.addEventListener?.('change', on);
+    return () => mql?.removeEventListener?.('change', on);
+  }, [pref]);
+  const choose = useCallback((p: ThemePref) => { writeThemePref(p); setPref(p); }, []);
+  return [pref, choose];
+}
+
+function AppearanceSwitch() {
+  const [pref, choose] = useThemePref();
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">Appearance</p>
+      <div role="radiogroup" aria-label="Appearance" className="mt-1.5 inline-flex rounded-lg border border-hairline bg-ground p-0.5">
+        {THEME_PREFS.map(t => (
+          <button key={t.id} role="radio" aria-checked={pref === t.id} onClick={() => choose(t.id)}
+            className={`rounded-md px-2.5 py-1 text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              pref === t.id ? 'bg-surface text-ink shadow-sm' : 'text-body hover:text-ink'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function WorkspaceShell({ children }: { children: React.ReactNode }) {
@@ -78,7 +114,7 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
       <div className="max-w-sm text-center">
         <p className="text-sm font-semibold text-ink">The workspace could not load</p>
         <p className="mt-2 text-sm text-body">{gate.message}</p>
-        <button onClick={() => { setGate({ kind: 'loading' }); resolve(); }} className="mt-5 rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white hover:bg-ink/85">Try again</button>
+        <button onClick={() => { setGate({ kind: 'loading' }); resolve(); }} className="mt-5 rounded-full bg-ink px-5 py-2 text-sm font-semibold text-surface hover:bg-ink/85">Try again</button>
       </div>
     </Centered>
   );
@@ -87,17 +123,21 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
       <div className="max-w-sm text-center">
         <p className="text-sm font-semibold text-ink">This sign-in is for inspection companies</p>
         <p className="mt-2 text-sm text-body">Your account has no inspector profile. Homeowners open their report from the link their inspector sent.</p>
-        <button onClick={signOut} className="mt-5 rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white hover:bg-ink/85">Sign out</button>
+        <button onClick={signOut} className="mt-5 rounded-full bg-ink px-5 py-2 text-sm font-semibold text-surface hover:bg-ink/85">Sign out</button>
       </div>
     </Centered>
   );
 
   const { access, companyName } = gate;
+  // ONE VOCABULARY WITH THE PHONE (2026-10-21, approved parity mockup): Today · Inspections · Reports · Templates · Team
+  // · Company, with Account in the footer. "Dashboard" became Today (the phone's home is the same question).
   const nav = [
-    { href: '/app', label: 'Dashboard', show: true },
+    { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
+    { href: '/app/reports', label: 'Reports', show: true },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
     { href: '/app/team', label: 'Team', show: !!access.companyId },
+    { href: '/app/company', label: 'Company', show: !!access.companyId },
   ].filter(n => n.show);
   const isActive = (href: string) => href === '/app' ? pathname === '/app' : pathname.startsWith(href);
 
@@ -133,7 +173,8 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <div className="mt-auto border-t border-hairline px-5 py-4">
               <p className="truncate text-sm font-semibold text-ink">{access.name ?? 'Signed in'}</p>
               <p className="truncate text-xs text-muted">{[companyName, roleLabel(access.role)].filter(Boolean).join(' · ')}</p>
-              <button onClick={signOut} className="mt-3 text-xs font-semibold text-body hover:text-ink focus:outline-none focus-visible:underline">Sign out</button>
+              <AppearanceSwitch />
+              <button onClick={signOut} className="mt-3 block text-xs font-semibold text-body hover:text-ink focus:outline-none focus-visible:underline">Sign out</button>
             </div>
           </div>
         </aside>

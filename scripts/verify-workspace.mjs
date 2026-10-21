@@ -100,6 +100,19 @@ console.log('model');
   ok('empty → null', M.photoRef('') === null && M.photoRef(null) === null);
 
   ok('legacy anomaly severity → deficiency', M.parseSeverity('anomaly') === 'deficiency');
+
+  // 2026-10-21 (approved parity mockup): the Reports page and the sync line.
+  const I = (id, status, extra = {}) => ({ id, status, inspector_id: null, assigned_inspector_id: null, updated_at: `2026-10-${10 + id.length}`, ...extra });
+  const rl = M.buildReportsList(
+    [I('a', 'completed'), I('bb', 'completed'), I('ccc', 'completed'), I('dddd', 'in_progress'), I('eeeee', 'completed', { deleted_at: '2026-10-20' })],
+    [{ share_id: 'a', version: '1', published_at: '2026-10-11', pdf_path: 'p1', html_path: null }, { share_id: 'a', version: '2', published_at: '2026-10-12', pdf_path: 'p2', html_path: null }],
+    { bb: { proposed: 1, confirmed: 0, rejected: 0 } });
+  ok('reports: a completed inspection with a published report is SENT, latest version first',
+    rl.sent.length === 1 && rl.sent[0].latest.version === '2' && rl.sent[0].versions === 2);
+  ok('reports: without one it is TO SEND — or REVIEW while proposed findings remain (the dashboard\'s rule)',
+    rl.toSend.map(i => i.id).join() === 'ccc' && rl.review.map(i => i.id).join() === 'bb');
+  ok('reports: in-progress and tombstoned inspections are not reports', ![...rl.toSend, ...rl.review, ...rl.sent.map(x => x.inspection)].some(i => i.id === 'dddd' || i.id === 'eeeee'));
+  ok('sync line: the newest updated_at, or null for no rows', M.latestUpdate([{ updated_at: '2026-10-01' }, { updated_at: '2026-10-19' }, { updated_at: null }]) === '2026-10-19' && M.latestUpdate([]) === null);
 }
 
 console.log('redirect');
@@ -166,6 +179,13 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
   const others = ['app/page.tsx', 'app/home/page.tsx', 'app/about/page.tsx', 'app/ethix/page.tsx'].filter(p => existsSync(join(ROOT, p)) && /signInHref/.test(read(p)));
   ok('Sign in link not on non-Inspect pages', others.length === 0, others.join(', '));
   ok('Request a demo CTA still present', /Request a demo/.test(nav));
+  // 2026-10-21: one vocabulary with the phone, and the permanent banner replaced by the sync line.
+  const shell = read('components/workspace/WorkspaceShell.tsx');
+  const labels = [...shell.matchAll(/\{ href: '([^']+)', label: '([^']+)'/g)].map(m => m[2]);
+  ok('sidebar: Today · Inspections · Reports · Templates · Team · Company', labels.join(' · ') === 'Today · Inspections · Reports · Templates · Team · Company', labels.join(' · '));
+  ok('every sidebar page exists', [...shell.matchAll(/\{ href: '\/app([^']*)'/g)].every(m => existsSync(join(ROOT, `app/app${m[1]}/page.tsx`))));
+  const pages = ['app/app/page.tsx', 'app/app/inspections/page.tsx', 'app/app/inspections/[id]/page.tsx', 'app/app/reports/page.tsx'];
+  ok('no page shows the permanent "View only" banner; each shows the sync line', pages.every(p => !/<ReadOnlyNotice/.test(read(p)) && /<SyncLine /.test(read(p))));
 }
 
 // ── 3. Mutations: each rule must catch a broken copy ───────────────────────────

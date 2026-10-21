@@ -4,11 +4,11 @@
 // estimated, sampled or invented; a section with no rows says so.
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader, PhasePill, ReadOnlyNotice, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Loading, Page, PageHeader, PhasePill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import { loadFindingCounts, loadInspections, loadOrders, loadReports } from '@/lib/workspace/data';
-import { addDays, buildDashboard, inspectionPhase, localDate, type Dashboard, type OrderRow } from '@/lib/workspace/model';
+import { addDays, buildDashboard, inspectionPhase, latestUpdate, localDate, type Dashboard, type OrderRow } from '@/lib/workspace/model';
 
-type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; d: Dashboard };
+type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; d: Dashboard; lastSync: string | null };
 
 export default function DashboardPage() {
   const { access, companyName } = useWorkspace();
@@ -22,7 +22,7 @@ export default function DashboardPage() {
       const [inspections, orders] = await Promise.all([loadInspections(), loadOrders(today, addDays(today, 14))]);
       const ids = inspections.map(i => i.id);
       const [findings, reports] = await Promise.all([findingsVisible ? loadFindingCounts(ids) : Promise.resolve({}), loadReports(ids)]);
-      setState({ kind: 'ready', d: buildDashboard({ inspections, findings, orders, reports, today }) });
+      setState({ kind: 'ready', d: buildDashboard({ inspections, findings, orders, reports, today }), lastSync: latestUpdate(inspections) });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : 'The dashboard could not load.' });
     }
@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <PageHeader title={greeting} subtitle={scope} actions={
         <button onClick={load} className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5">Refresh</button>
       } />
-      <ReadOnlyNotice />
+      <SyncLine lastSync={state.kind === 'ready' ? state.lastSync : undefined} />
 
       {state.kind === 'loading' && <Card><Loading label="Loading your company’s work…" /></Card>}
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}

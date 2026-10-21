@@ -55,16 +55,16 @@ function LoginForm() {
 
           <label htmlFor="email" className="mt-6 block text-xs font-semibold uppercase tracking-wide text-muted">Email</label>
           <input id="email" type="email" autoComplete="username" required autoFocus value={email} onChange={e => setEmail(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-hairline bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
+            className="mt-1.5 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
 
           <label htmlFor="password" className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted">Password</label>
           <input id="password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-hairline bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
+            className="mt-1.5 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
 
           {error && <p role="alert" className="mt-4 rounded-lg bg-safety/10 px-3 py-2 text-sm text-ink">{error}</p>}
 
           <button type="submit" disabled={busy || !email.trim() || !password}
-            className="mt-6 w-full rounded-full bg-ink py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            className="mt-6 w-full rounded-full bg-ink py-2.5 text-sm font-semibold text-surface transition-colors hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
 

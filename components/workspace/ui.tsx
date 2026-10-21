@@ -50,8 +50,22 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
   );
 }
 
+/** THE SYNC LINE (2026-10-21, approved parity mockup): where the data comes from and how fresh it is, in one line,
+ *  instead of the permanent "View only" banner. What a page cannot do yet is said on that page, where you would try
+ *  it. `lastSync` is the newest `inspections.updated_at` the page loaded — the last time a phone's work reached the
+ *  server — or undefined while it loads. */
+export function SyncLine({ lastSync }: { lastSync?: string | null }) {
+  return (
+    <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+      <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-ok" />
+      <span>Showing what phones have synced{lastSync ? ` · last phone sync ${formatWhen(lastSync)}` : lastSync === null ? ' · nothing synced yet' : ''}.</span>
+      <span>Work still on a phone appears after it syncs.</span>
+    </p>
+  );
+}
+
 /** States, every time it matters, where the data comes from — so nobody mistakes the browser
- *  for the place the inspection is conducted. */
+ *  for the place the inspection is conducted. Superseded by SyncLine on every page (2026-10-21). */
 export function ReadOnlyNotice() {
   return (
     <div className="mb-6 rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-body">

@@ -1,0 +1,478 @@
+{
+ "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
+ "packVersion": "2026.10.15.2",
+ "nodes": {
+  "hvac_filter": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "gas",
+      "propane",
+      "electric",
+      "heat pump"
+     ]
+    }
+   ]
+  },
+  "hvac_flue": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "gas",
+      "propane",
+      "oil furnace",
+      "boiler"
+     ]
+    }
+   ]
+  },
+  "hvac_burner": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "gas",
+      "propane",
+      "oil furnace",
+      "boiler"
+     ]
+    }
+   ]
+  },
+  "hvac_heat_exchanger": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "gas",
+      "propane",
+      "oil furnace"
+     ]
+    }
+   ]
+  },
+  "hvac_combustion_air": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "gas",
+      "propane",
+      "oil furnace",
+      "boiler"
+     ]
+    }
+   ]
+  },
+  "plumb_flow": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_pressure": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_drainage": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_sinks": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_toilets": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_tubshower": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_hosebibs": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "laundry_washer": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "laundry_drain": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  },
+  "plumb_wh_flue": {
+   "dependsOnSpec": {
+    "nodeId": "plumb_wh_type::type",
+    "includes": [
+     "gas",
+     "propane",
+     "oil"
+    ]
+   }
+  },
+  "roof_surface": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_asphalt": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "asphalt",
+      "architectural",
+      "3-tab",
+      "three tab",
+      "composition",
+      "comp shingle"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_metal": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "metal",
+      "standing seam",
+      "steel",
+      "aluminum",
+      "copper"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_tile": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "tile"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_wood": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "wood shake",
+      "shake",
+      "wood shingle",
+      "cedar"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_tpo": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "tpo"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_epdm": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "epdm",
+      "rubber roof"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_modbit": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "modified bitumen",
+      "mod bit",
+      "torch down",
+      "torch-down"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_slate": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "slate"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "roof_cov_other": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [],
+     "unlisted": [
+      "asphalt",
+      "architectural",
+      "3-tab",
+      "three tab",
+      "composition",
+      "comp shingle",
+      "metal",
+      "standing seam",
+      "steel",
+      "aluminum",
+      "copper",
+      "tile",
+      "wood shake",
+      "shake",
+      "wood shingle",
+      "cedar",
+      "tpo",
+      "epdm",
+      "rubber roof",
+      "modified bitumen",
+      "mod bit",
+      "torch down",
+      "torch-down",
+      "slate"
+     ],
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "found_cs_access": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_vapor": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_vent": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_piers": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_moisture": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_ins_type": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_ins_cov": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_cs_sump": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "crawlspace",
+     "pier & beam"
+    ]
+   }
+  },
+  "found_bsmt_moist": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "basement"
+    ]
+   }
+  },
+  "found_bsmt_sump": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "basement"
+    ]
+   }
+  },
+  "found_bsmt_walls": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "basement"
+    ]
+   }
+  },
+  "int_basement": {
+   "dependsOnSpec": {
+    "nodeId": "found_type::type",
+    "includes": [
+     "basement"
+    ]
+   }
+  },
+  "fp_arrestor": {
+   "dependsOnSpec": {
+    "nodeId": "fp_chimney",
+    "includes": [
+     "masonry",
+     "prefab"
+    ]
+   }
+  },
+  "fp_gas_logs": {
+   "requires": [
+    {
+     "utility": "gas"
+    }
+   ],
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "gas"
+    ]
+   }
+  },
+  "fp_gas_shutoff": {
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "gas"
+    ]
+   }
+  },
+  "fp_gas_vent": {
+   "requires": [
+    {
+     "utility": "gas"
+    }
+   ],
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "gas"
+    ]
+   }
+  },
+  "fp_co_prox": {
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "wood",
+     "gas",
+     "pellet"
+    ]
+   }
+  },
+  "fp_creosote": {
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "wood",
+     "pellet"
+    ]
+   }
+  },
+  "kit_oven": {
+   "requires": [
+    {
+     "specNodeId": "kit_range",
+     "includes": [
+      "gas",
+      "dual fuel"
+     ]
+    },
+    {
+     "utility": "gas"
+    }
+   ]
+  },
+  "kit_dishwasher": {
+   "requires": [
+    {
+     "utility": "water"
+    }
+   ]
+  }
+ }
+}
