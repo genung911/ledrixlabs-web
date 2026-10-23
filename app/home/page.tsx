@@ -83,7 +83,7 @@ export default function LedrixHomePage() {
               </div>
             </div>
             <div className="flex justify-center md:justify-end">
-              <Shot src="/screenshots/home-dashboard.jpg" alt="Ledrix Home — the home dashboard" />
+              <Shot src="/screenshots/home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
             </div>
           </div>
         </section>
@@ -110,7 +110,7 @@ export default function LedrixHomePage() {
         <section id="baseline" className="bg-ground px-6 py-24">
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 md:grid-cols-2">
             <div className="order-2 flex justify-center md:order-1 md:justify-start">
-              <Shot src="/screenshots/home-history.jpg" alt="Ledrix Home — the living record of maintenance and projects" />
+              <Shot src="/screenshots/home-maintain.jpg" alt="Ledrix Home — what your home needs, on a schedule built for it" />
             </div>
             <div className="order-1 md:order-2">
               <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent-ink">

@@ -25,7 +25,7 @@ const STEPS: Array<{
 }> = [
   {
     n: '01',
-    img: '/screenshots/capture-live.jpg',
+    img: '/screenshots/capture-water-heater.jpg',
     fit: 'contain',
     title: 'Capture',
     body: 'Point your camera. Ledrix Vision reads the structure the way you do — roof to crawlspace.',
@@ -35,7 +35,7 @@ const STEPS: Array<{
   },
   {
     n: '02',
-    img: '/screenshots/finding-panel.jpg',
+    img: '/screenshots/finding-flue.jpg',
     fit: 'contain',
     title: 'Draft & Confirm',
     body: 'Ledrix Intelligence drafts the finding from what you shoot and say; you stay the source of truth — Confirm, Adjust, or Reject, by tap or by voice.',
@@ -44,7 +44,7 @@ const STEPS: Array<{
   },
   {
     n: '03',
-    img: '/screenshots/deliver-screen.jpg',
+    img: '/screenshots/finalize-delivery.jpg',
     fit: 'contain',
     title: 'Deliver',
     body: 'It compiles into a clean, professional PDF and a client home portal — before you leave the driveway.',

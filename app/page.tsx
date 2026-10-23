@@ -119,7 +119,7 @@ export default function LedrixLabsHome() {
               </div>
             </div>
             <div className="flex justify-center pt-2 md:justify-start">
-              <Shot src="/screenshots/capture-live.jpg" alt="Ledrix Inspect — live capture with on-device analyze" />
+              <Shot src="/screenshots/capture-water-heater.jpg" alt="Ledrix Inspect — live capture reading a water heater data plate" />
             </div>
           </article>
 
@@ -155,7 +155,7 @@ export default function LedrixLabsHome() {
               </div>
             </div>
             <div className="flex justify-center pt-2 md:justify-start">
-              <Shot src="/screenshots/home-dashboard.jpg" alt="Ledrix Home — the home dashboard" />
+              <Shot src="/screenshots/home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
             </div>
           </article>
         </section>
