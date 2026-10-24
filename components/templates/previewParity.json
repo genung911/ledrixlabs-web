@@ -1,0 +1,11 @@
+{
+ "_note": "The app Scope screens components/templates/PhonePreview.tsx was last matched to (sha256 of each). Written by ledrix-app scripts/sync-web-preview.mjs --ack after the preview was reviewed; checked by ledrix-app verify:web-preview. Do not edit by hand.",
+ "files": {
+  "src/components/inspect/CoverageGrid.tsx": "40ee4bf2e98ca7d8fe5ce08bcb9235e00fc2b8284fd22e203145afe912a472ee",
+  "src/components/inspect/InspectTabBar.tsx": "ba3b7990c3380243c95ec3c2b0ed8e015978c405a6857333c14ef1e34d851edc",
+  "src/components/systems/ScopeWorkspace.tsx": "f0b368b8a27af25e2cef0bc4f3beabfd4a48b95e9e0096d198acf909fa3edd00",
+  "src/components/systems/GuidedStep.tsx": "d52a0651ec0e913c1056dd7c8c8a2181529249ab2f8832185542c2a0381d2130",
+  "src/components/systems/ScopeRowList.tsx": "d74cd200a3bd70ac32e809ee67169ab46f871f3a63daec62b26105d4a433442c",
+  "src/core/taxonomy/guidedRows.ts": "67e2f3ed9c5243325010b2f74756e58f56eb912f06cd65492f87ed044a0714dc"
+ }
+}

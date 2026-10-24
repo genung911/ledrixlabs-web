@@ -10,6 +10,7 @@ import { DEFAULT_COVERED, isCovered } from '@/lib/templates/editorModel';
 import { captureRuleDefinitions, frozenRuleNode, type PackRules, type RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
 import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/core/applicability';
 import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
+import { guidedSteps, type GuidedStep } from '@/lib/templateBuilder/core/guidedOrder';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
  *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
@@ -258,4 +259,55 @@ export function prunePicks(picks: Picks, typed: Picks, index: PreviewIndex): { p
   });
   Object.keys(typed).forEach(k => { if (fieldValues(index, k)) outT[k] = typed[k]; else changed = true; });
   return { picks: outP, typed: outT, changed };
+}
+
+// ── GUIDED COVERAGE: THE APP'S STEP LIST (2026-10-24) ─────────────────────────────────────────────────────────
+// The app's system page is its ITEM LIST — one row per Guided Coverage step — and an item opens as its step,
+// walked with Back / Next. The ORDER, GROUPING and SYSTEM BOUNDARIES come from the app's own module:
+// lib/templateBuilder/core/guidedOrder.ts is a byte-identical copy of ledrix-app src/core/taxonomy/guidedOrder.ts
+// (scripts/verify-template-builder.mjs; ledrix-app verify:web-preview). What is handed to it here is the draft
+// tree's version of the app's inputs:
+//   · tilesOf / leavesOf ...... the cards and their applicable rows (above; the app's tileNodesOf + scopeRowsFor)
+//   · drawnInside ............. ledrix-app src/core/taxonomy/guidedRows.ts drawnInsideRow: a per-type condition
+//                               card rides in its host's step; a method-only row rides in a covering host's step
+//   · kindOf .................. guidedRows.guidedKindOf: EQUIPMENT for a unit's condition node, DESCRIPTION for
+//                               facts only, else COMPONENT
+const UNIT_CONDITION_NODES = ['hvac_furnace', 'hvac_condenser'];   // ledrix-app src/core/taxonomy/unitFacts.ts UNIT_FACTS
+const baseOf = (id: string) => id.split('~i')[0];                  // ledrix-app src/core/taxonomy/instances.ts baseIdOf
+
+/** typeConditions.typeConditionLinkOf: the host a per-type card hangs off, or null for an ordinary node. */
+function cardHostOf(nodeId: string): string | null {
+  const reqs = (PACK[baseOf(nodeId)] as { requires?: unknown } | undefined)?.requires;
+  if (!Array.isArray(reqs)) return null;
+  for (const r of reqs as Array<{ specNodeId?: string; whenUnanswered?: string; origin?: string }>) {
+    if (!r || typeof r.specNodeId !== 'string' || r.whenUnanswered !== 'not_applicable' || r.origin === 'template') continue;
+    const host = r.specNodeId.split('::')[0];
+    if (host) return host;
+  }
+  return null;
+}
+function authorsCards(host: TemplateNode): boolean {
+  if (axesOf(host).condition) return false;
+  return Object.keys(PACK).some(id => cardHostOf(id) === baseOf(host.id));
+}
+const isMethodOnly = (n: TemplateNode) => { const ax = axesOf(n); return ax.method.length > 0 && ax.attributes.length === 0 && !ax.condition; };
+
+function drawnInside(row: TemplateNode, rows: readonly TemplateNode[]): TemplateNode | undefined {
+  const hostId = cardHostOf(row.id);
+  if (hostId) {
+    const h = rows.find(r => baseOf(r.id) === hostId);
+    if (h) return h;
+  }
+  if (!isMethodOnly(row)) return undefined;
+  return rows.find(r => r.id !== row.id && !cardHostOf(r.id) && authorsCards(r));
+}
+function kindOf(row: TemplateNode): 'description' | 'equipment' | 'component' {
+  if (UNIT_CONDITION_NODES.indexOf(baseOf(row.id)) >= 0) return 'equipment';
+  if (!axesOf(row).condition && !authorsCards(row)) return 'description';
+  return 'component';
+}
+
+/** Every Guided Coverage step for the systems shown, with the inspection's rules applied to these answers. */
+export function previewSteps(systems: readonly TemplateNode[], applies: (nodeId: string) => boolean): GuidedStep[] {
+  return guidedSteps(systems, { tilesOf, rowsOf: tile => leavesOf(tile, applies), drawnInside, kindOf });
 }

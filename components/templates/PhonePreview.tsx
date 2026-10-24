@@ -10,11 +10,14 @@
 //   · header ................ src/app/ScopeScreen.tsx (chrome: back, blue dot + address, sub lines, menu)
 //   · landing ............... src/components/inspect/CoverageGrid.tsx (building row, CHECKPOINTS ADDRESSED card,
 //                              three-across system tiles with the red / amber / green lights, dashed Add system)
-//   · a system's cards ...... src/components/systems/ScopeWorkspace.tsx (eyebrow, title + count, "n components ·
-//                              x of n completed", bar, component cards with value rows) — cards per ScopeScreen
-//                              `tileNodesOf`
-//   · a card's components ... src/components/systems/ScopeRowList.tsx + scopeRowStyles.ts (walkTile, guidance
-//                              line, CONDITION: Satisfactory / Limitation / Finding, limitation + finding sheets)
+//   · a system's page ....... src/components/systems/ScopeWorkspace.tsx — since 2026-10-24 the system's ITEM LIST:
+//                              one row per Guided Coverage step, grouped by component group (kind, name, status,
+//                              what is recorded). The steps come from the app's own guidedOrder.ts (byte-identical
+//                              copy), so the list and the walk are the app's.
+//   · a guided step ......... src/components/systems/GuidedStep.tsx (the SYSTEM as the big heading, the item under
+//                              it, Back / Next fixed above the tabs, the system-boundary card between systems) whose
+//                              body is src/components/systems/ScopeRowList.tsx + scopeRowStyles.ts (CONDITION:
+//                              Satisfactory / Limitation / Finding, limitation + finding sheets, value grids)
 //   · value grids ........... src/components/systems/SpecChipRow.tsx (SpecOptionGrid: three-across tiles, "Add …")
 //   · bottom tabs ........... src/components/inspect/InspectTabBar.tsx (Coverage · Findings · Evidence · Camera)
 //   · colours ............... src/core/theme/starlink.ts and the literals in the files above
@@ -25,12 +28,19 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  previewSpecValue, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
+import {
+  crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
+} from '@/lib/templateBuilder/core/guidedOrder';
+import { displayLabel } from './systemLabel';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
 
-type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string } | { kind: 'tile'; systemId: string; tileId: string };
+// The app's screens (2026-10-24): the Coverage grid, a system's item list, a guided step, and the system-boundary
+// card that Next / Back stops on between two systems — a state of the walk, never a step.
+type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string } | { kind: 'step'; key: string }
+  | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' };
 type Sheet = { kind: 'limit' | 'finding'; nodeId: string } | null;
 
 // ── icons (MaterialCommunityIcons names the app's pack uses → simple inline strokes) ──
@@ -96,6 +106,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const sv = previewSpecValue(index, picks, typed);
     return (id: string) => itemApplies(rules, id, sv);
   }, [rules, index, picks, typed]);
+  // THE WALK — the app's step list for this draft and these answers (guidedOrder, the app's own module).
+  const steps = useMemo(() => previewSteps(systems, applies), [systems, applies]);
+  const prevSteps = useRef<GuidedStep[]>([]);
   const [limReason, setLimReason] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState<Record<string, string>>({});
   const [readings, setReadings] = useState<Record<string, string>>({});
@@ -127,12 +140,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   useEffect(() => {
     setScreen(cur => {
       if (cur.kind === 'landing') return cur;
+      if (cur.kind !== 'system') return cur;   // steps are reconciled against the step list below
       if (!index.shown[cur.systemId] || !index.byId[cur.systemId]) return { kind: 'landing' };
-      if (cur.kind === 'tile') {
-        const t = index.byId[cur.tileId];
-        const stillTile = t && t.systemId === cur.systemId && (t.kind === 'tile' || (t.kind === 'system' && cur.tileId === cur.systemId));
-        if (!stillTile) return { kind: 'system', systemId: cur.systemId };
-      }
       return cur;
     });
     setSheet(cur => (cur && !index.byId[cur.nodeId] ? null : cur));
@@ -140,6 +149,25 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (pr.changed) { setPicks(pr.picks); setTyped(pr.typed); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
+
+  // ── THE STEP LIST CHANGED (an answer, or an edit in the editor): the app's reconcile rule ──
+  // The open step stays if it still applies; if it no longer does, the walk moves to the next surviving step,
+  // never backwards (guidedOrder.reconcileIndex). A boundary whose ends no longer exist is dropped.
+  useEffect(() => {
+    const prev = prevSteps.current;
+    prevSteps.current = steps;
+    setScreen(cur => {
+      if (cur.kind === 'step') {
+        const i = reconcileIndex(prev, steps, cur.key);
+        return i < 0 ? { kind: 'landing' } : steps[i].key === cur.key ? cur : { kind: 'step', key: steps[i].key };
+      }
+      if (cur.kind === 'cross') {
+        const ok = steps.some(x => x.key === cur.from) && steps.some(x => x.key === cur.to);
+        return ok ? cur : (steps.some(x => x.key === cur.from) ? { kind: 'step', key: cur.from } : { kind: 'landing' });
+      }
+      return cur;
+    });
+  }, [steps]);
 
   // ── SELECTION FROM THE EDITOR → navigate and highlight ──
   useEffect(() => {
@@ -157,17 +185,13 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     }
     setSheet(null);
     const loc = selection.nodeId ? index.byId[selection.nodeId] : undefined;
-    if (!loc || loc.kind === 'system') {
-      const tiles = tilesOf(sys);
-      // A system with no subsystems is one card, itself — the app opens straight into its components.
-      if (tiles.length === 1 && tiles[0].id === sys.id) setScreen({ kind: 'tile', systemId: sysId, tileId: sys.id });
-      else setScreen({ kind: 'system', systemId: sysId });
-      flash(sysId);
-      return;
-    }
-    if (loc.kind === 'tile') { setScreen({ kind: 'system', systemId: sysId }); flash(loc.node.id); return; }
-    if (loc.tileId) { setScreen({ kind: 'tile', systemId: sysId, tileId: loc.tileId }); flash(loc.node.id); }
-  }, [selection.systemId, selection.nodeId, index]);
+    // An item selected in the editor opens its guided step (a card opens its host's); a system or a component
+    // group opens the system's item list, as the app's system page does.
+    const at = loc && loc.kind === 'leaf' ? stepIndexOf(steps, loc.node.id) : -1;
+    if (at >= 0) { setScreen({ kind: 'step', key: steps[at].key }); flash(loc!.node.id); return; }
+    setScreen({ kind: 'system', systemId: sysId });
+    flash(loc && loc.kind !== 'system' ? loc.node.id : sysId);
+  }, [selection.systemId, selection.nodeId, index]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll a highlighted element into view INSIDE the frame (never the page).
   useEffect(() => {
@@ -184,25 +208,31 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const go = (s: Screen) => { setScreen(s); setSheet(null); setAdding(null); if (scrollRef.current) scrollRef.current.scrollTop = 0; };
   const back = () => {
     if (sheet) { setSheet(null); return; }
-    if (screen.kind === 'tile') {
-      const sys = index.allSystems[screen.systemId];
-      const single = sys && tilesOf(sys).length === 1 && tilesOf(sys)[0].id === sys.id;
-      go(single ? { kind: 'landing' } : { kind: 'system', systemId: screen.systemId });
-    } else if (screen.kind === 'system') go({ kind: 'landing' });
+    if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: st.systemId } : { kind: 'landing' }); }
+    else if (screen.kind === 'cross') go({ kind: 'step', key: screen.from });
+    else if (screen.kind === 'system') go({ kind: 'landing' });
   };
   const reset = () => {
     setPicks({}); setTyped({}); setCond({}); setLimReason({}); setFinding({}); setReadings({});
     setSheet(null); setAdding(null); setNote(null); go({ kind: 'landing' });
   };
-  const openSystem = (sys: TemplateNode) => {
-    const tiles = tilesOf(sys);
-    go(tiles.length === 1 && tiles[0].id === sys.id ? { kind: 'tile', systemId: sys.id, tileId: sys.id } : { kind: 'system', systemId: sys.id });
-    emit({ systemId: sys.id, nodeId: null });
+  // Every system opens its item list — a flat system too (the app's one-card system page is gone).
+  const openSystem = (sys: TemplateNode) => { go({ kind: 'system', systemId: sys.id }); emit({ systemId: sys.id, nodeId: null }); };
+  const openStep = (st: GuidedStep) => { go({ kind: 'step', key: st.key }); emit({ systemId: st.systemId, nodeId: st.key }); };
+  // THE APP'S NEXT / BACK (ScopeScreen guidedNext / guidedBack): the next or previous applicable step of the same
+  // sequence; a move that crosses into another system stops on the boundary card first; Next on the last step ends
+  // the walk on the Coverage grid. Nothing is written by moving.
+  const move = (dir: 1 | -1) => {
+    if (screen.kind !== 'step') return;
+    const i = steps.findIndex(x => x.key === screen.key);
+    const j = i + dir;
+    if (i < 0 || j < 0) return;
+    if (j >= steps.length) { go({ kind: 'landing' }); say('End of guided coverage.'); return; }
+    if (crossesSystem(steps, i, j)) { go({ kind: 'cross', from: steps[i].key, to: steps[j].key, dir: dir > 0 ? 'forward' : 'back' }); return; }
+    openStep(steps[j]);
   };
-  const openTile = (sysId: string, tile: TemplateNode) => {
-    go({ kind: 'tile', systemId: sysId, tileId: tile.id });
-    emit({ systemId: sysId, nodeId: tile.id === sysId ? null : tile.id });
-  };
+  const stepStat = (st: GuidedStep) => sumProgress(st.rowIds.map(id => index.byId[id]?.node).filter(Boolean) as TemplateNode[], picks, cond, readings);
+  const stepDone = (st: GuidedStep) => { const p = stepStat(st); return p.total === 0 || p.met >= p.total; };
   const togglePick = (key: string, value: string, multi: boolean) => setPicks(p => {
     const cur = p[key] ?? [];
     const next = cur.indexOf(value) >= 0 ? cur.filter(v => v !== value) : multi ? cur.concat(value) : [value];
@@ -247,47 +277,50 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
   };
 
+  // ── A SYSTEM'S PAGE: ITS ITEMS (ScopeWorkspace, 2026-10-24) ──
   const systemPage = (sysId: string) => {
     const sys = index.allSystems[sysId]; if (!sys) return null;
-    const tiles = tilesOf(sys);
+    const mine = steps.filter(st => st.systemId === sysId);
     const p = progressOfSystem(sys);
-    const done = tiles.filter(t => { const q = sumProgress(leavesOf(t, applies), picks, cond, readings); return q.total > 0 && q.met >= q.total; }).length;
+    const done = mine.filter(st => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; }).length;
+    const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
+    mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
+    const start = () => { if (!mine.length) return; openStep(mine[resumeIndex(mine, stepDone, 0)]); };
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
         <div className="pv-sysrow">
           <button type="button" className="pv-iconbtn" onClick={back} aria-label="Back to all systems"><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
-          <Icon name={sys.icon ?? 'shape-outline'} size={18} color="#217BE8" />
-          <span className="pv-t">{sys.label}</span>
-          <span className="pv-c">{p.met}<small>/{p.total}</small></span>
+          <span className="pv-big1">{displayLabel(sys.label)}</span>
+          <span className="pv-c">{p.met}<small> / {p.total}</small></span>
+          <button type="button" className="pv-guidechip" onClick={start} aria-label={`Guided coverage through ${displayLabel(sys.label)}`}>▶ GUIDED</button>
         </div>
-        <div className="pv-syssub">{tiles.length} component{tiles.length === 1 ? '' : 's'} · {done} of {tiles.length} completed</div>
-        <div className="pv-bar3"><i style={{ width: `${tiles.length ? Math.round((done / tiles.length) * 100) : 0}%` }} /></div>
-        <div className="pv-cards">
-          {tiles.map(t => {
-            const leaves = leavesOf(t, applies);
-            const q = sumProgress(leaves, picks, cond, readings); const c = toneOf(q);
-            const specs: Array<{ k: string; label: string; v: string }> = [];
-            leaves.forEach(l => axesOf(l).attributes.forEach(a => specs.push({ k: pickKey(l.id, a.id), label: a.label, v: (picks[pickKey(l.id, a.id)] ?? []).join(', ') })));
-            return (
-              <button key={t.id} type="button" data-pv-id={t.id} className={`pv-card${hl === t.id ? ' pv-hit' : ''}`} onClick={() => openTile(sysId, t)}
-                aria-label={`${t.label}, ${q.met} of ${q.total} addressed. Open`}>
-                <span className="pv-h">
-                  <span className="pv-ibox" style={{ color: c }}><Icon name={sys.icon ?? 'shape-outline'} size={16} /></span>
-                  <span className="pv-tt"><b>{t.label}</b>{t.description ? <span>{t.description}</span> : null}</span>
-                  <span className="pv-cnt" style={{ color: c }}>{q.met}<small>/{q.total}</small></span>
-                </span>
-                {specs.length ? (
-                  <span className="pv-specs">
-                    {specs.slice(0, 3).map(s => <span key={s.k} className="pv-spec"><span>{s.label}</span><b className={s.v ? '' : 'unset'}>{s.v || 'Not set'}</b></span>)}
-                    {specs.length > 3 ? <span className="pv-more">+{specs.length - 3} more</span> : null}
-                  </span>
-                ) : null}
-                <span className="pv-bar3" style={{ marginTop: 0 }}><i style={{ width: `${q.total ? Math.round((q.met / q.total) * 100) : 0}%`, background: c }} /></span>
-              </button>
-            );
-          })}
-        </div>
+        <div className="pv-bar3"><i style={{ width: `${p.total ? Math.round((p.met / p.total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
+        <div className="pv-syssub">{mine.length} item{mine.length === 1 ? '' : 's'} · {done} complete · tap an item to start there</div>
+        {!mine.length ? <p className="pv-empty">Nothing in scope for this category yet.</p> : null}
+        {groups.map(g => (
+          <div key={g.id} className="pv-group">
+            <div className="pv-ghead" data-pv-id={g.id !== sysId ? g.id : undefined}><span>{g.label.toUpperCase()}</span><em>+ Item</em></div>
+            {g.items.map(st => {
+              const q = stepStat(st); const c = toneOf(q);
+              const n = index.byId[st.key]?.node;
+              const ax = n ? axesOf(n) : null;
+              const vals = ax ? ax.attributes.map(a => (picks[pickKey(st.key, a.id)] ?? []).join(', ')).filter(Boolean) : [];
+              const v = q.finding ? 'Finding' : q.limited ? 'Limitation' : vals.length ? vals.join(', ')
+                : cond[st.key] === 'ok' ? 'Satisfactory' : q.total && q.met >= q.total ? 'Complete' : q.met ? 'Incomplete'
+                : st.kind === 'description' ? 'Not set' : 'Not started';
+              return (
+                <button key={st.key} type="button" data-pv-id={st.key} className={`pv-item${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
+                  aria-label={`${st.label}, ${v}. Start guided coverage here`}>
+                  <i className="pv-dot" style={{ background: q.met || q.finding || q.limited ? c : '#2a333a' }} />
+                  <span className="pv-itx"><em>{GUIDED_KIND_LABEL[st.kind]}</em><b>{st.label}</b></span>
+                  <span className="pv-iv" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
+                  <Glyph d={G.chevR} size={14} color="#4a5a60" />
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </>
     );
   };
@@ -362,7 +395,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           <div className="pv-ct"><Glyph d={G.link} size={14} color="#6aa8f0" />{n.label}</div>
           <div className="pv-guide">Recorded under {tSys ? tSys.label : 'another system'}{target ? ` › ${target.node.label}` : ''}.</div>
           {reachable && target ? (
-            <button type="button" className="pv-linkbtn" onClick={() => { go({ kind: 'tile', systemId: target.systemId, tileId: target.tileId as string }); flash(target.node.id); emit({ systemId: target.systemId, nodeId: target.node.id }); }}>
+            <button type="button" className="pv-linkbtn" onClick={() => { const at = stepIndexOf(steps, target.node.id); go(at >= 0 ? { kind: 'step', key: steps[at].key } : { kind: 'system', systemId: target.systemId }); flash(target.node.id); emit({ systemId: target.systemId, nodeId: target.node.id }); }}>
               Open in {tSys ? tSys.label : 'its system'}
             </button>
           ) : null}
@@ -401,27 +434,71 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
   };
 
-  const tilePage = (sysId: string, tileId: string) => {
-    const sys = index.allSystems[sysId]; const loc = index.byId[tileId];
-    if (!sys || !loc) return null;
-    const tile = loc.node;
-    const leaves = leavesOf(tile, applies);
-    const q = sumProgress(leaves, picks, cond, readings); const c = toneOf(q);
-    const isSys = tile.id === sys.id;
+  // ── A GUIDED STEP (GuidedStep.tsx): the system is the heading, the item the second one ──
+  const stepPage = (key: string) => {
+    const at = steps.findIndex(x => x.key === key); if (at < 0) return null;
+    const st = steps[at];
+    const pos = positionInSystem(steps, at);
+    const q = stepStat(st); const c = toneOf(q);
+    const sub = st.tileLabel !== st.systemLabel ? displayLabel(st.tileLabel).toUpperCase() : null;
+    const state = q.finding ? 'Finding recorded' : q.limited ? 'Limitation recorded' : q.total && q.met >= q.total ? 'Complete' : q.met ? 'Incomplete' : 'Not started';
     return (
       <>
-        <button type="button" className="pv-crumb" onClick={back}>
-          <Glyph d={G.chevL} size={14} />{isSys ? 'All systems' : sys.label}
-          {!isSys ? <><span style={{ color: '#3a4650' }}><Glyph d={G.chevR} size={11} /></span><b>{tile.label}</b></> : null}
-        </button>
-        <div className="pv-phead">
-          <span className="pv-ibox" style={{ color: c }}><Icon name={sys.icon ?? 'shape-outline'} size={18} /></span>
-          <span className="pv-t">{tile.label}</span>
-          <span className="pv-cnt" style={{ color: c, fontSize: 14 }}>{q.met}<small>/{q.total}</small></span>
+        <div className="pv-toprow"><span className="pv-eyebrow" style={{ margin: 0 }}>{address.toUpperCase()} · MAIN STRUCTURE</span>
+          <button type="button" className="pv-exit" onClick={() => go({ kind: 'landing' })}>EXIT GUIDED</button></div>
+        <div className="pv-sysrow" style={{ marginTop: 4 }}>
+          <button type="button" className="pv-sysbtn" onClick={() => go({ kind: 'system', systemId: st.systemId })} aria-label={`Open the ${displayLabel(st.systemLabel)} page`}>
+            <Glyph d={G.chevL} size={20} color="#2F8CE8" /><span className="pv-big1">{displayLabel(st.systemLabel)}</span>
+          </button>
+          <span className="pv-c">{pos.n}<small> / {pos.of}</small></span>
         </div>
-        {tile.description && !isSys ? <div className="pv-guide" style={{ margin: '-6px 0 12px' }}>{tile.description}</div> : null}
-        {leaves.length ? leaves.map(l => leafCard(sysId, l)) : <p className="pv-empty">Nothing in scope for this category yet.</p>}
+        <div className="pv-bar3"><i style={{ width: `${pos.of ? Math.round((pos.n / pos.of) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
+        <div className="pv-kindrow"><span>{GUIDED_KIND_LABEL[st.kind]}{sub ? <small>{`  ·  ${sub}`}</small> : null}</span>
+          <span className="pv-pill" style={{ color: c, borderColor: c }}>{state}</span></div>
+        <div className="pv-steptitle">{st.label}</div>
+        {st.rowIds.map(id => { const n = index.byId[id]?.node; return n ? leafCard(st.systemId, n) : null; })}
       </>
+    );
+  };
+
+  // ── THE SYSTEM BOUNDARY (GuidedTransitionView) ──
+  const crossPage = (from: string, to: string, dir: 'forward' | 'back') => {
+    const fi = steps.findIndex(x => x.key === from), ti = steps.findIndex(x => x.key === to);
+    if (fi < 0 || ti < 0) return null;
+    const toSum = systemSummary(steps, ti, stepDone)!, fromSum = systemSummary(steps, fi, stepDone)!;
+    const t = steps[ti];
+    return (
+      <>
+        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
+        <div className="pv-xcap">{dir === 'forward' ? 'NEXT SYSTEM' : 'BACK TO'}</div>
+        <div className="pv-xsys">{displayLabel(t.systemLabel)}</div>
+        <div className="pv-xstat">System {toSum.n} of {toSum.of} · {toSum.steps} item{toSum.steps === 1 ? '' : 's'} · {toSum.done} complete</div>
+        <div className="pv-xcard"><em>{dir === 'forward' ? 'STARTS WITH' : 'RETURNS TO'}</em><span>{GUIDED_KIND_LABEL[t.kind]}</span><b>{t.label}</b></div>
+        <div className="pv-xleave">Leaving {displayLabel(fromSum.systemLabel)} · {fromSum.done} of {fromSum.steps} complete. Nothing changes by moving on.</div>
+      </>
+    );
+  };
+
+  // ── BACK / NEXT, FIXED ABOVE THE TABS (GuidedNavBar in the rail's `above` slot) ──
+  const navBar = () => {
+    if (screen.kind === 'cross') {
+      const f = steps.find(x => x.key === screen.from), t = steps.find(x => x.key === screen.to);
+      if (!f || !t) return null;
+      return (
+        <div className="pv-nav">
+          <button type="button" className="pv-nb" onClick={() => openStep(f)}><Glyph d={G.chevL} size={16} />{displayLabel(f.systemLabel).toUpperCase()}</button>
+          <button type="button" className="pv-nn" onClick={() => openStep(t)}>{screen.dir === 'forward' ? 'BEGIN' : 'BACK TO'} {displayLabel(t.systemLabel).toUpperCase()}<Glyph d={G.chevR} size={16} /></button>
+        </div>
+      );
+    }
+    if (screen.kind !== 'step') return null;
+    const i = steps.findIndex(x => x.key === screen.key);
+    const last = i >= steps.length - 1;
+    return (
+      <div className="pv-nav">
+        <button type="button" className="pv-nb" disabled={i <= 0} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
+        <button type="button" className="pv-nn" onClick={() => move(1)} aria-label={last ? 'Finish guided coverage' : 'Next step'}>{last ? 'FINISH' : 'NEXT'}<Glyph d={G.chevR} size={16} /></button>
+      </div>
     );
   };
 
@@ -465,7 +542,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   let body: JSX.Element | null;
   if (screen.kind === 'landing') body = landing();
   else if (screen.kind === 'system') body = systemPage(screen.systemId);
-  else body = tilePage(screen.systemId, screen.tileId);
+  else if (screen.kind === 'step') body = stepPage(screen.key);
+  else body = crossPage(screen.from, screen.to, screen.dir);
 
   return (
     <div className="ldx-pv flex w-full max-w-[340px] flex-col items-stretch gap-2.5">
@@ -489,6 +567,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <span style={{ color: '#8a8f93' }} aria-hidden="true"><Glyph d={G.dots} size={18} /></span>
           </div>
           <div className="pv-scroll" ref={scrollRef}>{body}</div>
+          {navBar()}
           <div className="pv-tabs" aria-hidden="true">
             <div className="on"><Glyph d={G.grid} size={20} />Coverage</div>
             <div><Glyph d={G.flag} size={20} />Findings</div>
@@ -609,5 +688,37 @@ const CSS_TEXT = `
 .ldx-pv .pv-big{text-align:center}
 .ldx-pv .pv-foot{color:#5f6d78;font-size:10.5px;line-height:1.5;padding:10px 20px 0;margin:0}
 .ldx-pv .pv-toast{position:absolute;left:12px;right:12px;bottom:84px;z-index:6;background:rgba(14,24,34,.96);border:1px solid rgba(47,74,98,.5);border-radius:12px;padding:10px 12px;color:#eef3f5;font-size:11.5px;font-weight:600;text-align:center}
+.ldx-pv .pv-big1{flex:1;min-width:0;color:#eef3f5;font-size:22px;font-weight:800;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-guidechip{border:1px solid rgba(47,140,232,.4);border-radius:999px;padding:4px 8px;color:#2F8CE8;font-size:9.5px;font-weight:900;letter-spacing:.7px;white-space:nowrap}
+.ldx-pv .pv-group{margin-top:14px}
+.ldx-pv .pv-ghead{display:flex;justify-content:space-between;align-items:center;padding:0 3px 5px;border-bottom:1px solid #1b2429;color:#8a959c;font-size:9.5px;font-weight:900;letter-spacing:1.3px}
+.ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
+.ldx-pv .pv-item{display:flex;align-items:center;gap:8px;width:100%;min-height:50px;padding:8px 3px;border-bottom:1px solid #131c22}
+.ldx-pv .pv-dot{width:8px;height:8px;border-radius:4px;flex:none}
+.ldx-pv .pv-itx{flex:1;min-width:0;display:flex;flex-direction:column}
+.ldx-pv .pv-itx em{font-style:normal;color:#8cc4ff;font-size:8.5px;font-weight:900;letter-spacing:1px}
+.ldx-pv .pv-itx b{color:#eef3f5;font-size:13px;font-weight:600;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-iv{font-size:11px;font-weight:600;max-width:38%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-toprow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ldx-pv .pv-toprow .pv-eyebrow{flex:1;min-width:0}
+.ldx-pv .pv-exit{border:1px solid #26363b;border-radius:999px;padding:3px 8px;color:#8fa0ad;font-size:9px;font-weight:900;letter-spacing:.7px;white-space:nowrap}
+.ldx-pv .pv-sysbtn{flex:1;min-width:0;display:flex;align-items:center;margin-left:-5px}
+.ldx-pv .pv-kindrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;color:#8cc4ff;font-size:9.5px;font-weight:900;letter-spacing:1.1px}
+.ldx-pv .pv-kindrow small{color:#7f9197;font-size:9.5px}
+.ldx-pv .pv-pill{border:1px solid;border-radius:999px;padding:2px 8px;font-size:9.5px;font-weight:800;letter-spacing:0;white-space:nowrap}
+.ldx-pv .pv-steptitle{color:#dfe7ec;font-size:16px;font-weight:700;margin:2px 0 12px}
+.ldx-pv .pv-xcap{color:#8cc4ff;font-size:10px;font-weight:900;letter-spacing:1.5px;margin-top:22px}
+.ldx-pv .pv-xsys{color:#eef3f5;font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:3px}
+.ldx-pv .pv-xstat{color:#8fa0ad;font-size:11.5px;font-weight:600;margin-top:5px}
+.ldx-pv .pv-xcard{display:flex;flex-direction:column;gap:3px;margin-top:18px;padding:12px;border:1px solid #1f2d37;background:#0d151b;border-radius:12px}
+.ldx-pv .pv-xcard em{font-style:normal;color:#7c878e;font-size:9px;font-weight:900;letter-spacing:1.3px}
+.ldx-pv .pv-xcard span{color:#8cc4ff;font-size:9.5px;font-weight:900;letter-spacing:1.1px}
+.ldx-pv .pv-xcard b{color:#eef3f5;font-size:15px;font-weight:700}
+.ldx-pv .pv-xleave{color:#7f9197;font-size:11px;line-height:1.5;margin-top:14px}
+.ldx-pv .pv-nav{flex:none;display:flex;gap:8px;padding:8px 12px;background:#05070b;border-top:1px solid rgba(38,50,62,.55)}
+.ldx-pv .pv-nb,.ldx-pv .pv-nn{display:flex;align-items:center;justify-content:center;gap:4px;border-radius:11px;padding:11px 6px;font-size:11px;font-weight:900;letter-spacing:.6px;white-space:nowrap;overflow:hidden}
+.ldx-pv .pv-nb{flex:1;border:1px solid #26363b;background:#0d151b;color:#c7d0d6}
+.ldx-pv .pv-nb:disabled{opacity:.35;cursor:default}
+.ldx-pv .pv-nn{flex:2;background:#2F8CE8;color:#04101c;text-align:center}
 @media (prefers-reduced-motion:reduce){.ldx-pv *{transition:none!important}}
 `;

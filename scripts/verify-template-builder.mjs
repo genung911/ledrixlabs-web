@@ -43,7 +43,8 @@ const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*
 
 const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
-const TAXONOMY_CORE = ['applicability'];
+// 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
+const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
 
 // ── 1. Parity ─────────────────────────────────────────────────────────────────────────────────────────────
 console.log('parity with the app');
@@ -60,6 +61,10 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
     ok(`core/${f}.ts is byte-identical to the app's taxonomy/${f}.ts (the preview runs the phone's resolver)`,
       read(`lib/templateBuilder/core/${f}.ts`) === readFileSync(join(APP, `src/core/taxonomy/${f}.ts`), 'utf8'), 'copy it again from ledrix-app src/core/taxonomy');
   }
+  // The preview names a system exactly as the app's Scope does (2026-10-24).
+  ok('components/templates/systemLabel.ts is byte-identical to the app\'s components/systems/systemLabel.ts',
+    read('components/templates/systemLabel.ts') === readFileSync(join(APP, 'src/components/systems/systemLabel.ts'), 'utf8'),
+    'copy it again from ledrix-app src/components/systems/systemLabel.ts');
   // Ledrix's own rules: exactly the rule fields of the app's bundled pack, node for node.
   {
     const pack = JSON.parse(readFileSync(join(APP, 'src/core/taxonomy/ledrix.core.json'), 'utf8'));
