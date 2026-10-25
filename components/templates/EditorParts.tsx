@@ -85,10 +85,16 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 }) {
   const rows = flatItems(system);
   const groups = [system, ...rows.map(r => r.node).filter(n => n.kind !== 'component' && !n.pointsTo)];
-  const [parent, setParent] = useState(system.id);
+  // WHERE AN ITEM CAN LIVE (2026-10-25). The app gives a system with groups one card per GROUP (ledrix-app ScopeScreen
+  // `tileNodesOf`, mirrored by the preview's tilesOf): an item placed directly under such a system has no card, so no
+  // inspector ever sees it. So on a system with groups an ITEM is added inside a group (the first, by default); a
+  // GROUP can still be added at the top. A system without groups keeps "in <system>".
+  const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
   const [kind, setKind] = useState<'component' | 'subsystem'>('component');
+  const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;
+  const [parent, setParent] = useState(homes[0]?.id ?? system.id);
   const [name, setName] = useState('');
-  useEffect(() => { setParent(system.id); }, [system.id]);
+  useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
   const setAside = rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))).concat((system.trimmed ?? []).map(t => ({ t, under: system.label })));
 
   return (
@@ -109,6 +115,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
             const siblings = (locate(tree, parentId)?.node ?? system).children ?? [];
             const idx = siblings.findIndex(c => c.id === node.id);
             const group = node.kind !== 'component';
+            const unseen = !group && parentId === system.id && hasGroups;   // no card in the app — see `homes` above
             return (
               <li key={node.id} className={`group flex items-center gap-2 py-2 pr-2 ${on ? 'bg-accent/10' : group ? 'bg-ground' : ''}`} style={{ paddingLeft: 12 + depth * 18 }}>
                 <div className="flex flex-col opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -118,6 +125,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
                 <button className="min-w-0 flex-1 text-left" onClick={() => { onSelect({ systemId: system.id, nodeId: node.id }); if (!group) onOpen(node.id); }}>
                   <p className={`truncate text-sm ${group ? 'font-semibold uppercase tracking-wide text-muted text-xs' : 'font-medium text-ink'}`}>{node.label}</p>
                   {!group && <p className="truncate text-xs text-muted">{itemSummary(node)}</p>}
+                  {unseen && <span title="This system has groups, and inspectors only see items inside a group. Set this item aside and add it inside a group."><Pill tone="warn">Not shown to inspectors</Pill></span>}
                 </button>
                 {!group && <button aria-label={`Edit ${node.label}`} className={btn.icon} onClick={() => { onSelect({ systemId: system.id, nodeId: node.id }); onOpen(node.id); }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg></button>}
@@ -133,7 +141,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         <form className="mt-2 flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); if (name.trim() && onOps(ops.addItem(tree, system.id, parent, name, kind))) setName(''); }}>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'component' ? 'Add item, e.g. Kick-out flashing' : 'Add group'} aria-label="New item name" disabled={disabled} className={`${field} min-w-[10rem] flex-1 py-1.5`} />
           <select aria-label="Add under" value={parent} onChange={e => setParent(e.target.value)} disabled={disabled} className={`${field} w-auto py-1.5`}>
-            {groups.map(g => <option key={g.id} value={g.id}>{g.id === system.id ? `in ${system.label}` : `in ${g.label}`}</option>)}
+            {homes.map(g => <option key={g.id} value={g.id}>{g.id === system.id ? `in ${system.label}` : `in ${g.label}`}</option>)}
           </select>
           <select aria-label="Kind" value={kind} onChange={e => setKind(e.target.value as 'component' | 'subsystem')} disabled={disabled} className={`${field} w-auto py-1.5`}>
             <option value="component">Item</option><option value="subsystem">Group</option>

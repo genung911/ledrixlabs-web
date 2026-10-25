@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "e2e:template-builder": "node scripts/e2e-template-builder.mjs",
     "start": "next start"
   },
   "dependencies": {

@@ -395,6 +395,15 @@ const RULES = {
   },
   // Phase A (2026-10-25) — templates may CARRY requirements, but no company may publish ones the app can't enforce yet,
   // and no desktop control can author them yet (owner decisions 2 and 4).
+  // 2026-10-25 (owner-workflow e2e): an item added directly under a system that has groups gets no card in the app
+  // (ScopeScreen tileNodesOf) — the editor only offers groups as an item's home there, and flags any such item.
+  'editor: an item is never added where inspectors cannot see it': all => {
+    const s = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return (/const homes = kind === 'component' && hasGroups \? groups\.filter\(g => g\.id !== system\.id\) : groups;/.test(s)
+      && /\{homes\.map\(g => <option/.test(s) && /const unseen = !group && parentId === system\.id && hasGroups;/.test(s)) ? [] : ['components/templates/EditorParts.tsx'];
+  },
+  'editor: a duplicate choice is reported, not silently dropped': all =>
+    /if \(dup\) \{ setNote\(/.test(strip(all['components/templates/ui.tsx'] ?? '')) ? [] : ['components/templates/ui.tsx'],
   'requirements: publishing refuses a template that carries them — in the hook, before the RPC': all => {
     const hook = strip(all['lib/templates/useDraft.ts'] ?? '');
     const gate = hook.indexOf('const reqs = carriedRequirements(m0.core.tree);'), rpc = hook.indexOf('return publishDraft(');
@@ -440,6 +449,8 @@ const MUT = {
   'pages: editing is for owners and admins only': rep(EDIT, 'if (!access.companyId || !author)', 'if (!access.companyId)'),
   'pages: publish, rename, delete and type assignment are owner-only in the UI': rep(LIST, 'disabled={!owner || busy}', 'disabled={busy}'),
   'pages: publishing always asks first and says inspections are not changed': rep(EDIT, 'Inspections already started or finished keep the copy they started with', 'Done'),
+  'editor: an item is never added where inspectors cannot see it': rep('components/templates/EditorParts.tsx', "const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;", 'const homes = groups;'),
+  'editor: a duplicate choice is reported, not silently dropped': rep('components/templates/ui.tsx', 'if (dup) { setNote(', 'if (dup) { void ('),
   'requirements: publishing refuses a template that carries them — in the hook, before the RPC': rep('lib/templates/useDraft.ts', "if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported'", "if (false) throw new TemplateApiError('invalid', 'requirements_unsupported'"),
   'requirements: no desktop control writes requirements, the default-set pin or overrides yet': add('components/templates/EditorParts.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requirements', value: [] };"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),

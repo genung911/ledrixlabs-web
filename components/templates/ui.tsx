@@ -96,7 +96,14 @@ export function ChipList({ values, onChange, addLabel, placeholder, disabled }: 
   values: string[]; onChange: (next: string[]) => void; addLabel: string; placeholder?: string; disabled?: boolean;
 }) {
   const [adding, setAdding] = useState('');
-  const add = () => { const v = adding.trim(); if (!v) return; if (!values.some(x => x.toLowerCase() === v.toLowerCase())) onChange([...values, v]); setAdding(''); };
+  // A choice already in the list used to vanish without a word (the input cleared, nothing added). Say so instead.
+  const [note, setNote] = useState<string | null>(null);
+  const add = () => {
+    const v = adding.trim(); if (!v) return;
+    const dup = values.find(x => x.toLowerCase() === v.toLowerCase());
+    if (dup) { setNote(`“${dup}” is already listed.`); return; }
+    onChange([...values, v]); setAdding(''); setNote(null);
+  };
   return (
     <div>
       <div className="flex flex-wrap gap-1.5">
@@ -111,11 +118,12 @@ export function ChipList({ values, onChange, addLabel, placeholder, disabled }: 
       </div>
       {!disabled && (
         <div className="mt-2 flex gap-2">
-          <input value={adding} onChange={e => setAdding(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          <input value={adding} onChange={e => { setAdding(e.target.value); setNote(null); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
             placeholder={placeholder ?? addLabel} aria-label={addLabel} className={`${field} py-1.5`} />
           <button onClick={add} disabled={!adding.trim()} className={btn.secondary}>Add</button>
         </div>
       )}
+      {note && <p role="status" className="mt-1 text-xs text-muted">{note}</p>}
     </div>
   );
 }

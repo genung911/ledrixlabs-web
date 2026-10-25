@@ -183,7 +183,12 @@ export function validateTemplateRequirements(tpl: Pick<InspectionTemplate, 'syst
   const walk = (n: TemplateNode) => {
     shapes.set(n.id, nodeShapeOf(n));
     const reqs = (n as TemplateNode & { requirements?: unknown }).requirements;
-    if (reqs !== undefined) {
+    // A REPEATED UNIT (`x~i2`, or an `instanceOf` stub) inherits its definition's requirements (owner, 2026-10-25,
+    // ADR §18.6): it never carries its own — a copy would duplicate the definition's ids and could drift from it.
+    const unit = /~i\d+$/.test(n.id) || typeof (n as TemplateNode & { instanceOf?: unknown }).instanceOf === 'string';
+    if (unit && (Array.isArray(reqs) ? reqs.length > 0 : reqs !== undefined)) {
+      add('requirement_on_unit', `"${n.label}" is a repeated unit; it uses its definition's requirements and cannot carry its own.`);
+    } else if (reqs !== undefined) {
       if (!Array.isArray(reqs)) add('requirements_shape', `"${n.label}": its requirements must be a list.`);
       else for (const def of reqs) owned.push({ owner: n, def });
     }

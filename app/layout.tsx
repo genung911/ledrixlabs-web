@@ -17,7 +17,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the workspace's theme boot script (lib/workspace/theme THEME_BOOT_SCRIPT, run from
+    // app/app/layout.tsx before hydration) sets data-ws-theme on <html> so a dark preference never flashes light.
+    // That attribute is intentionally client-only; this silences the mismatch on THIS element only (not its children).
+    <html lang="en" suppressHydrationWarning>
       <body className="bg-ground font-sans text-body antialiased">{children}</body>
     </html>
   );
