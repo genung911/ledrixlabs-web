@@ -10,7 +10,7 @@
 // The class of each entry (content vs company policy) is decided by rule (templateOps.classifyOp), never by the
 // model. Nothing here applies anything: the result is a change set whose every entry is `proposed`.
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
-import { parseOp, hashOf, storageFields, type TemplateOp } from './templateOps';
+import { parseOp, hashOf, storageFields, requirementFields, type TemplateOp } from './templateOps';
 import { validateOps } from './templateValidate';
 import { createChangeSet, type ChangeSet, type RefusedProposal } from './templateChangeSets';
 
@@ -144,6 +144,8 @@ export function proposalFromResponse(args: {
     if (!why) { refused.push({ ...base, error: 'Ledrix gave no reason for this change.' }); return; }
     if (ROLLBACK_ONLY.has(p.op.op)) { refused.push({ ...base, error: 'Only an undo can do that.' }); return; }
     if (storageFields(p.op).length) { refused.push({ ...base, error: 'That setting decides where answers are stored; only Ledrix sets it.' }); return; }
+    // Requirements are the company's decision (Phase A, 2026-10-25): Ledrix never proposes them.
+    if (requirementFields(p.op).length) { refused.push({ ...base, error: 'Requirements are set by your company, not proposed by Ledrix.' }); return; }
     const se = scopeError(p.op, allowed);
     if (se) { refused.push({ ...base, error: se }); return; }
     grow(p.op, allowed);

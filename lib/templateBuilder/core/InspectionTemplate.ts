@@ -63,6 +63,8 @@ export type TemplateNode = {
   method?: string[];
   freeFormValue?: boolean;
   pointsTo?: { systemId: string; nodeId: string };
+  /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */
+  requirements?: import('./requirementsContract').RequirementDef[];
   children?: TemplateNode[];
   trimmed?: TemplateNode[];
 };
@@ -83,4 +85,8 @@ export type InspectionTemplate = {
   structureTypes?: import('./structureTypes').StructureTypeDef[];
   /** Inspection snapshots only (app 2026-10-24): the buildings added during the inspection. Never on a company template. */
   buildings?: import('./structureTypes').SnapshotBuilding[];
+  /** The pinned Ledrix default requirement set (app Phase A); absent = 'ledrix-r0'. */
+  requirementDefaults?: string;
+  /** Company overrides of the pinned set's requirements (app Phase A). */
+  requirementOverrides?: Record<string, import('./requirementsContract').RequirementOverride>;
 };

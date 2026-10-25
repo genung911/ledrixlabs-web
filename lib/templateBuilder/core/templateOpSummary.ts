@@ -81,6 +81,7 @@ export function summarizeOp(op: TemplateOp, tpl: InspectionTemplate): OpSummary 
       if (op.field === 'label') return { title: `Rename ${q(String(prev ?? name))}`, before: String(prev ?? ''), after: String(op.value ?? ''), section };
       if (op.field === 'condition') return { title: `${op.value ? 'Assess' : 'Stop assessing'} ${q(name)}`, detail: op.value ? 'Gets OK · Finding · Limitation' : 'Described only', section };
       if (op.field === 'appliesWhen') return { title: op.value ? `Load ${q(name)} only when…` : `Always load ${q(name)}`, before: prev ? describeRule(tpl, prev) : 'always', after: op.value ? describeRule(tpl, op.value as Predicate) : 'always', section };
+      if (op.field === 'requirements') return { title: `Requirements on ${q(name)}`, before: list((prev ?? []).map((r: any) => `${r.label} (${r.level})`)), after: list(((op.value as any[]) ?? []).map((r: any) => `${r.label} (${r.level})`)), section };
       if (op.field === 'findingShortcuts') return { title: `Shortcuts on ${q(name)}`, before: list((prev ?? []).map((s: any) => s.label)), after: list(((op.value as any[]) ?? []).map((s: any) => s.label + (s.defaultPriority ? ` (${s.defaultPriority})` : ''))), section };
       const word = FIELD_WORDS[op.field] ?? op.field;
       const show = (v: unknown) => (v == null ? 'none' : Array.isArray(v) ? list(v) : typeof v === 'object' ? JSON.stringify(v) : String(v));
@@ -106,7 +107,8 @@ export function summarizeOp(op: TemplateOp, tpl: InspectionTemplate): OpSummary 
     }
     case 'addLink': return { title: `Show ${q(labelOf(tpl, op.homeId))} in ${q(labelOf(tpl, op.parentId))}`, detail: 'One record, answered from either place — not a copy', section: sectionOf(tpl, op.parentId) };
     case 'removeLink': return { title: `Stop showing ${q(labelOf(tpl, op.pointerId))} here`, detail: 'The record itself is unchanged', section: sectionOf(tpl, op.pointerId) };
-    case 'setTemplateField': return { title: op.field === 'name' ? `Rename the template` : op.field === 'structureTypes' ? 'Change the building types' : `Change ${op.field}`, after: typeof op.value === 'string' ? op.value : undefined, section: [] };
+    case 'setTemplateField': return { title: op.field === 'name' ? `Rename the template` : op.field === 'structureTypes' ? 'Change the building types'
+      : op.field === 'requirementDefaults' ? 'Change the Ledrix default requirements' : op.field === 'requirementOverrides' ? 'Change Ledrix default requirements for this template' : `Change ${op.field}`, after: typeof op.value === 'string' ? op.value : undefined, section: [] };
     case 'unaddNode': return { title: `Remove ${q(labelOf(tpl, op.nodeId))} (undo)`, section: sectionOf(tpl, op.nodeId) };
     case 'reinsertNode': return { title: `Put back ${q(op.node.label)} (undo)`, section: sectionOf(tpl, op.parentId) };
   }

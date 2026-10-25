@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -393,6 +393,15 @@ const RULES = {
     return (/const commit = \(next: StructureTypeDef\[\] \| null\) => onOps\(\[\{ op: 'setTemplateField', field: 'structureTypes', value: next \}\]\);/.test(s)
       && opsUsed.every(o => o === 'setTemplateField') && !/workspace|fetch\(|supabase/i.test(s)) ? [] : ['components/templates/BuildingTypes.tsx'];
   },
+  // Phase A (2026-10-25) — templates may CARRY requirements, but no company may publish ones the app can't enforce yet,
+  // and no desktop control can author them yet (owner decisions 2 and 4).
+  'requirements: publishing refuses a template that carries them — in the hook, before the RPC': all => {
+    const hook = strip(all['lib/templates/useDraft.ts'] ?? '');
+    const gate = hook.indexOf('const reqs = carriedRequirements(m0.core.tree);'), rpc = hook.indexOf('return publishDraft(');
+    return (gate > 0 && rpc > gate && /if \(reqs\.length\) throw new TemplateApiError\('invalid', 'requirements_unsupported'/.test(hook)) ? [] : ['lib/templates/useDraft.ts'];
+  },
+  'requirements: no desktop control writes requirements, the default-set pin or overrides yet': all =>
+    Object.entries(all).filter(([f, s]) => /^(components|app)\//.test(f) && /field: '(requirements|requirementDefaults|requirementOverrides)'|requirementOverrides|requirementDefaults|\.requirements\b/.test(strip(s))).map(([f]) => f),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': all => {
     const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), edit = strip(all[EDIT] ?? '');
     const gate = hook.indexOf("validateStructureTypes(m0.core.tree).find(i => i.severity === 'error')"), rpc = hook.indexOf('return publishDraft(');
@@ -431,6 +440,8 @@ const MUT = {
   'pages: editing is for owners and admins only': rep(EDIT, 'if (!access.companyId || !author)', 'if (!access.companyId)'),
   'pages: publish, rename, delete and type assignment are owner-only in the UI': rep(LIST, 'disabled={!owner || busy}', 'disabled={busy}'),
   'pages: publishing always asks first and says inspections are not changed': rep(EDIT, 'Inspections already started or finished keep the copy they started with', 'Done'),
+  'requirements: publishing refuses a template that carries them — in the hook, before the RPC': rep('lib/templates/useDraft.ts', "if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported'", "if (false) throw new TemplateApiError('invalid', 'requirements_unsupported'"),
+  'requirements: no desktop control writes requirements, the default-set pin or overrides yet': add('components/templates/EditorParts.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requirements', value: [] };"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };

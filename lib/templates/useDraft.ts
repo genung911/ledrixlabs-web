@@ -13,6 +13,7 @@ import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTe
 import { createDraft, liveChangedSince, type TemplateDraft } from '@/lib/templateBuilder/core/templateDraft';
 import { createDraftStore, DraftStoreError } from '@/lib/templateBuilder/draftStore';
 import { validateStructureTypes } from '@/lib/templateBuilder/core/structureTypes';
+import { carriedRequirements } from '@/lib/templateBuilder/core/requirementsContract';
 import {
   TemplateApiError, detectBackend, discardDraft, loadDraft, loadTemplate, publishDraft, saveDraft, startDraft,
   type Backend, type LiveTemplate, type ServerDraft,
@@ -149,6 +150,10 @@ export function useDraft(args: { companyId: string; templateId: string; draftId:
     // Building types are judged again here, not only by the button (2026-10-24): an error never reaches inspections.
     const bad = validateStructureTypes(m0.core.tree).find(i => i.severity === 'error');
     if (bad) throw new TemplateApiError('invalid', 'structure_types', `Not published — fix the building types first: ${bad.message}`);
+    // Requirements are carried by the template contract (Phase A) but no inspection can evaluate or enforce them yet:
+    // a template that carries any is not published (owner decision, 2026-10-25). Today nothing in the UI can add one.
+    const reqs = carriedRequirements(m0.core.tree);
+    if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported', `Not published — inspections can't use requirements yet (${reqs.join('; ')}).`);
     if (!(await flush())) throw new TemplateApiError('failed', 'save', 'The draft could not be saved, so it was not published.');
     const m = ref.current!;
     if (!m.server) throw new TemplateApiError('missing', 'draft_missing', 'There is nothing to publish yet — make a change first.');

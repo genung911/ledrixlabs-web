@@ -106,6 +106,9 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   findingShortcuts: { check: checkShortcuts, class: 'content', pending: true, why: 'finding shortcuts' },
   titleFrom:        { check: (v) => (obj(v) ? onlyKeys(v, ['attrId', 'map']) ?? nonEmpty(v.attrId) ?? (v.map === undefined || (obj(v.map) && Object.values(v.map).every(x => typeof x === 'string')) ? null : 'map must be {value: title}') : 'must be {attrId, map?}'), class: 'content', pending: true, why: 'title from an answer' },
   groupUnder:       { check: (v) => (obj(v) ? onlyKeys(v, ['nodeId', 'attrId']) ?? nonEmpty(v.nodeId) ?? nonEmpty(v.attrId) : 'must be {nodeId, attrId}'), class: 'content', pending: true, why: 'shown under a spec card' },
+  // Phase A (2026-10-25): the item's COMPANY requirements — the whole list, judged by templateValidate
+  // (requirementsContract.validateTemplateRequirements). Pending: no inspection reads them yet. Never from Ledrix's AI.
+  requirements:     { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', pending: true, why: 'what inspectors must record for this item' },
 };
 
 /** Fields `setAttributeField` may write. `id` is identity; `legacyBareKey` decides where recorded values are
@@ -122,6 +125,9 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   advisories: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'report advisories are disclosures' },
   // 2026-10-24: the building types (templates/structureTypes.ts) — validated as a whole by templateValidate
   structureTypes: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'which systems each kind of building starts with' },
+  // Phase A (2026-10-25): the pinned Ledrix default requirement set, and company overrides of it (validated as a whole).
+  requirementDefaults:  { check: (v) => (typeof v === 'string' && v.trim() ? null : 'must be a default set id'), class: 'policy', why: 'which Ledrix default requirements apply' },
+  requirementOverrides: { check: (v) => (obj(v) ? null : 'must be a map of requirement ids'), class: 'policy', why: 'changes to Ledrix default requirements' },
 };
 
 const NODE_KINDS = ['system', 'subsystem', 'component'];
@@ -631,6 +637,17 @@ export function storageFields(op: TemplateOp): string[] {
   return [];
 }
 export const STORAGE_SOURCES = ['rollback', 'ledrix_update'] as const;
+
+/** Requirement settings an op writes (Phase A, 2026-10-25). Requirements are the COMPANY's: a Ledrix AI proposal that
+ *  writes any of them is refused (templateAuthoring), like a storage field. */
+export const REQUIREMENT_TEMPLATE_FIELDS = ['requirementDefaults', 'requirementOverrides'] as const;
+export function requirementFields(op: TemplateOp): string[] {
+  const inNode = (n: TemplateNode): boolean => (n as TemplateNode & { requirements?: unknown }).requirements !== undefined || (n.children ?? []).some(inNode);
+  if (op.op === 'setNodeField' && op.field === 'requirements') return ['requirements'];
+  if (op.op === 'addNode' && inNode(op.node)) return ['requirements'];
+  if (op.op === 'setTemplateField' && (REQUIREMENT_TEMPLATE_FIELDS as readonly string[]).includes(op.field)) return [op.field];
+  return [];
+}
 
 /** The op with an `expect` filled in from `tpl` wherever the producer left it out — so every op of a change
  *  set is anchored to the draft it was proposed against, whatever produced it. An append (no index) carries

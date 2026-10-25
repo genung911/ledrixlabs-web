@@ -12,6 +12,7 @@ import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import { parseOp, applyOp, runtimePendingFields, classifyOp, allIds, storageFields, type TemplateOp, type Predicate, type OpClass } from './templateOps';
 import { ruleShapeError } from './templateRules';
 import { validateStructureTypes } from './structureTypes';
+import { validateTemplateRequirements } from './requirementsContract';
 
 export type Issue = { code: string; severity: 'error' | 'warning'; nodeId?: string; message: string };
 
@@ -157,6 +158,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
   }
   // building types (2026-10-24) — which of these systems each kind of building starts with
   for (const i of validateStructureTypes(tpl)) add(i.severity, i.code, i.message);
+  // requirements (Phase A, 2026-10-25) — the company's requirements, default-set pin and overrides
+  for (const i of validateTemplateRequirements(tpl)) add(i.severity, i.code, i.message);
   return issues;
 }
 
