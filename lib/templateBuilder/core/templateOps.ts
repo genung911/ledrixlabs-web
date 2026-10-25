@@ -120,6 +120,8 @@ export const ATTR_FIELDS: Record<string, FieldSpec> = {
 export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   name:       { check: nonEmpty, class: 'content', why: 'template name' },
   advisories: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'report advisories are disclosures' },
+  // 2026-10-24: the building types (templates/structureTypes.ts) — validated as a whole by templateValidate
+  structureTypes: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'which systems each kind of building starts with' },
 };
 
 const NODE_KINDS = ['system', 'subsystem', 'component'];

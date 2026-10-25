@@ -11,6 +11,7 @@
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import { parseOp, applyOp, runtimePendingFields, classifyOp, allIds, storageFields, type TemplateOp, type Predicate, type OpClass } from './templateOps';
 import { ruleShapeError } from './templateRules';
+import { validateStructureTypes } from './structureTypes';
 
 export type Issue = { code: string; severity: 'error' | 'warning'; nodeId?: string; message: string };
 
@@ -154,6 +155,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
     const c = cyc(id, []);
     if (c) { add('error', 'rule_cycle', `Loading rules go in a circle: ${c.join(' → ')}.`, c[0]); break; }
   }
+  // building types (2026-10-24) — which of these systems each kind of building starts with
+  for (const i of validateStructureTypes(tpl)) add(i.severity, i.code, i.message);
   return issues;
 }
 

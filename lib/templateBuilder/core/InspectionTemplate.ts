@@ -79,4 +79,8 @@ export type InspectionTemplate = {
   ruleDefinitions?: import('./templateRules').RuleDefinitions;
   offeringModel?: 1;
   advisories?: unknown[];
+  /** Company building types (app 2026-10-24, templates/structureTypes.ts). On a snapshot: captured at creation. */
+  structureTypes?: import('./structureTypes').StructureTypeDef[];
+  /** Inspection snapshots only (app 2026-10-24): the buildings added during the inspection. Never on a company template. */
+  buildings?: import('./structureTypes').SnapshotBuilding[];
 };

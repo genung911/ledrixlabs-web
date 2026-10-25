@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -386,6 +386,19 @@ const RULES = {
   },
   'pages: publishing always asks first and says inspections are not changed': all =>
     /Inspections already started or finished keep the copy they started with/.test(all[EDIT] ?? '') && /dialog === 'publish'/.test(all[EDIT] ?? '') ? [] : [EDIT],
+  // 2026-10-24 — building types: edited ONLY as one template op (draft, undo, validation), and never published with an error.
+  'building types: edited only through setTemplateField structureTypes': all => {
+    const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
+    const opsUsed = [...s.matchAll(/op: '(\w+)'/g)].map(m => m[1]);
+    return (/const commit = \(next: StructureTypeDef\[\] \| null\) => onOps\(\[\{ op: 'setTemplateField', field: 'structureTypes', value: next \}\]\);/.test(s)
+      && opsUsed.every(o => o === 'setTemplateField') && !/workspace|fetch\(|supabase/i.test(s)) ? [] : ['components/templates/BuildingTypes.tsx'];
+  },
+  'building types: publishing refuses an error — in the hook, before the RPC, and on the button': all => {
+    const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), edit = strip(all[EDIT] ?? '');
+    const gate = hook.indexOf("validateStructureTypes(m0.core.tree).find(i => i.severity === 'error')"), rpc = hook.indexOf('return publishDraft(');
+    return (gate > 0 && rpc > gate && /if \(bad\) throw new TemplateApiError\('invalid', 'structure_types'/.test(hook)
+      && /: bIssues\.errors\.length \? `Fix the building types first:/.test(edit) && /disabled=\{busy \|\| !!publishBlock\} title=\{publishBlock \?\? undefined\} onClick=\{\(\) => doPublish\(false\)\}/.test(edit)) ? [] : ['lib/templates/useDraft.ts', EDIT];
+  },
 };
 
 console.log('static');
@@ -418,6 +431,8 @@ const MUT = {
   'pages: editing is for owners and admins only': rep(EDIT, 'if (!access.companyId || !author)', 'if (!access.companyId)'),
   'pages: publish, rename, delete and type assignment are owner-only in the UI': rep(LIST, 'disabled={!owner || busy}', 'disabled={busy}'),
   'pages: publishing always asks first and says inspections are not changed': rep(EDIT, 'Inspections already started or finished keep the copy they started with', 'Done'),
+  'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
+  'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 for (const [name, mutate] of Object.entries(MUT)) {
   const rule = RULES[name];

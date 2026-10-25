@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { createDraft, liveChangedSince, type TemplateDraft } from '@/lib/templateBuilder/core/templateDraft';
 import { createDraftStore, DraftStoreError } from '@/lib/templateBuilder/draftStore';
+import { validateStructureTypes } from '@/lib/templateBuilder/core/structureTypes';
 import {
   TemplateApiError, detectBackend, discardDraft, loadDraft, loadTemplate, publishDraft, saveDraft, startDraft,
   type Backend, type LiveTemplate, type ServerDraft,
@@ -145,6 +146,9 @@ export function useDraft(args: { companyId: string; templateId: string; draftId:
   const publish = useCallback(async (replaceLive: boolean) => {
     const m0 = ref.current;
     if (!m0 || m0.backend !== 'server') throw new TemplateApiError('invalid', 'local', 'Publishing turns on with the next Ledrix app update.');
+    // Building types are judged again here, not only by the button (2026-10-24): an error never reaches inspections.
+    const bad = validateStructureTypes(m0.core.tree).find(i => i.severity === 'error');
+    if (bad) throw new TemplateApiError('invalid', 'structure_types', `Not published — fix the building types first: ${bad.message}`);
     if (!(await flush())) throw new TemplateApiError('failed', 'save', 'The draft could not be saved, so it was not published.');
     const m = ref.current!;
     if (!m.server) throw new TemplateApiError('missing', 'draft_missing', 'There is nothing to publish yet — make a change first.');

@@ -5,6 +5,8 @@
 // Everything edits ONE private draft (lib/templates/useDraft): hand edits and accepted Ledrix proposals both go
 // through template operations, the preview renders the draft, and nothing reaches the live template until the
 // OWNER publishes. Publishing never changes an inspection already started — each keeps its own snapshot.
+// BUILDING TYPES (2026-10-24) are a second view of the same draft (components/templates/BuildingTypes): which of the
+// template's systems each kind of building starts with. Publishing is refused while they have an error.
 // /app/templates/new?draft=<id> opens a template that isn't published yet.
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -15,6 +17,7 @@ import { Banner, Modal, Pill, btn, timeAgo } from '@/components/templates/ui';
 import { ItemDrawer, ItemsPanel, SystemsColumn } from '@/components/templates/EditorParts';
 import { LedrixPanel } from '@/components/templates/LedrixPanel';
 import { PhonePreview } from '@/components/templates/PhonePreview';
+import { BuildingTypesPanel, buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { applyManual, locate } from '@/lib/templates/editorModel';
@@ -53,6 +56,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const [tab, setTab] = useState<'items' | 'ledrix'>('items');
   const [drawer, setDrawer] = useState<string | null>(null);
   const [view, setView] = useState<'edit' | 'preview'>('edit');
+  const [area, setArea] = useState<'systems' | 'buildings'>('systems');
   const [problem, setProblem] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | 'publish' | 'discard' | 'replace'>(null);
   const [busy, setBusy] = useState(false);
@@ -122,7 +126,10 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
     finally { setBusy(false); }
   };
 
-  const publishBlock = !server ? 'Publishing turns on with the next Ledrix app update.' : !owner ? 'Only the company owner can publish.' : null;
+  const bIssues = buildingTypeIssues(tree);
+  const bChanges = buildingTypeChanges(m.live?.tree ?? null, tree);
+  const publishBlock = !server ? 'Publishing turns on with the next Ledrix app update.' : !owner ? 'Only the company owner can publish.'
+    : bIssues.errors.length ? `Fix the building types first: ${bIssues.errors[0].message}` : null;
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen">
@@ -156,6 +163,23 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         {problem && <Banner tone="warn" title={problem} actions={<button className={btn.ghost} onClick={() => setProblem(null)}>Dismiss</button>} />}
       </div>
 
+      <div className="px-4 pt-3 lg:px-6">
+        <div role="tablist" aria-label="Template" className="inline-flex rounded-lg border border-hairline bg-surface p-0.5">
+          {([['systems', 'Systems & items'], ['buildings', 'Building types']] as const).map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={area === k} onClick={() => setArea(k)}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${area === k ? 'bg-ink text-surface' : 'text-body hover:text-ink'}`}>
+              {l}{k === 'buildings' && bIssues.errors.length > 0 && <span className="ml-1.5 inline-block h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {area === 'buildings' ? (
+        <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6">
+          <BuildingTypesPanel tree={tree} live={m.live?.tree ?? null} onOps={onOps} disabled={!!readOnly}
+            onOpenSystem={id => { select({ systemId: id, nodeId: null }); setTab('items'); setArea('systems'); }} />
+        </div>
+      ) : (<>
       {/* narrow screens: one of edit / preview */}
       <div className="px-4 pt-3 xl:hidden">
         <div role="tablist" aria-label="View" className="inline-flex rounded-lg border border-hairline bg-ground p-0.5">
@@ -195,18 +219,25 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
           <PhonePreview tree={tree} selection={sel} onSelect={s => { select(s); if (s.nodeId) { setTab('items'); } }} />
         </aside>
       </div>
+      </>)}
 
       <Modal open={dialog === 'publish'} title={`Publish ${m.core.name}${isNew ? '' : ` as v${nextVersion}`}?`} onClose={() => setDialog(null)} footer={<>
         <button className={btn.secondary} onClick={() => setDialog(null)}>Cancel</button>
-        <button className={btn.primary} disabled={busy} onClick={() => doPublish(false)}>{busy ? 'Publishing…' : 'Publish'}</button>
+        <button className={btn.primary} disabled={busy || !!publishBlock} title={publishBlock ?? undefined} onClick={() => doPublish(false)}>{busy ? 'Publishing…' : 'Publish'}</button>
       </>}>
         <p>{isNew ? 'It becomes a live template your company can assign to inspection types.' : 'New inspections that use this template start from this version.'}</p>
         <p className="mt-2">Inspections already started or finished keep the copy they started with — nothing about them changes.</p>
+        {bChanges.length > 0 && (<>
+          <p className="mt-3 font-semibold text-ink">Building types</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">{bChanges.map(c => <li key={c}>{c}</li>)}</ul>
+          <p className="mt-1 text-xs text-muted">Buildings already added to an inspection keep their own systems.</p>
+        </>)}
+        {bIssues.warnings.length > 0 && <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted">{bIssues.warnings.map(w => <li key={w.code + w.message}>{w.message}</li>)}</ul>}
       </Modal>
       <Modal open={dialog === 'replace'} title="The live template changed" onClose={() => setDialog(null)} footer={<>
         <button className={btn.secondary} onClick={() => setDialog(null)}>Cancel</button>
         <button className={btn.secondary} onClick={() => setDialog('discard')}>Start over from live</button>
-        <button className={btn.danger} disabled={busy} onClick={() => doPublish(true)}>Publish anyway — replace</button>
+        <button className={btn.danger} disabled={busy || !!publishBlock} onClick={() => doPublish(true)}>Publish anyway — replace</button>
       </>}>
         <p>Someone changed the live template (for example on a phone) after this draft started. Publishing anyway replaces those changes with this draft.</p>
       </Modal>

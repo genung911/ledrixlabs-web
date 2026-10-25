@@ -106,7 +106,7 @@ export function summarizeOp(op: TemplateOp, tpl: InspectionTemplate): OpSummary 
     }
     case 'addLink': return { title: `Show ${q(labelOf(tpl, op.homeId))} in ${q(labelOf(tpl, op.parentId))}`, detail: 'One record, answered from either place — not a copy', section: sectionOf(tpl, op.parentId) };
     case 'removeLink': return { title: `Stop showing ${q(labelOf(tpl, op.pointerId))} here`, detail: 'The record itself is unchanged', section: sectionOf(tpl, op.pointerId) };
-    case 'setTemplateField': return { title: op.field === 'name' ? `Rename the template` : `Change ${op.field}`, after: typeof op.value === 'string' ? op.value : undefined, section: [] };
+    case 'setTemplateField': return { title: op.field === 'name' ? `Rename the template` : op.field === 'structureTypes' ? 'Change the building types' : `Change ${op.field}`, after: typeof op.value === 'string' ? op.value : undefined, section: [] };
     case 'unaddNode': return { title: `Remove ${q(labelOf(tpl, op.nodeId))} (undo)`, section: sectionOf(tpl, op.nodeId) };
     case 'reinsertNode': return { title: `Put back ${q(op.node.label)} (undo)`, section: sectionOf(tpl, op.parentId) };
   }
