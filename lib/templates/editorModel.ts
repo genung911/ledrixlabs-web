@@ -62,7 +62,7 @@ export function itemSummary(n: TemplateNode): string {
   const parts: string[] = [];
   if (n.pointsTo) parts.push('Shown here from another section');
   for (const a of n.attributes ?? []) parts.push(a.label);
-  if (n.condition) parts.push('Condition');
+  if (assessesCondition(n)) parts.push('Condition');
   if (x.findingShortcuts?.length) parts.push(`${x.findingShortcuts.length} finding shortcut${x.findingShortcuts.length === 1 ? '' : 's'}`);
   if (!parts.length && n.children?.length) return `${n.children.length} item${n.children.length === 1 ? '' : 's'}`;
   return parts.length ? parts.join(' · ') : 'Nothing recorded yet';
@@ -108,7 +108,10 @@ export const ops = {
     }
     return out;
   },
-  assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on ? true : null)],
+  // EXPLICIT BOTH WAYS (report integrity, 2026-10-24). OFF wrote `null`, which deletes the field — and the app reads a
+  // MISSING `condition` as ON (conditionMatch.componentAxes: `n.condition ?? true`), so the editor said "not assessed"
+  // while every inspection kept assessing it. ON writes true, OFF writes false; a missing value stays the app's default.
+  assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on)],
   limitations: (nodeId: string, reasons: string[]): TemplateOp[] => [setField(nodeId, 'limitations', listOrNull(reasons))],
   findingShortcuts: (node: TemplateNode, labels: string[], now: number): TemplateOp[] => {
     const prior = ((node as TemplateNode & { findingShortcuts?: FindingShortcut[] }).findingShortcuts ?? []);
@@ -162,3 +165,16 @@ export function isCovered(tree: InspectionTemplate, sys: TemplateNode): boolean 
 
 /** A blank template for "New template → Blank". */
 export const blankTree = (name: string): InspectionTemplate => ({ id: 'custom', name, version: 1, systems: [] });
+
+/** Does this item take a condition (Satisfactory / Limitation / Finding)? The APP's rule, exactly —
+ *  ledrix-app src/core/taxonomy/conditionMatch.ts `componentAxes` + `facetOf`: an item in the typed shape assesses
+ *  unless `condition` is false (missing = true); an older item (options / facet) assesses unless its facet is
+ *  'spec'. The editor shows THIS, so the switch, the saved draft, the published template and the phone agree —
+ *  including for a legacy item that never stored the field (scripts/verify-template-builder.mjs cross-checks it
+ *  against the app's own function). */
+export function assessesCondition(n: TemplateNode): boolean {
+  const x = n as TemplateNode & { options?: string[]; facet?: string; method?: unknown };
+  if (n.attributes || n.condition !== undefined || n.limitations || x.method) return n.condition ?? true;
+  const facet = x.facet ?? ((x.options?.length ?? 0) > 0 ? 'both' : 'condition');
+  return facet !== 'spec';
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SOP_SYSTEMS, systemForUnit, severityMeta, SOP_TEMPLATE_VERSION } from '../../../../../lib/sopTemplate';
 import { forHomeowner } from '../../../../../lib/homeownerRecommendation';
+import { sealPayloadKind, digestSealFacts } from '../../../../../lib/sealPayload';
 
 // ─── /api/reports/seal/[hash] ────────────────────────────────────────────────
 // Renders a FROZEN inspection report from a sealed entry in `report_seals`.
@@ -60,7 +61,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
 
   const payload = seal.payload ?? {};
   const inspection = payload.inspection ?? {};
-  const findings: any[] = Array.isArray(payload.anomalies) ? payload.anomalies : [];
+  // ── WHAT THIS SEAL HOLDS (report integrity, 2026-10-24; lib/sealPayload.ts) ──────────────────────────────────
+  // A seal made since ledrix-app's O-4 ruling carries no findings — it attests the finalized report record by its
+  // digest. Reading `payload.anomalies` on one of those printed "No confirmed findings in this seal": false. Only a
+  // seal that carries findings is rendered as findings; a digest seal says what it attests; nothing here ever reads
+  // live data in place of the sealed payload.
+  const kind = sealPayloadKind(payload);
+  const findings: any[] = kind === 'findings' ? payload.anomalies : [];
 
   // Sign photo paths in the frozen payload. (The paths themselves are sealed;
   // only the URL signature is regenerated each request.)
@@ -158,8 +165,21 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
       ${parentNote ? `<span>·</span>${parentNote}` : ''}
     </div>
   </header>
+  ${kind === 'findings' ? `
   <div class="summary">${summary || '<span class="sumchip" style="--c:#22c55e">No defects logged</span>'}</div>
-  ${sectionsHtml || '<p class="empty">No confirmed findings in this seal.</p>'}
+  ${sectionsHtml || '<p class="empty">No confirmed findings in this seal.</p>'}` : kind === 'digest' ? (() => {
+    const f = digestSealFacts(payload);
+    return `
+  <section>
+    <h2>What this seal attests</h2>
+    <p class="desc">This seal fixes the finalized inspection report record by its fingerprint. The findings, specifications, conditions and photographs are in the report the inspector delivered; this page lists only what the seal itself contains, and does not repeat or replace that report.</p>
+    <div class="meta">
+      <span>Report record fingerprint: <code>${esc(f.digest)}</code></span>
+      ${f.evidenceCount !== null ? `<span>Photographs in the record: ${esc(f.evidenceCount)}</span>` : ''}
+      ${f.templateVersion ? `<span>Template: ${esc(f.templateVersion)}</span>` : ''}
+    </div>
+  </section>`;
+  })() : '<p class="empty">This seal\'s contents could not be read.</p>'}
   <footer>Sealed snapshot · template ${SOP_TEMPLATE_VERSION} · ${esc(seal.hash)}${neutralised ? '<br/>In this view, recommendations that named a specific professional are shown as further evaluation or work by a qualified professional. The sealed record and its hash are unchanged.' : ''}</footer>
 </div></body></html>`;
 

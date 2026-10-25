@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { flatItems, isCovered, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, isCovered, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -179,8 +179,8 @@ export function ItemDrawer({ node, path, onOps, onClose, disabled }: { node: Tem
 
         <div>
           <div className="flex items-center justify-between"><p className={label + ' mb-0'}>Condition</p>
-            <Toggle on={node.condition === true} disabled={disabled} label="Inspectors assess its condition" onChange={v => onOps(ops.assessed(node.id, v))} /></div>
-          <p className="mt-1.5 text-xs text-body">{node.condition ? 'Inspectors answer Satisfactory, Limitation or Finding.' : 'Not assessed — inspectors only record what it is.'}</p>
+            <Toggle on={assessesCondition(node)} disabled={disabled} label="Inspectors assess its condition" onChange={v => onOps(ops.assessed(node.id, v))} /></div>
+          <p className="mt-1.5 text-xs text-body">{assessesCondition(node) ? 'Inspectors answer Satisfactory, Limitation or Finding.' : 'Not assessed — inspectors only record what it is.'}</p>
         </div>
 
         <div>
@@ -195,7 +195,7 @@ export function ItemDrawer({ node, path, onOps, onClose, disabled }: { node: Tem
           </form>
         </div>
 
-        {node.condition && (
+        {assessesCondition(node) && (
           <div>
             <p className={label}>Limitation reasons</p>
             <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by roof covering"
@@ -203,7 +203,7 @@ export function ItemDrawer({ node, path, onOps, onClose, disabled }: { node: Tem
             <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation; the app’s general reasons follow.</p>
           </div>
         )}
-        {node.condition && (
+        {assessesCondition(node) && (
           <div>
             <p className={label}>Finding shortcuts</p>
             <ChipList values={shortcuts} disabled={disabled} addLabel="Add finding shortcut" placeholder="e.g. Missing kick-out flashing"

@@ -235,8 +235,27 @@ async function runDesktop(files) {
     step(E.ops.findingShortcuts(node(), ['Missing kick-out flashing'], 4500), 4500);
     r('hand edit: limitation reasons and finding shortcuts are saved; a kept shortcut keeps its id',
       node().limitations?.[0] === 'Concealed by roof covering' && node().findingShortcuts?.length === 1 && node().findingShortcuts[0].id === firstId);
+    // ── ASSESSED, BOTH WAYS (report integrity, 2026-10-24) ── OFF used to write null, which DELETED the field, and the
+    // app reads a missing `condition` as ON — the old check here asserted exactly that broken state. Now OFF is an
+    // explicit false that the editor, the draft, the published template and the phone all read as off; checked against
+    // the APP's own componentAxes, not a model of it.
+    const appAxes = (await import(pathToFileURL(join(APP, 'src/core/taxonomy/conditionMatch.ts')).href)).componentAxes;
     step(E.ops.assessed(node().id, false), 4600);
-    r('hand edit: turning assessment off removes it (never a grade)', node().condition === undefined);
+    r('condition: switching assessment OFF stores an explicit false (never a deleted field)', node().condition === false);
+    r('condition: …and the editor, and the APP\'s componentAxes, both read it as off',
+      E.assessesCondition(node()) === false && appAxes(node()).condition === false);
+    step(E.ops.assessed(node().id, true), 4610);
+    r('condition: switching it back ON stores true, read as on by the editor and the app',
+      node().condition === true && E.assessesCondition(node()) === true && appAxes(node()).condition === true);
+    step(E.ops.assessed(node().id, false), 4620);
+    const legacy = [
+      { id: 'l1', label: 'Typed, condition never stored', kind: 'component', attributes: [{ id: 'm', label: 'Material', values: ['A', 'B'] }] },
+      { id: 'l2', label: 'Old shape, spec facet', kind: 'component', facet: 'spec', options: ['A', 'B'] },
+      { id: 'l3', label: 'Old shape, both', kind: 'component', options: ['A', 'B'] },
+      { id: 'l4', label: 'Bare item', kind: 'component' },
+    ];
+    r('condition: a legacy item that never stored the field reads exactly as the app reads it (missing = on; spec facet = off)',
+      legacy.every(n => E.assessesCondition(n) === appAxes(n).condition) && E.assessesCondition(legacy[0]) === true && E.assessesCondition(legacy[1]) === false);
     step(E.ops.coverByDefault(d.tree, 'hvac', false), 4700);
     const off = d.tree.systems.find(s => s.id === 'hvac').defaultActive === false;
     step(E.ops.coverByDefault(d.tree, 'hvac', true), 4800);
@@ -340,6 +359,11 @@ const RULES = {
       && /from\('company_template_drafts'\)\.select\('id'\)\.eq\('id', draftId\)\.eq\('company_id', profile\.company_id\)/.test(s)
       && /from\('company_templates'\)\.select\('id'\)\.eq\('id', templateId as string\)\.eq\('company_id', profile\.company_id\)/.test(s)) ? [] : [ROUTE];
   },
+  // 2026-10-24: the editor's condition switch shows what the APP will do (assessesCondition), never the raw field.
+  'editor: the condition switch shows the app rule, not the raw field': all => {
+    const s = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return (/<Toggle on=\{assessesCondition\(node\)\}/.test(s) && !/node\.condition (===|&&)/.test(s)) ? [] : ['components/templates/EditorParts.tsx'];
+  },
   'route: the prompt is built on the server': all => {
     const s = all[ROUTE] ?? '';
     return (/buildAssistantPrompt\(\{/.test(s) && /askModel\(prompt\.system, prompt\.user\)/.test(s) && !/body\.(system|messages|prompt)\b/.test(s)) ? [] : [ROUTE];
@@ -385,6 +409,7 @@ const MUT = {
   'no model key or service-role key in browser code': add('components/templates/LedrixPanel.tsx', "\nconst k = process.env.GATEWAY_KEY;"),
   'route: requires a signed-in user': rep(ROUTE, 'admin.auth.getUser(token)', 'admin.auth.getUser()'),
   "route: owner/admin, working on their own company's template or draft": rep(ROUTE, ".eq('id', templateId as string).eq('company_id', profile.company_id)", ".eq('id', templateId as string)"),
+  'editor: the condition switch shows the app rule, not the raw field': rep('components/templates/EditorParts.tsx', '<Toggle on={assessesCondition(node)}', '<Toggle on={node.condition === true}'),
   'route: the prompt is built on the server': rep(ROUTE, 'askModel(prompt.system, prompt.user)', 'askModel(String((body as any).system), prompt.user)'),
   'route: the cost cap is counted before the model is called': rep(ROUTE, 'const used = await bumpUsage(admin, user.id);', 'const used = 0;'),
   'route: the reply shape is normalized before grades are filtered and the browser checks it': all => /normalizeChanges\(\(parsed as \{ changes: unknown\[\] \}\)\.changes\)/.test(strip(all[ROUTE] ?? '')) ? [] : [ROUTE],
@@ -408,6 +433,8 @@ const EXEC_MUT = [
   { name: 'grades hidden in a value list slip through', file: 'assistant.ts', from: "if (op.op === 'setAttributeField') return", to: "if (op.op === 'setAttributeField') return false &&", check: 'assistant: grades are caught wherever they hide', run: runDesktop },
   { name: 'flattened changes are not re-wrapped', file: 'assistant.ts', from: "    if (typeof x.op === 'string') {", to: "    if (false) {", check: 'assistant: a flattened or renamed change is re-wrapped, a correct one is untouched, junk stays junk', run: runDesktop },
   { name: 'switching on only clears the off flag', file: 'editorModel.ts', from: "const want = s.id === systemId ? on : isCovered(tree, s);", to: "const want = s.id === systemId ? (on ? (undefined as any) : false) : isCovered(tree, s);", check: 'coverage: switching a system on makes it covered (defaultActive true, not merely "not false")', run: runDesktop },
+  { name: 'assessment OFF writes null again', file: 'editorModel.ts', from: "assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on)],", to: "assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on ? true : null)],", check: 'condition: switching assessment OFF stores an explicit false (never a deleted field)', run: runDesktop },
+  { name: 'the editor reads the raw field instead of the app rule', file: 'editorModel.ts', from: "if (n.attributes || n.condition !== undefined || n.limitations || x.method) return n.condition ?? true;", to: "if (n.attributes || n.condition !== undefined || n.limitations || x.method) return n.condition === true;", check: 'condition: a legacy item that never stored the field reads exactly as the app reads it (missing = on; spec facet = off)', run: runDesktop },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 for (const m of EXEC_MUT) {

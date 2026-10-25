@@ -14,6 +14,7 @@ import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
 import { shareIdForToken } from '../../../lib/shareAccess';
 import { isEntitled } from '../../../lib/entitlement';
 import { forHomeowner } from '../../../lib/homeownerRecommendation';
+import { publishedFindings, publishedSpecs } from '../../../lib/publishedRecord';
 
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? '').replace(/\/$/, '');
 const GATEWAY_KEY = process.env.GATEWAY_KEY ?? '';
@@ -30,8 +31,10 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 function buildContext(rec: any, log: any[] = []): string {
   if (!rec) return 'No inspection record is available for this property.';
-  const anomalies: any[] = Array.isArray(rec.anomalies) ? rec.anomalies : [];
-  const specs: any[]     = Array.isArray(rec.specs) ? rec.specs : [];
+  // The homeowner's assistant sees what the homeowner may see — the published allow-list (lib/publishedRecord.ts),
+  // never internal fields a row published before 2026-10-24 may still carry.
+  const anomalies: any[] = publishedFindings(rec.anomalies);
+  const specs: any[]     = publishedSpecs(rec.specs);
   // The app's priority tiers, with Safety as a separate overlay flag (SeverityConfig.ts) —
   // 'critical' is Major Repair, not Safety; 'anomaly' is the legacy spelling of 'deficiency'.
   const TIER: Record<string, string> = { critical: 'MAJOR REPAIR', deficiency: 'MINOR REPAIR', anomaly: 'MINOR REPAIR',

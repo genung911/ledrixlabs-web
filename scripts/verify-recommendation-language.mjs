@@ -140,7 +140,8 @@ console.log('Part 3b · the REAL sealed route, run against a stored seal');
   const ts = require('typescript');
   const out = join(root, 'node_modules/.cache/verify-recommendation-language');
   rmSync(out, { recursive: true, force: true });
-  for (const rel of ['app/api/reports/seal/[hash]/route.ts', 'lib/sopTemplate.ts', 'lib/homeownerRecommendation.ts']) {
+  // + lib/sealPayload.ts since 2026-10-24: the seal page asks what the payload holds before rendering it.
+  for (const rel of ['app/api/reports/seal/[hash]/route.ts', 'lib/sopTemplate.ts', 'lib/homeownerRecommendation.ts', 'lib/sealPayload.ts']) {
     const js = ts.transpileModule(read(rel), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } }).outputText;
     const to = join(out, rel.replace(/\.ts$/, '.js')); mkdirSync(dirname(to), { recursive: true }); writeFileSync(to, js);
   }
@@ -193,6 +194,40 @@ console.log('Part 3b · the REAL sealed route, run against a stored seal');
     stored = JSON.stringify(clean); hash = createHash('sha256').update(stored).digest('hex');
     const h3 = await (await route.GET(new Request(`https://x/api/reports/seal/${hash}`), { params: Promise.resolve({ hash }) })).text();
     ok('clean seal: no disclosure when the view matches the sealed text', !/The sealed record and its hash are unchanged/.test(h3) && !h3.includes(HEADING));
+
+    // ── THE CURRENT SEAL FORMAT, THROUGH THE REAL ROUTE (report integrity, 2026-10-24) ──────────────────────────
+    // Since ledrix-app's O-4 ruling a seal carries NO findings: SealService writes { inspection, input_digest,
+    // evidence_count, template_version } — the frozen record attested by its digest. The page read `payload.anomalies`
+    // and printed "No confirmed findings in this seal" for every one of them. It must say what the seal attests.
+    const digest = 'ab'.repeat(32);
+    const digestSeal = { inspection: { address: '18 Test Ln' }, input_digest: digest, evidence_count: 7, template_version: 'generic-v1' };
+    stored = JSON.stringify(digestSeal); hash = createHash('sha256').update(stored).digest('hex');
+    const storedDigest = stored, hashDigest = hash;
+    const r4 = await route.GET(new Request(`https://x/api/reports/seal/${hash}`), { params: Promise.resolve({ hash }) });
+    const h4 = await r4.text();
+    ok('digest seal (current format): renders (200) with its address and seal hash', r4.status === 200 && h4.includes('18 Test Ln') && h4.includes(hash), `status ${r4.status}`);
+    ok('digest seal: states what it attests — the report record fingerprint and the photo count',
+      h4.includes('What this seal attests') && h4.includes(`Report record fingerprint: <code>${digest}</code>`) && h4.includes('Photographs in the record: 7'));
+    ok('digest seal: says the findings are in the delivered report, not in the seal',
+      /The findings, specifications, conditions and photographs are in the report the inspector delivered/.test(h4));
+    ok('digest seal: NEVER claims there are no findings, or no defects',
+      !/No confirmed findings/.test(h4) && !/No defects logged/.test(h4));
+    ok('digest seal: payload byte-identical, hash unchanged, nothing written',
+      JSON.stringify(digestSeal) === storedDigest && createHash('sha256').update(storedDigest).digest('hex') === hashDigest && writes.length === 0, writes.join(', '));
+
+    // Compatibility: a pre-O-4 seal that sealed NO findings still says so — that statement is true of it.
+    const legacyEmpty = { inspection: { address: '20 Test Ln' }, anomalies: [] };
+    stored = JSON.stringify(legacyEmpty); hash = createHash('sha256').update(stored).digest('hex');
+    const h5 = await (await route.GET(new Request(`https://x/api/reports/seal/${hash}`), { params: Promise.resolve({ hash }) })).text();
+    ok('older seal with an empty findings list: still "No confirmed findings in this seal" (true of that seal)',
+      h5.includes('No confirmed findings in this seal.') && !h5.includes('What this seal attests'));
+
+    // Neither shape: the page says it cannot read the seal — never "no findings".
+    const unknown = { inspection: { address: '22 Test Ln' }, something: 'else' };
+    stored = JSON.stringify(unknown); hash = createHash('sha256').update(stored).digest('hex');
+    const h6 = await (await route.GET(new Request(`https://x/api/reports/seal/${hash}`), { params: Promise.resolve({ hash }) })).text();
+    ok('unreadable seal payload: says so, and claims nothing about findings',
+      /contents could not be read/.test(h6) && !/No confirmed findings/.test(h6) && !/No defects logged/.test(h6));
   } catch (e) {
     ok('sealed route ran', false, String(e?.stack ?? e).split('\n').slice(0, 3).join(' | '));
   } finally { globalThis.fetch = realFetch; }

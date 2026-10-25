@@ -29,6 +29,7 @@
 // Do not reintroduce it — an id-addressable report is exactly the hole this route closes.
 import { NextRequest, NextResponse } from 'next/server';
 import { resolvePortalToken } from '../../../../lib/shareAccess';
+import { publishedFindings, publishedSpecs } from '../../../../lib/publishedRecord';
 
 export const runtime = 'nodejs';
 
@@ -86,7 +87,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
         for (const f of REPAIRS_FIELDS) out[f] = rec[f] ?? null;
         return NextResponse.json(out, { headers });
       }
-      return NextResponse.json({ ...rec, access: access.scope }, { headers });
+      // ── FINDINGS AND SPECS THROUGH THE PUBLISHED ALLOW-LIST (report integrity, 2026-10-24) ──
+      // The app used to publish each finding as a spread of the device row, so stored rows can still hold inspector
+      // notes, the dictation transcript, the unprinted second concern and AI confidence. Whatever is stored, only the
+      // homeowner-facing fields leave this server (lib/publishedRecord.ts — a byte-identical copy of the app's).
+      return NextResponse.json({ ...rec, anomalies: publishedFindings(rec.anomalies), specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
     }
 
     // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old
