@@ -57,6 +57,13 @@ export function normalizeFindingStatus(raw: unknown): FindingStatus {
   return 'proposed';
 }
 
+// A photo-only draft (`source = 'document_photo'`) that is not confirmed has NO priority yet (ledrix-app
+// cardDefinition.isPriorityUnset, 2026-10-26): its `severity` column holds a NOT NULL placeholder that no
+// inspector chose. Derived from synced columns, so this page reads it exactly as the phone does.
+export function isPriorityUnset(row: { source?: unknown; status?: unknown }): boolean {
+  return row.source === 'document_photo' && normalizeFindingStatus(row.status) !== 'confirmed';
+}
+
 // ─── Access ──────────────────────────────────────────────────────────────────
 
 export type Role = 'ledrix_admin' | 'owner' | 'admin' | 'manager' | 'office' | 'inspector';

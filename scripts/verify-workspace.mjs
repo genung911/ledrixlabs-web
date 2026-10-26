@@ -101,6 +101,14 @@ console.log('model');
 
   ok('legacy anomaly severity → deficiency', M.parseSeverity('anomaly') === 'deficiency');
 
+  // 2026-10-26 (ledrix-app cardDefinition.isPriorityUnset): an unconfirmed photo-only draft has no priority —
+  // its severity column is a placeholder. Derived from synced columns, the same answer as the phone.
+  ok('priority: an unconfirmed photo-only draft is NOT SET', M.isPriorityUnset({ source: 'document_photo', status: 'proposed' }) === true);
+  ok('priority: a confirmed photo-only finding is graded', M.isPriorityUnset({ source: 'document_photo', status: 'confirmed' }) === false
+    && M.isPriorityUnset({ source: 'document_photo', status: null }) === false);
+  ok('priority: a worded proposal keeps its stated priority', M.isPriorityUnset({ source: 'text_chat', status: 'proposed' }) === false);
+  ok('priority: the inspection page passes it to the pill', /<PriorityPill severity=\{r\.severity\} unset=\{isPriorityUnset\(r\)\} \/>/.test(read('app/app/inspections/[id]/page.tsx')));
+
   // 2026-10-21 (approved parity mockup): the Reports page and the sync line.
   const I = (id, status, extra = {}) => ({ id, status, inspector_id: null, assigned_inspector_id: null, updated_at: `2026-10-${10 + id.length}`, ...extra });
   const rl = M.buildReportsList(

@@ -80,7 +80,8 @@ export function PhasePill({ phase }: { phase: Phase }) {
   return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${tone}`}>{PHASE_LABEL[phase]}</span>;
 }
 
-export function PriorityPill({ severity }: { severity: unknown }) {
+export function PriorityPill({ severity, unset }: { severity: unknown; unset?: boolean }) {
+  if (unset) return <span className="inline-flex rounded-full bg-ground px-2 py-0.5 text-[11px] font-semibold text-muted">NOT SET</span>;
   const s = parseSeverity(severity);
   if (!s) return <span className="inline-flex rounded-full bg-ground px-2 py-0.5 text-[11px] font-semibold text-muted">UNRATED</span>;
   const c = SEVERITY_COLOR[s];
