@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.10.15.2",
+ "packVersion": "2026.10.26.1",
  "nodes": {
   "hvac_filter": {
    "requires": [
@@ -452,20 +452,6 @@
      "pellet"
     ]
    }
-  },
-  "kit_oven": {
-   "requires": [
-    {
-     "specNodeId": "kit_range",
-     "includes": [
-      "gas",
-      "dual fuel"
-     ]
-    },
-    {
-     "utility": "gas"
-    }
-   ]
   },
   "kit_dishwasher": {
    "requires": [
