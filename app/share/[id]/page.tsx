@@ -271,12 +271,6 @@ const REPORT_ICON: Record<string,string> = {
   'HVAC': '❄️', 'Fireplace': '🔥', 'Plumbing': '🚰', 'Electrical': '⚡', 'Kitchen': '🍽️',
   'Bathrooms': '🚿', 'Interior': '🛋️', 'Garage': '🚗', 'General': '📋',
 };
-// Scope statement keyed by the chosen SOP (synced as home_records.sop_mode).
-const SOP_SCOPE: Record<string,{ name: string; text: string }> = {
-  INTERNACHI: { name: 'the InterNACHI® Standards of Practice', text: 'a visual examination of the readily accessible systems and components of the home' },
-  ASHI:       { name: 'the ASHI® Standards of Practice',       text: 'a visual examination of the readily accessible installed systems and components of the home' },
-  CUSTOM:     { name: "the inspector's Standards of Practice",  text: 'a visual examination of the systems and components within the agreed scope of work' },
-};
 function reportSystem(a: Anomaly): string {
   // Trust the app's classification (`unit`) FIRST. The description often mentions
   // "insulation" about something else — refrigerant-line insulation on an AC unit,
@@ -2034,7 +2028,6 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
   const slug = (s: string) => 'rpt-' + s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const sub = [record.city, record.state, record.zip].filter(Boolean).join(', ');
-  const sop = SOP_SCOPE[(record.sop_mode ?? 'INTERNACHI').toUpperCase()] ?? SOP_SCOPE.INTERNACHI;
 
   // Path A: the Full Report is the app's REAL report HTML (the exact thing that becomes the PDF),
   // published to storage. Fetch it; if present, render the complete report + hide the reconstructed
@@ -2214,7 +2207,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
                   {record.inspection_type ? <span>{record.inspection_type}</span> : null}
                 </div>
                 <div style={{ borderTop: `2px solid ${C.accent}`, paddingTop: 14, color: '#4b5563', fontSize: 13.5, lineHeight: 1.65 }}>
-                  This inspection was performed in general accordance with <strong>{sop.name}</strong> — {sop.text}. It covered {sections.length > 0 ? <>the following system{sections.length !== 1 ? 's' : ''}: <strong>{sections.map(s => s.system).join(', ')}</strong></> : 'the home’s systems'}. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented. Conditions can change after the inspection date — download the full PDF for the complete report.
+                  This inspection was a visual examination of the readily accessible systems and components of the home. It covered {sections.length > 0 ? <>the following system{sections.length !== 1 ? 's' : ''}: <strong>{sections.map(s => s.system).join(', ')}</strong></> : 'the home’s systems'}. <strong>{anomalies.length}</strong> finding{anomalies.length !== 1 ? 's were' : ' was'} documented. Conditions can change after the inspection date — download the full PDF for the complete report.
                 </div>
               </section>
               {sections.length === 0 ? (
