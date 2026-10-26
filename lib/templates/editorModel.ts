@@ -152,6 +152,22 @@ export const ops = {
   fieldOther: (nodeId: string, a: ComponentAttribute, on: boolean): TemplateOp[] =>
     [{ op: 'setAttributeField', nodeId, attrId: a.id, field: 'allowTyped', value: on }],
   removeField: (nodeId: string, a: ComponentAttribute): TemplateOp[] => [{ op: 'removeAttribute', nodeId, attrId: a.id }],
+  /** When the item is inspected: a rule in the existing grammar (lib/templates/ruleModel.writeRule), or null for
+   *  "always". `whenUnknown` only means something with a rule, so clearing the rule clears it too. */
+  applicability: (node: TemplateNode, rule: unknown | null, whenUnknown: 'show' | 'hide' | null): TemplateOp[] => {
+    const x = node as TemplateNode & { appliesWhen?: unknown; whenUnknown?: unknown };
+    const out: TemplateOp[] = [setField(node.id, 'appliesWhen', rule)];
+    const wu = rule === null ? null : whenUnknown;
+    if ((x.whenUnknown ?? null) !== wu) out.push(setField(node.id, 'whenUnknown', wu));
+    return out;
+  },
+  /** What an item with a rule does before the rule's answer is recorded: 'hide' (not applicable until answered) or
+   *  absent (shown; the inspector decides — the runtime's default). */
+  whenUnknown: (nodeId: string, hide: boolean): TemplateOp[] => [setField(nodeId, 'whenUnknown', hide ? 'hide' : null)],
+  /** The item's company requirements, the whole list (lib/templates/requirementModel builds them; the contract judges
+   *  them on every edit). The ONLY writer of `requirements` in the website. It never writes the Ledrix default-set pin
+   *  or overrides. A template carrying any is not published (useDraft.publish). */
+  setRequirements: (nodeId: string, defs: readonly unknown[]): TemplateOp[] => [setField(nodeId, 'requirements', defs.length ? [...defs] : null)],
 };
 
 /** Ledrix's default coverage when a template switches no system on (ledrix-app inspectionOffering.ts). */

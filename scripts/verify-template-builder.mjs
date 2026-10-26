@@ -102,7 +102,7 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
 // ── 2. Executed ───────────────────────────────────────────────────────────────────────────────────────────
 // The builder modules, copied to a temp dir with explicit .ts import specifiers so Node can strip and load them.
 const BUILDER = ['access', 'draftStore', 'session', 'edit'];
-const DESKTOP = ['editorModel', 'assistant'];
+const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel'];
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
@@ -311,6 +311,67 @@ async function runDesktop(files) {
     r('coverage: a new system is covered, and adding it keeps the default systems covered',
       an.ok && E.isCovered(cn.tree, cn.tree.systems.find(s => s.label === 'Pools')) && E.isCovered(cn.tree, cn.tree.systems.find(s => s.id === 'roofing')));
     r('coverage: switching a system on makes it covered (defaultActive true, not merely "not false")', c2.ok && cd.tree.systems.find(s => s.id === 'hvac').defaultActive === true && E.isCovered(cd.tree, cd.tree.systems.find(s => s.id === 'hvac')));
+
+    // ── 2026-10-26 workspace: applicability rules and requirements, executed ──────────────────────────────────────
+    const RM = await import(pathToFileURL(join(dir, 'ruleModel.ts')).href);
+    const QM = await import(pathToFileURL(join(dir, 'requirementModel.ts')).href);
+    const TR = await import(pathToFileURL(join(dir, 'core/templateRules.ts')).href);
+    const TO = await import(pathToFileURL(join(dir, 'core/templateOps.ts')).href);
+    const WS = { id: 'tpl_ws', name: 'Workspace', version: 1, systems: [
+      { id: 'hvac', label: 'Heating', kind: 'system', children: [
+        { id: 'hvac__plant', label: 'Heating plant', kind: 'subsystem', children: [
+          { id: 'hvac_heating', label: 'Heating System', kind: 'component', condition: true, attributes: [{ id: 'fuel', label: 'Fuel Source', values: ['Gas', 'Oil', 'Electric'] }, { id: 'age', label: 'Age', values: ['0-5', '6-15'] }] },
+          { id: 'hvac_dataplate', label: 'Data Plate', kind: 'component', condition: false, attributes: [{ id: 'model', label: 'Model number', values: [] }] },
+          { id: 'hvac_flue', label: 'Flue', kind: 'component', condition: true },
+        ] },
+      ] },
+    ] };
+    let wd = T.createDraft({ companyId: 'co_1', templateId: 'tpl_ws', live: clone(WS), now: 1 });
+    const wstep = (o, now) => { const x = E.applyManual(wd, o, OWNER, now); if (x.ok) wd = x.draft; return x; };
+    const nodeOf = id => E.locate(wd.tree, id).node;
+    // rules: what the editor writes is exactly what inspections run
+    const one = RM.writeRule([{ field: 'hvac_heating::fuel', values: ['Gas'], typed: false }]);
+    const two = RM.writeRule([{ field: 'hvac_heating::fuel', values: ['Gas', 'Oil'], typed: true }, { field: 'hvac_heating::age', values: ['0-5'], typed: false }]);
+    r('rules: every rule the editor writes passes the runtime compiler and the op validator',
+      [one, two].every(x => TR.ruleShapeError(x) === null && TO.checkPredicate(x) === null) && RM.writeRule([]) === null
+      && RM.writeRule([{ field: 'hvac_heating::fuel', values: [], typed: false }]) === null);
+    r('rules: what is written reads back as the same conditions',
+      JSON.stringify(RM.readRule(two)) === JSON.stringify({ ok: true, conditions: [{ field: 'hvac_heating::fuel', values: ['Gas', 'Oil'], typed: true }, { field: 'hvac_heating::age', values: ['0-5'], typed: false }] })
+      && RM.readRule(undefined).ok && RM.readRule(undefined).conditions.length === 0);
+    r('rules: a shape the runtime cannot run is shown as unreadable, never rewritten',
+      RM.readRule({ any: [{ field: 'a::b', anyOf: ['x'] }, { field: 'c::d', anyOf: ['y'] }] }).ok === false && RM.readRule({ any: [{ all: [] }] }).ok === false);
+    r('rules: an item is never offered its own fields, and set-aside items are not offered',
+      RM.ruleFields(wd.tree, 'hvac_heating').every(f => f.nodeId !== 'hvac_heating') && RM.ruleFields(wd.tree).some(f => f.field === 'hvac_heating::fuel'));
+    const aw = wstep(E.ops.applicability(nodeOf('hvac_flue'), one, 'hide'), 10);
+    r('applicability: a rule and "hide until answered" reach the draft through one manual change set',
+      aw.ok && JSON.stringify(nodeOf('hvac_flue').appliesWhen) === JSON.stringify(one) && nodeOf('hvac_flue').whenUnknown === 'hide');
+    const awClear = wstep(E.ops.applicability(nodeOf('hvac_flue'), null, 'hide'), 11);
+    r('applicability: removing the rule removes "hide until answered" with it', awClear.ok && nodeOf('hvac_flue').appliesWhen === undefined && nodeOf('hvac_flue').whenUnknown === undefined);
+    r('applicability: a rule on the item\'s own answer is refused, and the draft is unchanged',
+      (() => { const before = JSON.stringify(wd.tree); const x = E.applyManual(wd, E.ops.applicability(nodeOf('hvac_heating'), one, null), OWNER, 12); return !x.ok && JSON.stringify(wd.tree) === before; })());
+    // requirements: built over the shared contract, judged by it on every edit
+    const q1 = QM.newRequirement(wd.tree, nodeOf('hvac_heating'), 'Fuel recorded');
+    const qa = wstep(E.ops.setRequirements('hvac_heating', [q1]), 20);
+    r('requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it',
+      qa.ok && q1.origin === 'company' && /^rq_[a-z0-9_]+$/.test(q1.id) && q1.subject.nodeId === 'hvac_heating' && q1.unmet.exception === 'not_allowed'
+      && QM.requirementsOf(nodeOf('hvac_heating')).length === 1 && QM.requirementIssues(wd.tree).filter(i => i.severity === 'error').length === 0);
+    const q2 = QM.newRequirement(wd.tree, nodeOf('hvac_heating'), 'Fuel recorded');
+    r('requirements: ids stay unique across the template', q2.id !== q1.id);
+    const meth = QM.methodsFor(nodeOf('hvac_heating'));
+    const fuel = meth.find(m => m.label === 'Specification — Fuel Source'), photo = meth.find(m => m.clause.kind === 'evidence' && m.clause.media === 'photo');
+    const anyS = QM.writeSatisfy('any', [fuel.clause, photo.clause]), allS = QM.writeSatisfy('all', [fuel.clause, photo.clause]);
+    r('requirements: ANY is one group of alternatives, ALL is one group per method, and both read back',
+      anyS.all.length === 1 && anyS.all[0].any.length === 2 && allS.all.length === 2 && allS.all.every(g => g.any.length === 1)
+      && JSON.stringify(QM.readSatisfy({ ...q1, satisfy: anyS }, meth)) === JSON.stringify({ ok: true, mode: 'any', keys: [fuel.key, photo.key] })
+      && JSON.stringify(QM.readSatisfy({ ...q1, satisfy: allS }, meth)) === JSON.stringify({ ok: true, mode: 'all', keys: [fuel.key, photo.key] }));
+    r('requirements: an item that is not assessed is never offered a condition assessment',
+      !QM.methodsFor(nodeOf('hvac_dataplate')).some(m => m.clause.kind === 'assessment') && meth.some(m => m.clause.kind === 'assessment'));
+    const refusedIs = (defs) => { const before = JSON.stringify(wd.tree); const x = E.applyManual(wd, E.ops.setRequirements('hvac_heating', defs), OWNER, 30); return !x.ok && JSON.stringify(wd.tree) === before; };
+    r('requirements: the contract refuses an exception (not built), and the draft is unchanged', refusedIs([{ ...q1, unmet: { limitation: 'resolves', exception: 'allowed' } }]));
+    r('requirements: the contract refuses another item\'s records', refusedIs([{ ...q1, satisfy: { all: [{ any: [{ kind: 'fields', nodeId: 'hvac_dataplate', fields: [{ attr: 'model', key: 'hvac_dataplate::model', label: 'Model' }] }] }] } }]));
+    r('requirements: a draft carrying any is flagged for the publish refusal', QM.carriedRequirements(wd.tree).length === 1);
+    const qc = wstep(E.ops.setRequirements('hvac_heating', []), 40);
+    r('requirements: removing the last one removes the field, so the template publishes as before', qc.ok && nodeOf('hvac_heating').requirements === undefined && QM.carriedRequirements(wd.tree).length === 0);
   } catch (e) {
     r(`desktop scenario completed (${e?.message})`, false);
   }
@@ -409,8 +470,36 @@ const RULES = {
     const gate = hook.indexOf('const reqs = carriedRequirements(m0.core.tree);'), rpc = hook.indexOf('return publishDraft(');
     return (gate > 0 && rpc > gate && /if \(reqs\.length\) throw new TemplateApiError\('invalid', 'requirements_unsupported'/.test(hook)) ? [] : ['lib/templates/useDraft.ts'];
   },
-  'requirements: no desktop control writes requirements, the default-set pin or overrides yet': all =>
-    Object.entries(all).filter(([f, s]) => /^(components|app)\//.test(f) && /field: '(requirements|requirementDefaults|requirementOverrides)'|requirementOverrides|requirementDefaults|\.requirements\b/.test(strip(s))).map(([f]) => f),
+  // 2026-10-26 (owner authorization): requirements may be DRAFTED on items in the website — through one writer,
+  // editorModel ops.setRequirements, over the shared contract — and still never published (rule above). Nothing in
+  // the website writes the Ledrix default-set pin or its overrides.
+  'requirements: only editorModel.setRequirements writes them; nothing writes the default-set pin or overrides': all => {
+    const bad = Object.entries(all).filter(([f, s]) => /^(components|app)\//.test(f) && /field: '(requirements|requirementDefaults|requirementOverrides)'|requirementOverrides|requirementDefaults|\.requirements\b/.test(strip(s))).map(([f]) => f);
+    for (const [f, s] of Object.entries(all).filter(([f]) => f.startsWith('lib/templates/'))) {
+      const x = strip(s);
+      if (/field: '(requirementDefaults|requirementOverrides)'|'requirement(Defaults|Overrides)'\s*,\s*value/.test(x)) bad.push(f);
+      const writes = (x.match(/'requirements'/g) ?? []).length;
+      if (f === 'lib/templates/editorModel.ts' ? !(writes === 1 && /setRequirements: \(nodeId: string, defs: readonly unknown\[\]\): TemplateOp\[\] => \[setField\(nodeId, 'requirements', /.test(x)) : writes > 0) bad.push(f);
+    }
+    return bad;
+  },
+  'requirements: the Publish button is disabled with the reason while the draft carries them': all => {
+    const e = strip(all[EDIT] ?? '');
+    return (/const reqs = carriedRequirements\(tree\);/.test(e) && /: reqs\.length \? `Not publishable yet — inspections can’t use requirements yet/.test(e)
+      && /const canPublish = !publishBlock && /.test(e) && /disabled=\{!canPublish\} title=\{publishBlock \?\? undefined\}/.test(e)) ? [] : [EDIT];
+  },
+  // 2026-10-26: the six sections each render a real view of the draft (no dead navigation), and the inspector preview
+  // renders the draft tree itself.
+  'workspace: every section in the rail renders its view': all => {
+    const e = strip(all[EDIT] ?? '');
+    const ids = ['overview', 'buildings', 'systems', 'requirements', 'report', 'review'];
+    return ids.every(id => new RegExp(`\\{ id: '${id}', label: `).test(e) && new RegExp(`section === '${id}' \\? 'flex'|section === '${id}' && `).test(e)) ? [] : [EDIT];
+  },
+  'workspace: the inspector preview renders the draft tree': all => /<PhonePreview tree=\{tree\} selection=\{sel\}/.test(strip(all[EDIT] ?? '')) ? [] : [EDIT],
+  'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': all => {
+    const r = strip(all['components/templates/RuleEditor.tsx'] ?? '');
+    return /const next = writeRule\(conds\);/.test(r) && /onSave\(next\)/.test(r) && !/appliesWhen/.test(r) ? [] : ['components/templates/RuleEditor.tsx'];
+  },
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': all => {
     const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), edit = strip(all[EDIT] ?? '');
     const gate = hook.indexOf("validateStructureTypes(m0.core.tree).find(i => i.severity === 'error')"), rpc = hook.indexOf('return publishDraft(');
@@ -452,16 +541,28 @@ const MUT = {
   'editor: an item is never added where inspectors cannot see it': rep('components/templates/EditorParts.tsx', "const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;", 'const homes = groups;'),
   'editor: a duplicate choice is reported, not silently dropped': rep('components/templates/ui.tsx', 'if (dup) { setNote(', 'if (dup) { void ('),
   'requirements: publishing refuses a template that carries them — in the hook, before the RPC': rep('lib/templates/useDraft.ts', "if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported'", "if (false) throw new TemplateApiError('invalid', 'requirements_unsupported'"),
-  'requirements: no desktop control writes requirements, the default-set pin or overrides yet': add('components/templates/EditorParts.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requirements', value: [] };"),
+  'requirements: only editorModel.setRequirements writes them; nothing writes the default-set pin or overrides': add('components/templates/EditorParts.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requirements', value: [] };"),
+  'requirements: the Publish button is disabled with the reason while the draft carries them': rep(EDIT, ': reqs.length ? `Not publishable yet', ': false ? `Not publishable yet'),
+  'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
+  'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
+  'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
+const MUT2 = {
+  'requirements: only editorModel.setRequirements writes them; nothing writes the default-set pin or overrides': add('lib/templates/requirementModel.ts', "\nexport const pin = [{ op: 'setTemplateField', field: 'requirementDefaults', value: 'ledrix-r1' }];"),
+};
+for (const [name, mutate] of Object.entries(MUT2)) ok(`mutation caught: ${name} (lib)`, RULES[name](mutate(all)).length > 0);
 for (const [name, mutate] of Object.entries(MUT)) {
   const rule = RULES[name];
   if (!rule) { ok(`mutation has a rule: ${name}`, false); continue; }
   ok(`mutation caught: ${name}`, rule(mutate(all)).length > 0);
 }
 const EXEC_MUT = [
+  { name: 'a typed answer is nested as an all inside any', file: 'ruleModel.ts', from: "return leaves.length === 1 ? leaves[0] : { any: leaves };", to: "return leaves.length === 1 ? leaves[0] : { any: [{ all: leaves }] };", check: 'rules: every rule the editor writes passes the runtime compiler and the op validator', run: runDesktop },
+  { name: 'ALL is written as one group of alternatives', file: 'requirementModel.ts', from: "return mode === 'any' || clauses.length <= 1 ?", to: "return true ?", check: 'requirements: ANY is one group of alternatives, ALL is one group per method, and both read back', run: runDesktop },
+  { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
+  { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },
   { name: 'the draft shares the live template object', file: 'core/templateDraft.ts', from: 'tree: clone(args.live)', to: 'tree: args.live', check: 'draft: a new draft is a COPY of the live template', run: runDesktop },

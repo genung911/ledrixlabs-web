@@ -1,6 +1,7 @@
 'use client';
 
-// The template editor's hand-editing parts: the systems column, a system's items, and an item's details.
+// The template editor's hand-editing parts: a system's details and items, a component's Details and Fields tabs,
+// and the "add a system, group or item" form the tree uses.
 // Every change is a list of template operations (lib/templates/editorModel `ops`), applied through `onOps`, so a
 // direct edit takes the same validated, undoable path as an accepted Ledrix proposal. Text commits on blur or
 // Enter — one change per edit, not one per keystroke.
@@ -14,7 +15,7 @@ type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
 
 /** A text input that commits on blur / Enter, and follows outside changes when not being edited. */
-function CommitInput({ value, onCommit, multiline, ariaLabel, placeholder, className = '', disabled }: {
+export function CommitInput({ value, onCommit, multiline, ariaLabel, placeholder, className = '', disabled }: {
   value: string; onCommit: (v: string) => void; multiline?: boolean; ariaLabel: string; placeholder?: string; className?: string; disabled?: boolean;
 }) {
   const [v, setV] = useState(value);
@@ -28,81 +29,115 @@ function CommitInput({ value, onCommit, multiline, ariaLabel, placeholder, class
     : <input {...common} className={`${field} ${className}`} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(value); (e.target as HTMLInputElement).blur(); } }} />;
 }
 
-const Arrow = ({ dir }: { dir: 'up' | 'down' }) => (
+export const Arrow = ({ dir }: { dir: 'up' | 'down' }) => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{dir === 'up' ? <path d="M6 15l6-6 6 6" /> : <path d="M6 9l6 6 6-6" />}</svg>
 );
 
-// ── systems ────────────────────────────────────────────────────────────────────────────────────────────────
+// ── where an item can live ───────────────────────────────────────────────────────────────────────────────────
+// WHERE AN ITEM CAN LIVE (2026-10-25). The app gives a system with groups one card per GROUP (ledrix-app ScopeScreen
+// `tileNodesOf`, mirrored by the preview's tilesOf): an item placed directly under such a system has no card, so no
+// inspector ever sees it. So on a system with groups an ITEM is added inside a group (the first, by default); a
+// GROUP can still be added at the top. A system without groups keeps "in <system>".
 
-export function SystemsColumn({ tree, sel, onSelect, onOps, disabled }: { tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; disabled: boolean }) {
-  const [adding, setAdding] = useState('');
-  const covered = tree.systems.filter(s => isCovered(tree, s)).length;
+/** The places a new item of `kind` may be added in `system`. */
+export function homesFor(system: TemplateNode, kind: 'component' | 'subsystem'): TemplateNode[] {
+  const rows = flatItems(system);
+  const groups = [system, ...rows.map(r => r.node).filter(n => n.kind !== 'component' && !n.pointsTo)];
+  const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
+  const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;
+  return homes;
+}
+
+/** An item directly under a system that has groups: the app gives it no card, so inspectors never see it. */
+export function notShownToInspectors(system: TemplateNode, node: TemplateNode, parentId: string): boolean {
+  const group = node.kind !== 'component';
+  const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
+  const unseen = !group && parentId === system.id && hasGroups;
+  return unseen;
+}
+
+export const UnseenPill = () => (
+  <span title="This system has groups, and inspectors only see items inside a group. Set this item aside and add it inside a group."><Pill tone="warn">Not shown to inspectors</Pill></span>
+);
+
+/** Add a system, or a group or item inside a system — the one structured way to add to the template. */
+export function AddToTemplate({ tree, systemId, onOps, disabled, onAdded }: {
+  tree: InspectionTemplate; systemId: string | null; onOps: OnOps; disabled: boolean; onAdded?: (sel: Sel) => void;
+}) {
+  const [what, setWhat] = useState<'system' | 'component' | 'subsystem'>(systemId ? 'component' : 'system');
+  const [sys, setSys] = useState<string>(systemId ?? tree.systems[0]?.id ?? '');
+  const [name, setName] = useState('');
+  useEffect(() => { if (systemId) setSys(systemId); }, [systemId]);
+  const system = tree.systems.find(s => s.id === sys) ?? null;
+  const homes = what !== 'system' && system ? homesFor(system, what) : [];
+  const [parent, setParent] = useState('');
+  useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? ''); }, [sys, what, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const submit = () => {
+    const v = name.trim(); if (!v) return;
+    if (what === 'system') {
+      const o = ops.addSystem(tree, v);
+      if (onOps(o)) { setName(''); onAdded?.({ systemId: (o[o.length - 1] as { node: { id: string } }).node.id, nodeId: null }); }
+      return;
+    }
+    if (!system || !parent) return;
+    const o = ops.addItem(tree, system.id, parent, v, what);
+    if (onOps(o)) { setName(''); const id = (o[0] as { node: { id: string } }).node.id; onAdded?.({ systemId: system.id, nodeId: id }); }
+  };
   return (
-    <section aria-label="Systems" className="flex min-h-0 flex-col rounded-xl border border-hairline bg-surface">
-      <header className="flex items-center justify-between border-b border-hairline px-3 py-2.5">
-        <h2 className="text-sm font-semibold text-ink">Systems</h2>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Covered</span>
-      </header>
-      <ul className="min-h-0 flex-1 overflow-y-auto py-1">
-        {tree.systems.map((s, i) => {
-          const on = sel.systemId === s.id;
-          return (
-            <li key={s.id} className={`group flex items-center gap-1 px-1.5 ${on ? 'bg-accent/10' : ''}`}>
-              <div className="flex flex-col opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                <button aria-label={`Move ${s.label} up`} disabled={disabled || i === 0} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i - 1))}><Arrow dir="up" /></button>
-                <button aria-label={`Move ${s.label} down`} disabled={disabled || i === tree.systems.length - 1} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i + 1))}><Arrow dir="down" /></button>
-              </div>
-              <button onClick={() => onSelect({ systemId: s.id, nodeId: null })} aria-current={on ? 'true' : undefined}
-                className={`min-w-0 flex-1 truncate py-2 text-left text-sm ${on ? 'font-semibold text-accent-ink' : !isCovered(tree, s) ? 'text-muted' : 'text-ink'}`}>{s.label}</button>
-              <Toggle on={isCovered(tree, s)} disabled={disabled} label={`${s.label} is covered when an inspection starts`} onChange={v => onOps(ops.coverByDefault(tree, s.id, v))} />
-              <Menu label={`More for ${s.label}`} items={[{ label: 'Set aside', disabled: disabled && 'The draft can’t change right now.', onSelect: () => onOps(ops.setAside(s.id)) }]} />
-            </li>
-          );
-        })}
-        {!tree.systems.length && <li className="px-3 py-4 text-xs text-muted">No systems yet. Add the first one below.</li>}
-      </ul>
-      {!!tree.trimmedSystems?.length && (
-        <details className="border-t border-hairline px-3 py-2 text-xs">
-          <summary className="cursor-pointer text-muted">Set aside ({tree.trimmedSystems.length})</summary>
-          <ul className="mt-1 space-y-1">{tree.trimmedSystems.map(s => (
-            <li key={s.id} className="flex items-center justify-between gap-2"><span className="truncate text-body">{s.label}</span>
-              <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => onOps(ops.restore(s.id))}>Restore</button></li>))}</ul>
-        </details>
+    <form aria-label="Add to the template" className="space-y-1.5" onSubmit={e => { e.preventDefault(); submit(); }}>
+      <div className="flex gap-1.5">
+        <select aria-label="What to add" value={what} onChange={e => setWhat(e.target.value as typeof what)} disabled={disabled} className={`${field} w-auto py-1.5`}>
+          <option value="system">System</option><option value="component" disabled={!tree.systems.length}>Item</option><option value="subsystem" disabled={!tree.systems.length}>Group</option>
+        </select>
+        <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label="Name of what to add"
+          placeholder={what === 'system' ? 'System name' : what === 'component' ? 'Item name' : 'Group name'} className={`${field} min-w-0 py-1.5`} />
+      </div>
+      {what !== 'system' && (
+        <div className="flex gap-1.5">
+          <select aria-label="In system" value={sys} onChange={e => setSys(e.target.value)} disabled={disabled} className={`${field} min-w-0 py-1.5`}>
+            {tree.systems.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select aria-label="Inside" value={parent} onChange={e => setParent(e.target.value)} disabled={disabled} className={`${field} min-w-0 py-1.5`}>
+            {homes.map(g => <option key={g.id} value={g.id}>{`in ${g.label}`}</option>)}
+          </select>
+        </div>
       )}
-      <form className="flex gap-1.5 border-t border-hairline p-2" onSubmit={e => { e.preventDefault(); if (adding.trim() && onOps(ops.addSystem(tree, adding))) setAdding(''); }}>
-        <input value={adding} onChange={e => setAdding(e.target.value)} placeholder="Add system" aria-label="New system name" disabled={disabled} className={`${field} py-1.5`} />
-        <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !adding.trim()}>Add</button>
-      </form>
-      <p className="border-t border-hairline px-3 py-2 text-[11px] text-muted">{covered} of {tree.systems.length} covered when an inspection starts</p>
-    </section>
+      <button className={`${btn.secondary} w-full py-1.5`} disabled={disabled || !name.trim() || (what !== 'system' && !parent)}>Add {what === 'system' ? 'system' : what === 'component' ? 'item' : 'group'}</button>
+    </form>
   );
 }
 
-// ── a system's items ───────────────────────────────────────────────────────────────────────────────────────
+// ── a system: details and its items ─────────────────────────────────────────────────────────────────────────
 
 export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean;
 }) {
   const rows = flatItems(system);
-  const groups = [system, ...rows.map(r => r.node).filter(n => n.kind !== 'component' && !n.pointsTo)];
-  // WHERE AN ITEM CAN LIVE (2026-10-25). The app gives a system with groups one card per GROUP (ledrix-app ScopeScreen
-  // `tileNodesOf`, mirrored by the preview's tilesOf): an item placed directly under such a system has no card, so no
-  // inspector ever sees it. So on a system with groups an ITEM is added inside a group (the first, by default); a
-  // GROUP can still be added at the top. A system without groups keeps "in <system>".
   const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
   const [kind, setKind] = useState<'component' | 'subsystem'>('component');
-  const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;
+  const homes = homesFor(system, kind);
   const [parent, setParent] = useState(homes[0]?.id ?? system.id);
   const [name, setName] = useState('');
   useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
   const setAside = rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))).concat((system.trimmed ?? []).map(t => ({ t, under: system.label })));
+  const covered = isCovered(tree, system);
 
   return (
     <div className="space-y-5 px-4 py-4">
       <div className="space-y-2">
+        <label className={label}>Name</label>
         <CommitInput value={system.label} ariaLabel="System name" disabled={disabled} onCommit={v => onOps(ops.rename(system.id, v))} className="text-base font-semibold" />
+        <label className={label + ' pt-2'}>Guidance</label>
         <CommitInput value={system.description ?? ''} multiline ariaLabel="System guidance" placeholder="Guidance inspectors see for this system (optional)" disabled={disabled}
           onCommit={v => onOps(ops.describe(system.id, v))} />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-hairline px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ink">Covered when an inspection starts</p>
+          <p className="text-xs text-muted">{covered ? 'New inspections include this system.' : 'Off — inspectors can still add it during an inspection.'}</p>
+        </div>
+        <Toggle on={covered} disabled={disabled} label={`${system.label} is covered when an inspection starts`} onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />
       </div>
 
       <div>
@@ -115,7 +150,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
             const siblings = (locate(tree, parentId)?.node ?? system).children ?? [];
             const idx = siblings.findIndex(c => c.id === node.id);
             const group = node.kind !== 'component';
-            const unseen = !group && parentId === system.id && hasGroups;   // no card in the app — see `homes` above
+            const unseen = !group && parentId === system.id && hasGroups;   // no card in the app — see homesFor above
             return (
               <li key={node.id} className={`group flex items-center gap-2 py-2 pr-2 ${on ? 'bg-accent/10' : group ? 'bg-ground' : ''}`} style={{ paddingLeft: 12 + depth * 18 }}>
                 <div className="flex flex-col opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -125,7 +160,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
                 <button className="min-w-0 flex-1 text-left" onClick={() => { onSelect({ systemId: system.id, nodeId: node.id }); if (!group) onOpen(node.id); }}>
                   <p className={`truncate text-sm ${group ? 'font-semibold uppercase tracking-wide text-muted text-xs' : 'font-medium text-ink'}`}>{node.label}</p>
                   {!group && <p className="truncate text-xs text-muted">{itemSummary(node)}</p>}
-                  {unseen && <span title="This system has groups, and inspectors only see items inside a group. Set this item aside and add it inside a group."><Pill tone="warn">Not shown to inspectors</Pill></span>}
+                  {unseen && <UnseenPill />}
                 </button>
                 {!group && <button aria-label={`Edit ${node.label}`} className={btn.icon} onClick={() => { onSelect({ systemId: system.id, nodeId: node.id }); onOpen(node.id); }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg></button>}
@@ -158,71 +193,113 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
               <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => onOps(ops.restore(t.id))}>Restore</button></li>))}</ul>
         </details>
       )}
+
+      <div className="border-t border-hairline pt-4">
+        <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(system.id))}>Set this system aside</button>
+        <p className="mt-1 text-[11px] text-muted">Set-aside systems leave the template but can be restored from the tree.</p>
+      </div>
     </div>
   );
 }
 
-// ── an item's details (slide-over) ─────────────────────────────────────────────────────────────────────────
+// ── a group: name, guidance and its items ──────────────────────────────────────────────────────────────────
 
-export function ItemDrawer({ node, path, onOps, onClose, disabled }: { node: TemplateNode; path: string; onOps: OnOps; onClose: () => void; disabled: boolean }) {
+export function GroupDetails({ node, onOps, onOpen, disabled }: { node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean }) {
+  return (
+    <div className="space-y-5 px-4 py-4">
+      <div>
+        <label className={label}>Group name</label>
+        <CommitInput value={node.label} ariaLabel="Group name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
+      </div>
+      <div>
+        <label className={label}>Guidance</label>
+        <CommitInput value={node.description ?? ''} multiline ariaLabel="Group guidance" placeholder="Shown to inspectors on this group (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+      </div>
+      <div>
+        <p className={label}>Items in this group</p>
+        <ul className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+          {(node.children ?? []).map(c => (
+            <li key={c.id}><button className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-ink/5" onClick={() => onOpen(c.id)}>
+              <span className="min-w-0"><span className="block truncate text-sm font-medium text-ink">{c.label}</span><span className="block truncate text-xs text-muted">{itemSummary(c)}</span></span>
+              <span aria-hidden className="text-muted">›</span></button></li>
+          ))}
+          {!node.children?.length && <li className="px-3 py-3 text-xs text-muted">No items yet. Add one from the tree.</li>}
+        </ul>
+      </div>
+      <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>
+    </div>
+  );
+}
+
+// ── a component: Details tab ────────────────────────────────────────────────────────────────────────────────
+
+export function ComponentDetails({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
   const shortcuts = ((node as TemplateNode & { findingShortcuts?: FindingShortcut[] }).findingShortcuts ?? []).map(s => s.label);
+  return (
+    <div className="space-y-5 px-4 py-4">
+      {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">This row shows an item recorded in another section. Edit it there.</p>}
+      <div>
+        <label className={label}>Name</label>
+        <CommitInput value={node.label} ariaLabel="Item name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
+      </div>
+      <div>
+        <label className={label}>Guidance</label>
+        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at and record" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+      </div>
+
+      <div className="rounded-xl border border-hairline px-3 py-3">
+        <div className="flex items-center justify-between"><p className="text-sm font-semibold text-ink">Condition assessment</p>
+          <Toggle on={assessesCondition(node)} disabled={disabled} label="Inspectors assess its condition" onChange={v => onOps(ops.assessed(node.id, v))} /></div>
+        <p className="mt-1.5 text-xs text-body">{assessesCondition(node) ? 'Inspectors answer Satisfactory, Limitation or Finding.' : 'Not assessed — inspectors only record what it is.'}</p>
+      </div>
+
+      {assessesCondition(node) && (
+        <div>
+          <p className={label}>Limitation reasons</p>
+          <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by roof covering"
+            onChange={v => onOps(ops.limitations(node.id, v))} />
+          <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation; the app’s general reasons follow. An item that can’t be reached is recorded this way — as a limitation.</p>
+        </div>
+      )}
+      {assessesCondition(node) && (
+        <div>
+          <p className={label}>Finding shortcuts</p>
+          <ChipList values={shortcuts} disabled={disabled} addLabel="Add finding shortcut" placeholder="e.g. Missing kick-out flashing"
+            onChange={v => onOps(ops.findingShortcuts(node, v, Date.now()))} />
+          <p className="mt-1 text-[11px] text-muted">Saved with the template and shown in the preview. The Ledrix app doesn’t read template shortcuts yet — inspectors see them after an app update.</p>
+        </div>
+      )}
+      <div className="border-t border-hairline pt-4">
+        <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this item aside</button>
+      </div>
+    </div>
+  );
+}
+
+// ── a component: Fields tab ─────────────────────────────────────────────────────────────────────────────────
+
+export function ComponentFields({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
   const [newField, setNewField] = useState('');
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-start justify-between gap-2 border-b border-hairline px-4 py-3">
-        <div className="min-w-0"><p className="truncate text-[11px] text-muted">{path}</p><h3 className="truncate text-base font-semibold text-ink">{node.label}</h3></div>
-        <button aria-label="Close item" className={btn.icon} onClick={onClose}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
-      </header>
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
-        {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">This row shows an item recorded in another section. Edit it there.</p>}
-        <div>
-          <label className={label}>Name</label>
-          <CommitInput value={node.label} ariaLabel="Item name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
+    <div className="space-y-5 px-4 py-4">
+      <div>
+        <p className={label}>Spec fields</p>
+        <div className="space-y-3">
+          {(node.attributes ?? []).map(a => <AttrEditor key={a.id} node={node} a={a} onOps={onOps} disabled={disabled} />)}
+          {!node.attributes?.length && <p className="text-xs text-muted">No spec fields. Spec fields describe what the thing is (type, material, age) — never a grade.</p>}
         </div>
-        <div>
-          <label className={label}>Guidance</label>
-          <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at and record" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between"><p className={label + ' mb-0'}>Condition</p>
-            <Toggle on={assessesCondition(node)} disabled={disabled} label="Inspectors assess its condition" onChange={v => onOps(ops.assessed(node.id, v))} /></div>
-          <p className="mt-1.5 text-xs text-body">{assessesCondition(node) ? 'Inspectors answer Satisfactory, Limitation or Finding.' : 'Not assessed — inspectors only record what it is.'}</p>
-        </div>
-
-        <div>
-          <p className={label}>Spec fields</p>
-          <div className="space-y-3">
-            {(node.attributes ?? []).map(a => <AttrEditor key={a.id} node={node} a={a} onOps={onOps} disabled={disabled} />)}
-            {!node.attributes?.length && <p className="text-xs text-muted">No spec fields. Spec fields describe what the thing is (type, material, age) — never a grade.</p>}
-          </div>
-          <form className="mt-2 flex gap-1.5" onSubmit={e => { e.preventDefault(); if (newField.trim() && onOps(ops.addField(node, newField, [], false))) setNewField(''); }}>
-            <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Add spec field, e.g. Material" aria-label="New spec field" disabled={disabled} className={`${field} py-1.5`} />
-            <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !newField.trim()}>Add</button>
-          </form>
-        </div>
-
-        {assessesCondition(node) && (
-          <div>
-            <p className={label}>Limitation reasons</p>
-            <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by roof covering"
-              onChange={v => onOps(ops.limitations(node.id, v))} />
-            <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation; the app’s general reasons follow.</p>
-          </div>
-        )}
-        {assessesCondition(node) && (
-          <div>
-            <p className={label}>Finding shortcuts</p>
-            <ChipList values={shortcuts} disabled={disabled} addLabel="Add finding shortcut" placeholder="e.g. Missing kick-out flashing"
-              onChange={v => onOps(ops.findingShortcuts(node, v, Date.now()))} />
-            <p className="mt-1 text-[11px] text-muted">Saved with the template and shown in this preview. The Ledrix app doesn’t read template shortcuts yet — inspectors see them after an app update.</p>
-          </div>
-        )}
-        <div className="rounded-lg bg-ground px-3 py-2 text-[11px] text-muted">
-          Required photos and required checkpoints aren’t part of templates yet — they wait on the default-obligations decision.
-        </div>
+        <form className="mt-2 flex gap-1.5" onSubmit={e => { e.preventDefault(); if (newField.trim() && onOps(ops.addField(node, newField, [], false))) setNewField(''); }}>
+          <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Add spec field, e.g. Material" aria-label="New spec field" disabled={disabled} className={`${field} py-1.5`} />
+          <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !newField.trim()}>Add</button>
+        </form>
       </div>
+      {!!node.method?.length && (
+        <div>
+          <p className={label}>Method of inspection</p>
+          <div className="flex flex-wrap gap-1.5">{node.method.map(m => <Pill key={m}>{m}</Pill>)}</div>
+          <p className="mt-1 text-[11px] text-muted">The ways inspectors can say how this was inspected. They print as disclosures in the report. Set by Ledrix; not editable here.</p>
+        </div>
+      )}
     </div>
   );
 }

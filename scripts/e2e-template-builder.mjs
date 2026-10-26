@@ -16,6 +16,7 @@
 // THE WORKFLOW (owner): template list → duplicate → edit (rename an item, add a spec choice, add an item, reorder,
 // condition switch) → autosave → undo from Draft changes → reload (persistence) → phone preview reflects the draft →
 // a refused invalid edit → building types → publish → the published row equals the draft → list shows it live;
+// → the six sections, tree search, an applicability rule, a drafted requirement (Publish disabled while it exists);
 // plus: a concurrent save is refused (conflict banner), publishing a template carrying requirements is refused,
 // an admin cannot publish, rename and delete go to the server.
 // The published tree is written to E2E_OUT (default: a temp file) for the app-side pull → snapshot check.
@@ -227,12 +228,14 @@ try {
 
   // ── 3 · edits ──
   step = '3'; console.log('\n3 · edits through the real controls\n');
-  await page.getByRole('region', { name: 'Systems' }).getByRole('button', { name: 'HEATING', exact: true }).click();
+  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Furnace Flue / Venting' }).click();
   if (process.env.E2E_DEBUG) console.log('item name inputs:', JSON.stringify(await page.locator('[aria-label="Item name"]').evaluateAll(els => els.map(e => [e.value, e.closest('section,aside,div[class*="absolute"]')?.className.slice(0, 80)]))));
   const nameBox = page.getByLabel('Item name', { exact: true });
   await nameBox.fill('Flue / Vent Connector'); await nameBox.blur();
+  await page.getByRole('tab', { name: 'Fields', exact: true }).click();
   await page.getByLabel('Add choice to Flue / Venting').fill('Stainless Liner'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
+  await page.getByRole('tab', { name: 'Details', exact: true }).click();
   await page.getByRole('switch', { name: 'Inspectors assess its condition' }).click();
   await page.getByRole('button', { name: 'Close item' }).click();
   await page.getByLabel('New item name').fill('E2E Draft Hood'); await page.getByLabel('New item name').press('Enter');
@@ -269,13 +272,13 @@ try {
   tree = draftRow().template;
   const sib3 = ((function find(n) { if ((n.children ?? []).some(c => c.id === hood.id)) return n; for (const c of n.children ?? []) { const h = find(c); if (h) return h; } return null; })(tree.systems.find(s => s.id === 'heating'))).children;
   ok('4 · undoing the latest edit (the move) restores the previous order on the server', sib3.findIndex(c => c.id === hood.id) === idx0, `${sib3.findIndex(c => c.id === hood.id)} vs ${idx0}`);
-  await page.getByRole('tab', { name: 'Items', exact: true }).click();
+  await page.getByRole('tab', { name: 'Editor', exact: true }).click();
 
   // ── 5 · reload: persistence ──
   step = '5'; console.log('\n5 · persistence across a reload\n');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await waitFor(async () => (await page.getByRole('region', { name: 'Systems' }).count()) > 0, 60000);
-  await page.getByRole('region', { name: 'Systems' }).getByRole('button', { name: 'HEATING', exact: true }).click();
+  await waitFor(async () => (await page.getByRole('region', { name: 'Systems and components' }).count()) > 0, 60000);
+  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
   ok('5 · after a reload the editor shows the saved draft (renamed item, added item)',
     await waitFor(async () => (await page.getByRole('button', { name: 'Edit Flue / Vent Connector' }).count()) > 0 && (await page.getByRole('button', { name: 'Edit E2E Draft Hood' }).count()) > 0));
 
@@ -293,12 +296,15 @@ try {
 
   // ── 7 · a refused invalid edit ──
   step = '7'; console.log('\n7 · validation\n');
+  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Flue / Vent Connector' }).click();
   const before = JSON.stringify(draftRow().template);
+  await page.getByRole('tab', { name: 'Fields', exact: true }).click();
   await page.getByLabel('Add choice to Flue / Venting').fill('Metal B-Vent'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
   ok('7 · a duplicate choice is not added, the editor says it is already listed, and nothing is saved',
     await waitFor(async () => (await page.getByText(/already listed/i).count()) > 0, 5000) && (await sleep(1800), JSON.stringify(draftRow().template) === before));
   // an item cannot lose its name: clearing it puts the saved name back, and nothing is saved
+  await page.getByRole('tab', { name: 'Details', exact: true }).click();
   const nb = page.getByLabel('Item name', { exact: true });
   await nb.fill(''); await nb.blur();
   ok('7 · clearing an item\'s name restores the saved name, and nothing is saved',
@@ -307,11 +313,74 @@ try {
 
   // ── 8 · building types ──
   step = '8'; console.log('\n8 · building types\n');
-  await page.getByRole('tab', { name: 'Building types' }).click();
+  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Building Types' }).click();
   await page.getByRole('button', { name: 'Customize building types' }).click();
   await sleep(1500); await saved();
   ok('8 · customizing building types saves them into the draft', Array.isArray(draftRow().template.structureTypes) && draftRow().template.structureTypes.length >= 4);
-  await page.getByRole('tab', { name: 'Systems & items' }).click();
+  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Systems & Components' }).click();
+
+  // ── 8b · the workspace: sections, search, applicability, requirements ──
+  step = '8b'; console.log('\n8b · workspace sections, search, applicability, requirements\n');
+  const nav = page.getByRole('navigation', { name: 'Template sections' });
+  for (const [btnName, heading] of [['Overview', 'Copy of Standard'], ['Requirements', 'Requirements'], ['Report Content', 'Report content'], ['Review & Publish', 'Review & publish']]) {
+    await nav.getByRole('button', { name: btnName }).click();
+    ok(`8b · the ${btnName} section opens its view`, await waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByRole('heading', { name: heading, exact: true }).count()) > 0, 10000)
+      && (await nav.getByRole('button', { name: btnName }).getAttribute('aria-current')) === 'page');
+  }
+  ok('8b · Overview counts come from the draft (items in the template)', await (async () => {
+    await nav.getByRole('button', { name: 'Overview' }).click();
+    const items = (function count(n) { return (n.kind === 'component' ? 1 : 0) + (n.children ?? []).reduce((a, c) => a + count(c), 0); })({ children: draftRow().template.systems });
+    return waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByText(String(items), { exact: true }).count()) > 0, 5000);
+  })());
+  await nav.getByRole('button', { name: 'Systems & Components' }).click();
+  const tree8 = page.getByRole('region', { name: 'Systems and components' });
+  await tree8.getByLabel('Search systems and components').fill('draft hood');
+  ok('8b · search narrows the tree to matches (and opens their path)', await waitFor(async () => (await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).count()) === 1
+    && (await tree8.getByRole('button', { name: 'ROOFING', exact: true }).count()) === 0, 5000));
+  await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).click();
+  await tree8.getByLabel('Search systems and components').fill('');
+  ok('8b · selecting an item in the tree opens its workspace with the five tabs', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0, 5000)
+    && (await page.getByRole('tablist', { name: 'Component' }).getByRole('tab').count()) === 5);
+  // applicability: inspect the hood only when the heating fuel is a gas furnace
+  await page.getByRole('tab', { name: 'Applicability', exact: true }).click();
+  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add condition' }).first().click();
+  await page.getByLabel('Condition 1: spec field').selectOption('hvac_heating::fuel_source');
+  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Gas Furnace', exact: true }).click();
+  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Save rule' }).click();
+  await sleep(1500); await saved();
+  const hood8 = () => findByLabel(draftRow().template, 'E2E Draft Hood');
+  ok('8b · an applicability rule is saved in the runtime\'s shape', JSON.stringify(hood8()?.appliesWhen) === JSON.stringify({ field: 'hvac_heating::fuel_source', anyOf: ['Gas Furnace'] }), JSON.stringify(hood8()?.appliesWhen));
+  // requirements: drafted through the contract, never publishable
+  await page.getByRole('tab', { name: /^Requirements/ }).click();
+  await page.getByLabel('New requirement name').fill('Hood photographed');
+  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add requirement' }).click();
+  await sleep(1500); await saved();
+  const rq8 = () => hood8()?.requirements ?? [];
+  ok('8b · a requirement is drafted as a company requirement on its own item', rq8().length === 1 && rq8()[0].origin === 'company' && rq8()[0].subject?.nodeId === hood8()?.id && rq8()[0].unmet?.exception === 'not_allowed');
+  await page.getByLabel(/^Level$/).first().selectOption('recommended');
+  await sleep(1500); await saved();
+  ok('8b · changing its level is saved', rq8()[0]?.level === 'recommended', rq8()[0]?.level);
+  if (process.env.E2E_SHOTS) {                                       // screenshots for review, dark theme (no checks)
+    await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'dark'));
+    await sleep(400); await page.screenshot({ path: join(dirname(OUT), 'dark-requirements.png') }).catch(() => {});
+    await page.getByRole('tab', { name: 'Applicability', exact: true }).click(); await sleep(300);
+    await page.screenshot({ path: join(dirname(OUT), 'dark-applicability.png') }).catch(() => {});
+    await nav.getByRole('button', { name: 'Review & Publish' }).click(); await sleep(300);
+    await page.screenshot({ path: join(dirname(OUT), 'dark-review.png') }).catch(() => {});
+    await nav.getByRole('button', { name: 'Overview' }).click(); await sleep(300);
+    await page.screenshot({ path: join(dirname(OUT), 'dark-overview.png') }).catch(() => {});
+    await nav.getByRole('button', { name: 'Systems & Components' }).click();
+    await page.getByRole('tab', { name: /^Requirements/ }).click();
+    await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'light'));
+  }
+  ok('8b · while the draft carries a requirement, Publish is disabled and says why',
+    await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled() && (await page.getByText(/can.t use requirements yet/i).count()) > 0);
+  ok('8b · the completion card counts only what the item would owe, and says it is not used yet',
+    (await page.getByRole('region', { name: 'Completion logic for this item' }).getByText(/not evaluate these yet|don.t evaluate these yet/).count()) > 0);
+  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Remove requirement' }).click();
+  await sleep(1500); await saved();
+  ok('8b · removing it removes the field, and Publish is available again', hood8()?.requirements === undefined
+    && await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000));
 
   // ── 9 · publish ──
   step = '9'; console.log('\n9 · publish\n');
@@ -329,8 +398,8 @@ try {
   // ── 10 · concurrency: a stale save is refused ──
   step = '10'; console.log('\n10 · concurrency\n');
   await page.goto(`${BASE}/app/templates/${LIVE_ID}`, { waitUntil: 'domcontentloaded' });
-  await waitFor(async () => (await page.getByRole('region', { name: 'Systems' }).count()) > 0, 60000);
-  await page.getByRole('region', { name: 'Systems' }).getByRole('button', { name: 'ROOFING', exact: true }).click();
+  await waitFor(async () => (await page.getByRole('region', { name: 'Systems and components' }).count()) > 0, 60000);
+  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'ROOFING', exact: true }).click();
   await page.getByLabel('New item name').fill('E2E first edit'); await page.getByLabel('New item name').press('Enter');
   await saved();
   const live3 = db.company_template_drafts.find(d => d.template_id === LIVE_ID);
@@ -346,14 +415,30 @@ try {
   const rq = clone(d11.template); const n = findIn(rq, 'hvac_heating');
   n.requirements = [{ id: 'rq_e2e', origin: 'company', label: 'Fuel recorded', purposes: ['report_support'], level: 'required', subject: { nodeId: 'hvac_heating' },
     satisfy: { all: [{ any: [{ kind: 'finding' }] }] }, unmet: { limitation: 'resolves', exception: 'not_allowed' } }];
-  d11.template = rq; d11.row_version += 1;                           // written outside the UI (no control can add one)
+  d11.template = rq; d11.row_version += 1;                           // written outside the UI (a draft from elsewhere)
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitFor(async () => (await page.getByRole('button', { name: 'Publish', exact: true }).count()) > 0, 60000);
   const liveBefore = JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID));
-  await page.getByRole('button', { name: 'Publish', exact: true }).first().click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Publish', exact: true }).click();
-  ok('11 · publishing a template that carries requirements is refused with the reason; the live template is unchanged',
-    await waitFor(async () => (await page.getByText(/can.t use requirements yet/i).count()) > 0, 10000) && JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID)) === liveBefore);
+  ok('11 · a template that carries requirements can\'t be published: Publish is disabled with the reason, and the live template is unchanged',
+    await waitFor(async () => (await page.getByText(/can.t use requirements yet/i).count()) > 0, 10000)
+    && await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()
+    && (await page.getByRole('button', { name: 'Publish', exact: true }).first().click({ timeout: 1500 }).then(() => false, () => true))
+    && JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID)) === liveBefore);
+
+  // ── 11b · phone width ──
+  step = '11b'; console.log('\n11b · phone width\n');
+  await page.screenshot({ path: join(dirname(OUT), 'desktop.png') }).catch(() => {});
+  await page.setViewportSize({ width: 390, height: 844 });
+  await sleep(800);
+  ok('11b · at phone width the page has no sideways scroll and the section rail and tree are reachable',
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+    && await page.getByRole('navigation', { name: 'Template sections' }).isVisible()
+    && await page.getByRole('region', { name: 'Systems and components' }).isVisible(), await page.evaluate(() => `${document.documentElement.scrollWidth} > ${window.innerWidth}`));
+  await page.screenshot({ path: join(dirname(OUT), 'phone.png'), fullPage: true }).catch(() => {});
+  await page.getByRole('tab', { name: 'Inspector preview' }).click();
+  ok('11b · at phone width the inspector preview opens from its tab', await waitFor(async () => await page.getByLabel('Inspector preview of the Ledrix Inspect app').isVisible(), 5000));
+  await page.screenshot({ path: join(dirname(OUT), 'phone-preview.png'), fullPage: true }).catch(() => {});
+  await page.setViewportSize({ width: 1600, height: 1000 });
 
   // ── 12 · an admin cannot publish ──
   step = '12'; console.log('\n12 · roles\n');
