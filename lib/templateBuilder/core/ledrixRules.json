@@ -1,16 +1,15 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.10.26.1",
+ "packVersion": "2026.10.26.3",
  "nodes": {
   "hvac_filter": {
    "requires": [
     {
-     "specNodeId": "hvac_heating::fuel_source",
+     "specNodeId": "hvac_distribution",
      "includes": [
-      "gas",
-      "propane",
-      "electric",
-      "heat pump"
+      "forced air",
+      "fan coil",
+      "ductless"
      ]
     }
    ]
