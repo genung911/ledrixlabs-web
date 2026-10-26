@@ -15,7 +15,7 @@ const ROWS: { legacy: string; ledrix: string }[] = [
   },
   {
     legacy: 'One rigid checklist, whether the house needs it or not.',
-    ledrix: 'Scope adapts to the house — NACHI, ASHI, or a template you built.',
+    ledrix: 'Scope adapts to the house — and to the template your company built.',
   },
   {
     legacy: 'The report is the end of the relationship.',
