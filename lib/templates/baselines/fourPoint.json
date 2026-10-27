@@ -63,6 +63,34 @@
        "condition": false
       },
       {
+       "id": "hvac_backup_heat",
+       "label": "Backup Heat",
+       "kind": "component",
+       "keywords": [
+        "backup heat",
+        "emergency heat",
+        "em heat",
+        "aux heat",
+        "auxiliary heat",
+        "heat strips",
+        "electric strips",
+        "dual fuel"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Backup Heat",
+         "values": [
+          "Electric Strips",
+          "Gas Furnace (Dual Fuel)",
+          "None",
+          "Not Determined"
+         ]
+        }
+       ],
+       "condition": true
+      },
+      {
        "id": "hvac_flue",
        "label": "Furnace Flue / Venting",
        "kind": "component",

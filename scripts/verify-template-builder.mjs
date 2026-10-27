@@ -102,7 +102,7 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
 // ── 2. Executed ───────────────────────────────────────────────────────────────────────────────────────────
 // The builder modules, copied to a temp dir with explicit .ts import specifiers so Node can strip and load them.
 const BUILDER = ['access', 'draftStore', 'session', 'edit'];
-const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel', 'startingPoints'];
+const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel', 'startingPoints', 'publishFixes'];
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
@@ -401,6 +401,48 @@ async function runDesktop(files) {
       apply(E.ops.assessed('heating__vent', true), 7500);
       r('switches: any one on → it records something again', !E.recordsNothingHere(vn()));
     }
+    // ── "Also show in…" (2026-10-27): one record, linked into other systems ──────────────────────────────────────
+    {
+      const LT = { id: 'lk_1', name: 'Links', version: 1, systems: [
+        { id: 'heating', label: 'Heating', kind: 'system', children: [{ id: 'heating__tstat', label: 'Thermostat', kind: 'component', condition: true }] },
+        { id: 'cooling', label: 'Cooling', kind: 'system', children: [{ id: 'cooling__coil', label: 'Coil', kind: 'component', condition: true }] },
+      ] };
+      let ld = T.createDraft({ companyId: 'co_1', templateId: 'lk_1', live: clone(LT), now: 8000 });
+      const app = (o, t) => { const x = E.applyManual(ld, o, OWNER, t); if (x.ok) ld = x.draft; return x; };
+      const tstat = () => E.locate(ld.tree, 'heating__tstat').node;
+      const on = app(E.ops.showIn(ld.tree, tstat(), 'cooling'), 8100);
+      const links = E.linksOf(ld.tree, 'heating__tstat');
+      const ptr = links[0] && E.locate(ld.tree, links[0].pointerId);
+      r('show in: the item appears in the other system as a link — one record, no copy of its answers',
+        on.ok && links.length === 1 && links[0].systemId === 'cooling' && ptr?.system.id === 'cooling'
+        && ptr.node.pointsTo?.nodeId === 'heating__tstat' && ptr.node.attributes === undefined && ptr.node.condition === undefined);
+      const off = app(E.ops.unlink(links[0].pointerId), 8200);
+      r('show in: switching it off removes the link and leaves the item untouched',
+        off.ok && E.linksOf(ld.tree, 'heating__tstat').length === 0 && JSON.stringify(ld.tree.systems[0]) === JSON.stringify(LT.systems[0]));
+    }
+    // ── publish fixes: every blocker opens its exact place (2026-10-27) ──────────────────────────────────────────
+    {
+      const PF = await import(pathToFileURL(join(dir, 'publishFixes.ts')).href);
+      const VT = await import(pathToFileURL(join(dir, 'core', 'templateValidate.ts')).href);
+      const REQ = { id: 'rq_1', origin: 'company', level: 'recommended', subject: { nodeId: 'heating__tstat' }, satisfy: { all: [{ any: [{ kind: 'photo' }] }] }, unmet: { exception: 'not_allowed' } };
+      const FX = { id: 'fx_1', name: 'Fixes', version: 1, systems: [
+        { id: 'heating', label: 'Heating', kind: 'system', children: [
+          { id: 'heating__ctl', label: 'Controls', kind: 'subsystem', children: [{ id: 'heating__tstat', label: 'Thermostat', kind: 'component', condition: true, requirements: [REQ] }] },
+          { id: 'heating__loose', label: 'Loose', kind: 'component', condition: true },
+        ] },
+        { id: 'cooling', label: 'Cooling', kind: 'system', children: [{ id: 'cooling__coil', label: 'Coil', kind: 'component', condition: true, appliesWhen: { field: 'nope::x', anyOf: ['A'] } }] },
+      ] };
+      const fx = PF.publishFixes(FX, VT.validateTemplate(FX), { errors: [], warnings: [] });
+      const req = fx.find(f => f.key === 'req:heating__tstat'), rule = fx.find(f => f.go.nodeId === 'cooling__coil'), loose = fx.find(f => f.key === 'u:heating__loose');
+      r('publish fixes: a requirement opens its item on the Requirements tab, and blocks', !!req && req.blocks && req.go.section === 'systems' && req.go.systemId === 'heating' && req.go.tab === 'requirements');
+      r('publish fixes: a broken rule opens its item on the Applicability tab, and blocks', !!rule && rule.blocks && rule.go.systemId === 'cooling' && rule.go.tab === 'applicability');
+      r('publish fixes: an item inspectors won’t see opens it, and does not block', !!loose && !loose.blocks && loose.go.nodeId === 'heating__loose');
+      r('publish fixes: blockers come first', fx.findIndex(f => !f.blocks) > fx.findLastIndex(f => f.blocks));
+      let fd = T.createDraft({ companyId: 'co_1', templateId: 'fx_1', live: clone(FX), now: 9000 });
+      const q = E.applyManual(fd, req.quick.ops, OWNER, 9100); if (q.ok) fd = q.draft;
+      r('publish fixes: "Switch off (kept)" clears the blocker and keeps the requirement', q.ok && !PF.publishFixes(fd.tree, VT.validateTemplate(fd.tree), { errors: [], warnings: [] }).some(f => f.key.startsWith('req:'))
+        && E.locate(fd.tree, 'heating__tstat').node.parked?.requirements?.length === 1);
+    }
     // ── template creation: starting points (2026-10-27) ──────────────────────────────────────────────────────
     {
       const S = await import(pathToFileURL(join(dir, 'startingPoints.ts')).href);
@@ -627,6 +669,8 @@ const RULES = {
     for (const [f, s] of Object.entries(all).filter(([f]) => f.startsWith('lib/templates/'))) {
       const x = strip(s);
       if (/field: '(requirementDefaults|requirementOverrides)'|'requirement(Defaults|Overrides)'\s*,\s*value/.test(x)) bad.push(f);
+      // publishFixes names the Requirements section and tab ('requirements') and reads the lists; it writes nothing itself.
+      if (f === 'lib/templates/publishFixes.ts') { if (/setNodeField|setField\(|op: '/.test(x)) bad.push(f); continue; }
       const writes = (x.match(/'requirements'/g) ?? []).length;
       if (f === 'lib/templates/editorModel.ts' ? !(writes === 1 && /setRequirements: \(nodeId: string, defs: readonly unknown\[\]\): TemplateOp\[\] => \[setField\(nodeId, 'requirements', /.test(x)) : writes > 0) bad.push(f);
     }
@@ -718,6 +762,8 @@ const EXEC_MUT = [
   { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
   { name: 'Details OFF deletes instead of keeping', file: 'editorModel.ts', from: "? [setField(node.id, 'parked', parkedWith(node, { attributes: [...attrs] })), ...attrs.map(", to: "? [...attrs.map(", check: 'switches: Details OFF removes the fields from the item and keeps them, hidden (parked)', run: runDesktop },
   { name: 'restore puts the parked copy back after clearing it', file: 'editorModel.ts', from: "return parked.length ? [...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp), setField(node.id, 'parked', parkedWith(node, { attributes: [] }))] : [];", to: "return parked.length ? [setField(node.id, 'parked', parkedWith(node, { attributes: [] })), ...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp)] : [];", check: 'switches: a field kept under Ledrix’s own storage key switches off and back on, unchanged (marker kept)', run: runDesktop },
+  { name: 'show in links into the item\'s own system', file: 'editorModel.ts', from: "homeId: node.id, parentId: systemId }]", to: "homeId: node.id, parentId: tree.systems[0].id }]", check: 'show in: the item appears in the other system as a link — one record, no copy of its answers', run: runDesktop },
+  { name: 'a rule problem opens the wrong tab', file: 'publishFixes.ts', from: "rule_unsupported: 'applicability', rule_missing_item: 'applicability',", to: "rule_unsupported: 'applicability', rule_missing_item: 'overview',", check: 'publish fixes: a broken rule opens its item on the Applicability tab, and blocks', run: runDesktop },
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },

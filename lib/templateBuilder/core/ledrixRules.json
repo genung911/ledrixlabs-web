@@ -1,7 +1,17 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.10.27.1",
+ "packVersion": "2026.10.27.2",
  "nodes": {
+  "hvac_backup_heat": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "heat pump"
+     ]
+    }
+   ]
+  },
   "hvac_filter": {
    "requires": [
     {

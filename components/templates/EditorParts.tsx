@@ -8,7 +8,8 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from '@/lib/templates/editorModel';
+import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
 
@@ -228,8 +229,8 @@ export function GroupDetails({ node, onOps, onOpen, disabled }: { node: Template
 
 // ── a component: Details tab ────────────────────────────────────────────────────────────────────────────────
 
-export function ComponentOverview({ node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled }: {
-  node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
+export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled }: {
+  tree: InspectionTemplate; systemId: string; node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
   onDetails: (on: boolean) => void; onReqs: (on: boolean) => void; onOps: OnOps; disabled: boolean;
 }) {
   const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
@@ -265,8 +266,45 @@ export function ComponentOverview({ node, reqCount, detailsOn, reqsOn, onDetails
         </div>
         {nothing && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
       </div>
+      {!node.pointsTo && <AlsoShowIn tree={tree} systemId={systemId} node={node} onOps={onOps} disabled={disabled} />}
       <div className="border-t border-hairline pt-4">
         <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this item aside</button>
+      </div>
+    </div>
+  );
+}
+
+function AlsoShowIn({ tree, systemId, node, onOps, disabled }: { tree: InspectionTemplate; systemId: string; node: TemplateNode; onOps: OnOps; disabled: boolean }) {
+  const links = linksOf(tree, node.id);
+  return (
+    <div>
+      <p className={label}>Also show in</p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Also show in">
+        {tree.systems.filter(s => s.id !== systemId).map(s => {
+          const link = links.find(l => l.systemId === s.id);
+          return (
+            <button key={s.id} type="button" aria-pressed={!!link} disabled={disabled}
+              onClick={() => onOps(link ? ops.unlink(link.pointerId) : ops.showIn(tree, node, s.id))}
+              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${link ? 'border-accent bg-accent/10 text-accent-ink' : 'border-hairline text-body hover:text-ink'}`}>
+              {link ? '✓ ' : ''}{displayLabel(s.label)}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11px] text-muted">Recorded once, reported here.</p>
+    </div>
+  );
+}
+
+/** A LINK's panel: it shows an item that lives in another system. */
+export function LinkOverview({ tree, node, onOpen, onOps, disabled }: { tree: InspectionTemplate; node: TemplateNode; onOpen: (systemId: string, nodeId: string) => void; onOps: OnOps; disabled: boolean }) {
+  const home = node.pointsTo ? locate(tree, node.pointsTo.nodeId) : null;
+  return (
+    <div className="space-y-4 px-4 py-4">
+      <p className="text-sm text-body">Shown from <span className="font-semibold text-ink">{home ? `${displayLabel(home.system.label)} › ${home.node.label}` : 'a missing item'}</span>. Recorded and reported there.</p>
+      <div className="flex gap-2">
+        {home && <button className={btn.secondary} onClick={() => onOpen(home.system.id, home.node.id)}>Open {home.node.label}</button>}
+        <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.unlink(node.id))}>Remove from here</button>
       </div>
     </div>
   );

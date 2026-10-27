@@ -22,6 +22,7 @@ import { Banner, Modal, Pill, btn, timeAgo } from '@/components/templates/ui';
 import { SystemTree } from '@/components/templates/Tree';
 import { NodeWorkspace, type ComponentTab } from '@/components/templates/Workspace';
 import { OverviewSection, RequirementsSection, ReportSection, ReviewSection, issueCounts } from '@/components/templates/Sections';
+import { publishFixes } from '@/lib/templates/publishFixes';
 import { LevelPill } from '@/components/templates/RequirementsEditor';
 import { LedrixPanel } from '@/components/templates/LedrixPanel';
 import { PhonePreview } from '@/components/templates/PhonePreview';
@@ -156,6 +157,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const canDiscard = !busy && (m.hasDraft || d.save.kind !== 'clean');
   const canPublish = !publishBlock && !busy && !readOnly && !(!m.hasDraft && d.save.kind === 'clean');
   const counts = issueCounts(issues);
+  const fixes = publishFixes(tree, issues, { errors: bIssues.errors.map(i => i.message), warnings: bIssues.warnings.map(i => i.message) });
+  const blocking = fixes.filter(f => f.blocks).length;
   const reqTotal = reqs.length ? tree.systems.reduce((a, s) => a + countReqs(s), 0) : 0;
 
   return (
@@ -177,7 +180,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         </div>
         <p className="mt-1.5 text-[11px] text-muted">
           Save draft keeps changes private{server ? ' and shared with your owner and admins' : ' in this browser'}. Only Publish changes the live template — for new inspections only.
-          {publishBlock && <> {publishBlock}</>}
+          {blocking > 0 && !(!server || !owner)
+            ? <> <button className="font-semibold text-accent-ink hover:underline" onClick={() => go('review')}>{blocking} to fix before publishing →</button></>
+            : publishBlock && <> {publishBlock}</>}
         </p>
       </div>
 
@@ -235,7 +240,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               <ReviewSection tree={tree} status={status} issues={issues} buildingErrors={bIssues.errors.map(i => i.message)} buildingWarnings={bIssues.warnings.map(i => i.message)}
                 buildingChanges={bChanges} publishBlock={publishBlock} readOnly={readOnly} liveMoved={d.liveMoved} edits={m.core.log.length} saveState={d.save.kind}
                 isNew={isNew} nextVersion={nextVersion} canSave={canSave} canDiscard={canDiscard} canPublish={canPublish} busy={busy}
-                onSave={() => d.flush()} onDiscard={() => setDialog('discard')} onPublish={() => setDialog('publish')} onGo={go} />
+                onSave={() => d.flush()} onDiscard={() => setDialog('discard')} onPublish={() => setDialog('publish')} onGo={go} fixes={fixes} onOps={onOps} />
             </div>
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}

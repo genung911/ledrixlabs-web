@@ -61,6 +61,35 @@
               "condition": false
             },
             {
+              "id": "hvac_backup_heat",
+              "label": "Backup Heat",
+              "kind": "component",
+              "keywords": [
+                "backup heat",
+                "emergency heat",
+                "em heat",
+                "aux heat",
+                "auxiliary heat",
+                "heat strips",
+                "electric strips",
+                "dual fuel"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Backup Heat",
+                  "values": [
+                    "Electric Strips",
+                    "Gas Furnace (Dual Fuel)",
+                    "None",
+                    "Not Determined"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
               "id": "hvac_flue",
               "label": "Furnace Flue / Venting",
               "kind": "component",
@@ -349,7 +378,13 @@
                   ]
                 }
               ],
-              "condition": true
+              "condition": true,
+              "findingShortcuts": [
+                {
+                  "id": "fs_hvac_thermostat_no_em_heat",
+                  "label": "No emergency heat setting"
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -547,6 +582,47 @@
           "walkZones": [
             "exterior"
           ]
+        },
+        {
+          "id": "cooling__link_hvac_heating",
+          "label": "Heat Pump",
+          "kind": "component",
+          "pointsTo": {
+            "systemId": "heating",
+            "nodeId": "hvac_heating"
+          },
+          "appliesWhen": {
+            "field": "hvac_heating::fuel_source",
+            "anyOf": [
+              "Heat Pump"
+            ]
+          },
+          "whenUnknown": "hide"
+        },
+        {
+          "id": "cooling__link_hvac_backup_heat",
+          "label": "Backup Heat",
+          "kind": "component",
+          "pointsTo": {
+            "systemId": "heating",
+            "nodeId": "hvac_backup_heat"
+          },
+          "appliesWhen": {
+            "field": "hvac_heating::fuel_source",
+            "anyOf": [
+              "Heat Pump"
+            ]
+          },
+          "whenUnknown": "hide"
+        },
+        {
+          "id": "cooling__link_hvac_thermostat",
+          "label": "Thermostat",
+          "kind": "component",
+          "pointsTo": {
+            "systemId": "heating",
+            "nodeId": "hvac_thermostat"
+          }
         }
       ],
       "trimmed": [],

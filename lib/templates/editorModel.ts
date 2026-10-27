@@ -48,6 +48,19 @@ export function locate(tree: InspectionTemplate, id: string | null | undefined):
   return null;
 }
 
+// ── "Also show in…" (2026-10-27): an item shown in other systems through LINKS — one record, at its home; a link has no
+// answers of its own (the phone opens the real item, the report lists it once, under its home system).
+
+/** The links that show `nodeId` in other systems: the system each sits in, and the link's id. */
+export function linksOf(tree: InspectionTemplate, nodeId: string): Array<{ systemId: string; pointerId: string }> {
+  const out: Array<{ systemId: string; pointerId: string }> = [];
+  for (const system of tree.systems) {
+    const walk = (n: TemplateNode) => (n.children ?? []).forEach(c => { if (c.pointsTo?.nodeId === nodeId) out.push({ systemId: system.id, pointerId: c.id }); walk(c); });
+    walk(system);
+  }
+  return out;
+}
+
 /** Every item of a system in display order, with its depth (subsystems are headings, components rows). */
 export function flatItems(system: TemplateNode): Array<{ node: TemplateNode; depth: number; parentId: string }> {
   const out: Array<{ node: TemplateNode; depth: number; parentId: string }> = [];
@@ -191,6 +204,11 @@ export const ops = {
    *  them on every edit). The ONLY writer of `requirements` in the website. It never writes the Ledrix default-set pin
    *  or overrides. A template carrying any is not published (useDraft.publish). */
   setRequirements: (nodeId: string, defs: readonly unknown[]): TemplateOp[] => [setField(nodeId, 'requirements', defs.length ? [...defs] : null)],
+  /** Show an item in another system (at the end of that system's list). */
+  showIn: (tree: InspectionTemplate, node: TemplateNode, systemId: string): TemplateOp[] =>
+    [{ op: 'addLink', pointerId: newNodeId(tree, systemId, `link ${node.id}`), homeId: node.id, parentId: systemId }],
+  /** Stop showing it there. */
+  unlink: (pointerId: string): TemplateOp[] => [{ op: 'removeLink', pointerId }],
   /** Details switch. OFF parks every field (kept, hidden); ON restores the parked fields. Nothing to park or restore →
    *  no change (the panel just opens or closes the empty Details tab). */
   switchDetails: (node: TemplateNode, on: boolean): TemplateOp[] => {

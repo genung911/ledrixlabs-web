@@ -393,8 +393,15 @@ try {
     await page.getByRole('tab', { name: /^Requirements/ }).click();
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'light'));
   }
-  ok('8b · while the draft carries a requirement, Publish is disabled and says why',
-    await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled() && (await page.getByText(/can.t use requirements yet/i).count()) > 0);
+  ok('8b · while the draft carries a requirement, Publish is disabled and the header says what to fix',
+    await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled() && (await page.getByRole('button', { name: /1 to fix before publishing/ }).count()) === 1);
+  // the header opens Review & Publish; the fix opens the item on its Requirements tab
+  await page.getByRole('button', { name: /1 to fix before publishing/ }).click();
+  const fixRow = page.getByRole('list', { name: 'To fix before publishing' }).getByRole('button', { name: /E2E Draft Hood/ });
+  ok('8b · Review & Publish lists the item to fix', await waitFor(async () => (await fixRow.count()) === 1, 5000));
+  await fixRow.click();
+  ok('8b · tapping it opens that item on its Requirements tab', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0
+    && (await page.getByRole('tab', { name: /^Requirements/, selected: true }).count()) === 1, 5000));
   ok('8b · the completion card counts only what the item would owe, and says it is not used yet',
     (await page.getByRole('region', { name: 'Completion logic for this item' }).getByText(/not evaluate these yet|don.t evaluate these yet/).count()) > 0);
   await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Remove requirement' }).click();
@@ -451,7 +458,7 @@ try {
   await waitFor(async () => (await page.getByRole('button', { name: 'Publish', exact: true }).count()) > 0, 60000);
   const liveBefore = JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID));
   ok('11 · a template that carries requirements can\'t be published: Publish is disabled with the reason, and the live template is unchanged',
-    await waitFor(async () => (await page.getByText(/can.t use requirements yet/i).count()) > 0, 10000)
+    await waitFor(async () => (await page.getByRole('button', { name: /to fix before publishing/ }).count()) > 0, 10000)
     && await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()
     && (await page.getByRole('button', { name: 'Publish', exact: true }).first().click({ timeout: 1500 }).then(() => false, () => true))
     && JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID)) === liveBefore);

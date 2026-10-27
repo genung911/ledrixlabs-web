@@ -9,7 +9,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import { assessesCondition, isCovered, locate, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
-import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, UnseenPill, notShownToInspectors } from './EditorParts';
+import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
 import { Pill, Toggle, btn, label } from './ui';
@@ -50,6 +50,19 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       </Shell>
     );
   }
+  if (node.pointsTo) {
+    const lt: ComponentTab = tab === 'applicability' ? 'applicability' : 'overview';
+    return (
+      <Shell kind="Link" title={node.label} sub={path} onClose={close}
+        tabs={(['overview', 'applicability'] as const).map(t => (
+          <button key={t} role="tab" aria-selected={lt === t} onClick={() => setTab(t)}
+            className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${lt === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>{TAB_LABEL[t]}</button>
+        ))}>
+        {lt === 'overview' && <LinkOverview tree={tree} node={node} onOpen={(s, n) => onSelect({ systemId: s, nodeId: n })} onOps={onOps} disabled={disabled} />}
+        {lt === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
+      </Shell>
+    );
+  }
   const reqs = requirementsOf(node).length;
   const unseen = notShownToInspectors(system, node, loc.parent?.id ?? system.id);
   const o = opened[node.id] ?? {};
@@ -68,7 +81,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
           {TAB_LABEL[t]}{t === 'requirements' && reqs > 0 && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqs}</span>}
         </button>
       ))}>
-      {cur === 'overview' && <ComponentOverview node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled} />}
+      {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled} />}
       {cur === 'condition' && <ComponentCondition node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'details' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'requirements' && <>

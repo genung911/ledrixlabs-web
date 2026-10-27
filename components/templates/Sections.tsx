@@ -14,6 +14,8 @@ import {
 import { notShownToInspectors } from './EditorParts';
 import { LevelPill } from './RequirementsEditor';
 import { btn } from './ui';
+import type { Fix } from '@/lib/templates/publishFixes';
+import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 
@@ -190,8 +192,32 @@ export type ReviewProps = {
   tree: InspectionTemplate; status: string; issues: Issue[]; buildingErrors: string[]; buildingWarnings: string[]; buildingChanges: string[];
   publishBlock: string | null; readOnly: string | null; liveMoved: boolean; edits: number; saveState: string; isNew: boolean; nextVersion: number;
   canSave: boolean; canDiscard: boolean; canPublish: boolean; busy: boolean;
-  onSave: () => void; onDiscard: () => void; onPublish: () => void; onGo: (section: string, sel?: Sel) => void;
+  onSave: () => void; onDiscard: () => void; onPublish: () => void; onGo: (section: string, sel?: Sel, tab?: Fix['go']['tab']) => void;
+  fixes: Fix[]; onOps: (o: TemplateOp[]) => boolean;
 };
+
+/** Everything between this draft and Publish — each row opens the exact place to fix it (owner, 2026-10-27). */
+export function FixList({ fixes, onGo, onOps, disabled }: { fixes: Fix[]; onGo: ReviewProps['onGo']; onOps: ReviewProps['onOps']; disabled: boolean }) {
+  if (!fixes.length) return null;
+  const blocking = fixes.filter(f => f.blocks).length;
+  return (
+    <Card title={blocking ? `To fix before publishing · ${blocking}` : 'Worth a look'}>
+      <ul className="-mx-1 divide-y divide-hairline" aria-label="To fix before publishing">
+        {fixes.map(f => (
+          <li key={f.key} className="flex items-center gap-2 py-1">
+            <button type="button" onClick={() => onGo(f.go.section, f.go.systemId ? { systemId: f.go.systemId, nodeId: f.go.nodeId ?? null } : undefined, f.go.tab)}
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1.5 text-left hover:bg-ground">
+              <span aria-hidden className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${f.blocks ? 'bg-safety/15 text-safety' : 'bg-warn/30 text-ink'}`}>{f.blocks ? '✕' : '!'}</span>
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{f.where}</span><span className="block text-xs text-body">{f.what}</span></span>
+              <span aria-hidden className="shrink-0 text-sm font-semibold text-accent-ink">Open →</span>
+            </button>
+            {f.quick && <button type="button" className={btn.secondary + ' shrink-0 px-2.5 py-1 text-xs'} disabled={disabled} onClick={() => onOps(f.quick!.ops)}>{f.quick.label}</button>}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
 
 export function ReviewSection(p: ReviewProps) {
   const errors = p.issues.filter(i => i.severity === 'error'), warnings = p.issues.filter(i => i.severity === 'warning');
@@ -206,19 +232,19 @@ export function ReviewSection(p: ReviewProps) {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4">
       <div><h2 className="text-xl font-bold tracking-tight text-ink">Review & publish</h2><p className="text-sm text-muted">{p.status}</p></div>
+      <FixList fixes={p.fixes} onGo={p.onGo} onOps={p.onOps} disabled={!!p.readOnly} />
       <Card title="Before publishing">
         <ul className="divide-y divide-hairline">
           {row(p.saveState === 'saved' || p.saveState === 'clean' ? true : p.saveState === 'error' ? false : 'warn', 'Draft saved',
             p.saveState === 'error' ? 'The last change was not saved.' : p.saveState === 'dirty' || p.saveState === 'saving' ? 'Saving…' : `${p.edits} change${p.edits === 1 ? '' : 's'} in this draft.`)}
           {row(errors.length ? false : warnings.length ? 'warn' : true, errors.length ? `${errors.length} template problem${errors.length === 1 ? '' : 's'}` : 'Template checks pass',
-            (errors.length || warnings.length) ? <ul className="mt-1 list-disc space-y-0.5 pl-4">{[...errors, ...warnings].slice(0, 12).map(i => <li key={i.code + i.message}>{i.message}</li>)}</ul> : undefined)}
+            (errors.length || warnings.length) ? 'Listed above — tap one to open it.' : undefined)}
           {row(p.buildingErrors.length ? false : p.buildingWarnings.length ? 'warn' : true, p.buildingErrors.length ? 'Building types need attention' : 'Building types',
-            p.buildingErrors.length || p.buildingWarnings.length ? <ul className="mt-1 list-disc space-y-0.5 pl-4">{[...p.buildingErrors, ...p.buildingWarnings].map(m => <li key={m}>{m}</li>)}</ul>
-              : 'Every building type is valid.')}
+            p.buildingErrors.length || p.buildingWarnings.length ? 'Listed above — tap one to open it.' : 'Every building type is valid.')}
           {row(carried.length ? false : true, carried.length ? 'Requirements can’t be published yet' : 'No requirements to hold back',
-            carried.length ? <>Inspections can’t use requirements yet, so this draft can’t be published while it carries: {carried.join('; ')}. <button className="font-semibold text-accent-ink hover:underline" onClick={() => p.onGo('requirements')}>See requirements</button></> : undefined)}
+            carried.length ? 'Inspections can’t check requirements yet. Open each one above, or switch it off — it’s kept for later.' : undefined)}
           {row(facts.unseen ? 'warn' : true, facts.unseen ? `${facts.unseen} item${facts.unseen === 1 ? '' : 's'} not shown to inspectors` : 'Every item is shown to inspectors',
-            facts.unseen ? 'They sit directly under a system that has groups. Move them into a group, or set them aside.' : undefined)}
+            facts.unseen ? 'Listed above — tap one to open it.' : undefined)}
           {p.liveMoved && row('warn', 'The live template changed after this draft started', 'Publishing will ask before replacing those changes.')}
           {p.readOnly && row(false, 'This draft can’t change right now', p.readOnly)}
         </ul>
