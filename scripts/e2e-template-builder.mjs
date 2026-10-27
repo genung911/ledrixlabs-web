@@ -50,6 +50,7 @@ const db = {
   companies: [{ id: CO, name: 'E2E Inspections' }],
   company_templates: [{ id: LIVE_ID, company_id: CO, name: 'Standard', base: 'internachi', template: { id: LIVE_ID, name: 'Standard', ...clone(def) }, row_version: 3, updated_at: now(), created_at: now(), deleted_at: null }],
   company_template_drafts: [],
+  company_template_context: [],   // ledger #71 (ledrix-app supabase_company_template_context.sql)
   company_inspection_types: [{ id: randomUUID(), company_id: CO, name: 'Full Home Inspection', template_id: LIVE_ID, row_version: 1, sort_order: 0, deleted_at: null }],
   calls: [],
 };
@@ -100,6 +101,13 @@ function writeRow(table, op, row, old) {
     if (op === 'insert') { Object.assign(row, { id: row.id ?? randomUUID(), row_version: 1, deleted_at: null, sort_order: row.sort_order ?? 0 }); return null; }
     if (row.row_version !== old.row_version + 1) return pgErr(400, 'P0409', `inspection_type_version_conflict: ${old.id} is at version ${old.row_version}`, String(old.row_version));
     return null;
+  }
+  if (table === 'company_template_context') {
+    if (role !== 'owner' && role !== 'admin') return op === 'insert' ? pgErr(403, '42501', 'new row violates row-level security policy') : 'skip';
+    if (op === 'insert') { if (db.company_template_context.some(c => c.company_id === row.company_id)) return pgErr(409, '23505', 'duplicate key'); Object.assign(row, { row_version: 1, updated_at: now(), updated_by: OWNER }); return null; }
+    if (row.company_id !== old.company_id) return pgErr(400, 'P0422', 'context_immutable: the company cannot change');
+    if (row.row_version !== old.row_version + 1) return pgErr(400, 'P0409', `context_version_conflict: at version ${old.row_version}`, String(old.row_version));
+    row.updated_at = now(); return null;
   }
   return pgErr(403, '42501', `no write policy on ${table}`);
 }
@@ -463,6 +471,47 @@ try {
   ok('13 · delete is a soft delete at the next version, and the list drops it',
     await waitFor(() => !!db.company_templates.find(t => t.name === 'E2E Renamed')?.deleted_at) && db.company_templates.find(t => t.name === 'E2E Renamed').row_version === 3
     && await waitFor(async () => (await page.getByRole('link', { name: 'E2E Renamed', exact: true }).count()) === 0));
+
+  // ── 14 · New template: the guided creation page (2026-10-27) ──
+  step = '14'; console.log('\n14 · New template → company requirements → starting point → private draft\n');
+  const sourceBefore = JSON.stringify(db.company_templates.find(t => t.name === 'Standard'));
+  const liveCount = db.company_templates.filter(t => !t.deleted_at).length, draftsBefore = db.company_template_drafts.length;
+  await page.goto(`${BASE}/app/templates`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('link', { name: 'New template' }).click();
+  ok('14 · New template opens the creation page (no dialog)', await waitFor(async () => page.url().includes('/app/templates/create') && await page.getByRole('heading', { name: 'Create a template' }).isVisible(), 60000));
+  const fits = async () => { const r = []; for (const w of [1280, 1440, 1920]) { await page.setViewportSize({ width: w, height: 900 }); r.push(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)); } await page.setViewportSize({ width: 1600, height: 1000 }); return r.every(Boolean); };
+  ok('14 · the start step fits 1280, 1440 and 1920 px wide (no sideways scroll)', await fits());
+  await page.getByRole('button', { name: 'Get started →' }).click();
+  ok('14 · the company step fits 1280, 1440 and 1920 px wide', await fits());
+  await page.getByLabel('States').selectOption('ID');
+  await page.getByLabel('4-Point (insurance)').check();
+  await page.getByLabel('InterNACHI member').check();
+  await page.getByLabel('We’re still determining this').check();
+  ok('14 · no individual license number is asked for', (await page.getByLabel(/license (number|#)/i).count()) === 0);
+  await page.getByRole('button', { name: 'Next: Starting point →' }).click();
+  const ctxRow = () => db.company_template_context.find(c => c.company_id === CO);
+  ok('14 · the company’s answers are saved once, for the company, at version 1',
+    await waitFor(() => !!ctxRow()) && ctxRow().jurisdictions.join() === 'ID' && ctxRow().services.join() === 'four_point'
+    && ctxRow().affiliations.join() === 'internachi' && ctxRow().standards.length === 0 && ctxRow().licensing === 'undetermined' && ctxRow().row_version === 1);
+  ok('14 · the Ledrix 4-Point template is recommended for the 4-Point service, with its reason',
+    await waitFor(async () => (await page.getByRole('radio', { name: /Recommended.*Ledrix 4-Point/ }).count()) === 1)
+    && await page.getByText('Built for 4-Point inspections, a service you selected.').isVisible());
+  ok('14 · requirements coverage reads "Not evaluated" — no score, nothing claimed covered',
+    await page.getByText(/^Not evaluated — Ledrix has no verified requirement data/).first().isVisible()
+    && (await page.getByText(/compliant|% covered/i).count()) === 0);
+  ok('14 · import is shown as coming later, not as a working option', await page.getByText('Coming later').isVisible() && (await page.getByRole('radio', { name: /Import/ }).count()) === 0);
+  ok('14 · the starting-point step fits 1280, 1440 and 1920 px wide', await fits());
+  await page.getByRole('button', { name: 'Next: Create draft →' }).click();
+  ok('14 · the create-draft step fits 1280, 1440 and 1920 px wide', await fits());
+  await page.locator('#tpl-name').fill('E2E 4-Point');
+  await page.getByRole('button', { name: 'Create draft & open Template Builder →' }).click();
+  const made = () => db.company_template_drafts.find(d => d.name === 'E2E 4-Point');
+  ok('14 · a private draft is created from the Ledrix 4-Point template (13 systems, the company’s own copy)',
+    await waitFor(() => !!made()) && made().template_id == null && made().base === 'fourpoint' && made().template.systems.length === 13 && made().template.id === 'custom'
+    && db.company_template_drafts.length === draftsBefore + 1);
+  ok('14 · it opens in the Template Builder, unpublished', await waitFor(async () => page.url().includes('/app/templates/new?draft=') && await page.getByText('New template · not published').isVisible(), 60000));
+  ok('14 · nothing was published and the company’s templates are untouched',
+    db.company_templates.filter(t => !t.deleted_at).length === liveCount && JSON.stringify(db.company_templates.find(t => t.name === 'Standard')) === sourceBefore);
 } catch (e) {
   ok(`workflow completed (${String(e?.message ?? e).split('\n')[0]})`, false);
   await page.screenshot({ path: join(dirname(OUT), 'failure.png') }).catch(() => {});

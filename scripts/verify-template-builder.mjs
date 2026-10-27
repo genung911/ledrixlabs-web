@@ -102,7 +102,7 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
 // ── 2. Executed ───────────────────────────────────────────────────────────────────────────────────────────
 // The builder modules, copied to a temp dir with explicit .ts import specifiers so Node can strip and load them.
 const BUILDER = ['access', 'draftStore', 'session', 'edit'];
-const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel'];
+const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel', 'startingPoints'];
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
@@ -374,6 +374,36 @@ async function runDesktop(files) {
     r('requirements: removing the last one removes the field, so the template publishes as before', qc.ok && nodeOf('hvac_heating').requirements === undefined && QM.carriedRequirements(wd.tree).length === 0);
 
     {
+    // ── template creation: starting points (2026-10-27) ──────────────────────────────────────────────────────
+    {
+      const S = await import(pathToFileURL(join(dir, 'startingPoints.ts')).href);
+      const BASE = { id: 'internachi', name: 'Ledrix Default', version: 1, systems: [{ id: 'roofing', label: 'Roofing', kind: 'system', children: [{ id: 'r1', label: 'Covering', kind: 'component' }] }] };
+      const FOUR = { id: 'fourpoint', name: '4-Point', version: 1, systems: [{ id: 'roofing', label: 'Roofing', kind: 'system', defaultActive: true, children: [] }, { id: 'attic', label: 'Attic', kind: 'system', defaultActive: false, children: [] }] };
+      const MINE = { id: 't1', name: 'Our 4-Point', base: 'fourpoint', updatedAt: null, rowVersion: 2, tree: clone(FOUR) };
+      const TYPES = [{ id: 'it1', name: '4-Point', templateId: 't1', rowVersion: 1, stock: false }];
+      const ctx = (o = {}) => ({ jurisdictions: [], services: [], affiliations: [], standards: [], licensing: null, notes: '', ...o });
+      const pts = (c, extra = {}) => S.startingPoints({ context: c, templates: [MINE], types: TYPES, ledrixDefault: BASE, ledrixFourPoint: FOUR, ...extra });
+      const full = ctx({ jurisdictions: ['ID'], services: ['home', 'four_point'], affiliations: ['internachi'], standards: ['internachi_sop', 'state_sop'], licensing: 'varies', notes: 'Sewer scope pre-1980' });
+      const all = [...pts(ctx()), ...pts(full), ...pts(ctx({ services: ['home'] }))];
+      r('create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', all.every(p => p.coverage.state === 'not_evaluated' && /^Not evaluated/.test(p.coverage.text)));
+      r('create: no recommendation when Ledrix knows nothing that points to one', !pts(ctx()).some(p => p.recommended) && !pts(ctx({ standards: ['internachi_sop'], jurisdictions: ['ID'] })).some(p => p.recommended));
+      const f = pts(full);
+      r('create: one recommendation at most — the company’s own template already used for a selected service wins',
+        f.filter(p => p.recommended).length === 1 && f.find(p => p.recommended).key === 'company:t1' && f.find(p => p.key === 'company:t1').reasons.some(x => /already uses it for 4-Point/.test(x)));
+      r('create: without such a template, the Ledrix template built for the selected service is recommended',
+        pts(ctx({ services: ['home'] })).find(p => p.recommended)?.key === 'ledrix_default');
+      r('create: reasons cite only services and how the company uses its templates — never standards, licensing or jurisdiction',
+        all.flatMap(p => p.reasons).every(x => !/standard|licens|Idaho|\bID\b|InterNACHI|ASHI|complian/i.test(x)));
+      r('create: what the company declared becomes things to check itself, never a claim of coverage',
+        f[0].review.length === 4 && f[0].review.every(x => !/\bcovered\b|complian|meets|satisf/i.test(x)) && f[0].review.some(x => /haven’t been evaluated/.test(x)));
+      r('create: Ledrix templates appear only when they are available', !pts(ctx(), { ledrixDefault: null, ledrixFourPoint: null }).some(p => p.kind.startsWith('ledrix')));
+      const src = clone(BASE), before = JSON.stringify(src), fk = S.forkTree(src, 'Acme Home');
+      fk.systems[0].label = 'Changed';
+      r('create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)',
+        JSON.stringify(src) === before && fk.id === 'custom' && fk.name === 'Acme Home');
+      r('create: the blank start has no systems; every card reports real counts from its tree',
+        pts(ctx()).find(p => p.kind === 'blank').tree.systems.length === 0 && f.find(p => p.key === 'ledrix_fourpoint').systems.join() === 'Roofing' && f.find(p => p.key === 'ledrix_default').componentCount === 1);
+    }
     // ── the equipment component catalog (owner rulings 2026-10-26) ──────────────────────────────────────────
     const C = await import(pathToFileURL(join(dir, 'catalogModel.ts')).href);
     const EC = await import(pathToFileURL(join(dir, 'core/equipmentCatalog.ts')).href);
@@ -457,11 +487,11 @@ const WRITE = /\.(insert|update|upsert|delete)\s*\(\s*[{\[]|\.delete\(\)|\.rpc\s
 
 const RULES = {
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
-  'writes: only the three template tables and the publish RPC': all => {
+  'writes: only the three template tables, the company template context and the publish RPC': all => {
     const s = strip(all[API] ?? '');
     const tables = [...s.matchAll(/from\(\s*'([\w]+)'\s*\)/g)].map(m => m[1]);
     const rpcs = [...s.matchAll(/\.rpc\(\s*'([\w]+)'/g)].map(m => m[1]);
-    return tables.every(t => ['company_templates', 'company_template_drafts', 'company_inspection_types'].includes(t)) && rpcs.every(x => x === 'publish_company_template_draft') && rpcs.length === 1 ? [] : [API];
+    return tables.every(t => ['company_templates', 'company_template_drafts', 'company_inspection_types', 'company_template_context'].includes(t)) && rpcs.every(x => x === 'publish_company_template_draft') && rpcs.length === 1 ? [] : [API];
   },
   'writes: every update names the next version (row_version)': all => {
     const s = strip(all[API] ?? '');
@@ -510,6 +540,19 @@ const RULES = {
   'pages: publishing always asks first and says inspections are not changed': all =>
     /Inspections already started or finished keep the copy they started with/.test(all[EDIT] ?? '') && /dialog === 'publish'/.test(all[EDIT] ?? '') ? [] : [EDIT],
   // 2026-10-24 — building types: edited ONLY as one template op (draft, undo, validation), and never published with an error.
+  'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
+    const list = strip(all[LIST] ?? ''), page = strip(all['app/app/templates/create/page.tsx'] ?? '');
+    return /<Link className=\{btn\.primary\} href="\/app\/templates\/create">/.test(list) && !/NewDialog/.test(list)
+      && /await startNewTemplateDraft\(access\.companyId!, \{ name: name\.trim\(\), base: chosen\.base, tree \}\)/.test(page)
+      && /router\.push\(`\/app\/templates\/new\?draft=\$\{encodeURIComponent\(draft\.id\)\}`\)/.test(page)
+      && !/publishDraft|publish_company_template_draft|\.publish\(/.test(page) ? [] : ['app/app/templates/create/page.tsx'];
+  },
+  'create: no individual license is collected, import is not offered as working, and no compliance is claimed': all => {
+    const page = strip(all['app/app/templates/create/page.tsx'] ?? ''), sp = strip(all['lib/templates/startingPoints.ts'] ?? '');
+    const imp = page.slice(page.indexOf('Import a template'), page.indexOf('contact support', page.indexOf('Import a template')));   // the import card only
+    return !/license_number|licenseNumber|License #|license number"/i.test(page) && /Coming later/.test(imp) && !/onClick|role="radio"/.test(imp)
+      && !/compliant|compliance score|%\s*covered/i.test(page + sp) ? [] : ['app/app/templates/create/page.tsx'];
+  },
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': all => {
     const panel = strip(all['components/templates/CatalogPanel.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
     return /<CatalogPanel tree=\{tree\} system=\{system\} onOps=\{onOps\} disabled=\{disabled\} \/>/.test(parts)
@@ -588,7 +631,7 @@ const add = (f, x) => s => ({ ...s, [f]: (s[f] ?? '') + x });
 const rep = (f, a, b) => s => ({ ...s, [f]: (s[f] ?? '').replace(a, () => b) });
 const MUT = {
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
-  'writes: only the three template tables and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
+  'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),
   'writes: the live template is never inserted, upserted or hard-deleted from the browser': add(API, "\nworkspace.from('company_templates').delete().eq('id', x);"),
   'isolation: no inspection, finding or snapshot table is touched': add('lib/templates/useDraft.ts', "\nworkspace.from('inspection_templates').select('*');"),
@@ -614,6 +657,8 @@ const MUT = {
   'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
+  'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
+  'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
@@ -631,6 +676,9 @@ const EXEC_MUT = [
   { name: 'a typed answer is nested as an all inside any', file: 'ruleModel.ts', from: "return leaves.length === 1 ? leaves[0] : { any: leaves };", to: "return leaves.length === 1 ? leaves[0] : { any: [{ all: leaves }] };", check: 'rules: every rule the editor writes passes the runtime compiler and the op validator', run: runDesktop },
   { name: 'ALL is written as one group of alternatives', file: 'requirementModel.ts', from: "return mode === 'any' || clauses.length <= 1 ?", to: "return true ?", check: 'requirements: ANY is one group of alternatives, ALL is one group per method, and both read back', run: runDesktop },
   { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
+  { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
+  { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
+  { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
   { name: 'the catalog adds a component the template already has', file: 'catalogModel.ts', from: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && !x.row.present && ", to: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && ", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds evidence the phone cannot collect', file: 'catalogModel.ts', from: "!x.row.evidenceOnly && pickRecordsSomething", to: "pickRecordsSomething", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },

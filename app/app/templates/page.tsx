@@ -20,12 +20,11 @@ import {
   listInspectionTypes, listTemplates, removeInspectionType, renameTemplate, startNewTemplateDraft, systemCount,
   type Backend, type DraftMeta, type InspectionType, type LiveTemplate,
 } from '@/lib/templates/api';
-import { blankTree } from '@/lib/templates/editorModel';
 
 type Data = { backend: Backend; templates: LiveTemplate[]; drafts: DraftMeta[]; types: InspectionType[] };
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; data: Data };
 type Dialog =
-  | { kind: 'new' } | { kind: 'rename'; t: LiveTemplate } | { kind: 'delete'; t: LiveTemplate } | { kind: 'addType' } | null;
+  | { kind: 'rename'; t: LiveTemplate } | { kind: 'delete'; t: LiveTemplate } | { kind: 'addType' } | null;
 
 const NEEDS_SERVER = 'Turns on with the next Ledrix app update.';
 
@@ -77,9 +76,9 @@ export default function TemplatesPage() {
     <Page>
       <PageHeader title="Templates" subtitle="Your company’s inspection templates"
         actions={author && (
-          <button className={btn.primary} disabled={!server} title={server ? undefined : NEEDS_SERVER} onClick={() => setDialog({ kind: 'new' })}>
-            <span aria-hidden>+</span> New template
-          </button>
+          server
+            ? <Link className={btn.primary} href="/app/templates/create"><span aria-hidden>+</span> New template</Link>
+            : <button className={btn.primary} disabled title={NEEDS_SERVER}><span aria-hidden>+</span> New template</button>
         )} />
 
       {data && !server && author && (
@@ -200,13 +199,6 @@ export default function TemplatesPage() {
         </>
       )}
 
-      {data && dialog?.kind === 'new' && <NewDialog templates={data.templates} busy={busy} onClose={() => setDialog(null)}
-        onCreate={(name, from) => run(async () => {
-          const src = from ? data.templates.find(x => x.id === from) : null;
-          if (from && !src?.tree) throw new Error('That template has no systems to copy.');
-          const d = await startNewTemplateDraft(access.companyId!, { name, base: src ? src.base : 'blank', tree: src?.tree ?? blankTree(name) });
-          router.push(`/app/templates/new?draft=${encodeURIComponent(d.id)}`);
-        })} />}
       {dialog?.kind === 'rename' && <RenameDialog t={dialog.t} busy={busy} onClose={() => setDialog(null)}
         onRename={name => run(() => renameTemplate(dialog.t, name), `Renamed to ${name}.`)} />}
       {data && dialog?.kind === 'delete' && <DeleteDialog t={dialog.t} uses={usedFor.get(dialog.t.id) ?? []} busy={busy} onClose={() => setDialog(null)}
@@ -222,43 +214,6 @@ function Stat({ label: l, value, warn }: { label: string; value: number | string
     <div className="rounded-xl border border-hairline bg-surface px-4 py-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">{l}</p>
       <p className={`mt-1 text-2xl font-bold ${warn ? 'text-ink' : 'text-ink'}`}>{value}{warn && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-warn align-middle" />}</p>
-    </div>
-  );
-}
-
-function NewDialog({ templates, busy, onClose, onCreate }: { templates: LiveTemplate[]; busy: boolean; onClose: () => void; onCreate: (name: string, from: string | null) => void }) {
-  const [name, setName] = useState('');
-  const [start, setStart] = useState<'copy' | 'blank'>(templates.length ? 'copy' : 'blank');
-  const [from, setFrom] = useState(templates[0]?.id ?? '');
-  const ok = name.trim().length > 0 && (start === 'blank' || !!from);
-  return (
-    <Modal open title="New template" onClose={onClose} footer={<>
-      <button className={btn.secondary} onClick={onClose}>Cancel</button>
-      <button className={btn.primary} disabled={!ok || busy} onClick={() => onCreate(name.trim(), start === 'copy' ? from : null)}>{busy ? 'Creating…' : 'Create draft'}</button>
-    </>}>
-      <label className={label} htmlFor="tpl-name">Name</label>
-      <input id="tpl-name" className={field} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Condo, Commercial walkthrough" maxLength={120} />
-      <p className={`${label} mt-4`}>Start from</p>
-      <div className="space-y-2">
-        <Choice on={start === 'copy'} disabled={!templates.length} onPick={() => setStart('copy')} title="A copy of one of your templates"
-          sub={<select aria-label="Template to copy" className={`${field} mt-2 py-1.5`} value={from} onChange={e => { setFrom(e.target.value); setStart('copy'); }}>
-            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>} />
-        <Choice on={start === 'blank'} onPick={() => setStart('blank')} title="Blank" sub="No systems yet. Add your own." />
-        <Choice on={false} disabled onPick={() => {}} title="Ledrix Default · 4-Point" sub="Start from these in the Ledrix app for now, or copy a template that is based on them." />
-      </div>
-      <p className="mt-4 text-xs text-muted">The new template is a private draft until you publish it.</p>
-    </Modal>
-  );
-}
-
-function Choice({ on, disabled, onPick, title, sub }: { on: boolean; disabled?: boolean; onPick: () => void; title: string; sub?: React.ReactNode }) {
-  return (
-    <div className={`rounded-xl border px-3 py-2.5 ${on ? 'border-accent bg-accent/5' : 'border-hairline'} ${disabled ? 'opacity-50' : ''}`}>
-      <button type="button" role="radio" aria-checked={on} disabled={disabled} onClick={onPick} className="flex w-full items-center gap-2 text-left">
-        <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${on ? 'border-accent' : 'border-hairline'}`}>{on && <span className="h-2 w-2 rounded-full bg-accent" />}</span>
-        <span className="text-sm font-semibold text-ink">{title}</span>
-      </button>
-      {sub && <div className="ml-6 text-xs text-body">{sub}</div>}
     </div>
   );
 }

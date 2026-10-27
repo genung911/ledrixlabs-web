@@ -48,6 +48,7 @@ const REASONS: Record<string, string> = {
   draft_template: 'That template is not one of your company’s live templates.',
   live_template_changed: 'The live template was changed after this draft started.',
   owner_only: 'Only the company owner can do that.',
+  context_version_conflict: 'Your company details were changed somewhere else since you opened this page.',
   draft_missing: 'This draft no longer exists.',
 };
 
@@ -264,6 +265,50 @@ export async function removeInspectionType(type: InspectionType): Promise<void> 
     .update({ deleted_at: new Date().toISOString(), row_version: (type.rowVersion ?? 0) + 1 }).eq('id', type.id).select('id').maybeSingle();
   if (res.error) fail('The inspection type could not be removed', res.error);
   if (!res.data) throw new TemplateApiError('forbidden', 'rls', REASONS.owner_only);
+}
+
+// ── company context (template-creation page, 2026-10-27; ledger #71) ─────────────────────────────────────────
+// What the company DECLARES about itself when it builds templates — never verified by Ledrix, never an enforced
+// requirement. One row per company; any member reads it, the owner or an admin writes it. No individual credential is
+// stored here (an inspector's license stays on that inspector's own profile).
+
+export type Licensing = 'licensed' | 'varies' | 'not_required' | 'undetermined';
+export type CompanyContext = {
+  jurisdictions: string[]; services: string[]; affiliations: string[]; standards: string[];
+  licensing: Licensing | null; notes: string;
+};
+export type StoredContext = { context: CompanyContext; rowVersion: number | null };
+export const EMPTY_CONTEXT: CompanyContext = { jurisdictions: [], services: [], affiliations: [], standards: [], licensing: null, notes: '' };
+const CONTEXT_COLS = 'jurisdictions, services, affiliations, standards, licensing, notes, row_version';
+
+/** The company's saved context, `null` when none is saved yet, or 'unavailable' when the table is not applied yet. */
+export async function loadCompanyContext(companyId: string): Promise<StoredContext | null | 'unavailable'> {
+  const res = await workspace.from('company_template_context').select(CONTEXT_COLS).eq('company_id', companyId).maybeSingle();
+  if (res.error) {
+    if (res.error.code === '42P01' || res.error.code === 'PGRST205' || /company_template_context/.test(res.error.message ?? '')) return 'unavailable';
+    fail('Your company details could not be loaded', res.error);
+  }
+  if (!res.data) return null;
+  const r = res.data as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  return {
+    rowVersion: typeof r.row_version === 'number' ? r.row_version : Number(r.row_version) || 1,
+    context: { jurisdictions: list(r.jurisdictions), services: list(r.services), affiliations: list(r.affiliations), standards: list(r.standards),
+      licensing: (['licensed', 'varies', 'not_required', 'undetermined'] as const).find(x => x === r.licensing) ?? null,
+      notes: typeof r.notes === 'string' ? r.notes : '' },
+  };
+}
+
+/** Save the company's context over the version it was loaded at (insert when none exists). A stale save is refused. */
+export async function saveCompanyContext(companyId: string, c: CompanyContext, rowVersion: number | null): Promise<StoredContext> {
+  const row = { jurisdictions: c.jurisdictions, services: c.services, affiliations: c.affiliations, standards: c.standards,
+    licensing: c.licensing, notes: c.notes.trim() ? c.notes.trim().slice(0, 2000) : null };
+  const res = rowVersion === null
+    ? await workspace.from('company_template_context').insert({ company_id: companyId, ...row }).select(CONTEXT_COLS).single()
+    : await workspace.from('company_template_context').update({ ...row, row_version: rowVersion + 1 }).eq('company_id', companyId).select(CONTEXT_COLS).single();
+  if (res.error) fail('Your company details could not be saved', res.error);
+  const r = res.data as Record<string, unknown>;
+  return { context: c, rowVersion: typeof r.row_version === 'number' ? r.row_version : Number(r.row_version) || 1 };
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,5080 @@
+{
+  "version": 4,
+  "systems": [
+    {
+      "id": "heating",
+      "label": "HEATING",
+      "kind": "system",
+      "icon": "fire",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "heating__heating_plant",
+          "label": "Heating Plant",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "hvac_heating",
+              "label": "Heating System",
+              "kind": "component",
+              "keywords": [
+                "furnace",
+                "boiler",
+                "heat pump",
+                "gas heat",
+                "electric heat",
+                "radiant heat",
+                "hvac age",
+                "unit age",
+                "manufactured",
+                "install year"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "fuel_source",
+                  "label": "Fuel Source",
+                  "values": [
+                    "Gas Furnace",
+                    "Electric Heat",
+                    "Heat Pump",
+                    "Propane",
+                    "Oil Furnace",
+                    "Boiler",
+                    "Radiant Heat"
+                  ]
+                },
+                {
+                  "id": "system_age",
+                  "label": "Age",
+                  "values": [
+                    "Under 5 years old",
+                    "5–10 years old",
+                    "10–15 years old",
+                    "15–20 years old",
+                    "20–25 years old",
+                    "Over 25 years old",
+                    "Not determined"
+                  ]
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "hvac_flue",
+              "label": "Furnace Flue / Venting",
+              "kind": "component",
+              "keywords": [
+                "flue",
+                "vent pipe",
+                "b-vent",
+                "pvc vent",
+                "metal vent",
+                "combustion vent",
+                "draft hood",
+                "exhaust vent"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Flue / Venting",
+                  "values": [
+                    "Metal B-Vent",
+                    "PVC (High-Eff)",
+                    "Direct Vent (Sealed)",
+                    "Masonry Chimney",
+                    "Single-Wall (Verify)"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "hvac_dataplate",
+              "label": "Data Plate (Make/Model)",
+              "kind": "component",
+              "keywords": [
+                "data plate",
+                "id tag",
+                "nameplate",
+                "model number",
+                "serial",
+                "manufacturer",
+                "btu",
+                "rating plate"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "hvac_burner",
+              "label": "Burner / Flame",
+              "kind": "component",
+              "keywords": [
+                "burner",
+                "flame",
+                "burn chamber",
+                "combustion chamber",
+                "pilot",
+                "ignitor",
+                "igniter",
+                "flame sensor"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Operated"
+              ]
+            },
+            {
+              "id": "hvac_heat_exchanger",
+              "label": "Heat Exchanger",
+              "kind": "component",
+              "keywords": [
+                "heat exchanger",
+                "cracked exchanger",
+                "exchanger",
+                "cell"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Heat Exchanger",
+                  "values": [
+                    "Visible — No Defects",
+                    "Partially Visible"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "hvac_combustion_air",
+              "label": "Combustion Air",
+              "kind": "component",
+              "keywords": [
+                "combustion air",
+                "make-up air",
+                "makeup air",
+                "air supply",
+                "louver",
+                "high low vent",
+                "fresh air"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Combustion Air",
+                  "values": [
+                    "High-Low Vents",
+                    "Direct Vent (Sealed)"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "hvac_cabinet",
+              "label": "Cabinet / Access",
+              "kind": "component",
+              "keywords": [
+                "cabinet",
+                "access panel",
+                "closed cabinet",
+                "door interlock",
+                "blower door",
+                "service panel"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "hvac_temp_rise",
+              "label": "Temp Rise / Register",
+              "kind": "component",
+              "keywords": [
+                "temp rise",
+                "temperature rise",
+                "register temp",
+                "supply temp",
+                "delta t",
+                "at register",
+                "split",
+                "return temp"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Measured"
+              ]
+            },
+            {
+              "id": "hvac_furnace",
+              "label": "Furnace",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "heating__air_handling",
+          "label": "Air Handling",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "hvac_distribution",
+              "label": "Distribution",
+              "kind": "component",
+              "keywords": [
+                "ductwork",
+                "duct",
+                "baseboard",
+                "radiator",
+                "forced air"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Distribution",
+                  "values": [
+                    "Forced Air (Ducts)",
+                    "Baseboard Electric",
+                    "Radiator / Boiler",
+                    "Ductless",
+                    "Radiant Floor",
+                    "Fan Coil Units"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "hvac_filter",
+              "label": "Filter",
+              "kind": "component",
+              "keywords": [
+                "filter",
+                "media filter",
+                "air filter",
+                "hepa",
+                "filter size",
+                "filter dimension",
+                "16x25",
+                "20x25",
+                "16x20",
+                "20x20",
+                "14x25",
+                "nominal size"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Type",
+                  "values": [
+                    "Standard 1\"",
+                    "Media Filter (4–5\")",
+                    "HEPA",
+                    "Electronic Air Cleaner",
+                    "UV Filter"
+                  ]
+                },
+                {
+                  "id": "size",
+                  "label": "Size",
+                  "values": [
+                    "16x25x1",
+                    "20x25x1",
+                    "16x20x1",
+                    "20x20x1",
+                    "14x25x1",
+                    "16x25x4",
+                    "20x25x4",
+                    "Custom / Other"
+                  ]
+                },
+                {
+                  "id": "location",
+                  "label": "Location",
+                  "values": [
+                    "At Unit / Air Handler",
+                    "Ceiling Return",
+                    "Wall Return",
+                    "Floor Return",
+                    "Multiple Returns"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "heating__controls",
+          "label": "Controls",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "hvac_thermostat",
+              "label": "Thermostat",
+              "kind": "component",
+              "keywords": [
+                "thermostat",
+                "nest",
+                "ecobee",
+                "smart thermostat",
+                "programmable"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Thermostat",
+                  "values": [
+                    "Smart (Nest / Ecobee)",
+                    "Programmable",
+                    "Manual",
+                    "Multi-Zone"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "heating__special_systems",
+          "label": "Special Systems",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "hvac_manufactured_crossover_duct",
+              "label": "Crossover Duct",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_manufactured_belly_wrap",
+              "label": "Belly Wrap",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_manufactured_furnace",
+              "label": "Manufactured Home Listed Furnace",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_older_gravity_furnace",
+              "label": "Gravity Furnace",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_older_oil_furnace",
+              "label": "Oil Furnace",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_older_steam_boiler",
+              "label": "Steam Boiler",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_multi_unit_shared_plant",
+              "label": "Shared HVAC Plant",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "mechanical",
+      "walkZones": [
+        "mechanical"
+      ]
+    },
+    {
+      "id": "cooling",
+      "label": "COOLING",
+      "kind": "system",
+      "icon": "snowflake",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "hvac_cooling",
+          "label": "AC System Type",
+          "kind": "component",
+          "keywords": [
+            "ac",
+            "air condition",
+            "cooling",
+            "condenser",
+            "mini-split",
+            "central air"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "AC System Type",
+              "values": [
+                "Split System",
+                "Package Unit",
+                "Ductless Mini-Split",
+                "Window / Wall AC",
+                "Heat Pump AC",
+                "Evaporative Cooler"
+              ],
+              "legacyBareKey": true
+            },
+            {
+              "id": "age",
+              "label": "Age",
+              "values": [
+                "Under 5 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
+                "Over 25 years old",
+                "Not determined"
+              ]
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "hvac_condenser",
+          "label": "Condenser",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "hvac_compressor",
+          "label": "Compressor",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "hvac_evaporator_coil",
+          "label": "Evaporator Coil",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "condition": true,
+          "walkZone": "mechanical",
+          "walkZones": [
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hvac_condensate",
+          "label": "Condensate Line",
+          "kind": "component",
+          "keywords": [
+            "condensate",
+            "drain line",
+            "condensate pump",
+            "pvc drain",
+            "condensate trap",
+            "secondary drain"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Condensate Line",
+              "values": [
+                "Gravity Drain (PVC)",
+                "Condensate Pump",
+                "To Floor Drain"
+              ]
+            }
+          ],
+          "condition": true,
+          "walkZone": "mechanical",
+          "walkZones": [
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hvac_disconnect",
+          "label": "Service Disconnect",
+          "kind": "component",
+          "keywords": [
+            "disconnect",
+            "service switch",
+            "shutoff",
+            "whip",
+            "breaker at unit",
+            "fused disconnect"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Service Disconnect",
+              "values": [
+                "Within Sight",
+                "Remote"
+              ]
+            }
+          ],
+          "condition": true,
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ]
+        }
+      ],
+      "trimmed": [],
+      "locationAxis": "room",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior"
+      ]
+    },
+    {
+      "id": "plumbing",
+      "label": "PLUMBING",
+      "kind": "system",
+      "icon": "water",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "plumbing__supply",
+          "label": "Supply",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "plumb_supply",
+              "label": "Supply Material",
+              "kind": "component",
+              "keywords": [
+                "supply line",
+                "copper pipe",
+                "pex",
+                "galvanized",
+                "cpvc",
+                "polybutylene",
+                "supply piping"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Supply Material",
+                  "values": [
+                    "Copper",
+                    "PEX",
+                    "CPVC",
+                    "Galvanized Steel",
+                    "PVC"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "plumb_main",
+              "label": "Main Shutoff Location",
+              "kind": "component",
+              "keywords": [
+                "main shutoff",
+                "main valve",
+                "water main",
+                "ball valve"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Main Shutoff Location",
+                  "values": [
+                    "Ball Valve — Basement",
+                    "Ball Valve — Utility",
+                    "Gate Valve",
+                    "Curb Stop Only"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Located"
+              ]
+            },
+            {
+              "id": "plumb_flow",
+              "label": "Functional Flow",
+              "kind": "component",
+              "keywords": [
+                "functional flow",
+                "water flow",
+                "low pressure flow",
+                "simultaneous fixtures",
+                "flow test",
+                "functional flow bath",
+                "water flow bath",
+                "low pressure bath",
+                "hot water bath"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "plumb_pressure",
+              "label": "Water Pressure",
+              "kind": "component",
+              "keywords": [
+                "water pressure",
+                "psi",
+                "pressure gauge",
+                "high pressure",
+                "low pressure",
+                "prv"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Measured"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "plumbing__drain_waste_vent",
+          "label": "Drain · Waste · Vent",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "plumb_drain",
+              "label": "Drain Material",
+              "kind": "component",
+              "keywords": [
+                "drain",
+                "abs pipe",
+                "pvc drain",
+                "cast iron drain",
+                "clay tile"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Drain Material",
+                  "values": [
+                    "PVC",
+                    "ABS",
+                    "Cast Iron",
+                    "Galvanized"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "plumb_vent",
+              "label": "Vent / Stack",
+              "kind": "component",
+              "keywords": [
+                "vent stack",
+                "plumbing vent",
+                "soil stack",
+                "roof vent",
+                "aav",
+                "studor",
+                "s-trap"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Vent / Stack",
+                  "values": [
+                    "Conventional Through-Roof",
+                    "Air Admittance Valve"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "plumb_drainage",
+              "label": "Functional Drainage",
+              "kind": "component",
+              "keywords": [
+                "functional drainage",
+                "slow drain",
+                "drainage test",
+                "gurgle",
+                "backup",
+                "standing water"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "plumb_cleanout",
+              "label": "Cleanouts",
+              "kind": "component",
+              "keywords": [
+                "cleanout",
+                "clean out",
+                "main cleanout",
+                "sewer cleanout"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located"
+              ]
+            },
+            {
+              "id": "primary_bathroom_drain_traps",
+              "label": "Drain Traps",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "laundry_drain",
+              "label": "Laundry Drain / Overflow Pan",
+              "kind": "component",
+              "keywords": [
+                "floor drain",
+                "drain pan",
+                "overflow pan",
+                "standpipe"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Drain / Overflow Pan",
+                  "values": [
+                    "Floor Drain Present",
+                    "Overflow Pan Present"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "plumbing__fixtures",
+          "label": "Fixtures",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "plumb_sinks",
+              "label": "Sinks / Faucets",
+              "kind": "component",
+              "keywords": [
+                "sink",
+                "faucet",
+                "lavatory",
+                "basin",
+                "drip",
+                "aerator",
+                "kitchen sink",
+                "sprayer",
+                "drip faucet",
+                "loose faucet",
+                "vanity",
+                "bathroom sink",
+                "vanity top",
+                "loose sink",
+                "lav",
+                "vanity sink"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "plumb_toilets",
+              "label": "Toilets",
+              "kind": "component",
+              "keywords": [
+                "toilet",
+                "water closet",
+                "wc",
+                "running toilet",
+                "loose toilet",
+                "rocking",
+                "rocking toilet",
+                "commode"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "plumb_tubshower",
+              "label": "Tubs / Showers",
+              "kind": "component",
+              "keywords": [
+                "tub",
+                "shower",
+                "bathtub",
+                "shower pan",
+                "surround",
+                "caulk",
+                "grout",
+                "tub shower combo",
+                "walk-in shower",
+                "soaking tub",
+                "separate shower",
+                "shower stall",
+                "tub/shower"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Bathing Fixture",
+                  "values": [
+                    "Tub Only",
+                    "Shower Only",
+                    "Tub / Shower Combo",
+                    "Walk-in Shower",
+                    "Tub + Separate Shower"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "plumb_hosebibs",
+              "label": "Hose Bibs",
+              "kind": "component",
+              "keywords": [
+                "hose bib",
+                "spigot",
+                "sillcock",
+                "exterior faucet",
+                "frost-free",
+                "anti-siphon",
+                "hose bib exterior",
+                "sillcock exterior",
+                "frost-free bib"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Winterized",
+                "Not Tested"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            },
+            {
+              "id": "kit_supplydrain",
+              "label": "Sink Supply / Drain",
+              "kind": "component",
+              "keywords": [
+                "under sink",
+                "p-trap",
+                "supply valve",
+                "angle stop",
+                "drain leak",
+                "s-trap kitchen",
+                "p-trap bath",
+                "angle stop bath",
+                "supply valve bath",
+                "drain leak bath",
+                "under vanity"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "kit_leaks",
+              "label": "Fixture Leaks / Water Damage",
+              "kind": "component",
+              "keywords": [
+                "leak under sink",
+                "water damage kitchen",
+                "cabinet base stain",
+                "mold under sink",
+                "caulk",
+                "grout",
+                "tub caulk",
+                "shower caulk",
+                "water damage bath",
+                "failing caulk"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "primary_bathroom_shower_head",
+              "label": "Shower Head",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "primary_bathroom_toilet_flapper",
+              "label": "Toilet Flapper",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "laundry_washer",
+              "label": "Washer Connections",
+              "kind": "component",
+              "keywords": [
+                "washer",
+                "washing machine",
+                "supply valves",
+                "laundry box",
+                "drain hose",
+                "laundry",
+                "dryer hookup",
+                "dryer vent interior",
+                "washer box",
+                "laundry drain",
+                "240v"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "plumbing__fuel_gas",
+          "label": "Fuel · Gas",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "plumb_gas",
+              "label": "Gas Supply",
+              "kind": "component",
+              "keywords": [
+                "gas supply",
+                "gas line",
+                "natural gas",
+                "propane",
+                "csst",
+                "black iron",
+                "gas piping"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Supply",
+                  "values": [
+                    "Black Iron",
+                    "CSST (Bonded)",
+                    "CSST (Bonding Unverified)",
+                    "Copper"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "plumb_gas_shutoff",
+              "label": "Gas Shutoffs",
+              "kind": "component",
+              "keywords": [
+                "gas shutoff",
+                "gas valve",
+                "appliance shutoff",
+                "sediment trap",
+                "drip leg",
+                "main gas valve"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Shutoffs",
+                  "values": [
+                    "Main + Appliance Valves",
+                    "Main Only"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "plumbing__plumbing",
+          "label": "PLUMBING",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "plumbing_manufactured_water_heater_vent",
+              "label": "Manufactured Home Water Heater Vent",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "plumbing_manufactured_plumbing_tie_downs",
+              "label": "Manufactured Home Plumbing Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "plumbing_older_galvanized_supply",
+              "label": "Older Home Galvanized Supply",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "plumbing_older_oil_fired_water_heater",
+              "label": "Older Home Oil-Fired Water Heater",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "plumbing_multi_unit_shared_water_heater",
+              "label": "Multi-Unit Shared Water Heater",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "plumbing_multi_unit_per_unit_water_meter",
+              "label": "Multi-Unit Per-Unit Water Meter",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "water_heater",
+      "label": "WATER HEATER",
+      "kind": "system",
+      "icon": "water-boiler",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "plumb_wh_type",
+          "label": "Water Heater",
+          "kind": "component",
+          "keywords": [
+            "water heater",
+            "tankless",
+            "tank water heater",
+            "heat pump water heater",
+            "hot water heater",
+            "water tank",
+            "gas water heater",
+            "electric water heater",
+            "propane",
+            "natural gas",
+            "heat pump",
+            "oil fired",
+            "gallon",
+            "gallon tank",
+            "40 gallon",
+            "50 gallon",
+            "80 gallon",
+            "water heater age",
+            "manufactured",
+            "mfg date",
+            "install year",
+            "serial date"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "type",
+              "label": "Type & Fuel",
+              "values": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane",
+                "Tankless — Electric",
+                "Heat Pump (Hybrid)",
+                "Solar Assisted"
+              ]
+            },
+            {
+              "id": "capacity",
+              "label": "Capacity",
+              "values": [
+                "30 Gallon",
+                "40 Gallon",
+                "50 Gallon",
+                "75 Gallon",
+                "80 Gallon"
+              ]
+            },
+            {
+              "id": "age_est",
+              "label": "Age",
+              "values": [
+                "Under 5 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "Over 15 years old — budget replacement",
+                "Not determined"
+              ]
+            },
+            {
+              "id": "location",
+              "label": "Location",
+              "freeText": true,
+              "values": []
+            }
+          ],
+          "condition": false,
+          "limitations": [
+            "Not Determined"
+          ]
+        },
+        {
+          "id": "plumb_wh_tpr",
+          "label": "TPR Valve & Discharge",
+          "kind": "component",
+          "keywords": [
+            "tpr",
+            "temperature pressure relief",
+            "relief valve",
+            "discharge tube",
+            "overflow tube",
+            "t&p valve"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "plumb_wh_expansion",
+          "label": "Expansion Tank",
+          "kind": "component",
+          "keywords": [
+            "expansion tank",
+            "thermal expansion",
+            "closed system"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_flue",
+          "label": "Water Heater Flue / Venting",
+          "kind": "component",
+          "keywords": [
+            "water heater flue",
+            "draft hood",
+            "b-vent",
+            "backdraft",
+            "spillage",
+            "venting"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Vent Type",
+              "values": [
+                "Atmospheric / Draft Hood",
+                "Power Vent",
+                "Direct Vent (Sealed)",
+                "Power Direct Vent",
+                "Common Vent (Shared with Furnace)"
+              ]
+            },
+            {
+              "id": "material",
+              "label": "Vent Material",
+              "values": [
+                "Type B (Double-Wall)",
+                "Single-Wall Metal",
+                "PVC / CPVC",
+                "Stainless (AL29-4C)",
+                "Masonry Chimney / Liner"
+              ]
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_pan",
+          "label": "Drain Pan",
+          "kind": "component",
+          "keywords": [
+            "drain pan",
+            "catch pan",
+            "pan drain",
+            "water heater pan"
+          ],
+          "trimmed": [],
+          "condition": true
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "plumbing_plumb_wh_tpr_test",
+          "label": "TPR Valve Test",
+          "kind": "component",
+          "keywords": []
+        },
+        {
+          "id": "plumbing_plumb_wh_expansion_test",
+          "label": "Expansion Tank Test",
+          "kind": "component",
+          "keywords": []
+        },
+        {
+          "id": "plumbing_plumb_wh_flue_test",
+          "label": "Flue / Venting Test",
+          "kind": "component",
+          "keywords": []
+        }
+      ],
+      "locationAxis": "none",
+      "walkZone": "mechanical",
+      "walkZones": [
+        "mechanical"
+      ]
+    },
+    {
+      "id": "electrical",
+      "label": "ELECTRICAL",
+      "kind": "system",
+      "icon": "lightning-bolt",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "electrical__service",
+          "label": "Service",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "elec_service",
+              "label": "Service Size",
+              "kind": "component",
+              "keywords": [
+                "amp service",
+                "100 amp",
+                "200 amp",
+                "150 amp",
+                "amperage",
+                "service rating"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Service Size",
+                  "values": [
+                    "100 Amp",
+                    "150 Amp",
+                    "200 Amp",
+                    "320 / 400 Amp"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Determined"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior",
+                "mechanical"
+              ]
+            },
+            {
+              "id": "elec_entrance",
+              "label": "Service Entrance",
+              "kind": "component",
+              "keywords": [
+                "service entrance",
+                "overhead",
+                "underground",
+                "weatherhead",
+                "service drop",
+                "lateral",
+                "service mast"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Service Entrance",
+                  "values": [
+                    "Overhead",
+                    "Underground (Lateral)",
+                    "Service Mast"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Determined"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior",
+                "mechanical"
+              ]
+            },
+            {
+              "id": "elec_meter",
+              "label": "Meter Base",
+              "kind": "component",
+              "keywords": [
+                "meter",
+                "meter base",
+                "meter can",
+                "meter socket"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior",
+                "mechanical"
+              ]
+            },
+            {
+              "id": "elec_main",
+              "label": "Main Disconnect",
+              "kind": "component",
+              "keywords": [
+                "main disconnect",
+                "main breaker",
+                "service disconnect",
+                "main shutoff"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Main Disconnect",
+                  "values": [
+                    "Single Main Breaker",
+                    "Up to 6 Throws",
+                    "Not Located"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZones": [
+                "mechanical",
+                "exterior"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "electrical__panel",
+          "label": "Panel",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "elec_panel",
+              "label": "Panel",
+              "kind": "component",
+              "keywords": [
+                "panel",
+                "breaker panel",
+                "federal pacific",
+                "zinsco",
+                "siemens",
+                "square d",
+                "circuit breaker",
+                "ge panel",
+                "electrical panel",
+                "load center",
+                "panel location",
+                "garage panel",
+                "exterior panel",
+                "interior panel",
+                "closet panel",
+                "clearance"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "brand",
+                  "label": "Brand",
+                  "values": [
+                    "Square D",
+                    "Siemens",
+                    "Eaton / Cutler-Hammer",
+                    "GE",
+                    "Murray",
+                    "Other"
+                  ]
+                },
+                {
+                  "id": "location",
+                  "label": "Location",
+                  "values": [
+                    "Garage",
+                    "Exterior",
+                    "Basement / Utility",
+                    "Interior"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZones": [
+                "mechanical",
+                "exterior"
+              ]
+            },
+            {
+              "id": "elec_deadfront",
+              "label": "Dead Front / Interior",
+              "kind": "component",
+              "keywords": [
+                "dead front",
+                "panel cover",
+                "interior of panel",
+                "removed cover",
+                "panel opened"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Removed",
+                "Painted / Stuck"
+              ]
+            },
+            {
+              "id": "elec_breakers",
+              "label": "Breakers / Connections",
+              "kind": "component",
+              "keywords": [
+                "breaker",
+                "double tap",
+                "double-tap",
+                "loose connection",
+                "oversized breaker",
+                "overfused",
+                "tandem"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "elec_bonding",
+              "label": "Bonding & Grounding",
+              "kind": "component",
+              "keywords": [
+                "bonding",
+                "grounding electrode",
+                "ground rod",
+                "neutral bond",
+                "gec",
+                "main bonding jumper"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Electrode Type",
+                  "values": [
+                    "Ground Rod(s)",
+                    "Ufer / Concrete-Encased",
+                    "Ground Plate",
+                    "Metal Water Pipe",
+                    "Not Determined"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "gar_subpanel",
+              "label": "Sub-Panel",
+              "kind": "component",
+              "keywords": [
+                "garage subpanel",
+                "sub panel garage",
+                "garage panel"
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "electrical__branch_wiring",
+          "label": "Branch Wiring",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "elec_wiring",
+              "label": "Wiring",
+              "kind": "component",
+              "keywords": [
+                "wiring",
+                "aluminum wire",
+                "copper wire",
+                "knob and tube",
+                "romex",
+                "nm-b",
+                "conduit",
+                "emt",
+                "mc cable",
+                "bx cable",
+                "wiring method",
+                "flexible conduit"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Type",
+                  "values": [
+                    "Copper NM-B (Romex)",
+                    "Copper in Conduit"
+                  ]
+                },
+                {
+                  "id": "method",
+                  "label": "Method",
+                  "values": [
+                    "NM-B (Romex)",
+                    "Conduit (EMT)",
+                    "MC / BX Cable"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "kit_circuits",
+              "label": "Dedicated Circuits",
+              "kind": "component",
+              "keywords": [
+                "dedicated circuit",
+                "small appliance circuit",
+                "two circuits",
+                "20 amp counter"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Determinable"
+              ]
+            },
+            {
+              "id": "laundry_dryer",
+              "label": "Dryer Connections",
+              "kind": "component",
+              "keywords": [
+                "dryer",
+                "240v",
+                "gas dryer",
+                "electric dryer"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Dryer Connections",
+                  "values": [
+                    "Electric (240V)",
+                    "Gas",
+                    "Both Available"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "electrical__devices_protection",
+          "label": "Devices & Protection",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "elec_grounding",
+              "label": "GFCI / AFCI Protection",
+              "kind": "component",
+              "keywords": [
+                "gfci",
+                "afci",
+                "ground fault",
+                "arc fault",
+                "kitchen gfci",
+                "counter outlet",
+                "gfci counter",
+                "ground fault kitchen",
+                "bathroom gfci",
+                "bath outlet",
+                "ground fault bathroom",
+                "vanity outlet",
+                "receptacle",
+                "garage gfci",
+                "garage outlet",
+                "ground fault garage"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "GFCI / AFCI Protection",
+                  "values": [
+                    "GFCI + AFCI",
+                    "GFCI Protected",
+                    "AFCI Protected",
+                    "Partial Protection"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "elec_receptacles",
+              "label": "Receptacles / Switches",
+              "kind": "component",
+              "keywords": [
+                "receptacle",
+                "outlet",
+                "switch",
+                "reverse polarity",
+                "open ground",
+                "ungrounded",
+                "three prong"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "int_lighting",
+              "label": "Lighting / Fixtures",
+              "kind": "component",
+              "keywords": [
+                "lighting",
+                "light fixture",
+                "fixture",
+                "recessed light",
+                "ceiling fan",
+                "bulb",
+                "switch operation",
+                "sconce",
+                "pendant",
+                "garage light",
+                "garage lighting",
+                "garage switch"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "elec_ext_lighting",
+              "label": "Exterior Lighting",
+              "kind": "component",
+              "keywords": [
+                "exterior light",
+                "outdoor light",
+                "porch light",
+                "flood light",
+                "security light",
+                "soffit light",
+                "landscape lighting",
+                "motion light"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "electrical__electrical",
+          "label": "ELECTRICAL",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "electrical_manufactured_tie_downs",
+              "label": "Exterior Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "electrical_manufactured_skirt_electrical",
+              "label": "Skirting Electrical Openings",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "electrical_older_fuse_panel",
+              "label": "Fuse Panel",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "electrical_multi_unit_metering",
+              "label": "Multi-Unit Metering",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "electrical_multi_unit_shared_systems",
+              "label": "Shared Electrical Systems",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "mechanical",
+      "walkZones": [
+        "mechanical"
+      ]
+    },
+    {
+      "id": "roofing",
+      "label": "ROOFING",
+      "kind": "system",
+      "icon": "home-roof",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "roofing__covering",
+          "label": "Covering",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "roof_material",
+              "label": "Roof Material",
+              "kind": "component",
+              "keywords": [
+                "shingle",
+                "metal roof",
+                "tile roof",
+                "flat roof",
+                "membrane",
+                "tpo",
+                "asphalt shingle",
+                "wood shake",
+                "layer",
+                "double layer",
+                "single layer",
+                "roof layer",
+                "roof age",
+                "granule loss",
+                "roofing age",
+                "years old"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Type",
+                  "values": [
+                    "Asphalt Shingle",
+                    "Metal",
+                    "Clay / Concrete Tile",
+                    "Wood Shake",
+                    "TPO (Flat)",
+                    "EPDM (Flat)",
+                    "Modified Bitumen",
+                    "Slate"
+                  ]
+                },
+                {
+                  "id": "layer_count",
+                  "label": "Layer Count",
+                  "values": [
+                    "1 Layer",
+                    "2 Layers"
+                  ]
+                },
+                {
+                  "id": "estimated_age",
+                  "label": "Estimated Age",
+                  "values": [
+                    "Under 5 years old",
+                    "5–10 years old",
+                    "10–15 years old",
+                    "15–20 years old",
+                    "20–25 years old",
+                    "Over 25 years old",
+                    "Not determined"
+                  ]
+                }
+              ],
+              "condition": false,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_asphalt",
+              "label": "Asphalt Shingle",
+              "kind": "component",
+              "keywords": [
+                "asphalt shingle condition",
+                "shingle condition",
+                "granule loss",
+                "granule wear",
+                "curling",
+                "cupping",
+                "nail pops"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_metal",
+              "label": "Metal",
+              "kind": "component",
+              "keywords": [
+                "metal roof condition",
+                "metal panels",
+                "rust",
+                "loose fasteners",
+                "seams"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_tile",
+              "label": "Clay / Concrete Tile",
+              "kind": "component",
+              "keywords": [
+                "tile roof condition",
+                "cracked tile",
+                "broken tile",
+                "slipped tile"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_wood",
+              "label": "Wood Shake",
+              "kind": "component",
+              "keywords": [
+                "wood shake condition",
+                "split shakes",
+                "rot",
+                "moss"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_tpo",
+              "label": "TPO (Flat)",
+              "kind": "component",
+              "keywords": [
+                "tpo condition",
+                "membrane seams",
+                "ponding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_epdm",
+              "label": "EPDM (Flat)",
+              "kind": "component",
+              "keywords": [
+                "epdm condition",
+                "rubber roof condition",
+                "membrane seams",
+                "ponding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_modbit",
+              "label": "Modified Bitumen",
+              "kind": "component",
+              "keywords": [
+                "modified bitumen condition",
+                "blisters",
+                "alligatoring"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_slate",
+              "label": "Slate",
+              "kind": "component",
+              "keywords": [
+                "slate condition",
+                "cracked slate",
+                "slipped slate"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_cov_other",
+              "label": "Other Covering",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_surface",
+              "label": "Surface / Granule Wear",
+              "kind": "component",
+              "keywords": [
+                "granule loss",
+                "surface wear",
+                "curling",
+                "cupping",
+                "blister",
+                "moss",
+                "wear",
+                "balding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessed"
+              ]
+            },
+            {
+              "id": "roof_method",
+              "label": "Method of Inspection",
+              "kind": "component",
+              "keywords": [
+                "walked roof",
+                "from ground",
+                "drone",
+                "binoculars",
+                "not accessed",
+                "too steep",
+                "access method"
+              ],
+              "trimmed": [],
+              "condition": false,
+              "method": [
+                "Walked",
+                "From Ground / Eaves",
+                "Drone",
+                "Binoculars"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "roofing__flashing_penetrations",
+          "label": "Flashing & Penetrations",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "roof_flashing",
+              "label": "Flashings",
+              "kind": "component",
+              "keywords": [
+                "flashing",
+                "step flashing",
+                "valley flashing",
+                "wall flashing",
+                "kickout",
+                "counter flashing"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "roof_boots",
+              "label": "Vent Boots / Pipe Jacks",
+              "kind": "component",
+              "keywords": [
+                "pipe boot",
+                "vent boot",
+                "pipe jack",
+                "plumbing vent flashing",
+                "neoprene boot",
+                "cracked boot"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "roof_skylights",
+              "label": "Skylights",
+              "kind": "component",
+              "keywords": [
+                "skylight",
+                "roof window",
+                "sun tunnel",
+                "solar tube",
+                "curb mount"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "roof_chimflash",
+              "label": "Chimney Flashing",
+              "kind": "component",
+              "keywords": [
+                "chimney flashing",
+                "chimney saddle",
+                "cricket",
+                "chimney counter flashing"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZones": [
+                "roof",
+                "exterior"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "roofing__drainage",
+          "label": "Drainage",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "roof_gutters",
+              "label": "Gutters",
+              "kind": "component",
+              "keywords": [
+                "gutter",
+                "eavestrough",
+                "gutter guard",
+                "overflow",
+                "loose gutter",
+                "rusted gutter"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "material",
+                  "label": "Material",
+                  "values": [
+                    "Aluminum",
+                    "Vinyl",
+                    "Galvanized Steel",
+                    "Copper",
+                    "Wood"
+                  ]
+                }
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "roof",
+                "exterior"
+              ]
+            },
+            {
+              "id": "roof_downspouts",
+              "label": "Downspouts",
+              "kind": "component",
+              "keywords": [
+                "downspout",
+                "leader",
+                "conductor",
+                "disconnected downspout"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "roof",
+                "exterior"
+              ]
+            },
+            {
+              "id": "roof_discharge",
+              "label": "Downspout Extensions / Discharge",
+              "kind": "component",
+              "keywords": [
+                "downspout extension",
+                "discharge",
+                "splash block",
+                "discharge at foundation",
+                "underground drain",
+                "daylight"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Downspout Extensions / Discharge",
+                  "values": [
+                    "Splash Blocks Only",
+                    "Underground — Verify Daylight"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "roof",
+                "exterior"
+              ]
+            },
+            {
+              "id": "roof_dripedge",
+              "label": "Drip Edge",
+              "kind": "component",
+              "keywords": [
+                "drip edge",
+                "edge metal",
+                "eave flashing",
+                "gravel stop"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "roof",
+                "exterior"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "roofing__structure",
+          "label": "Structure",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "roof_sheath",
+              "label": "Sheathing / Decking",
+              "kind": "component",
+              "keywords": [
+                "decking",
+                "sheathing from roof",
+                "soft spots",
+                "spongy deck",
+                "sag in deck",
+                "osb sheathing",
+                "plywood sheathing",
+                "board sheathing",
+                "skip sheathing",
+                "delamination"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Assessed from Attic",
+                "Not Visible"
+              ],
+              "walkZone": "attic",
+              "walkZones": [
+                "roof",
+                "attic"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Material",
+                  "values": [
+                    "OSB",
+                    "Plywood",
+                    "Board Sheathing (Spaced)",
+                    "Board Sheathing (Solid)"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "roof_ridgeline",
+              "label": "Ridge / Sag Line",
+              "kind": "component",
+              "keywords": [
+                "ridge line",
+                "sag",
+                "swayback",
+                "roof line",
+                "deflection",
+                "uneven ridge"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Determinable"
+              ],
+              "walkZone": "attic",
+              "walkZones": [
+                "roof",
+                "attic"
+              ]
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "roofing__roofing",
+          "label": "ROOFING",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "roofing_manufactured_roof_tie_downs",
+              "label": "Roof Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "roofing_manufactured_roof_skirts",
+              "label": "Roof Skirts",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "roofing_older_roof_built_up_layers",
+              "label": "Built-Up Roof Layers",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "roofing_multi_unit_roof_drainage",
+              "label": "Roof Drainage",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "elevation",
+      "walkZone": "roof",
+      "walkZones": [
+        "roof"
+      ]
+    },
+    {
+      "id": "foundation",
+      "label": "FOUNDATION",
+      "kind": "system",
+      "icon": "layers-triple",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "foundation__type_material",
+          "label": "Type & Material",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "found_type",
+              "label": "Foundation",
+              "kind": "component",
+              "keywords": [
+                "slab",
+                "crawlspace",
+                "basement",
+                "pier and beam",
+                "grade beam",
+                "poured concrete",
+                "cinder block",
+                "concrete block",
+                "stone foundation"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Type",
+                  "values": [
+                    "Poured Concrete Slab",
+                    "Crawlspace",
+                    "Basement",
+                    "Pier & Beam",
+                    "Grade Beam"
+                  ]
+                },
+                {
+                  "id": "wall_material",
+                  "label": "Wall Material",
+                  "values": [
+                    "Poured Concrete",
+                    "Concrete Block (CMU)",
+                    "Stone",
+                    "Brick"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZones": [
+                "exterior",
+                "crawlspace",
+                "basement"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "foundation__walls_slab",
+          "label": "Walls / Slab",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "found_cracks",
+              "label": "Cracks",
+              "kind": "component",
+              "keywords": [
+                "crack",
+                "hairline crack",
+                "step crack",
+                "horizontal crack",
+                "vertical crack",
+                "diagonal crack"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "found_movement",
+              "label": "Movement / Settlement",
+              "kind": "component",
+              "keywords": [
+                "settlement",
+                "movement",
+                "heaving",
+                "bowing",
+                "leaning",
+                "displacement",
+                "differential"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Determinable"
+              ]
+            },
+            {
+              "id": "found_moisture",
+              "label": "Moisture / Efflorescence",
+              "kind": "component",
+              "keywords": [
+                "efflorescence",
+                "moisture",
+                "water stain",
+                "damp",
+                "mineral deposit",
+                "seepage stain"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "foundation_found_wall_setback",
+              "label": "Wall Setback",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            }
+          ]
+        },
+        {
+          "id": "foundation__crawlspace",
+          "label": "Crawlspace",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "found_cs_access",
+              "label": "Crawlspace Access",
+              "kind": "component",
+              "keywords": [
+                "crawlspace access",
+                "crawl access",
+                "crawl hatch",
+                "crawl door",
+                "too tight",
+                "no access crawl"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Viewed from Hatch",
+                "No Access"
+              ],
+              "method": [
+                "Fully Entered",
+                "Partial Entry"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_vapor",
+              "label": "Vapor Barrier",
+              "kind": "component",
+              "keywords": [
+                "vapor barrier",
+                "ground cover",
+                "poly sheeting",
+                "plastic on ground",
+                "encapsulation"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Vapor Barrier",
+                  "values": [
+                    "Full Coverage",
+                    "Encapsulated"
+                  ]
+                }
+              ],
+              "condition": true,
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_vent",
+              "label": "Foundation Vents / Louvers",
+              "kind": "component",
+              "keywords": [
+                "foundation vent",
+                "crawl vent",
+                "louver",
+                "passive vent",
+                "cross ventilation",
+                "vented crawl"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Foundation Vents / Louvers",
+                  "values": [
+                    "Passive Vents — Adequate",
+                    "Sealed — Conditioned Crawl"
+                  ]
+                }
+              ],
+              "condition": true,
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_piers",
+              "label": "Posts / Piers",
+              "kind": "component",
+              "keywords": [
+                "pier",
+                "post",
+                "support column",
+                "jack post",
+                "crawl support",
+                "settling pier"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_moisture",
+              "label": "Crawlspace Moisture",
+              "kind": "component",
+              "keywords": [
+                "crawl moisture",
+                "standing water crawl",
+                "damp crawl",
+                "wet crawl",
+                "mold crawl",
+                "fungal"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_ins_type",
+              "label": "Crawl Insulation — Type",
+              "kind": "component",
+              "keywords": [
+                "crawl insulation",
+                "batt insulation crawl",
+                "foam crawl",
+                "rim joist insulation",
+                "subfloor insulation",
+                "insulation condition",
+                "wet insulation",
+                "rodent damage insulation",
+                "sagging insulation",
+                "moldy insulation"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Crawl Insulation — Type",
+                  "values": [
+                    "Fiberglass Batt (Floor)",
+                    "Rigid / Spray Foam (Walls)",
+                    "Rim Joist Only"
+                  ]
+                }
+              ],
+              "condition": true,
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_ins_cov",
+              "label": "Crawl Insulation — Coverage",
+              "kind": "component",
+              "keywords": [
+                "insulation coverage crawl",
+                "gaps insulation",
+                "missing insulation",
+                "partial coverage"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            },
+            {
+              "id": "found_cs_sump",
+              "label": "Sump Pump & Pit (Crawl)",
+              "kind": "component",
+              "keywords": [
+                "sump pump crawl",
+                "crawl sump",
+                "sump pit",
+                "pump crawl",
+                "drainage pump"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Present — Not Tested"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "crawlspace",
+                  "pier & beam"
+                ]
+              }
+            }
+          ],
+          "walkZone": "crawlspace",
+          "walkZones": [
+            "crawlspace"
+          ]
+        },
+        {
+          "id": "foundation__basement",
+          "label": "Basement",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "found_bsmt_moist",
+              "label": "Basement Moisture / Seepage",
+              "kind": "component",
+              "keywords": [
+                "basement moisture",
+                "seepage",
+                "wet basement",
+                "water stain basement",
+                "efflorescence basement"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Finished — Concealed"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "basement"
+                ]
+              }
+            },
+            {
+              "id": "found_bsmt_sump",
+              "label": "Basement Sump Pump",
+              "kind": "component",
+              "keywords": [
+                "basement sump",
+                "sump pump basement",
+                "ejector pump",
+                "drain tile"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Present — Not Tested"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "basement"
+                ]
+              }
+            },
+            {
+              "id": "found_bsmt_walls",
+              "label": "Basement Floor / Walls",
+              "kind": "component",
+              "keywords": [
+                "basement wall",
+                "basement floor",
+                "slab crack basement",
+                "parging",
+                "block wall basement"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Finished — Concealed"
+              ],
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "basement"
+                ]
+              }
+            },
+            {
+              "id": "int_basement",
+              "label": "Basement / Lower",
+              "kind": "component",
+              "keywords": [
+                "finished basement",
+                "unfinished basement",
+                "partial basement",
+                "lower level"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Basement / Lower",
+                  "values": [
+                    "Finished",
+                    "Partially Finished",
+                    "Unfinished"
+                  ]
+                }
+              ],
+              "condition": true,
+              "dependsOnSpec": {
+                "nodeId": "found_type::type",
+                "includes": [
+                  "basement"
+                ]
+              }
+            }
+          ],
+          "walkZone": "basement",
+          "walkZones": [
+            "basement"
+          ]
+        },
+        {
+          "id": "foundation__framing_visible",
+          "label": "Framing (Visible)",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "found_joists",
+              "label": "Floor Joists",
+              "kind": "component",
+              "keywords": [
+                "floor joist",
+                "joist",
+                "sistered joist",
+                "cut joist",
+                "notched joist",
+                "sagging joist"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "found_beams",
+              "label": "Beams / Columns",
+              "kind": "component",
+              "keywords": [
+                "beam",
+                "girder",
+                "column",
+                "lally column",
+                "main beam",
+                "support beam"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "found_subfloor",
+              "label": "Subfloor",
+              "kind": "component",
+              "keywords": [
+                "subfloor",
+                "sub-floor",
+                "soft floor",
+                "spongy floor",
+                "water-damaged subfloor",
+                "underside of floor",
+                "bath subfloor",
+                "soft floor bath",
+                "spongy floor bath",
+                "rot at toilet",
+                "water-damaged subfloor bath"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "foundation__garage_slab",
+          "label": "Garage Slab",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "gar_floor",
+              "label": "Garage Floor / Slab",
+              "kind": "component",
+              "keywords": [
+                "garage floor",
+                "garage slab",
+                "floor crack",
+                "oil stain",
+                "floor slope",
+                "slopes to door",
+                "slab"
+              ],
+              "condition": true
+            },
+            {
+              "id": "gar_drain",
+              "label": "Garage Floor Drain",
+              "kind": "component",
+              "keywords": [
+                "floor drain",
+                "garage drain",
+                "trench drain"
+              ],
+              "condition": true
+            }
+          ],
+          "walkZone": "garage",
+          "walkZones": [
+            "garage"
+          ]
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "foundation__foundation",
+          "label": "FOUNDATION",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "foundation_manufactured_tie_downs",
+              "label": "Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_manufactured_skirting",
+              "label": "Skirting",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_manufactured_belly_wrap",
+              "label": "Belly Wrap",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_manufactured_marriage_line",
+              "label": "Marriage Line",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_older_galvanized_supply",
+              "label": "Galvanized Water Supply",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_multi_unit_shared_foundation",
+              "label": "Shared Foundation",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "none",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior"
+      ]
+    },
+    {
+      "id": "exterior",
+      "label": "EXTERIOR",
+      "kind": "system",
+      "icon": "home-city-outline",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "exterior__cladding",
+          "label": "Cladding",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "ext_siding",
+              "label": "Siding Material",
+              "kind": "component",
+              "keywords": [
+                "vinyl siding",
+                "hardie board",
+                "wood siding",
+                "stucco",
+                "brick",
+                "aluminum siding",
+                "siding condition",
+                "cracked siding",
+                "loose siding",
+                "rot siding",
+                "damaged siding",
+                "buckled"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Siding Material",
+                  "values": [
+                    "Vinyl",
+                    "Hardie Board (Fiber Cement)",
+                    "Wood",
+                    "Stucco",
+                    "Brick",
+                    "Stone",
+                    "Aluminum",
+                    "Metal Panel"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_trim",
+              "label": "Trim / Fascia / Soffit",
+              "kind": "component",
+              "keywords": [
+                "fascia",
+                "soffit",
+                "trim",
+                "rake board",
+                "frieze",
+                "rotted trim",
+                "open soffit"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_paint",
+              "label": "Paint / Sealant",
+              "kind": "component",
+              "keywords": [
+                "paint",
+                "sealant",
+                "caulk",
+                "peeling paint",
+                "exposed wood",
+                "failed caulk"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "exterior__openings",
+          "label": "Openings",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "ext_windows",
+              "label": "Window Type",
+              "kind": "component",
+              "keywords": [
+                "single pane",
+                "double pane",
+                "triple pane",
+                "aluminum window",
+                "vinyl window",
+                "wood window"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Type",
+                  "values": [
+                    "Double-Pane Vinyl",
+                    "Double-Pane Wood",
+                    "Double-Pane Aluminum",
+                    "Triple-Pane",
+                    "Storm Windows"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "ext_doors",
+              "label": "Door Material",
+              "kind": "component",
+              "keywords": [
+                "entry door",
+                "exterior door",
+                "garage door",
+                "steel door",
+                "fiberglass door"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Material",
+                  "values": [
+                    "Steel",
+                    "Fiberglass",
+                    "Solid Wood",
+                    "Glass / French"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "ext_weatherstrip",
+              "label": "Weatherstripping",
+              "kind": "component",
+              "keywords": [
+                "weatherstrip",
+                "weatherstripping",
+                "door seal",
+                "threshold",
+                "gap at door",
+                "daylight at door"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ext_garage_door",
+              "label": "Garage Door Auto-Reverse / Photo-Eyes",
+              "kind": "component",
+              "keywords": [
+                "garage door opener",
+                "auto reverse",
+                "auto-reverse",
+                "photo eye",
+                "photoelectric",
+                "safety reverse",
+                "photo-eyes",
+                "safety sensor",
+                "reverse on contact"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Garage Door Auto-Reverse / Photo-Eyes",
+                  "values": [
+                    "Photo-Eyes Only",
+                    "Mechanical Reverse Only",
+                    "Auto-Reverse Only"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
+            },
+            {
+              "id": "gar_door",
+              "label": "Garage Vehicle Door",
+              "kind": "component",
+              "keywords": [
+                "garage door",
+                "overhead door",
+                "sectional door",
+                "roll-up door",
+                "tilt-up door",
+                "bay door"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Vehicle Door",
+                  "values": [
+                    "Sectional — Insulated",
+                    "Sectional — Non-Insulated",
+                    "Roll-Up",
+                    "Tilt-Up",
+                    "Wood",
+                    "Steel"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
+            },
+            {
+              "id": "gar_opener",
+              "label": "Garage Door Opener",
+              "kind": "component",
+              "keywords": [
+                "garage door opener",
+                "opener",
+                "liftmaster",
+                "chamberlain",
+                "genie",
+                "belt drive",
+                "chain drive"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "gar_springs",
+              "label": "Garage Door Springs & Cables",
+              "kind": "component",
+              "keywords": [
+                "torsion spring",
+                "extension spring",
+                "garage cable",
+                "frayed cable",
+                "broken spring"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "garage_gar_door_hardware",
+              "label": "Garage Door Hardware",
+              "kind": "component",
+              "keywords": [],
+              "condition": true,
+              "walkZone": "garage",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "exterior__grounds",
+          "label": "Grounds",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "ext_grade",
+              "label": "Site Grade",
+              "kind": "component",
+              "keywords": [
+                "grade",
+                "grading",
+                "site drainage",
+                "slope away",
+                "negative grade"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ext_clearance",
+              "label": "Lot Slope / Foundation Clearance",
+              "kind": "component",
+              "keywords": [
+                "foundation clearance",
+                "soil clearance",
+                "mulch to siding",
+                "grade to siding",
+                "lot slope",
+                "wood to soil",
+                "ponding"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ext_walkways",
+              "label": "Walkways / Driveway",
+              "kind": "component",
+              "keywords": [
+                "driveway",
+                "walkway",
+                "sidewalk",
+                "trip hazard",
+                "heaved concrete",
+                "settled slab",
+                "apron",
+                "concrete driveway",
+                "asphalt driveway",
+                "paver driveway",
+                "concrete walkway",
+                "concrete sidewalk",
+                "driveway material",
+                "walkway material",
+                "flatwork"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Walkways / Driveway",
+                  "values": [
+                    "Poured Concrete",
+                    "Asphalt",
+                    "Pavers",
+                    "Brick",
+                    "Gravel",
+                    "Exposed Aggregate",
+                    "Stamped Concrete",
+                    "Stone"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ext_vegetation",
+              "label": "Vegetation",
+              "kind": "component",
+              "keywords": [
+                "vegetation",
+                "tree",
+                "overhanging branch",
+                "vines",
+                "shrubs against house",
+                "roots"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ext_retaining",
+              "label": "Retaining Walls",
+              "kind": "component",
+              "keywords": [
+                "retaining wall",
+                "retaining",
+                "leaning wall",
+                "bowing wall",
+                "weep holes",
+                "tieback"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "exterior__decks_porches",
+          "label": "Decks & Porches",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "ext_deck",
+              "label": "Deck / Porch",
+              "kind": "component",
+              "keywords": [
+                "deck",
+                "porch",
+                "balcony",
+                "deck boards",
+                "joist deck",
+                "post deck",
+                "rotted deck",
+                "deck material",
+                "composite deck",
+                "wood deck",
+                "treated deck",
+                "porch material"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Deck / Porch",
+                  "values": [
+                    "Pressure-Treated Wood",
+                    "Cedar",
+                    "Redwood",
+                    "Composite",
+                    "PVC",
+                    "Concrete",
+                    "Tile"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "ext_railings",
+              "label": "Railings / Guards",
+              "kind": "component",
+              "keywords": [
+                "railing",
+                "guard",
+                "guardrail",
+                "baluster",
+                "loose railing",
+                "spacing",
+                "4 inch sphere"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ext_ledger",
+              "label": "Ledger Attachment",
+              "kind": "component",
+              "keywords": [
+                "ledger",
+                "ledger board",
+                "ledger flashing",
+                "lag bolt",
+                "nailed ledger",
+                "deck attachment"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_ext_stairs",
+              "label": "Exterior Stairs",
+              "kind": "component",
+              "keywords": [
+                "exterior stair",
+                "porch stair",
+                "deck stair",
+                "stringer",
+                "riser exterior",
+                "handrail exterior"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "exterior__penetrations",
+          "label": "Penetrations",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "ext_gfci",
+              "label": "Exterior GFCI",
+              "kind": "component",
+              "keywords": [
+                "exterior outlet",
+                "exterior gfci",
+                "outdoor receptacle",
+                "in-use cover",
+                "weatherproof cover"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            },
+            {
+              "id": "ext_dryer",
+              "label": "Dryer Vent",
+              "kind": "component",
+              "keywords": [
+                "dryer vent",
+                "dryer exhaust",
+                "lint",
+                "dryer termination",
+                "screened dryer vent",
+                "exhaust duct",
+                "vent termination",
+                "foil vent",
+                "vinyl vent"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located",
+                "Not Visible"
+              ],
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior",
+                "interior"
+              ]
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "exterior__exterior",
+          "label": "EXTERIOR",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "exterior_manufactured_tie_downs",
+              "label": "Exterior Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_manufactured_skirts",
+              "label": "Skirting",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_manufactured_belly_wrap",
+              "label": "Belly Wrap",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_multi_unit_fire_separation",
+              "label": "Fire Separation",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "elevation",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior"
+      ]
+    },
+    {
+      "id": "attic",
+      "label": "ATTIC / INSULATION",
+      "kind": "system",
+      "icon": "home-thermometer-outline",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "attic__access_structure",
+          "label": "Access & Structure",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_access",
+              "label": "Attic Access",
+              "kind": "component",
+              "keywords": [
+                "attic access",
+                "scuttle",
+                "pull-down stair",
+                "attic door",
+                "attic hatch",
+                "no access attic"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Attic Access",
+                  "values": [
+                    "Scuttle / Hatch",
+                    "Pull-Down Stair"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Viewed from Hatch",
+                "No Access"
+              ],
+              "method": [
+                "Fully Entered"
+              ]
+            },
+            {
+              "id": "attic_framing",
+              "label": "Roof Framing",
+              "kind": "component",
+              "keywords": [
+                "rafter",
+                "truss",
+                "roof framing",
+                "collar tie",
+                "cut truss",
+                "modified truss",
+                "ridge board"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Roof Framing",
+                  "values": [
+                    "Conventional Rafters",
+                    "Engineered Trusses"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "attic__insulation",
+          "label": "Insulation",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_instype",
+              "label": "Insulation",
+              "kind": "component",
+              "keywords": [
+                "fiberglass batt",
+                "blown cellulose",
+                "blown fiberglass",
+                "spray foam",
+                "rigid foam",
+                "attic insulation",
+                "r-value",
+                "r value",
+                "r-19",
+                "r-30",
+                "r-38",
+                "r-49",
+                "insulation depth"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Type",
+                  "values": [
+                    "Fiberglass Batts",
+                    "Blown Cellulose",
+                    "Blown Fiberglass",
+                    "Open-Cell Spray Foam",
+                    "Closed-Cell Spray Foam",
+                    "Rigid Foam Board"
+                  ]
+                },
+                {
+                  "id": "est_r_value",
+                  "label": "Est. R-Value",
+                  "values": [
+                    "< R-19 (Upgrade)",
+                    "R-19–R-30",
+                    "R-30–R-38",
+                    "R-38–R-49",
+                    "> R-49"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Determined"
+              ]
+            },
+            {
+              "id": "attic_coverage",
+              "label": "Insulation Coverage",
+              "kind": "component",
+              "keywords": [
+                "insulation coverage",
+                "gaps insulation",
+                "missing insulation",
+                "compressed insulation",
+                "uneven coverage",
+                "voids"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "attic_vapor",
+              "label": "Vapor Barrier",
+              "kind": "component",
+              "keywords": [
+                "vapor barrier",
+                "vapor retarder",
+                "poly sheeting",
+                "kraft facing"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Coverage",
+                  "values": [
+                    "None",
+                    "Partial",
+                    "Full",
+                    "Ground Cover (Crawlspace)"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "attic__ventilation",
+          "label": "Ventilation",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_intake",
+              "label": "Intake (Soffit) Vents",
+              "kind": "component",
+              "keywords": [
+                "soffit vent",
+                "intake vent",
+                "eave vent",
+                "baffle",
+                "blocked soffit",
+                "continuous soffit"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "attic_exhaust",
+              "label": "Exhaust (Ridge / Gable)",
+              "kind": "component",
+              "keywords": [
+                "ridge vent",
+                "gable vent",
+                "box vent",
+                "turbine vent",
+                "exhaust vent attic"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Exhaust (Ridge / Gable)",
+                  "values": [
+                    "Ridge Vent",
+                    "Gable Vents",
+                    "Box / Turbine Vents"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "attic_powered",
+              "label": "Powered Vents",
+              "kind": "component",
+              "keywords": [
+                "power vent",
+                "attic fan",
+                "powered attic ventilator",
+                "solar vent",
+                "thermostat vent"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Present — Not Tested"
+              ]
+            },
+            {
+              "id": "attic_fan_term",
+              "label": "Bath / Kitchen Fan Termination",
+              "kind": "component",
+              "keywords": [
+                "fan termination",
+                "bath fan vent",
+                "exhaust to attic",
+                "duct to soffit",
+                "fan dumps in attic",
+                "terminates exterior",
+                "ducting"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "attic__conditions",
+          "label": "Conditions",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_moisture",
+              "label": "Moisture / Staining",
+              "kind": "component",
+              "keywords": [
+                "attic moisture",
+                "water stain attic",
+                "condensation",
+                "frost attic",
+                "mold attic",
+                "leak stain"
+              ],
+              "condition": true
+            },
+            {
+              "id": "attic_pests",
+              "label": "Pests / Rodents",
+              "kind": "component",
+              "keywords": [
+                "rodent",
+                "droppings",
+                "nest",
+                "pest attic",
+                "squirrel",
+                "wasp nest",
+                "insect attic"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "attic_wiring",
+              "label": "Wiring / Junction Boxes",
+              "kind": "component",
+              "keywords": [
+                "junction box attic",
+                "open splice attic",
+                "wiring attic",
+                "open junction",
+                "knob and tube attic",
+                "buried splice"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ]
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "attic__attic",
+          "label": "attic",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_manufactured_bellywood_ductwork",
+              "label": "Belly Ductwork",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "attic_manufactured_crossover_duct",
+              "label": "Crossover Duct",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "attic_older_asbestos_ductwrap",
+              "label": "Asbestos Duct Wrap",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "attic_multi_unit_shared_attic",
+              "label": "Shared Attic Space",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        },
+        {
+          "id": "attic__concerns",
+          "label": "Concerns",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "attic_moisture",
+              "label": "Moisture / Staining",
+              "kind": "component",
+              "keywords": [
+                "attic moisture",
+                "water stain attic",
+                "condensation",
+                "frost attic",
+                "mold attic",
+                "leak stain"
+              ],
+              "options": [
+                "Dry",
+                "Old Stains (Monitor)"
+              ]
+            },
+            {
+              "id": "attic_pests",
+              "label": "Pests / Rodents",
+              "kind": "component",
+              "keywords": [
+                "rodent",
+                "droppings",
+                "nest",
+                "pest attic",
+                "squirrel",
+                "wasp nest",
+                "insect attic"
+              ],
+              "options": [
+                "No Evidence",
+                "Old Droppings (Monitor)",
+                "Not Visible (Limitation)"
+              ]
+            },
+            {
+              "id": "attic_wiring",
+              "label": "Wiring / Junction Boxes",
+              "kind": "component",
+              "keywords": [
+                "junction box attic",
+                "open splice attic",
+                "wiring attic",
+                "open junction",
+                "knob and tube attic",
+                "buried splice"
+              ],
+              "options": [
+                "Boxed & Covered",
+                "Not Visible (Limitation)"
+              ]
+            }
+          ]
+        }
+      ],
+      "locationAxis": "none",
+      "walkZone": "attic",
+      "walkZones": [
+        "attic"
+      ]
+    },
+    {
+      "id": "interior",
+      "label": "INTERIOR",
+      "kind": "system",
+      "icon": "floor-plan",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "interior__surfaces",
+          "label": "Surfaces",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "int_flooring",
+              "label": "Flooring Material",
+              "kind": "component",
+              "keywords": [
+                "hardwood",
+                "laminate",
+                "lvp",
+                "vinyl plank",
+                "tile floor",
+                "carpet",
+                "concrete floor",
+                "terrazzo",
+                "flooring damage",
+                "floor damage",
+                "carpet stain",
+                "loose flooring",
+                "trip hazard",
+                "vinyl floor",
+                "lvp bathroom",
+                "bathroom flooring",
+                "stone floor",
+                "floor",
+                "tile",
+                "vinyl",
+                "flooring"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Flooring Material",
+                  "values": [
+                    "Hardwood",
+                    "Engineered Hardwood",
+                    "LVP / Vinyl Plank",
+                    "Laminate",
+                    "Ceramic / Porcelain Tile",
+                    "Carpet",
+                    "Concrete",
+                    "LVP / Vinyl",
+                    "Natural Stone",
+                    "Sheet Vinyl",
+                    "Other"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "int_wall_material",
+              "label": "Wall Material",
+              "kind": "component",
+              "keywords": [
+                "drywall",
+                "plaster",
+                "paneling",
+                "wallboard",
+                "shiplap",
+                "shower surround",
+                "tub surround",
+                "tile wall bath",
+                "grout wall",
+                "moisture wall bath"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Wall Material",
+                  "values": [
+                    "Drywall",
+                    "Plaster"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "int_walls",
+              "label": "Walls / Ceilings",
+              "kind": "component",
+              "keywords": [
+                "ceiling stain",
+                "cracked wall",
+                "wall damage",
+                "ceiling damage",
+                "wall",
+                "ceiling",
+                "drywall",
+                "garage wall",
+                "garage ceiling",
+                "water stain garage",
+                "drywall damage garage"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "int_trim",
+              "label": "Trim / Doors Finish",
+              "kind": "component",
+              "keywords": [
+                "baseboard",
+                "casing",
+                "trim interior",
+                "crown molding",
+                "damaged trim"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "kit_counter",
+              "label": "Countertop Material",
+              "kind": "component",
+              "keywords": [
+                "granite",
+                "quartz",
+                "laminate counter",
+                "butcher block",
+                "marble counter",
+                "tile counter",
+                "solid surface",
+                "countertop",
+                "counter",
+                "counters"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Countertop Material",
+                  "values": [
+                    "Granite",
+                    "Quartz",
+                    "Laminate",
+                    "Butcher Block",
+                    "Marble",
+                    "Tile",
+                    "Solid Surface",
+                    "Concrete"
+                  ]
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "kit_backsplash",
+              "label": "Backsplash",
+              "kind": "component",
+              "keywords": [
+                "backsplash",
+                "tile backsplash",
+                "splash guard",
+                "caulk backsplash"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "kit_cabinets",
+              "label": "Cabinets",
+              "kind": "component",
+              "keywords": [
+                "cabinet",
+                "cabinetry",
+                "cabinet door",
+                "drawer",
+                "loose cabinet",
+                "water damage cabinet",
+                "cabinets",
+                "cupboard"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "interior__doors_windows",
+          "label": "Doors & Windows",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "int_doors",
+              "label": "Interior Doors",
+              "kind": "component",
+              "keywords": [
+                "interior door",
+                "bedroom door",
+                "closet door",
+                "door latch",
+                "rubbing door",
+                "hollow core"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "int_windows",
+              "label": "Window Operation",
+              "kind": "component",
+              "keywords": [
+                "window operation",
+                "window stuck",
+                "sash",
+                "failed seal",
+                "fogged window",
+                "broken window"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Sampled"
+              ]
+            },
+            {
+              "id": "int_egress",
+              "label": "Egress",
+              "kind": "component",
+              "keywords": [
+                "egress",
+                "egress window",
+                "bedroom egress",
+                "emergency escape",
+                "window well",
+                "sleeping room"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Verified"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "interior__stairs_railings",
+          "label": "Stairs & Railings",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "int_stairs",
+              "label": "Stairs",
+              "kind": "component",
+              "keywords": [
+                "interior stair",
+                "staircase",
+                "open riser",
+                "stairway",
+                "uneven riser",
+                "tread"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "int_handrails",
+              "label": "Handrails / Guards",
+              "kind": "component",
+              "keywords": [
+                "handrail",
+                "guardrail interior",
+                "baluster interior",
+                "loose handrail",
+                "graspable",
+                "spindle spacing"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "int_headroom",
+              "label": "Headroom",
+              "kind": "component",
+              "keywords": [
+                "headroom",
+                "low clearance",
+                "head clearance stair",
+                "duct in path",
+                "low beam"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "interior__ventilation",
+          "label": "Ventilation",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "primary_bathroom_exhaust_fan",
+              "label": "Exhaust Fan (Bath / Laundry)",
+              "kind": "component",
+              "keywords": [
+                "exhaust fan",
+                "bath fan",
+                "window vent",
+                "no ventilation",
+                "vent fan",
+                "ventilation",
+                "window"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Ventilation",
+                  "values": [
+                    "Exhaust Fan",
+                    "Operable Window",
+                    "Fan + Window"
+                  ]
+                }
+              ],
+              "limitations": [
+                "Not Determined"
+              ]
+            }
+          ]
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "interior__interior",
+          "label": "INTERIOR",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "interior_manufactured_bellywood_ductwork",
+              "label": "Belly Wrap and Ductwork",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_manufactured_marriage_line",
+              "label": "Marriage Line",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_manufactured_tie_downs",
+              "label": "Tie-Downs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_older_asbestos_ducting",
+              "label": "Asbestos-Wrapped Ducting",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_older_gravity_furnace",
+              "label": "Gravity Furnace",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_multi_unit_shared_systems",
+              "label": "Shared Systems",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "fireplace",
+      "label": "FIREPLACE",
+      "kind": "system",
+      "icon": "fireplace",
+      "defaultActive": false,
+      "children": [
+        {
+          "id": "fireplace__firebox",
+          "label": "Firebox",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fp_type",
+              "label": "Fireplace Type",
+              "kind": "component",
+              "keywords": [
+                "wood burning",
+                "gas fireplace",
+                "gas insert",
+                "pellet stove",
+                "electric fireplace",
+                "decorative fireplace"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Fireplace Type",
+                  "values": [
+                    "Wood Burning — Masonry",
+                    "Wood Burning — Prefab",
+                    "Gas Insert",
+                    "Gas Log Set",
+                    "Pellet Stove",
+                    "Electric",
+                    "Decorative Only"
+                  ]
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "fp_firebox",
+              "label": "Firebox / Hearth",
+              "kind": "component",
+              "keywords": [
+                "firebox",
+                "hearth",
+                "hearth extension",
+                "cracked firebox",
+                "refractory panel",
+                "spalling",
+                "combustible clearance"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "fp_damper",
+              "label": "Damper",
+              "kind": "component",
+              "keywords": [
+                "damper",
+                "flue damper",
+                "throat damper",
+                "top-mount damper"
+              ],
+              "trimmed": [],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "fireplace__chimney_flue",
+          "label": "Chimney & Flue",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fp_chimney",
+              "label": "Chimney Type",
+              "kind": "component",
+              "keywords": [
+                "masonry chimney",
+                "prefab chimney",
+                "metal flue",
+                "direct vent",
+                "B-vent",
+                "single wall flue"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Chimney Type",
+                  "values": [
+                    "Masonry Brick",
+                    "Masonry Stone",
+                    "Prefab Metal",
+                    "Direct Vent (Sealed)"
+                  ]
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "fp_liner",
+              "label": "Flue Liner",
+              "kind": "component",
+              "keywords": [
+                "clay liner",
+                "tile liner",
+                "stainless liner",
+                "flue liner",
+                "unlined flue",
+                "cracked liner"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Flue Liner",
+                  "values": [
+                    "Clay Tile",
+                    "Stainless Steel Insert",
+                    "Cast-In-Place"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "fp_cap",
+              "label": "Cap / Crown",
+              "kind": "component",
+              "keywords": [
+                "chimney cap",
+                "chimney crown",
+                "crown crack",
+                "wash",
+                "cap missing",
+                "flashing crown"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "fp_arrestor",
+              "label": "Spark Arrestor / Rain Cap",
+              "kind": "component",
+              "keywords": [
+                "spark arrestor",
+                "rain cap",
+                "screen cap",
+                "animal screen",
+                "spark screen",
+                "mesh cap"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "fireplace__gas",
+          "label": "Gas",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fp_gas_logs",
+              "label": "Gas Logs",
+              "kind": "component",
+              "keywords": [
+                "gas log",
+                "gas log set",
+                "vented logs",
+                "vent-free",
+                "ceramic logs"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Logs",
+                  "values": [
+                    "Vented Set",
+                    "Vent-Free (Verify Code)"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "fp_gas_shutoff",
+              "label": "Gas Shutoff",
+              "kind": "component",
+              "keywords": [
+                "gas shutoff fireplace",
+                "gas valve fireplace",
+                "key valve",
+                "log lighter valve"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "fp_gas_vent",
+              "label": "Gas Venting",
+              "kind": "component",
+              "keywords": [
+                "gas fireplace vent",
+                "direct vent",
+                "b-vent fireplace",
+                "sealed combustion",
+                "spillage fireplace"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Venting",
+                  "values": [
+                    "Direct Vent (Sealed)",
+                    "B-Vent — Proper Draft"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "fp_co_prox",
+              "label": "CO Detector Proximity",
+              "kind": "component",
+              "keywords": [
+                "carbon monoxide fireplace",
+                "co detector near fireplace",
+                "co alarm proximity",
+                "co same level"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "CO Detector Proximity",
+                  "values": [
+                    "CO Detector on Same Level",
+                    "CO Within Required Proximity"
+                  ]
+                }
+              ],
+              "condition": true
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "fireplace__service",
+          "label": "Service",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fp_service",
+              "label": "Last Known Service",
+              "kind": "component",
+              "keywords": [
+                "chimney sweep",
+                "last cleaned",
+                "annual service",
+                "chimney service"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Last Known Service",
+                  "values": [
+                    "Serviced within 1 year",
+                    "Serviced 1–3 years ago",
+                    "Serviced 3–5 years ago"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Determined"
+              ]
+            },
+            {
+              "id": "fp_creosote",
+              "label": "Creosote / Buildup",
+              "kind": "component",
+              "keywords": [
+                "creosote",
+                "soot buildup",
+                "glazed creosote",
+                "flue buildup",
+                "dirty flue"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            }
+          ],
+          "trimmed": []
+        }
+      ],
+      "trimmed": [
+        {
+          "id": "fireplace__fireplace",
+          "label": "FIREPLACE",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fireplace_manufactured_fireplace_venting",
+              "label": "Manufactured Home Fireplace Venting",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "fireplace_older_fireplace_chimney",
+              "label": "Older Home Fireplace Chimney",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "fireplace_multi_unit_shared_chimney",
+              "label": "Multi-Unit Shared Chimney",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
+      ],
+      "locationAxis": "none",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "safety",
+      "label": "SAFETY",
+      "kind": "system",
+      "icon": "shield-check-outline",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "safety__detectors_alarms",
+          "label": "Detectors & Alarms",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "elec_smoke",
+              "label": "Smoke & CO Detectors",
+              "kind": "component",
+              "keywords": [
+                "smoke detector",
+                "smoke alarm",
+                "carbon monoxide",
+                "co detector",
+                "carbon monoxide garage",
+                "co detector garage",
+                "co alarm adjacent",
+                "smoke alarm interior",
+                "co alarm",
+                "missing detector",
+                "expired alarm"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Smoke & CO Detectors",
+                  "values": [
+                    "Smoke + CO",
+                    "Smoke Only",
+                    "Adjacent Living"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "safety__fire_separation",
+          "label": "Fire Separation",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "gar_firedoor",
+              "label": "Fire-Rated Door to House",
+              "kind": "component",
+              "keywords": [
+                "fire door",
+                "self-closing",
+                "self closing",
+                "20 minute door",
+                "fire rated door",
+                "man door",
+                "entry door to house",
+                "door to house"
+              ],
+              "condition": true,
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "gar_firewall",
+              "label": "Firewall / Ceiling Separation",
+              "kind": "component",
+              "keywords": [
+                "firewall",
+                "fire separation",
+                "garage drywall",
+                "fire rated ceiling",
+                "living above garage",
+                "attached garage",
+                "garage firewall",
+                "self-closing",
+                "20 minute door",
+                "garage door to house",
+                "firewall penetration"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "gar_penetrations",
+              "label": "Garage Penetrations Sealed",
+              "kind": "component",
+              "keywords": [
+                "penetration",
+                "fire caulk",
+                "firecaulk",
+                "sealed gap",
+                "gap to attic",
+                "unsealed penetration"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            }
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "appliances",
+      "label": "APPLIANCES",
+      "kind": "system",
+      "icon": "stove",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "kit_range",
+          "label": "Range / Cooktop Fuel",
+          "kind": "component",
+          "keywords": [
+            "gas range",
+            "electric range",
+            "induction",
+            "cooktop",
+            "dual fuel",
+            "range",
+            "stove",
+            "burner"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Range / Cooktop Fuel",
+              "values": [
+                "Gas",
+                "Electric",
+                "Induction",
+                "Dual Fuel"
+              ]
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "kit_fridge",
+          "label": "Refrigerator",
+          "kind": "component",
+          "keywords": [
+            "refrigerator",
+            "fridge",
+            "icebox",
+            "freezer",
+            "built-in fridge"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "kit_oven",
+          "label": "Oven",
+          "kind": "component",
+          "keywords": [
+            "oven",
+            "wall oven",
+            "built-in oven",
+            "bake",
+            "oven heats",
+            "double oven"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "kit_dishwasher",
+          "label": "Dishwasher",
+          "kind": "component",
+          "keywords": [
+            "dishwasher",
+            "air gap",
+            "high loop",
+            "dishwasher leak",
+            "dishwasher drain",
+            "dish washer"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "kit_disposal",
+          "label": "Disposal",
+          "kind": "component",
+          "keywords": [
+            "disposal",
+            "garbage disposal",
+            "food disposer",
+            "disposal leak",
+            "disposal jammed",
+            "insinkerator"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "kit_hood",
+          "label": "Microwave / Range Hood",
+          "kind": "component",
+          "keywords": [
+            "microwave",
+            "range hood",
+            "vent hood",
+            "exhaust hood",
+            "recirculating",
+            "vents outside",
+            "hood",
+            "over-range microwave"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Microwave / Range Hood",
+              "values": [
+                "Vented Outside",
+                "Recirculating"
+              ]
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        }
+      ],
+      "trimmed": [],
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    }
+  ],
+  "trimmedSystems": [],
+  "revision": 1
+}
