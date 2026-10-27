@@ -107,9 +107,6 @@ function parkedWith(n: TemplateNode, patch: Parked): Parked | null {
 export const parkedDetails = (n: TemplateNode): number => parkedOf(n).attributes?.length ?? 0;
 /** Requirements kept while the switch is off. */
 export const parkedRequirementCount = (n: TemplateNode): number => parkedOf(n).requirements?.length ?? 0;
-/** A field whose recorded answers live under Ledrix's own storage key can't be re-added by hand, so its item's Details
- *  can't be switched off without moving those answers. */
-export const detailsLocked = (n: TemplateNode): boolean => (n.attributes ?? []).some(a => (a as ComponentAttribute & { legacyBareKey?: true }).legacyBareKey !== undefined);
 /** An item whose company switched Condition, Details and Requirements all off asks inspectors for nothing — the phone
  *  hides it (ledrix-app conditionMatch.recordsNothing). */
 export function recordsNothingHere(n: TemplateNode): boolean {
@@ -198,7 +195,7 @@ export const ops = {
    *  no change (the panel just opens or closes the empty Details tab). */
   switchDetails: (node: TemplateNode, on: boolean): TemplateOp[] => {
     const attrs = node.attributes ?? [], parked = parkedOf(node).attributes ?? [];
-    if (!on) return attrs.length && !detailsLocked(node)
+    if (!on) return attrs.length
       ? [setField(node.id, 'parked', parkedWith(node, { attributes: [...attrs] })), ...attrs.map(a => ({ op: 'removeAttribute', nodeId: node.id, attrId: a.id }) as TemplateOp)] : [];
     return parked.length ? [...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp), setField(node.id, 'parked', parkedWith(node, { attributes: [] }))] : [];
   },

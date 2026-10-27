@@ -82,7 +82,7 @@ export function createChangeSet(args: {
     const p = parseOp(o.op);
     if ('error' in p) { errors.push({ index, error: p.error }); return; }
     if (ROLLBACK_ONLY.has(p.op.op) && args.source !== 'rollback') { errors.push({ index, error: 'only an undo can remove an added item outright or put one back verbatim' }); return; }
-    if (storageFields(p.op).length && !(STORAGE_SOURCES as readonly string[]).includes(args.source)) { errors.push({ index, error: 'legacyBareKey decides where answers are stored; only Ledrix sets it' }); return; }
+    if (storageFields(p.op, args.source === 'ai' ? undefined : sim).length && !(STORAGE_SOURCES as readonly string[]).includes(args.source)) { errors.push({ index, error: 'legacyBareKey decides where answers are stored; only Ledrix sets it' }); return; }
     if (args.source === 'ai' && !o.rationale?.trim()) { errors.push({ index, error: 'an AI proposal must say why' }); return; }
     const c = classifyOp(p.op, sim);
     const anchored = withExpect(sim, p.op);
@@ -120,10 +120,10 @@ export function editEntry(cs: ChangeSet, entryId: string, op: unknown, base: Ins
   const p = parseOp(op);
   if ('error' in p) return { ok: false, error: p.error };
   if (ROLLBACK_ONLY.has(p.op.op)) return { ok: false, error: 'only an undo can remove an added item outright or put one back verbatim' };
-  if (storageFields(p.op).length) return { ok: false, error: 'legacyBareKey decides where answers are stored; only Ledrix sets it' };
   // Anchor the edit to the draft as it will stand when this entry runs: the base plus the entries before it.
   let sim = base;
   for (const e of cs.entries) { if (e.id === entryId) break; const r = applyOp(sim, e.edited ?? e.op); if (r.ok) sim = r.tpl; }
+  if (storageFields(p.op, cs.source === 'ai' ? undefined : sim).length) return { ok: false, error: 'legacyBareKey decides where answers are stored; only Ledrix sets it' };
   const anchored = withExpect(sim, p.op);
   const c = classifyOp(anchored, sim);
   const next = withEntry(cs, entryId, e => (!reviewable(e) ? null : { ...e, edited: anchored, status: 'edited', class: c.class, classReason: c.reason }));

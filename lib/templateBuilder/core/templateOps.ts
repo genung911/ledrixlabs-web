@@ -636,13 +636,24 @@ export function runtimePendingFields(op: TemplateOp): string[] {
  *  only Ledrix may introduce it (a default update) or put it back (an undo of a removal) — never an owner edit,
  *  an AI draft, onboarding or an import. The parser accepts the key so those two can round-trip; the change-set
  *  and proposal layers refuse it from every other source. */
-export function storageFields(op: TemplateOp): string[] {
+export function storageFields(op: TemplateOp, tpl?: InspectionTemplate): string[] {
   const has = (a: unknown) => !!a && typeof a === 'object' && (a as Record<string, unknown>).legacyBareKey !== undefined;
   const inNode = (n: TemplateNode): boolean => (n.attributes ?? []).some(has) || (n.children ?? []).some(inNode);
-  if (op.op === 'addAttribute' && has(op.attribute)) return ['legacyBareKey'];
+  // THE ITEM'S OWN ROUND-TRIP (2026-10-27): the Details switch parks an item's fields and restores them. A field
+  // carrying the storage marker may move between the item's live fields and its own parked copy UNCHANGED — the
+  // marker never reaches an item, or a field, it was not already on. Only when the template it runs against is given.
+  const node = tpl && 'nodeId' in op ? (locate(tpl, op.nodeId)?.arr[locate(tpl, op.nodeId)!.index] as N | undefined) : undefined;
+  const held = (a: unknown, pool: unknown[] | undefined) => (pool ?? []).some(b => canon(b) === canon(a));
+  if (op.op === 'addAttribute' && has(op.attribute)) return node && held(op.attribute, node.parked?.attributes) ? [] : ['legacyBareKey'];
+  if (op.op === 'setNodeField' && op.field === 'parked' && op.value && typeof op.value === 'object') {
+    const parked = ((op.value as { attributes?: unknown[] }).attributes ?? []).filter(has);
+    return parked.every(a => node && held(a, [...(node.attributes ?? []), ...(node.parked?.attributes ?? [])])) ? [] : ['legacyBareKey'];
+  }
   if (op.op === 'addNode' && inNode(op.node)) return ['legacyBareKey'];
   return [];
 }
+/** Key-order-independent JSON, for "the same field, unchanged". */
+const canon = (v: unknown): string => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x));
 export const STORAGE_SOURCES = ['rollback', 'ledrix_update'] as const;
 
 /** Requirement settings an op writes (Phase A, 2026-10-25). Requirements are the COMPANY's: a Ledrix AI proposal that

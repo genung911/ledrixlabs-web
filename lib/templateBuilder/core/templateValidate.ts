@@ -191,7 +191,7 @@ export function validateOps(base: InspectionTemplate, raw: readonly unknown[]): 
     const p = parseOp(raw[index]);
     if ('error' in p) { r.errors.push({ code: 'schema', severity: 'error', message: p.error }); continue; }
     if (p.op.op === 'unaddNode' || p.op.op === 'reinsertNode') { r.errors.push({ code: 'rollback_only', severity: 'error', message: 'Only an undo can remove an added item outright; set it aside instead.' }); continue; }
-    if (storageFields(p.op).length) { r.errors.push({ code: 'storage_field', severity: 'error', message: 'legacyBareKey decides where answers are stored; only Ledrix sets it.' }); continue; }
+    if (storageFields(p.op, cur).length) { r.errors.push({ code: 'storage_field', severity: 'error', message: 'legacyBareKey decides where answers are stored; only Ledrix sets it.' }); continue; }
     const c = classifyOp(p.op, cur);
     r.class = c.class; r.classReason = c.reason;
     const a = applyOp(cur, p.op);

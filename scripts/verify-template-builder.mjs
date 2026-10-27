@@ -389,8 +389,12 @@ async function runDesktop(files) {
       const on = apply(E.ops.switchDetails(vn(), true), 7200);
       r('switches: Details ON restores the same fields exactly and leaves nothing parked', on.ok && JSON.stringify(vn().attributes) === attrsBefore && vn().parked === undefined);
       r('switches: nothing to park or restore is no change at all', E.ops.switchDetails({ id: 'x', label: 'X', kind: 'component' }, true).length === 0 && E.ops.switchDetails({ id: 'x', label: 'X', kind: 'component' }, false).length === 0);
-      r('switches: an item whose field keeps answers under Ledrix’s own key cannot switch Details off',
-        E.detailsLocked(E.locate(sd.tree, 'heating__locked').node) && E.ops.switchDetails(E.locate(sd.tree, 'heating__locked').node, false).length === 0);
+      // AC System Type's case: a field whose answers keep Ledrix's old storage key round-trips through the switch too.
+      const lk = () => E.locate(sd.tree, 'heating__locked').node, lkBefore = JSON.stringify(lk().attributes);
+      const lkOff = apply(E.ops.switchDetails(lk(), false), 7050);
+      const lkOn = lkOff.ok && apply(E.ops.switchDetails(lk(), true), 7060);
+      r('switches: a field kept under Ledrix’s own storage key switches off and back on, unchanged (marker kept)',
+        lkOff.ok && lkOn && lkOn.ok && JSON.stringify(lk().attributes) === lkBefore && lk().parked === undefined, JSON.stringify([lkOff.ok, lkOn && lkOn.ok, lkOn && lkOn.error]));
       apply(E.ops.assessed('heating__vent', false), 7300); apply(E.ops.switchDetails(vn(), false), 7400);
       r('switches: Condition, Details and Requirements all off → the item records nothing (hidden on the phone) and its summary says so',
         E.recordsNothingHere(vn()) && /hidden from inspectors/.test(E.itemSummary(vn())));
@@ -713,7 +717,7 @@ const EXEC_MUT = [
   { name: 'ALL is written as one group of alternatives', file: 'requirementModel.ts', from: "return mode === 'any' || clauses.length <= 1 ?", to: "return true ?", check: 'requirements: ANY is one group of alternatives, ALL is one group per method, and both read back', run: runDesktop },
   { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
   { name: 'Details OFF deletes instead of keeping', file: 'editorModel.ts', from: "? [setField(node.id, 'parked', parkedWith(node, { attributes: [...attrs] })), ...attrs.map(", to: "? [...attrs.map(", check: 'switches: Details OFF removes the fields from the item and keeps them, hidden (parked)', run: runDesktop },
-  { name: 'Details can be switched off over a Ledrix-keyed field', file: 'editorModel.ts', from: "return attrs.length && !detailsLocked(node)", to: "return attrs.length", check: 'switches: an item whose field keeps answers under Ledrix’s own key cannot switch Details off', run: runDesktop },
+  { name: 'restore puts the parked copy back after clearing it', file: 'editorModel.ts', from: "return parked.length ? [...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp), setField(node.id, 'parked', parkedWith(node, { attributes: [] }))] : [];", to: "return parked.length ? [setField(node.id, 'parked', parkedWith(node, { attributes: [] })), ...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp)] : [];", check: 'switches: a field kept under Ledrix’s own storage key switches off and back on, unchanged (marker kept)', run: runDesktop },
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },

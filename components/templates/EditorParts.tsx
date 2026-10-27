@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, detailsLocked, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
 
@@ -232,7 +232,6 @@ export function ComponentOverview({ node, reqCount, detailsOn, reqsOn, onDetails
   node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
   onDetails: (on: boolean) => void; onReqs: (on: boolean) => void; onOps: OnOps; disabled: boolean;
 }) {
-  const locked = detailsLocked(node);
   const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
   const Row = ({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) => (
     <div className="flex items-center gap-3 border-b border-hairline px-3 py-3 last:border-b-0">
@@ -257,8 +256,8 @@ export function ComponentOverview({ node, reqCount, detailsOn, reqsOn, onDetails
           <Row title="Condition" hint="Satisfactory · Limitation · Finding">
             <Toggle on={assessesCondition(node)} disabled={disabled} label="Condition" onChange={v => onOps(ops.assessed(node.id, v))} />
           </Row>
-          <Row title="Details" hint={locked ? 'Material, type or count · set by Ledrix' : 'Material, type or count'}>
-            <Toggle on={detailsOn} disabled={disabled || (locked && detailsOn)} label="Details" onChange={onDetails} />
+          <Row title="Details" hint="Material, type or count">
+            <Toggle on={detailsOn} disabled={disabled} label="Details" onChange={onDetails} />
           </Row>
           <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount} · not publishable yet` : 'Proof photos and readings'}>
             <Toggle on={reqsOn} disabled={disabled} label="Requirements" onChange={onReqs} />
