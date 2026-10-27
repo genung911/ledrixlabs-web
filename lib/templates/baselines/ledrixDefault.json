@@ -443,8 +443,7 @@
                 "Window / Wall AC",
                 "Heat Pump AC",
                 "Evaporative Cooler"
-              ],
-              "legacyBareKey": true
+              ]
             },
             {
               "id": "age",

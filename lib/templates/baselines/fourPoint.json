@@ -433,7 +433,7 @@
         "Heat Pump AC",
         "Evaporative Cooler"
        ],
-       "legacyBareKey": true
+       "formerBareKey": true
       },
       {
        "id": "age",
