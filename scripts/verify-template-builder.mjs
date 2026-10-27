@@ -374,6 +374,29 @@ async function runDesktop(files) {
     r('requirements: removing the last one removes the field, so the template publishes as before', qc.ok && nodeOf('hvac_heating').requirements === undefined && QM.carriedRequirements(wd.tree).length === 0);
 
     {
+    // ── an item's three switches: Condition, Details, Requirements (2026-10-27 (second)) ──────────────────────
+    {
+      const SW = { id: 'sw_1', name: 'Switches', version: 1, systems: [{ id: 'heating', label: 'Heating', kind: 'system', children: [
+        { id: 'heating__vent', label: 'Vent', kind: 'component', condition: true, attributes: [{ id: 'material', label: 'Material', values: ['PVC', 'B-vent'], multi: false }] },
+        { id: 'heating__locked', label: 'Locked', kind: 'component', condition: true, attributes: [{ id: 'spec', label: 'Type', values: ['A', 'B'], legacyBareKey: true }] },
+      ] }] };
+      let sd = T.createDraft({ companyId: 'co_1', templateId: 'sw_1', live: clone(SW), now: 7000 });
+      const vn = () => E.locate(sd.tree, 'heating__vent').node;
+      const apply = (o, t) => { const x = E.applyManual(sd, o, OWNER, t); if (x.ok) sd = x.draft; return x; };
+      const attrsBefore = JSON.stringify(vn().attributes);
+      const off = apply(E.ops.switchDetails(vn(), false), 7100);
+      r('switches: Details OFF removes the fields from the item and keeps them, hidden (parked)', off.ok && !vn().attributes?.length && JSON.stringify(vn().parked?.attributes) === attrsBefore);
+      const on = apply(E.ops.switchDetails(vn(), true), 7200);
+      r('switches: Details ON restores the same fields exactly and leaves nothing parked', on.ok && JSON.stringify(vn().attributes) === attrsBefore && vn().parked === undefined);
+      r('switches: nothing to park or restore is no change at all', E.ops.switchDetails({ id: 'x', label: 'X', kind: 'component' }, true).length === 0 && E.ops.switchDetails({ id: 'x', label: 'X', kind: 'component' }, false).length === 0);
+      r('switches: an item whose field keeps answers under Ledrix’s own key cannot switch Details off',
+        E.detailsLocked(E.locate(sd.tree, 'heating__locked').node) && E.ops.switchDetails(E.locate(sd.tree, 'heating__locked').node, false).length === 0);
+      apply(E.ops.assessed('heating__vent', false), 7300); apply(E.ops.switchDetails(vn(), false), 7400);
+      r('switches: Condition, Details and Requirements all off → the item records nothing (hidden on the phone) and its summary says so',
+        E.recordsNothingHere(vn()) && /hidden from inspectors/.test(E.itemSummary(vn())));
+      apply(E.ops.assessed('heating__vent', true), 7500);
+      r('switches: any one on → it records something again', !E.recordsNothingHere(vn()));
+    }
     // ── template creation: starting points (2026-10-27) ──────────────────────────────────────────────────────
     {
       const S = await import(pathToFileURL(join(dir, 'startingPoints.ts')).href);
@@ -545,6 +568,12 @@ const RULES = {
     return /action=\{<IncludedSwitch on=\{isCovered\(tree, system\)\} label=\{system\.label\} disabled=\{disabled\} onChange=\{v => onOps\(ops\.coverByDefault\(tree, system\.id, v\)\)\} \/>\}/.test(ws)
       && !/coverByDefault/.test(parts) ? [] : ['components/templates/Workspace.tsx'];
   },
+  'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': all => {
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return /const visible: ComponentTab\[\] = \['overview', \.\.\.\(assessesCondition\(node\) \? \['condition' as const\] : \[\]\), \.\.\.\(detailsOn \? \['details' as const\] : \[\]\), \.\.\.\(reqsOn \? \['requirements' as const\] : \[\]\), 'applicability'\];/.test(ws)
+      && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
+      && /Nothing to record — inspectors won’t see this item\./.test(parts) && !/ReportTab/.test(ws) ? [] : ['components/templates/Workspace.tsx'];
+  },
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
     const list = strip(all[LIST] ?? ''), page = strip(all['app/app/templates/create/page.tsx'] ?? '');
     return /<Link className=\{btn\.primary\} href="\/app\/templates\/create">/.test(list) && !/NewDialog/.test(list)
@@ -663,6 +692,7 @@ const MUT = {
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
   'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
+  'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': rep('components/templates/Workspace.tsx', "...(detailsOn ? ['details' as const] : [])", "'details' as const"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
@@ -682,6 +712,8 @@ const EXEC_MUT = [
   { name: 'a typed answer is nested as an all inside any', file: 'ruleModel.ts', from: "return leaves.length === 1 ? leaves[0] : { any: leaves };", to: "return leaves.length === 1 ? leaves[0] : { any: [{ all: leaves }] };", check: 'rules: every rule the editor writes passes the runtime compiler and the op validator', run: runDesktop },
   { name: 'ALL is written as one group of alternatives', file: 'requirementModel.ts', from: "return mode === 'any' || clauses.length <= 1 ?", to: "return true ?", check: 'requirements: ANY is one group of alternatives, ALL is one group per method, and both read back', run: runDesktop },
   { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
+  { name: 'Details OFF deletes instead of keeping', file: 'editorModel.ts', from: "? [setField(node.id, 'parked', parkedWith(node, { attributes: [...attrs] })), ...attrs.map(", to: "? [...attrs.map(", check: 'switches: Details OFF removes the fields from the item and keeps them, hidden (parked)', run: runDesktop },
+  { name: 'Details can be switched off over a Ledrix-keyed field', file: 'editorModel.ts', from: "return attrs.length && !detailsLocked(node)", to: "return attrs.length", check: 'switches: an item whose field keeps answers under Ledrix’s own key cannot switch Details off', run: runDesktop },
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },

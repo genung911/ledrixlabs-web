@@ -6,7 +6,7 @@
 // The rules are the Ledrix Inspect app's, ported (not imported — the app's modules pull in React Native and the
 // taxonomy runtime). Each helper names the app file it follows.
 import type { ComponentAttribute, InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
-import { DEFAULT_COVERED, isCovered } from '@/lib/templates/editorModel';
+import { DEFAULT_COVERED, isCovered, recordsNothingHere } from '@/lib/templates/editorModel';
 import { captureRuleDefinitions, frozenRuleNode, type PackRules, type RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
 import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/core/applicability';
 import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
@@ -59,7 +59,8 @@ export function leavesOf(tile: TemplateNode, applies?: (nodeId: string) => boole
   const out: TemplateNode[] = [];
   const walk = (n: TemplateNode) => {
     for (const c of n.children ?? []) {
-      if (c.kind === 'component' && (!applies || applies(c.id))) out.push(c);
+      // An item that asks for nothing (Condition, Details and Requirements all off) is hidden on the phone too.
+      if (c.kind === 'component' && !recordsNothingHere(c) && (!applies || applies(c.id))) out.push(c);
       if (c.children?.length) walk(c);
     }
   };

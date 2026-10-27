@@ -67,6 +67,8 @@ export type TemplateNode = {
   requirements?: import('./requirementsContract').RequirementDef[];
   /** Equipment component catalog entry this item or group was picked from (app equipmentCatalog.ts). Provenance only. */
   catalogRef?: string;
+  /** Setup switched off on this item (Details fields, Requirements), kept so switching back on restores it (app). */
+  parked?: { attributes?: ComponentAttribute[]; requirements?: import('./requirementsContract').RequirementDef[] };
   children?: TemplateNode[];
   trimmed?: TemplateNode[];
 };

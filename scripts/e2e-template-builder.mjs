@@ -241,10 +241,10 @@ try {
   if (process.env.E2E_DEBUG) console.log('item name inputs:', JSON.stringify(await page.locator('[aria-label="Item name"]').evaluateAll(els => els.map(e => [e.value, e.closest('section,aside,div[class*="absolute"]')?.className.slice(0, 80)]))));
   const nameBox = page.getByLabel('Item name', { exact: true });
   await nameBox.fill('Flue / Vent Connector'); await nameBox.blur();
-  await page.getByRole('tab', { name: 'Fields', exact: true }).click();
-  await page.getByLabel('Add choice to Flue / Venting').fill('Stainless Liner'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
   await page.getByRole('tab', { name: 'Details', exact: true }).click();
-  await page.getByRole('switch', { name: 'Inspectors assess its condition' }).click();
+  await page.getByLabel('Add choice to Flue / Venting').fill('Stainless Liner'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
   await page.getByRole('button', { name: 'Close item' }).click();
   await page.getByLabel('New item name').fill('E2E Draft Hood'); await page.getByLabel('New item name').press('Enter');
   ok('3 · autosave reaches the server draft', await saved());
@@ -307,12 +307,12 @@ try {
   await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Flue / Vent Connector' }).click();
   const before = JSON.stringify(draftRow().template);
-  await page.getByRole('tab', { name: 'Fields', exact: true }).click();
+  await page.getByRole('tab', { name: 'Details', exact: true }).click();
   await page.getByLabel('Add choice to Flue / Venting').fill('Metal B-Vent'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
   ok('7 · a duplicate choice is not added, the editor says it is already listed, and nothing is saved',
     await waitFor(async () => (await page.getByText(/already listed/i).count()) > 0, 5000) && (await sleep(1800), JSON.stringify(draftRow().template) === before));
   // an item cannot lose its name: clearing it puts the saved name back, and nothing is saved
-  await page.getByRole('tab', { name: 'Details', exact: true }).click();
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
   const nb = page.getByLabel('Item name', { exact: true });
   await nb.fill(''); await nb.blur();
   ok('7 · clearing an item\'s name restores the saved name, and nothing is saved',
@@ -347,8 +347,8 @@ try {
     && (await tree8.getByRole('button', { name: 'ROOFING', exact: true }).count()) === 0, 5000));
   await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).click();
   await tree8.getByLabel('Search systems and components').fill('');
-  ok('8b · selecting an item in the tree opens its workspace with the five tabs', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0, 5000)
-    && (await page.getByRole('tablist', { name: 'Component' }).getByRole('tab').count()) === 5);
+  ok('8b · a new item opens with Overview, Condition and Applicability (Details and Requirements are off)', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0, 5000)
+    && (await page.getByRole('tablist', { name: 'Component' }).getByRole('tab').allTextContents()).join('|') === 'Overview|Condition|Applicability');
   // applicability: inspect the hood only when the heating fuel is a gas furnace
   await page.getByRole('tab', { name: 'Applicability', exact: true }).click();
   await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add condition' }).first().click();
@@ -358,8 +358,10 @@ try {
   await sleep(1500); await saved();
   const hood8 = () => findByLabel(draftRow().template, 'E2E Draft Hood');
   ok('8b · an applicability rule is saved in the runtime\'s shape', JSON.stringify(hood8()?.appliesWhen) === JSON.stringify({ field: 'hvac_heating::fuel_source', anyOf: ['Gas Furnace'] }), JSON.stringify(hood8()?.appliesWhen));
-  // requirements: drafted through the contract, never publishable
-  await page.getByRole('tab', { name: /^Requirements/ }).click();
+  // requirements: switched on from Overview (the tab appears), drafted through the contract, never publishable
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  ok('8b · switching Requirements on opens its tab', await waitFor(async () => (await page.getByRole('tab', { name: /^Requirements/, selected: true }).count()) === 1, 5000));
   await page.getByLabel('New requirement name').fill('Hood photographed');
   await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add requirement' }).click();
   await sleep(1500); await saved();
@@ -368,6 +370,16 @@ try {
   await page.getByLabel(/^Level$/).first().selectOption('recommended');
   await sleep(1500); await saved();
   ok('8b · changing its level is saved', rq8()[0]?.level === 'recommended', rq8()[0]?.level);
+  // switching Requirements OFF keeps it, hidden — the draft publishes again — and ON restores it exactly
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  await sleep(1500); await saved();
+  ok('8b · Requirements OFF keeps the requirement hidden (parked), the item no longer carries it, and Publish is available',
+    hood8()?.requirements === undefined && hood8()?.parked?.requirements?.length === 1 && (await page.getByRole('tab', { name: /^Requirements/ }).count()) === 0
+    && await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000));
+  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  await sleep(1500); await saved();
+  ok('8b · Requirements ON restores it exactly (same level), and nothing stays parked', rq8().length === 1 && rq8()[0].level === 'recommended' && hood8()?.parked === undefined);
   if (process.env.E2E_SHOTS) {                                       // screenshots for review, dark theme (no checks)
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'dark'));
     await sleep(400); await page.screenshot({ path: join(dirname(OUT), 'dark-requirements.png') }).catch(() => {});
@@ -389,6 +401,17 @@ try {
   await sleep(1500); await saved();
   ok('8b · removing it removes the field, and Publish is available again', hood8()?.requirements === undefined
     && await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000));
+  // all three off: the builder says inspectors won't see it
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  await page.getByRole('switch', { name: 'Requirements', exact: true }).click().catch(() => {});
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  if (await page.getByRole('switch', { name: 'Requirements', exact: true }).getAttribute('aria-checked') === 'true') await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
+  await sleep(1500); await saved();
+  ok('8b · with Condition, Details and Requirements all off, the builder warns inspectors won’t see it',
+    hood8()?.condition === false && await page.getByText('Nothing to record — inspectors won’t see this item.').isVisible() && await page.getByText('Hidden — nothing to record').isVisible());
+  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
+  await sleep(1500); await saved();
 
   // ── 9 · publish ──
   step = '9'; console.log('\n9 · publish\n');

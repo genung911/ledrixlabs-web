@@ -58,6 +58,7 @@ export function flatItems(system: TemplateNode): Array<{ node: TemplateNode; dep
 
 /** A short, honest line under an item: what the inspector records there. */
 export function itemSummary(n: TemplateNode): string {
+  if (recordsNothingHere(n)) return 'Nothing to record — hidden from inspectors';
   const x = n as TemplateNode & { findingShortcuts?: FindingShortcut[] };
   const parts: string[] = [];
   if (n.pointsTo) parts.push('Shown here from another section');
@@ -90,6 +91,31 @@ export function newAttrId(node: TemplateNode, label: string): string {
 // ── the edits ─────────────────────────────────────────────────────────────────────────────────────────────
 
 const setField = (nodeId: string, field: string, value: unknown): TemplateOp => ({ op: 'setNodeField', nodeId, field, value });
+
+// ── the item's three switches: Condition, Details, Requirements (owner rulings 2026-10-27 (second)) ──────────────
+// Switching Details or Requirements OFF keeps their setup on the item, hidden (`parked`); switching back ON restores it.
+// The phone never reads `parked`, so a switched-off part is simply absent for inspectors.
+type Parked = { attributes?: ComponentAttribute[]; requirements?: unknown[] };
+const parkedOf = (n: TemplateNode): Parked => ((n as TemplateNode & { parked?: Parked }).parked ?? {});
+const currentRequirements = (n: TemplateNode): unknown[] => ((n as TemplateNode & { requirements?: unknown[] }).requirements ?? []);
+function parkedWith(n: TemplateNode, patch: Parked): Parked | null {
+  const p: Record<string, unknown> = { ...parkedOf(n), ...patch };
+  for (const k of Object.keys(p)) if (!Array.isArray(p[k]) || !(p[k] as unknown[]).length) delete p[k];
+  return Object.keys(p).length ? (p as Parked) : null;
+}
+/** Details fields kept while the switch is off. */
+export const parkedDetails = (n: TemplateNode): number => parkedOf(n).attributes?.length ?? 0;
+/** Requirements kept while the switch is off. */
+export const parkedRequirementCount = (n: TemplateNode): number => parkedOf(n).requirements?.length ?? 0;
+/** A field whose recorded answers live under Ledrix's own storage key can't be re-added by hand, so its item's Details
+ *  can't be switched off without moving those answers. */
+export const detailsLocked = (n: TemplateNode): boolean => (n.attributes ?? []).some(a => (a as ComponentAttribute & { legacyBareKey?: true }).legacyBareKey !== undefined);
+/** An item whose company switched Condition, Details and Requirements all off asks inspectors for nothing — the phone
+ *  hides it (ledrix-app conditionMatch.recordsNothing). */
+export function recordsNothingHere(n: TemplateNode): boolean {
+  if (n.kind !== 'component' || n.pointsTo || (n as TemplateNode & { freeFormValue?: boolean }).freeFormValue) return false;
+  return !assessesCondition(n) && !(n.attributes ?? []).length && !((n as TemplateNode & { method?: string[] }).method ?? []).length && !currentRequirements(n).length;
+}
 const listOrNull = (xs: string[]) => { const v = xs.map(s => s.trim()).filter(Boolean); return v.length ? v : null; };
 
 export const ops = {
@@ -168,6 +194,20 @@ export const ops = {
    *  them on every edit). The ONLY writer of `requirements` in the website. It never writes the Ledrix default-set pin
    *  or overrides. A template carrying any is not published (useDraft.publish). */
   setRequirements: (nodeId: string, defs: readonly unknown[]): TemplateOp[] => [setField(nodeId, 'requirements', defs.length ? [...defs] : null)],
+  /** Details switch. OFF parks every field (kept, hidden); ON restores the parked fields. Nothing to park or restore →
+   *  no change (the panel just opens or closes the empty Details tab). */
+  switchDetails: (node: TemplateNode, on: boolean): TemplateOp[] => {
+    const attrs = node.attributes ?? [], parked = parkedOf(node).attributes ?? [];
+    if (!on) return attrs.length && !detailsLocked(node)
+      ? [setField(node.id, 'parked', parkedWith(node, { attributes: [...attrs] })), ...attrs.map(a => ({ op: 'removeAttribute', nodeId: node.id, attrId: a.id }) as TemplateOp)] : [];
+    return parked.length ? [...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp), setField(node.id, 'parked', parkedWith(node, { attributes: [] }))] : [];
+  },
+  /** Requirements switch — the same keep-but-hide rule. */
+  switchRequirements: (node: TemplateNode, on: boolean): TemplateOp[] => {
+    const cur = currentRequirements(node), parked = parkedOf(node).requirements ?? [];
+    if (!on) return cur.length ? [setField(node.id, 'parked', parkedWith(node, { requirements: [...cur] })), ...ops.setRequirements(node.id, [])] : [];
+    return parked.length ? [...ops.setRequirements(node.id, parked), setField(node.id, 'parked', parkedWith(node, { requirements: [] }))] : [];
+  },
 };
 
 /** Ledrix's default coverage when a template switches no system on (ledrix-app inspectionOffering.ts). */

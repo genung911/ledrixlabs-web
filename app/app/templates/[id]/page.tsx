@@ -78,7 +78,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const d = useDraft({ companyId, templateId, draftId });
   const [sel, setSel] = useState<Sel>({ systemId: null, nodeId: null });
   const [section, setSection] = useState<Section>('systems');
-  const [ctab, setCtab] = useState<ComponentTab>('details');
+  const [ctab, setCtab] = useState<ComponentTab>('overview');
   const [mode, setMode] = useState<'edit' | 'ledrix'>('edit');
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [problem, setProblem] = useState<string | null>(null);

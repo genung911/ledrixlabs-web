@@ -7,23 +7,25 @@ import { useEffect, useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
-import { assessesCondition, isCovered, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, isCovered, locate, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
-import { ComponentDetails, ComponentFields, GroupDetails, ItemsPanel, UnseenPill, notShownToInspectors } from './EditorParts';
+import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, UnseenPill, notShownToInspectors } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
-import { Toggle, btn, label } from './ui';
+import { Pill, Toggle, btn, label } from './ui';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
-export type ComponentTab = 'details' | 'requirements' | 'fields' | 'applicability' | 'report';
+export type ComponentTab = 'overview' | 'condition' | 'details' | 'requirements' | 'applicability';
 
-const TAB_LABEL: Record<ComponentTab, string> = { details: 'Details', requirements: 'Requirements', fields: 'Fields', applicability: 'Applicability', report: 'Report' };
+const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Overview', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
 
 export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTab, onOpenBuildingTypes }: {
   tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; disabled: boolean;
   tab: ComponentTab; setTab: (t: ComponentTab) => void; onOpenBuildingTypes: () => void;
 }) {
+  // A switch turned ON with nothing behind it yet opens its empty tab for this item (it is "on" once something is added).
+  const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
   const system = sel.systemId ? tree.systems.find(s => s.id === sel.systemId) ?? null : null;
   const loc = sel.nodeId ? locate(tree, sel.nodeId) : null;
   if (!system) return <p className="px-4 py-6 text-sm text-muted">{tree.systems.length ? 'Pick a system or component in the tree.' : 'Add a system to start.'}</p>;
@@ -50,19 +52,29 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   }
   const reqs = requirementsOf(node).length;
   const unseen = notShownToInspectors(system, node, loc.parent?.id ?? system.id);
+  const o = opened[node.id] ?? {};
+  const detailsOn = !!(node.attributes?.length || node.method?.length) || !!o.details;
+  const reqsOn = reqs > 0 || !!o.reqs;
+  const mark = (k: 'details' | 'reqs', v: boolean) => setOpened(cur => ({ ...cur, [node.id]: { ...cur[node.id], [k]: v } }));
+  const onDetails = (on: boolean) => { const x = ops.switchDetails(node, on); if (x.length && !onOps(x)) return; mark('details', on); if (on) setTab('details'); };
+  const onReqs = (on: boolean) => { const x = ops.switchRequirements(node, on); if (x.length && !onOps(x)) return; mark('reqs', on); if (on) setTab('requirements'); };
+  const visible: ComponentTab[] = ['overview', ...(assessesCondition(node) ? ['condition' as const] : []), ...(detailsOn ? ['details' as const] : []), ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
+  const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
-    <Shell kind="Component" title={node.label} sub={path} onClose={close} badge={unseen ? <UnseenPill /> : null}
-      tabs={(['details', 'requirements', 'fields', 'applicability', 'report'] as const).map(t => (
-        <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-          className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${tab === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>
+    <Shell kind="Component" title={node.label} sub={path} onClose={close} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
+      tabs={visible.map(t => (
+        <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
+          className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${cur === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>
           {TAB_LABEL[t]}{t === 'requirements' && reqs > 0 && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqs}</span>}
         </button>
       ))}>
-      {tab === 'details' && <ComponentDetails node={node} onOps={onOps} disabled={disabled} />}
-      {tab === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
-      {tab === 'fields' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
-      {tab === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
-      {tab === 'report' && <ReportTab node={node} />}
+      {cur === 'overview' && <ComponentOverview node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled} />}
+      {cur === 'condition' && <ComponentCondition node={node} onOps={onOps} disabled={disabled} />}
+      {cur === 'details' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
+      {cur === 'requirements' && <>
+        <p className="px-4 pt-4 text-xs text-muted">Proof the inspector collects. Checked before the report is sent — they can continue without it. <span className="text-ink">Not publishable yet — phone check next.</span></p>
+        <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} /></>}
+      {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
     </Shell>
   );
 }
@@ -166,22 +178,3 @@ function Applicability({ tree, system, node, onOps, disabled, onOpenBuildingType
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────────────────────────────────────
-
-function ReportTab({ node }: { node: TemplateNode }) {
-  const assessed = assessesCondition(node);
-  return (
-    <div className="space-y-4 px-4 py-4 text-sm text-body">
-      <p className="text-base font-semibold text-ink">What this item can contribute to the report</p>
-      <ul className="space-y-2">
-        <li className="rounded-xl border border-hairline px-3 py-2"><span className="font-semibold text-ink">Findings</span> — {assessed ? 'confirmed findings on this item print in the report.' : 'this item isn’t assessed, so findings come only from the inspector adding one.'}</li>
-        {assessed && <li className="rounded-xl border border-hairline px-3 py-2"><span className="font-semibold text-ink">Limitations</span> — a limitation prints as a disclosure{node.limitations?.length ? `; inspectors are offered: ${node.limitations.join(', ')}` : ''}.</li>}
-        <li className="rounded-xl border border-hairline px-3 py-2"><span className="font-semibold text-ink">Specifications</span> — {node.attributes?.length ? `confirmed answers to ${node.attributes.map(a => a.label).join(', ')}.` : 'none; this item has no spec fields.'}</li>
-        {!!node.method?.length && <li className="rounded-xl border border-hairline px-3 py-2"><span className="font-semibold text-ink">Method of inspection</span> — prints as a disclosure.</li>}
-      </ul>
-      <div className="rounded-xl bg-ground px-3 py-3 text-xs">
-        <p className="font-semibold text-ink">Report settings aren’t available yet</p>
-        <p className="mt-1">Choosing whether an item’s data prints (always as standard, or never) needs report work in the Ledrix app first. Until then every template uses the app’s standard report rules, and nothing on this tab changes them.</p>
-      </div>
-    </div>
-  );
-}

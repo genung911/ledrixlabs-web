@@ -113,6 +113,9 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   // `<equipmentTypeId>` on a group, `<equipmentTypeId>.<componentId>` on an item (equipmentCatalog.catalogRefOf).
   // Provenance only: nothing at inspection time reads it.
   catalogRef:       { check: (v) => (typeof v === 'string' && /^[a-z0-9_]+(\.[a-z0-9_]+)?$/.test(v) ? null : 'must be a catalog reference'), class: 'content', why: 'which catalog entry the item came from' },
+  // 2026-10-27 (second) #4: what a company switched OFF on an item (its Details fields, its Requirements) is KEPT here,
+  // hidden, so switching back on restores it. Storage only — no inspection reads it.
+  parked:           { check: (v) => (obj(v) ? onlyKeys(v, ['attributes', 'requirements']) ?? (Object.values(v).every(x => Array.isArray(x)) ? null : 'each part must be a list') : 'must be {attributes?, requirements?}'), class: 'content', why: 'setup switched off, kept for later' },
 };
 
 /** Fields `setAttributeField` may write. `id` is identity; `legacyBareKey` decides where recorded values are

@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, detailsLocked, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
 
@@ -228,42 +228,44 @@ export function GroupDetails({ node, onOps, onOpen, disabled }: { node: Template
 
 // ── a component: Details tab ────────────────────────────────────────────────────────────────────────────────
 
-export function ComponentDetails({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
-  const shortcuts = ((node as TemplateNode & { findingShortcuts?: FindingShortcut[] }).findingShortcuts ?? []).map(s => s.label);
+export function ComponentOverview({ node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled }: {
+  node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
+  onDetails: (on: boolean) => void; onReqs: (on: boolean) => void; onOps: OnOps; disabled: boolean;
+}) {
+  const locked = detailsLocked(node);
+  const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
+  const Row = ({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) => (
+    <div className="flex items-center gap-3 border-b border-hairline px-3 py-3 last:border-b-0">
+      <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-ink">{title}</p><p className="text-xs text-muted">{hint}</p></div>
+      {children}
+    </div>
+  );
   return (
     <div className="space-y-5 px-4 py-4">
-      {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">This row shows an item recorded in another section. Edit it there.</p>}
+      {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Recorded in another section. Edit it there.</p>}
       <div>
         <label className={label}>Name</label>
         <CommitInput value={node.label} ariaLabel="Item name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
       </div>
       <div>
         <label className={label}>Guidance</label>
-        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at and record" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
       </div>
-
-      <div className="rounded-xl border border-hairline px-3 py-3">
-        <div className="flex items-center justify-between"><p className="text-sm font-semibold text-ink">Condition assessment</p>
-          <Toggle on={assessesCondition(node)} disabled={disabled} label="Inspectors assess its condition" onChange={v => onOps(ops.assessed(node.id, v))} /></div>
-        <p className="mt-1.5 text-xs text-body">{assessesCondition(node) ? 'Inspectors answer Satisfactory, Limitation or Finding.' : 'Not assessed — inspectors only record what it is.'}</p>
+      <div>
+        <p className={label}>Inspectors record</p>
+        <div className="overflow-hidden rounded-xl border border-hairline">
+          <Row title="Condition" hint="Satisfactory · Limitation · Finding">
+            <Toggle on={assessesCondition(node)} disabled={disabled} label="Condition" onChange={v => onOps(ops.assessed(node.id, v))} />
+          </Row>
+          <Row title="Details" hint={locked ? 'Material, type or count · set by Ledrix' : 'Material, type or count'}>
+            <Toggle on={detailsOn} disabled={disabled || (locked && detailsOn)} label="Details" onChange={onDetails} />
+          </Row>
+          <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount} · not publishable yet` : 'Proof photos and readings'}>
+            <Toggle on={reqsOn} disabled={disabled} label="Requirements" onChange={onReqs} />
+          </Row>
+        </div>
+        {nothing && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
       </div>
-
-      {assessesCondition(node) && (
-        <div>
-          <p className={label}>Limitation reasons</p>
-          <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by roof covering"
-            onChange={v => onOps(ops.limitations(node.id, v))} />
-          <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation; the app’s general reasons follow. An item that can’t be reached is recorded this way — as a limitation.</p>
-        </div>
-      )}
-      {assessesCondition(node) && (
-        <div>
-          <p className={label}>Finding shortcuts</p>
-          <ChipList values={shortcuts} disabled={disabled} addLabel="Add finding shortcut" placeholder="e.g. Missing kick-out flashing"
-            onChange={v => onOps(ops.findingShortcuts(node, v, Date.now()))} />
-          <p className="mt-1 text-[11px] text-muted">Saved with the template and shown in the preview. The Ledrix app doesn’t read template shortcuts yet — inspectors see them after an app update.</p>
-        </div>
-      )}
       <div className="border-t border-hairline pt-4">
         <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this item aside</button>
       </div>
@@ -271,20 +273,41 @@ export function ComponentDetails({ node, onOps, disabled }: { node: TemplateNode
   );
 }
 
-// ── a component: Fields tab ─────────────────────────────────────────────────────────────────────────────────
+// ── a component: Condition tab ──────────────────────────────────────────────────────────────────────────────
+
+export function ComponentCondition({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
+  const shortcuts = ((node as TemplateNode & { findingShortcuts?: FindingShortcut[] }).findingShortcuts ?? []).map(s => s.label);
+  return (
+    <div className="space-y-5 px-4 py-4">
+      <div>
+        <p className={label}>Quick findings <span className="ml-1 normal-case tracking-normal"><Pill>Phone support next</Pill></span></p>
+        <ChipList values={shortcuts} disabled={disabled} addLabel="Add quick finding" placeholder="e.g. Disconnected joint"
+          onChange={v => onOps(ops.findingShortcuts(node, v, Date.now()))} />
+      </div>
+      <div>
+        <p className={label}>Limitation reasons</p>
+        <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by insulation"
+          onChange={v => onOps(ops.limitations(node.id, v))} />
+        <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation.</p>
+      </div>
+    </div>
+  );
+}
+
+// ── a component: Details tab ─────────────────────────────────────────────────────────────────────────────────
 
 export function ComponentFields({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
   const [newField, setNewField] = useState('');
   return (
     <div className="space-y-5 px-4 py-4">
       <div>
-        <p className={label}>Spec fields</p>
+        <p className={label}>Details</p>
         <div className="space-y-3">
           {(node.attributes ?? []).map(a => <AttrEditor key={a.id} node={node} a={a} onOps={onOps} disabled={disabled} />)}
-          {!node.attributes?.length && <p className="text-xs text-muted">No spec fields. Spec fields describe what the thing is (type, material, age) — never a grade.</p>}
+          {!node.attributes?.length && <p className="text-xs text-muted">No details yet — what it is (material, type, count), never a grade.</p>}
         </div>
         <form className="mt-2 flex gap-1.5" onSubmit={e => { e.preventDefault(); if (newField.trim() && onOps(ops.addField(node, newField, [], false))) setNewField(''); }}>
-          <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Add spec field, e.g. Material" aria-label="New spec field" disabled={disabled} className={`${field} py-1.5`} />
+          <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Add a detail, e.g. Material" aria-label="New detail" disabled={disabled} className={`${field} py-1.5`} />
           <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !newField.trim()}>Add</button>
         </form>
       </div>
