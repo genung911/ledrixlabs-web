@@ -540,6 +540,11 @@ const RULES = {
   'pages: publishing always asks first and says inspections are not changed': all =>
     /Inspections already started or finished keep the copy they started with/.test(all[EDIT] ?? '') && /dialog === 'publish'/.test(all[EDIT] ?? '') ? [] : [EDIT],
   // 2026-10-24 — building types: edited ONLY as one template op (draft, undo, validation), and never published with an error.
+  'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': all => {
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return /action=\{<IncludedSwitch on=\{isCovered\(tree, system\)\} label=\{system\.label\} disabled=\{disabled\} onChange=\{v => onOps\(ops\.coverByDefault\(tree, system\.id, v\)\)\} \/>\}/.test(ws)
+      && !/coverByDefault/.test(parts) ? [] : ['components/templates/Workspace.tsx'];
+  },
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
     const list = strip(all[LIST] ?? ''), page = strip(all['app/app/templates/create/page.tsx'] ?? '');
     return /<Link className=\{btn\.primary\} href="\/app\/templates\/create">/.test(list) && !/NewDialog/.test(list)
@@ -657,6 +662,7 @@ const MUT = {
   'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
+  'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),

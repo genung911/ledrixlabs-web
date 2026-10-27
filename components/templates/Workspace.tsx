@@ -12,7 +12,7 @@ import { requirementsOf } from '@/lib/templates/requirementModel';
 import { ComponentDetails, ComponentFields, GroupDetails, ItemsPanel, UnseenPill, notShownToInspectors } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
-import { btn, label } from './ui';
+import { Toggle, btn, label } from './ui';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -31,7 +31,9 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
 
   if (!loc || loc.depth === 0) {
     return (
-      <Shell kind="System" title={system.label} sub={`${isCovered(tree, system) ? 'Covered when an inspection starts' : 'Not covered by default'}`}>
+      <Shell kind="System" title={system.label}
+        sub={isCovered(tree, system) ? 'Included in new inspections' : 'Not included — inspectors can still add it during an inspection'}
+        action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
     );
@@ -71,8 +73,19 @@ function pathOf(tree: InspectionTemplate, id: string): string {
   return parts.join(' › ');
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, children }: {
-  kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; children: React.ReactNode;
+/** Whether new inspections include a system — the system's one on/off, on its title line (owner, 2026-10-27). The app's
+ *  rule is `defaultActive` through ops.coverByDefault; Off still lets inspectors add the system during an inspection. */
+function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; label: string; disabled: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-2 pt-1">
+      <span className={`text-xs font-semibold ${on ? 'text-ink' : 'text-muted'}`}>{on ? 'Included' : 'Not included'}</span>
+      <Toggle on={on} disabled={disabled} label={`${name} included in new inspections`} onChange={onChange} />
+    </div>
+  );
+}
+
+function Shell({ kind, title, sub, onClose, badge, tabs, action, children }: {
+  kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -85,6 +98,7 @@ function Shell({ kind, title, sub, onClose, badge, tabs, children }: {
           <p className="truncate text-xs text-muted">{kind}{sub ? ` · ${sub}` : ''}</p>
           {badge && <div className="mt-1">{badge}</div>}
         </div>
+        {action}
         {onClose && <button aria-label="Close item" className={btn.icon} onClick={onClose} title="Back to the system">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
       </header>

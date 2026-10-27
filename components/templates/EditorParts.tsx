@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, flatItems, isCovered, itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
 
@@ -121,7 +121,6 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   const [name, setName] = useState('');
   useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
   const setAside = rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))).concat((system.trimmed ?? []).map(t => ({ t, under: system.label })));
-  const covered = isCovered(tree, system);
 
   return (
     <div className="space-y-5 px-4 py-4">
@@ -133,13 +132,6 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
           onCommit={v => onOps(ops.describe(system.id, v))} />
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-hairline px-3 py-2.5">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink">Covered when an inspection starts</p>
-          <p className="text-xs text-muted">{covered ? 'New inspections include this system.' : 'Off — inspectors can still add it during an inspection.'}</p>
-        </div>
-        <Toggle on={covered} disabled={disabled} label={`${system.label} is covered when an inspection starts`} onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />
-      </div>
 
       <div>
         <div className="mb-2 flex items-center justify-between">

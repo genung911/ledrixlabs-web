@@ -510,6 +510,11 @@ try {
     await waitFor(() => !!made()) && made().template_id == null && made().base === 'fourpoint' && made().template.systems.length === 13 && made().template.id === 'custom'
     && db.company_template_drafts.length === draftsBefore + 1);
   ok('14 · it opens in the Template Builder, unpublished', await waitFor(async () => page.url().includes('/app/templates/new?draft=') && await page.getByText('New template · not published').isVisible(), 60000));
+  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'ROOFING', exact: true }).click();
+  const roofOn = () => findIn(made().template, 'roofing')?.defaultActive;
+  const wasOn = roofOn() === true;
+  await page.getByRole('switch', { name: /included in new inspections/ }).click();
+  ok('14 · the system’s Included switch on its title line turns it off in the draft', await waitFor(() => roofOn() === !wasOn) && await page.getByText(wasOn ? 'Not included' : 'Included', { exact: true }).isVisible());
   ok('14 · nothing was published and the company’s templates are untouched',
     db.company_templates.filter(t => !t.deleted_at).length === liveCount && JSON.stringify(db.company_templates.find(t => t.name === 'Standard')) === sourceBefore);
 } catch (e) {
