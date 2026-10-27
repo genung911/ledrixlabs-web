@@ -10,6 +10,7 @@ import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
 import { assessesCondition, flatItems, isCovered, itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
+import { CatalogPanel } from './CatalogPanel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -184,6 +185,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
           <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !name.trim()}>Add</button>
         </form>
       </div>
+
+      <CatalogPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
 
       {!!setAside.length && (
         <details className="text-xs">

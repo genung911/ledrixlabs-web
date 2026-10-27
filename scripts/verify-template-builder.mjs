@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -102,7 +102,7 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
 // ── 2. Executed ───────────────────────────────────────────────────────────────────────────────────────────
 // The builder modules, copied to a temp dir with explicit .ts import specifiers so Node can strip and load them.
 const BUILDER = ['access', 'draftStore', 'session', 'edit'];
-const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel'];
+const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel'];
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
@@ -372,6 +372,68 @@ async function runDesktop(files) {
     r('requirements: a draft carrying any is flagged for the publish refusal', QM.carriedRequirements(wd.tree).length === 1);
     const qc = wstep(E.ops.setRequirements('hvac_heating', []), 40);
     r('requirements: removing the last one removes the field, so the template publishes as before', qc.ok && nodeOf('hvac_heating').requirements === undefined && QM.carriedRequirements(wd.tree).length === 0);
+
+    {
+    // ── the equipment component catalog (owner rulings 2026-10-26) ──────────────────────────────────────────
+    const C = await import(pathToFileURL(join(dir, 'catalogModel.ts')).href);
+    const EC = await import(pathToFileURL(join(dir, 'core/equipmentCatalog.ts')).href);
+    const FUEL = ['Gas Furnace', 'Electric Heat', 'Heat Pump', 'Propane', 'Oil Furnace', 'Boiler', 'Radiant Heat'];
+    const HEAT = { id: 'cat_1', name: 'Catalog', version: 1, systems: [{ id: 'heating', label: 'Heating', kind: 'system', children: [
+      { id: 'heating__plant', label: 'Heating Plant', kind: 'subsystem', children: [
+        { id: 'hvac_heating', label: 'Heating System', kind: 'component', condition: false, attributes: [{ id: 'fuel_source', label: 'Fuel Source', values: FUEL }] },
+        { id: 'hvac_burner', label: 'Burner / Flame', kind: 'component', condition: true },
+      ] },
+      { id: 'heating__air', label: 'Air Handling', kind: 'subsystem', children: [{ id: 'hvac_filter', label: 'Filter', kind: 'component', condition: true }] },
+    ] }] };
+    let cdr = T.createDraft({ companyId: 'co_1', templateId: 'cat_1', live: clone(HEAT), now: 5000 });
+    const sysOf = () => cdr.tree.systems[0];
+    const rowsOf = (t) => C.catalogRows(sysOf(), t).flatMap(g => g.rows);
+    const row = (t, id) => rowsOf(t).find(x => x.component.id === id);
+    r('catalog: nothing is picked until the company picks it (catalogOps with no picks adds nothing)', C.catalogOps(cdr.tree, sysOf(), 'gas_furnace', []).length === 0);
+    r('catalog: an item the template already has is recognised by name, so it is not added twice',
+      row('gas_furnace', 'burner').present === 'Burner / Flame' && row('gas_furnace', 'filter').present === 'Filter' && !row('gas_furnace', 'inducer').present);
+    r('catalog: readings and data plates are listed but not addable while the phone cannot collect evidence',
+      row('gas_furnace', 'supplytemp').evidenceOnly && row('gas_furnace', 'plate').evidenceOnly && !row('gas_furnace', 'vent').evidenceOnly);
+    const picks = [
+      { id: 'inducer', condition: true, details: false }, { id: 'vent', condition: true, details: true },
+      { id: 'burner', condition: true, details: false },          // already present — skipped
+      { id: 'plate', condition: true, details: false },           // evidence — skipped even with Condition on
+      { id: 'plenum', condition: false, details: true },          // Details only — added, Condition stored OFF
+      { id: 'blower', condition: false, details: false },         // records nothing — skipped
+    ];
+    const cops = C.catalogOps(cdr.tree, sysOf(), 'gas_furnace', picks);
+    const before = cdr.log.length;
+    const ca = E.applyManual(cdr, cops, OWNER, 6000); if (ca.ok) cdr = ca.draft;
+    const grp = (sysOf().children ?? []).find(n => n.catalogRef === 'gas_furnace');
+    const kids = grp?.children ?? [];
+    const vent = kids.find(n => n.catalogRef === 'gas_furnace.vent'), ind = kids.find(n => n.catalogRef === 'gas_furnace.inducer'), plen = kids.find(n => n.catalogRef === 'gas_furnace.plenum');
+    r('catalog: the picks apply as ONE validated change set (one undo)', ca.ok && cdr.log.length === before + 1);
+    r('catalog: on a system with groups they land in one group named for the equipment type', !!grp && grp.kind === 'subsystem' && grp.label === 'Gas furnace' && kids.length === 3);
+    r('catalog: only real picks are added — present, evidence and record-nothing picks are skipped', kids.every(n => ['gas_furnace.vent', 'gas_furnace.inducer', 'gas_furnace.plenum'].includes(n.catalogRef)));
+    r('catalog: Condition OFF is stored as an explicit false (the app reads a missing value as ON)', plen?.condition === false && plen.attributes?.[0]?.label === 'Material');
+    r('catalog: Condition is written explicitly, and Details becomes one choice field with the catalog label',
+      ind?.condition === true && !ind.attributes && vent?.condition === true && vent.attributes?.length === 1 && vent.attributes[0].label === 'Material'
+      && vent.attributes[0].values.join('|') === EC.catalogComponent('gas_furnace.vent').component.details.join('|') && vent.attributes[0].multi === false);
+    r('catalog: each component applies only to its equipment ("Heating System is Gas Furnace or Propane")',
+      JSON.stringify(ind?.appliesWhen) === JSON.stringify({ field: 'hvac_heating::fuel_source', anyOf: ['Gas Furnace', 'Propane'] }));
+    r('catalog: new ids start with the system and are unique', kids.every(n => n.id.startsWith('heating__')) && new Set(kids.map(n => n.id)).size === kids.length);
+    r('catalog: once added, a component reads as already in the template', row('gas_furnace', 'vent').present === 'Vent connector / flue' && C.catalogOps(cdr.tree, sysOf(), 'gas_furnace', [picks[1]]).length === 0);
+    const more = E.applyManual(cdr, C.catalogOps(cdr.tree, sysOf(), 'gas_furnace', [{ id: 'gasvalve', condition: true, details: false }]), OWNER, 6100);
+    r('catalog: a later pick joins the same equipment group (no second group)', more.ok && (more.draft.tree.systems[0].children ?? []).filter(n => n.catalogRef === 'gas_furnace').length === 1);
+    const flat = { id: 'f', name: 'F', version: 1, systems: [{ id: 'heating', label: 'Heating', kind: 'system', children: [{ id: 'heating__furnace', label: 'Furnace', kind: 'component', condition: true }] }] };
+    const fops = C.catalogOps(flat, flat.systems[0], 'heat_pump', [{ id: 'compressor', condition: true, details: false }]);
+    r('catalog: a system with items but no groups gets items directly (a new group would hide its items)',
+      fops.length === 1 && fops[0].parentId === 'heating' && fops[0].node.kind === 'component' && fops[0].node.appliesWhen === undefined);
+    r('catalog: no rule is written when the template has no field to tell the equipment apart', fops[0].node.appliesWhen === undefined);
+    const COMB = ['combustion', 'gas', 'oil', 'oilburner'];
+    const noComb = ['electric_furnace', 'heat_pump', 'electric_boiler', 'mini_split'].every(t => EC.catalogType(t).groups.every(g => !COMB.includes(g.id)));
+    const noAir = ['gas_boiler', 'oil_boiler', 'electric_boiler', 'mini_split'].every(t => EC.catalogType(t).groups.every(g => g.id !== 'air' && g.components.every(c => c.id !== 'filter' && c.id !== 'blower')));
+    r('catalog content: no combustion or fuel supply on equipment that burns nothing; no air handling on boilers or mini-splits', noComb && noAir);
+    r('catalog content: every type has electrical & controls, starts its readings as evidence, and has unique component ids',
+      EC.EQUIPMENT_CATALOG.length === 8 && EC.EQUIPMENT_CATALOG.every(t => t.groups.some(g => g.id === 'electrical')
+        && t.groups.flatMap(g => g.components).filter(c => c.kind === 'reading').every(c => c.reading?.units?.length && c.caption)
+        && new Set(t.groups.flatMap(g => g.components.map(c => c.id))).size === t.groups.flatMap(g => g.components).length));
+    }
   } catch (e) {
     r(`desktop scenario completed (${e?.message})`, false);
   }
@@ -448,6 +510,12 @@ const RULES = {
   'pages: publishing always asks first and says inspections are not changed': all =>
     /Inspections already started or finished keep the copy they started with/.test(all[EDIT] ?? '') && /dialog === 'publish'/.test(all[EDIT] ?? '') ? [] : [EDIT],
   // 2026-10-24 — building types: edited ONLY as one template op (draft, undo, validation), and never published with an error.
+  'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': all => {
+    const panel = strip(all['components/templates/CatalogPanel.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return /<CatalogPanel tree=\{tree\} system=\{system\} onOps=\{onOps\} disabled=\{disabled\} \/>/.test(parts)
+      && /onOps\(catalogOps\(tree, system, type\.id, addable\)\)/.test(panel) && !/op: '/.test(panel)
+      && /<Toggle on=\{false\} disabled label=\{`Evidence for/.test(panel) ? [] : ['components/templates/CatalogPanel.tsx'];
+  },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
     const opsUsed = [...s.matchAll(/op: '(\w+)'/g)].map(m => m[1]);
@@ -546,6 +614,7 @@ const MUT = {
   'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
+  'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
@@ -562,6 +631,11 @@ const EXEC_MUT = [
   { name: 'a typed answer is nested as an all inside any', file: 'ruleModel.ts', from: "return leaves.length === 1 ? leaves[0] : { any: leaves };", to: "return leaves.length === 1 ? leaves[0] : { any: [{ all: leaves }] };", check: 'rules: every rule the editor writes passes the runtime compiler and the op validator', run: runDesktop },
   { name: 'ALL is written as one group of alternatives', file: 'requirementModel.ts', from: "return mode === 'any' || clauses.length <= 1 ?", to: "return true ?", check: 'requirements: ANY is one group of alternatives, ALL is one group per method, and both read back', run: runDesktop },
   { name: 'a new requirement asks for an exception', file: 'requirementModel.ts', from: "unmet: { limitation: 'resolves', exception: 'not_allowed' },", to: "unmet: { limitation: 'resolves', exception: 'allowed' },", check: 'requirements: a new requirement is a valid COMPANY requirement on its own item, and the draft takes it', run: runDesktop },
+  { name: 'the catalog adds a component the template already has', file: 'catalogModel.ts', from: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && !x.row.present && ", to: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && ", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
+  { name: 'the catalog adds evidence the phone cannot collect', file: 'catalogModel.ts', from: "!x.row.evidenceOnly && pickRecordsSomething", to: "pickRecordsSomething", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
+  { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },
+  { name: 'the catalog drops the equipment rule', file: 'catalogModel.ts', from: "...(rule ? { appliesWhen: rule }", to: "...(false ? { appliesWhen: rule }", check: 'catalog: each component applies only to its equipment ("Heating System is Gas Furnace or Propane")', run: runDesktop },
+  { name: 'Condition off is stored as missing (= on in the app)', file: 'catalogModel.ts', from: "condition: p.condition,", to: "...(p.condition ? { condition: true } : {}),", check: 'catalog: Condition OFF is stored as an explicit false (the app reads a missing value as ON)', run: runDesktop },
   { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },

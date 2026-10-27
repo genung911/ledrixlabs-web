@@ -109,6 +109,10 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   // Phase A (2026-10-25): the item's COMPANY requirements — the whole list, judged by templateValidate
   // (requirementsContract.validateTemplateRequirements). Pending: no inspection reads them yet. Never from Ledrix's AI.
   requirements:     { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', pending: true, why: 'what inspectors must record for this item' },
+  // 2026-10-26 (equipment component catalog): which Ledrix catalog entry an item or group was picked from —
+  // `<equipmentTypeId>` on a group, `<equipmentTypeId>.<componentId>` on an item (equipmentCatalog.catalogRefOf).
+  // Provenance only: nothing at inspection time reads it.
+  catalogRef:       { check: (v) => (typeof v === 'string' && /^[a-z0-9_]+(\.[a-z0-9_]+)?$/.test(v) ? null : 'must be a catalog reference'), class: 'content', why: 'which catalog entry the item came from' },
 };
 
 /** Fields `setAttributeField` may write. `id` is identity; `legacyBareKey` decides where recorded values are

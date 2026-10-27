@@ -65,6 +65,8 @@ export type TemplateNode = {
   pointsTo?: { systemId: string; nodeId: string };
   /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */
   requirements?: import('./requirementsContract').RequirementDef[];
+  /** Equipment component catalog entry this item or group was picked from (app equipmentCatalog.ts). Provenance only. */
+  catalogRef?: string;
   children?: TemplateNode[];
   trimmed?: TemplateNode[];
 };
