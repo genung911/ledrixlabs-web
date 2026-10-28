@@ -21,6 +21,7 @@
 //     template runtime lands. validateOps warns on every op that writes one, so a draft never looks more live
 //     than it is.
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
+import { checkPropertyTypes } from './propertyTypes';
 
 // ── field registries ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,8 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   // Phase A (2026-10-25): the pinned Ledrix default requirement set, and company overrides of it (validated as a whole).
   requirementDefaults:  { check: (v) => (typeof v === 'string' && v.trim() ? null : 'must be a default set id'), class: 'policy', why: 'which Ledrix default requirements apply' },
   requirementOverrides: { check: (v) => (obj(v) ? null : 'must be a map of requirement ids'), class: 'policy', why: 'changes to Ledrix default requirements' },
+  // 2026-10-27: what kind of property the template is for (propertyTypes.ts) — a label and a filter; no inspection reads it.
+  propertyTypes: { check: checkPropertyTypes, class: 'content', why: 'which kinds of property it is for' },
 };
 
 const NODE_KINDS = ['system', 'subsystem', 'component'];

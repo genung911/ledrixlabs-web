@@ -340,6 +340,10 @@ try {
     const items = (function count(n) { return (n.kind === 'component' ? 1 : 0) + (n.children ?? []).reduce((a, c) => a + count(c), 0); })({ children: draftRow().template.systems });
     return waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByText(String(items), { exact: true }).count()) > 0, 5000);
   })());
+  // property types: picked on the Overview, saved on the draft
+  await page.getByRole('group', { name: 'Property types' }).getByRole('button', { name: /Multi-unit — one building/ }).click();
+  await sleep(1500); await saved();
+  ok('8b · a property type picked on the Overview is saved on the draft', JSON.stringify(draftRow().template.propertyTypes) === JSON.stringify(['multi_unit_one']), JSON.stringify(draftRow().template.propertyTypes));
   await nav.getByRole('button', { name: 'Systems & Components' }).click();
   const tree8 = page.getByRole('region', { name: 'Systems and components' });
   await tree8.getByLabel('Search systems and components').fill('draft hood');

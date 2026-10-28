@@ -6,6 +6,8 @@
 // lib/templates/api.startNewTemplateDraft — the same call the dialog made — and opens it in the Template Builder; it is
 // never published here. The company's answers are its own declaration (lib/templates/startingPoints honesty rules):
 // recommendations state facts only, requirements coverage reads "not evaluated", and no individual license is asked.
+import { propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
+import { PropertyTypePicker } from '@/components/templates/PropertyTypes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -38,6 +40,7 @@ export default function CreateTemplatePage() {
   const [ctx, setCtx] = useState<CompanyContext>(EMPTY_CONTEXT);
   const [picked, setPicked] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [props, setProps] = useState<PropertyTypeId[] | null>(null);   // null = not touched: the starting point's own
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -93,6 +96,8 @@ export default function CreateTemplatePage() {
     setBusy(true); setProblem(null);
     try {
       const tree = forkTree(chosen.tree, name.trim());
+      const picked = props ?? propertyTypesOf(chosen.tree);
+      if (picked.length) tree.propertyTypes = picked; else delete tree.propertyTypes;
       const draft = await startNewTemplateDraft(access.companyId!, { name: name.trim(), base: chosen.base, tree });
       router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`);
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
@@ -197,6 +202,11 @@ export default function CreateTemplatePage() {
             <div>
               <label htmlFor="tpl-name" className={label}>Template name *</label>
               <input id="tpl-name" className={field} value={name} onChange={e => setName(e.target.value)} maxLength={120} placeholder="e.g. Home inspection — Idaho" />
+            </div>
+            <div>
+              <p className={label}>Property types</p>
+              <PropertyTypePicker value={props ?? propertyTypesOf(chosen.tree)} onChange={setProps} />
+              <p className="mt-1 text-[11px] text-muted">What this template is for. You can change it later.</p>
             </div>
             <div>
               <p className={label}>Your company context</p>

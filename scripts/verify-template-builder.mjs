@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog', 'propertyTypes'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -443,6 +443,16 @@ async function runDesktop(files) {
       r('publish fixes: "Switch off (kept)" clears the blocker and keeps the requirement', q.ok && !PF.publishFixes(fd.tree, VT.validateTemplate(fd.tree), { errors: [], warnings: [] }).some(f => f.key.startsWith('req:'))
         && E.locate(fd.tree, 'heating__tstat').node.parked?.requirements?.length === 1);
     }
+    // ── property types (2026-10-27): a label and a filter on the template ─────────────────────────────────────
+    {
+      let pd = T.createDraft({ companyId: 'co_1', templateId: 'pt_1', live: clone(LIVE), now: 9500 });
+      const a = E.applyManual(pd, E.ops.propertyTypes(['multi_unit_one', 'single_family']), OWNER, 9600); if (a.ok) pd = a.draft;
+      r('property types: a pick is saved on the template', a.ok && JSON.stringify(pd.tree.propertyTypes) === JSON.stringify(['multi_unit_one', 'single_family']));
+      const bad = E.applyManual(pd, [{ op: 'setTemplateField', field: 'propertyTypes', value: ['castle'] }], OWNER, 9700);
+      r('property types: an unknown property type is refused', !bad.ok);
+      const clear = E.applyManual(pd, E.ops.propertyTypes([]), OWNER, 9800);
+      r('property types: clearing every pick removes the field', clear.ok && clear.draft.tree.propertyTypes === undefined);
+    }
     // ── template creation: starting points (2026-10-27) ──────────────────────────────────────────────────────
     {
       const S = await import(pathToFileURL(join(dir, 'startingPoints.ts')).href);
@@ -620,6 +630,11 @@ const RULES = {
       && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
       && /Nothing to record — inspectors won’t see this item\./.test(parts) && !/ReportTab/.test(ws) ? [] : ['components/templates/Workspace.tsx'];
   },
+  'property types: picked on the Overview and when creating; shown and filtered on the Templates page': all => {
+    const ov = strip(all['components/templates/Sections.tsx'] ?? ''), cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ls = strip(all['app/app/templates/page.tsx'] ?? '');
+    return /<PropertyTypePicker value=\{propertyTypesOf\(tree\)\}[^>]*onChange=\{v => onOps\(ops\.propertyTypes\(v\)\)\}/.test(ov)
+      && /tree\.propertyTypes = picked/.test(cr) && /propertyTypesOf\(t\.tree\)\.includes\(ptFilter\)/.test(ls) ? [] : ['components/templates/Sections.tsx'];
+  },
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
     const list = strip(all[LIST] ?? ''), page = strip(all['app/app/templates/create/page.tsx'] ?? '');
     return /<Link className=\{btn\.primary\} href="\/app\/templates\/create">/.test(list) && !/NewDialog/.test(list)
@@ -764,6 +779,7 @@ const EXEC_MUT = [
   { name: 'restore puts the parked copy back after clearing it', file: 'editorModel.ts', from: "return parked.length ? [...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp), setField(node.id, 'parked', parkedWith(node, { attributes: [] }))] : [];", to: "return parked.length ? [setField(node.id, 'parked', parkedWith(node, { attributes: [] })), ...parked.map(a => ({ op: 'addAttribute', nodeId: node.id, attribute: a }) as TemplateOp)] : [];", check: 'switches: a field kept under Ledrix’s own storage key switches off and back on, unchanged (marker kept)', run: runDesktop },
   { name: 'show in links into the item\'s own system', file: 'editorModel.ts', from: "homeId: node.id, parentId: systemId }]", to: "homeId: node.id, parentId: tree.systems[0].id }]", check: 'show in: the item appears in the other system as a link — one record, no copy of its answers', run: runDesktop },
   { name: 'a rule problem opens the wrong tab', file: 'publishFixes.ts', from: "rule_unsupported: 'applicability', rule_missing_item: 'applicability',", to: "rule_unsupported: 'applicability', rule_missing_item: 'overview',", check: 'publish fixes: a broken rule opens its item on the Applicability tab, and blocks', run: runDesktop },
+  { name: 'property types accept any value', file: 'core/propertyTypes.ts', from: "if (v.some(x => typeof x !== 'string' || !IDS.has(x)))", to: "if (v.some(x => typeof x !== 'string'))", check: 'property types: an unknown property type is refused', run: runDesktop },
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },

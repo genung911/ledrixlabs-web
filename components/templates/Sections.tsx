@@ -7,7 +7,9 @@ import { useMemo } from 'react';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import type { Issue } from '@/lib/templateBuilder/core/templateValidate';
-import { assessesCondition, flatItems, isCovered } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, isCovered, ops } from '@/lib/templates/editorModel';
+import { propertyTypesOf } from '@/lib/templateBuilder/core/propertyTypes';
+import { PropertyTypePicker } from './PropertyTypes';
 import {
   LEVEL_LABEL, LEVEL_MEANING, PURPOSE_LABEL, REQUIREMENT_LEVELS, carriedRequirements, itemsWithRequirements, levelCounts, overrideCount, pinnedDefaultSet,
 } from '@/lib/templates/requirementModel';
@@ -46,8 +48,9 @@ const Stat = ({ n, label: l }: { n: number | string; label: string }) => (
 
 // ── Overview ────────────────────────────────────────────────────────────────────────────────────────────────
 
-export function OverviewSection({ tree, status, issues, onGo }: {
+export function OverviewSection({ tree, status, issues, onGo, onOps, disabled }: {
   tree: InspectionTemplate; status: string; issues: Issue[]; onGo: (section: string, sel?: Sel) => void;
+  onOps: (o: TemplateOp[]) => boolean; disabled: boolean;
 }) {
   const f = useMemo(() => templateFacts(tree), [tree]);
   const types = useMemo(() => structureTypesOf(tree), [tree]);
@@ -57,6 +60,10 @@ export function OverviewSection({ tree, status, issues, onGo }: {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
       <div><h2 className="text-xl font-bold tracking-tight text-ink">{tree.name}</h2><p className="text-sm text-muted">{status}</p></div>
+      <Card title="Property types">
+        <PropertyTypePicker value={propertyTypesOf(tree)} disabled={disabled} onChange={v => onOps(ops.propertyTypes(v))} />
+        <p className="mt-2 text-xs text-muted">What this template is for. Shown on the Templates page; inspections run the same.</p>
+      </Card>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat n={`${f.covered} / ${f.systems}`} label="Systems covered when an inspection starts" />
         <Stat n={f.components} label="Items" />

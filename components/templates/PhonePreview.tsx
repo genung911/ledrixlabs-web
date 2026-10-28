@@ -313,7 +313,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 <button key={st.key} type="button" data-pv-id={st.key} className={`pv-item${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
                   aria-label={`${st.label}, ${v}. Start guided coverage here`}>
                   <i className="pv-dot" style={{ background: q.met || q.finding || q.limited ? c : '#2a333a' }} />
-                  <span className="pv-itx"><em>{GUIDED_KIND_LABEL[st.kind]}</em><b>{st.label}</b></span>
+                  <span className="pv-itx"><b>{st.label}</b></span>
                   <span className="pv-iv" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
                   <Glyph d={G.chevR} size={14} color="#4a5a60" />
                 </button>

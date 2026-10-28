@@ -8,6 +8,7 @@
 //
 // Until ledger #65 is applied (backend 'local'), templates are read from the server as they are, drafts live in this
 // browser, and the actions that need the server (new, duplicate, rename, delete, type assignment) say so.
+import { PROPERTY_TYPES, propertyTypeLabel, propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -71,6 +72,8 @@ export default function TemplatesPage() {
   const draftOf = useMemo(() => new Map((data?.drafts ?? []).filter(d => d.templateId).map(d => [d.templateId as string, d])), [data]);
   const newDrafts = (data?.drafts ?? []).filter(d => !d.templateId);
   const unassigned = (data?.types ?? []).filter(t => !t.templateId).length;
+  const [ptFilter, setPtFilter] = useState<PropertyTypeId | null>(null);
+  const usedTypes = useMemo(() => PROPERTY_TYPES.map(p => p.id).filter(id => (data?.templates ?? []).some(t => propertyTypesOf(t.tree).includes(id))), [data]);
 
   return (
     <Page>
@@ -101,7 +104,50 @@ export default function TemplatesPage() {
             <Stat label="Types without a template" value={server ? unassigned : '—'} warn={server && unassigned > 0} />
           </div>
 
-          <Card title="Templates" count={data.templates.length + newDrafts.length} className="mb-6">
+          <Card title="Inspection types" count={data.types.length} className="mb-6">
+            <ul className="divide-y divide-hairline">
+              {data.types.map(t => (
+                <li key={t.id ?? t.name} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink">{t.name}</p>
+                    {(() => { const tpl = data.templates.find(x => x.id === t.templateId); const pt = propertyTypesOf(tpl?.tree);
+                      return pt.length ? <p className="text-xs text-muted">{pt.map(id => propertyTypeLabel(id)).join(' · ')}</p> : null; })()}
+                    {server && !t.templateId && <p className="text-xs text-ink"><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-warn align-middle" />No template — new inspections of this type can’t start from one.</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {server ? (
+                      <select aria-label={`Template for ${t.name}`} disabled={!owner || busy} value={t.templateId ?? ''}
+                        title={owner ? undefined : 'Only the company owner can change this.'}
+                        onChange={e => run(() => assignTemplate(access.companyId!, t, e.target.value || null))}
+                        className={`${field} w-56 py-1.5`}>
+                        <option value="">— choose a template —</option>
+                        {data.templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      </select>
+                    ) : <span className="text-xs text-muted">Set in the Ledrix app for now</span>}
+                    {server && owner && !t.stock && t.id && (
+                      <button className={btn.icon} aria-label={`Remove ${t.name}`} onClick={() => run(() => removeInspectionType(t))}>×</button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-hairline px-4 py-3">
+              {server && owner
+                ? <button className={btn.ghost} onClick={() => setDialog({ kind: 'addType' })}>+ Add inspection type</button>
+                : <p className="text-xs text-muted">{server ? 'Only the company owner can add inspection types or change which template each one uses.' : NEEDS_SERVER}</p>}
+            </div>
+          </Card>
+          <Card title="Templates" count={data.templates.length + newDrafts.length}>
+            {usedTypes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-hairline px-4 py-2.5" role="group" aria-label="Filter by property type">
+                {[null, ...usedTypes].map(id => (
+                  <button key={id ?? 'all'} type="button" aria-pressed={ptFilter === id} onClick={() => setPtFilter(id)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${ptFilter === id ? 'border-accent bg-accent/10 text-accent-ink' : 'border-hairline text-body hover:text-ink'}`}>
+                    {id ? propertyTypeLabel(id) : 'All'}
+                  </button>
+                ))}
+              </div>
+            )}
             {data.templates.length + newDrafts.length === 0 ? <Empty>No company templates have synced yet.</Empty> : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-left text-sm">
@@ -113,7 +159,7 @@ export default function TemplatesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-hairline">
-                    {data.templates.map(t => {
+                    {data.templates.filter(t => !ptFilter || propertyTypesOf(t.tree).includes(ptFilter)).map(t => {
                       const draft = draftOf.get(t.id);
                       const uses = usedFor.get(t.id) ?? [];
                       return (
@@ -124,6 +170,7 @@ export default function TemplatesPage() {
                                 : <span className="font-medium text-ink">{t.name}</span>}
                               {draft && <Pill tone="accent">Draft in progress</Pill>}
                             </div>
+                            {propertyTypesOf(t.tree).length > 0 && <div className="mt-1 flex flex-wrap gap-1">{propertyTypesOf(t.tree).map(id => <Pill key={id}>{propertyTypeLabel(id, true)}</Pill>)}</div>}
                           </td>
                           <td className="px-4 py-3 text-body">{baseLabel(t.base)}</td>
                           <td className="px-4 py-3 text-body">{uses.length ? uses.join(', ') : <span className="text-muted">—</span>}</td>
@@ -164,37 +211,6 @@ export default function TemplatesPage() {
             )}
           </Card>
 
-          <Card title="Inspection types" count={data.types.length}>
-            <ul className="divide-y divide-hairline">
-              {data.types.map(t => (
-                <li key={t.id ?? t.name} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-ink">{t.name}</p>
-                    {server && !t.templateId && <p className="text-xs text-ink"><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-warn align-middle" />No template — new inspections of this type can’t start from one.</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {server ? (
-                      <select aria-label={`Template for ${t.name}`} disabled={!owner || busy} value={t.templateId ?? ''}
-                        title={owner ? undefined : 'Only the company owner can change this.'}
-                        onChange={e => run(() => assignTemplate(access.companyId!, t, e.target.value || null))}
-                        className={`${field} w-56 py-1.5`}>
-                        <option value="">— choose a template —</option>
-                        {data.templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-                      </select>
-                    ) : <span className="text-xs text-muted">Set in the Ledrix app for now</span>}
-                    {server && owner && !t.stock && t.id && (
-                      <button className={btn.icon} aria-label={`Remove ${t.name}`} onClick={() => run(() => removeInspectionType(t))}>×</button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-hairline px-4 py-3">
-              {server && owner
-                ? <button className={btn.ghost} onClick={() => setDialog({ kind: 'addType' })}>+ Add inspection type</button>
-                : <p className="text-xs text-muted">{server ? 'Only the company owner can add inspection types or change which template each one uses.' : NEEDS_SERVER}</p>}
-            </div>
-          </Card>
           <p className="mt-4 text-xs text-muted">Only the owner can publish, delete, or change which template a type uses. Inspections already underway keep the template they started with.</p>
         </>
       )}

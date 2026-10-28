@@ -204,6 +204,8 @@ export const ops = {
    *  them on every edit). The ONLY writer of `requirements` in the website. It never writes the Ledrix default-set pin
    *  or overrides. A template carrying any is not published (useDraft.publish). */
   setRequirements: (nodeId: string, defs: readonly unknown[]): TemplateOp[] => [setField(nodeId, 'requirements', defs.length ? [...defs] : null)],
+  /** What kind of property the template is for (a label and a filter). An empty pick removes the field. */
+  propertyTypes: (ids: readonly string[]): TemplateOp[] => [{ op: 'setTemplateField', field: 'propertyTypes', value: ids.length ? [...ids] : null }],
   /** Show an item in another system (at the end of that system's list). */
   showIn: (tree: InspectionTemplate, node: TemplateNode, systemId: string): TemplateOp[] =>
     [{ op: 'addLink', pointerId: newNodeId(tree, systemId, `link ${node.id}`), homeId: node.id, parentId: systemId }],

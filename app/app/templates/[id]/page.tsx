@@ -226,7 +226,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         </nav>
 
         <main aria-label="Template section" className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {section === 'overview' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><OverviewSection tree={tree} status={status} issues={issues} onGo={go} /></div>}
+          {section === 'overview' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><OverviewSection tree={tree} status={status} issues={issues} onGo={go} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'buildings' && (
             <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6">
               <BuildingTypesPanel tree={tree} live={m.live?.tree ?? null} onOps={onOps} disabled={!!readOnly}

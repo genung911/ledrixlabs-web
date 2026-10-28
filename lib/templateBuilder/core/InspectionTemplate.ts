@@ -91,6 +91,8 @@ export type InspectionTemplate = {
   buildings?: import('./structureTypes').SnapshotBuilding[];
   /** The pinned Ledrix default requirement set (app Phase A); absent = 'ledrix-r0'. */
   requirementDefaults?: string;
+  /** What kind of property this template is for (propertyTypes.ts, 2026-10-27). A label and a filter (app). */
+  propertyTypes?: import('./propertyTypes').PropertyTypeId[];
   /** Company overrides of the pinned set's requirements (app Phase A). */
   requirementOverrides?: Record<string, import('./requirementsContract').RequirementOverride>;
 };
