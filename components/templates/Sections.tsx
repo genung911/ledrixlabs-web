@@ -11,7 +11,7 @@ import { assessesCondition, flatItems, isCovered, ops } from '@/lib/templates/ed
 import { propertyTypesOf } from '@/lib/templateBuilder/core/propertyTypes';
 import { PropertyTypePicker } from './PropertyTypes';
 import {
-  LEVEL_LABEL, LEVEL_MEANING, PURPOSE_LABEL, REQUIREMENT_LEVELS, carriedRequirements, itemsWithRequirements, levelCounts, overrideCount, pinnedDefaultSet,
+  LEVEL_LABEL, LEVEL_MEANING, PURPOSE_LABEL, REQUIREMENT_LEVELS, unpublishableRequirements, itemsWithRequirements, levelCounts, overrideCount, pinnedDefaultSet,
 } from '@/lib/templates/requirementModel';
 import { notShownToInspectors } from './EditorParts';
 import { LevelPill } from './RequirementsEditor';
@@ -94,7 +94,7 @@ export function OverviewSection({ tree, status, issues, onGo, onOps, disabled }:
             <p>{types.source === 'template' ? 'This template has its own building types: ' : 'Using Ledrix’s default building types: '}{types.types.map(t => t.name).join(', ') || 'none'}.</p>
           </Card>
           <Card title="Requirements" action={<button className={btn.ghost} onClick={() => onGo('requirements')}>Open</button>}>
-            <p>{reqCount ? `${reqCount} draft requirement${reqCount === 1 ? '' : 's'} on ${reqItems.length} item${reqItems.length === 1 ? '' : 's'} — not used in inspections yet.` : 'No company requirements. Inspections use Ledrix’s built-in rules.'}</p>
+            <p>{reqCount ? `${reqCount} requirement${reqCount === 1 ? '' : 's'} on ${reqItems.length} item${reqItems.length === 1 ? '' : 's'} — checked on the phone before the report is sent.` : 'No company requirements. Inspections use Ledrix’s built-in rules.'}</p>
           </Card>
         </div>
       </div>
@@ -108,14 +108,13 @@ export function RequirementsSection({ tree, onGo }: { tree: InspectionTemplate; 
   const items = useMemo(() => itemsWithRequirements(tree), [tree]);
   const all = items.flatMap(i => i.defs);
   const counts = levelCounts(all);
-  const carried = carriedRequirements(tree);
+  const carried = unpublishableRequirements(tree);
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
       <div><h2 className="text-xl font-bold tracking-tight text-ink">Requirements</h2>
         <p className="text-sm text-muted">What inspectors must record, item by item. Add them from an item’s Requirements tab.</p></div>
-      <div className="rounded-xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm text-body" role="status">
-        <p className="font-semibold text-ink">Not used in inspections yet.</p>
-        <p className="mt-1">The Ledrix app can’t evaluate company requirements yet. {carried.length ? 'This draft carries requirements, so it can’t be published until they are removed or the app supports them.' : 'A template that carries any can’t be published until the app supports them.'}</p>
+      <div className="rounded-xl border border-hairline bg-ground px-4 py-3 text-sm text-body" role="status">
+        <p>Before the report is sent, the phone lists any item missing its proof — each one opens the item. The inspector can send without it.{carried.length ? <> <span className="font-semibold text-ink">Not publishable yet:</span> inspections can’t use {carried.join('; ')}.</> : null}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card title="Ledrix defaults">
@@ -228,7 +227,7 @@ export function FixList({ fixes, onGo, onOps, disabled }: { fixes: Fix[]; onGo: 
 
 export function ReviewSection(p: ReviewProps) {
   const errors = p.issues.filter(i => i.severity === 'error'), warnings = p.issues.filter(i => i.severity === 'warning');
-  const carried = carriedRequirements(p.tree);
+  const carried = unpublishableRequirements(p.tree);
   const facts = templateFacts(p.tree);
   const row = (ok: boolean | 'warn', title: string, detail?: React.ReactNode) => (
     <li className="flex items-start gap-2.5 py-2">
@@ -248,8 +247,8 @@ export function ReviewSection(p: ReviewProps) {
             (errors.length || warnings.length) ? 'Listed above — tap one to open it.' : undefined)}
           {row(p.buildingErrors.length ? false : p.buildingWarnings.length ? 'warn' : true, p.buildingErrors.length ? 'Building types need attention' : 'Building types',
             p.buildingErrors.length || p.buildingWarnings.length ? 'Listed above — tap one to open it.' : 'Every building type is valid.')}
-          {row(carried.length ? false : true, carried.length ? 'Requirements can’t be published yet' : 'No requirements to hold back',
-            carried.length ? 'Inspections can’t check requirements yet. Open each one above, or switch it off — it’s kept for later.' : undefined)}
+          {row(carried.length ? false : true, carried.length ? 'Changes to Ledrix default requirements can’t be published yet' : 'Requirements are ready',
+            carried.length ? 'Inspections can’t use them yet.' : 'Item requirements are checked on the phone before the report is sent.')}
           {row(facts.unseen ? 'warn' : true, facts.unseen ? `${facts.unseen} item${facts.unseen === 1 ? '' : 's'} not shown to inspectors` : 'Every item is shown to inspectors',
             facts.unseen ? 'Listed above — tap one to open it.' : undefined)}
           {p.liveMoved && row('warn', 'The live template changed after this draft started', 'Publishing will ask before replacing those changes.')}

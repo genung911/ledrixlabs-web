@@ -312,3 +312,4 @@ function kindOf(row: TemplateNode): 'description' | 'equipment' | 'component' {
 export function previewSteps(systems: readonly TemplateNode[], applies: (nodeId: string) => boolean): GuidedStep[] {
   return guidedSteps(systems, { tilesOf, rowsOf: tile => leavesOf(tile, applies), drawnInside, kindOf });
 }
+

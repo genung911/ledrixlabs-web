@@ -109,7 +109,7 @@ function stage(files) {
   const alias = s => s
     .replace(/from '@\/lib\/templateBuilder\/core\/([^']+)'/g, "from './core/$1'")
     .replace(/from '@\/lib\/(?:templateBuilder|templates)\/([^']+)'/g, "from './$1'");
-  const fix = s => alias(s).replace(/from '(\.{1,2}\/[^']+)'/g, (m, p) => (p.endsWith('.ts') ? m : `from '${p}.ts'`));
+  const fix = s => alias(s).replace(/from '(\.{1,2}\/[^']+)'/g, (m, p) => (p.endsWith('.ts') ? m : p.endsWith('.json') ? `from '${p}' with { type: 'json' }` : `from '${p}.ts'`));
   for (const [rel, src] of Object.entries(files)) writeFileSync(join(dir, rel), fix(src));
   return dir;
 }
@@ -117,6 +117,7 @@ const sourceFiles = () => Object.fromEntries([
   ...CORE.map(f => [`core/${f}.ts`, read(`lib/templateBuilder/core/${f}.ts`)]),
   ...TAXONOMY_CORE.map(f => [`core/${f}.ts`, read(`lib/templateBuilder/core/${f}.ts`)]),
   ['core/InspectionTemplate.ts', read('lib/templateBuilder/core/InspectionTemplate.ts')],
+  ['core/measurementPoints.json', read('lib/templateBuilder/core/measurementPoints.json')],
   ...BUILDER.map(f => [`${f}.ts`, read(`lib/templateBuilder/${f}.ts`)]),
   ...DESKTOP.map(f => [`${f}.ts`, read(`lib/templates/${f}.ts`)]),
 ]);
@@ -434,14 +435,14 @@ async function runDesktop(files) {
       ] };
       const fx = PF.publishFixes(FX, VT.validateTemplate(FX), { errors: [], warnings: [] });
       const req = fx.find(f => f.key === 'req:heating__tstat'), rule = fx.find(f => f.go.nodeId === 'cooling__coil'), loose = fx.find(f => f.key === 'u:heating__loose');
-      r('publish fixes: a requirement opens its item on the Requirements tab, and blocks', !!req && req.blocks && req.go.section === 'systems' && req.go.systemId === 'heating' && req.go.tab === 'requirements');
+      r('publish fixes: an item requirement no longer holds Publish (Stage 2 — the phone checks it, soft)', !req && !fx.some(f => f.key.startsWith('req:heating')));
       r('publish fixes: a broken rule opens its item on the Applicability tab, and blocks', !!rule && rule.blocks && rule.go.systemId === 'cooling' && rule.go.tab === 'applicability');
       r('publish fixes: an item inspectors won’t see opens it, and does not block', !!loose && !loose.blocks && loose.go.nodeId === 'heating__loose');
       r('publish fixes: blockers come first', fx.findIndex(f => !f.blocks) > fx.findLastIndex(f => f.blocks));
-      let fd = T.createDraft({ companyId: 'co_1', templateId: 'fx_1', live: clone(FX), now: 9000 });
-      const q = E.applyManual(fd, req.quick.ops, OWNER, 9100); if (q.ok) fd = q.draft;
-      r('publish fixes: "Switch off (kept)" clears the blocker and keeps the requirement', q.ok && !PF.publishFixes(fd.tree, VT.validateTemplate(fd.tree), { errors: [], warnings: [] }).some(f => f.key.startsWith('req:'))
-        && E.locate(fd.tree, 'heating__tstat').node.parked?.requirements?.length === 1);
+      const RM = await import(pathToFileURL(join(dir, 'requirementModel.ts')).href);
+      r('publish fixes: a change to Ledrix’s default requirements still holds Publish', RM.unpublishableRequirements({ ...FX, requirementOverrides: { x: { level: 'optional' } } }).length === 1 && RM.unpublishableRequirements(FX).length === 0);
+      r('readings: an item can ask for a reading its system takes (Water Heater → Hot Water Temperature)', RM.methodsFor({ id: 'n', label: 'N', kind: 'component' }, 'water_heater').some(m => m.clause.kind === 'measurement' && m.clause.point === 'hot_water_temp')
+        && !RM.methodsFor({ id: 'n', label: 'N', kind: 'component' }, 'roofing').some(m => m.clause.kind === 'measurement'));
     }
     // ── property types (2026-10-27): a label and a filter on the template ─────────────────────────────────────
     {
@@ -671,9 +672,12 @@ const RULES = {
   },
   'editor: a duplicate choice is reported, not silently dropped': all =>
     /if \(dup\) \{ setNote\(/.test(strip(all['components/templates/ui.tsx'] ?? '')) ? [] : ['components/templates/ui.tsx'],
-  'requirements: publishing refuses a template that carries them — in the hook, before the RPC': all => {
-    const hook = strip(all['lib/templates/useDraft.ts'] ?? '');
-    const gate = hook.indexOf('const reqs = carriedRequirements(m0.core.tree);'), rpc = hook.indexOf('return publishDraft(');
+  // Stage 2 (2026-10-27): item requirements PUBLISH (the phone checks them before the report is sent, soft). Only what
+  // inspections still can't use — changes to Ledrix's own default rules — holds Publish.
+  'requirements: publishing refuses what inspections can’t use yet — in the hook, before the RPC': all => {
+    const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), rm = strip(all['lib/templates/requirementModel.ts'] ?? '');
+    if (!/carriedRequirements\(tree\)\.filter\(x => !x\.startsWith\('requirements on '\)\)/.test(rm)) return ['lib/templates/requirementModel.ts'];
+    const gate = hook.indexOf('const reqs = unpublishableRequirements(m0.core.tree);'), rpc = hook.indexOf('return publishDraft(');
     return (gate > 0 && rpc > gate && /if \(reqs\.length\) throw new TemplateApiError\('invalid', 'requirements_unsupported'/.test(hook)) ? [] : ['lib/templates/useDraft.ts'];
   },
   // 2026-10-26 (owner authorization): requirements may be DRAFTED on items in the website — through one writer,
@@ -691,9 +695,9 @@ const RULES = {
     }
     return bad;
   },
-  'requirements: the Publish button is disabled with the reason while the draft carries them': all => {
+  'requirements: the Publish button is disabled with the reason while the draft carries what inspections can’t use': all => {
     const e = strip(all[EDIT] ?? '');
-    return (/const reqs = carriedRequirements\(tree\);/.test(e) && /: reqs\.length \? `Not publishable yet — inspections can’t use requirements yet/.test(e)
+    return (/const reqs = unpublishableRequirements\(tree\);/.test(e) && /: reqs\.length \? `Not publishable yet — inspections can’t use/.test(e)
       && /const canPublish = !publishBlock && /.test(e) && /disabled=\{!canPublish\} title=\{publishBlock \?\? undefined\}/.test(e)) ? [] : [EDIT];
   },
   // 2026-10-26: the six sections each render a real view of the draft (no dead navigation), and the inspector preview
@@ -748,9 +752,9 @@ const MUT = {
   'pages: publishing always asks first and says inspections are not changed': rep(EDIT, 'Inspections already started or finished keep the copy they started with', 'Done'),
   'editor: an item is never added where inspectors cannot see it': rep('components/templates/EditorParts.tsx', "const homes = kind === 'component' && hasGroups ? groups.filter(g => g.id !== system.id) : groups;", 'const homes = groups;'),
   'editor: a duplicate choice is reported, not silently dropped': rep('components/templates/ui.tsx', 'if (dup) { setNote(', 'if (dup) { void ('),
-  'requirements: publishing refuses a template that carries them — in the hook, before the RPC': rep('lib/templates/useDraft.ts', "if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported'", "if (false) throw new TemplateApiError('invalid', 'requirements_unsupported'"),
+  'requirements: publishing refuses what inspections can’t use yet — in the hook, before the RPC': rep('lib/templates/useDraft.ts', "if (reqs.length) throw new TemplateApiError('invalid', 'requirements_unsupported'", "if (false) throw new TemplateApiError('invalid', 'requirements_unsupported'"),
   'requirements: only editorModel.setRequirements writes them; nothing writes the default-set pin or overrides': add('components/templates/EditorParts.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requirements', value: [] };"),
-  'requirements: the Publish button is disabled with the reason while the draft carries them': rep(EDIT, ': reqs.length ? `Not publishable yet', ': false ? `Not publishable yet'),
+  'requirements: the Publish button is disabled with the reason while the draft carries what inspections can’t use': rep(EDIT, ': reqs.length ? `Not publishable yet', ': false ? `Not publishable yet'),
   'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),

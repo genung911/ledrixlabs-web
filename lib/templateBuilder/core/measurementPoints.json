@@ -1,0 +1,44 @@
+{
+  "_doc": "Measurement points per measurable system (M1, owner rulings 2026-10-04 — DECISIONS.md). Authored data, not code: Ledrix owns the structure, the content grows here. `assetAliases` name the system when spoken (matched longest-first, before the shared system resolver). Each point: `id`, `label` (spoken/read back), `quantity`, `units` (the only units a reading may carry — matched from what was SAID, never assumed), `aliases` (the words that name the point; matched deterministically — the model never picks the point), optional `node` (the checkpoint the reading belongs to, for Scope/report later).",
+  "version": 1,
+  "systems": {
+    "water_heater": {
+      "assetAliases": ["hot water heater", "water heater", "hot water tank"],
+      "points": [
+        { "id": "hot_water_temp", "label": "Hot Water Temperature", "quantity": "temperature", "units": ["°F", "°C"],
+          "aliases": ["water temperature", "hot water temperature", "water temp", "hot water", "tap temperature", "temperature at the tap", "temperature at the faucet"] }
+      ]
+    },
+    "plumbing": {
+      "assetAliases": ["plumbing", "house water", "main water"],
+      "points": [
+        { "id": "water_pressure", "label": "Water Pressure", "quantity": "pressure", "units": ["psi", "kPa"], "node": "plumb_pressure",
+          "aliases": ["water pressure", "static pressure", "static water pressure", "house pressure", "pressure"] }
+      ]
+    },
+    "heating": {
+      "assetAliases": ["furnace", "heating system", "heating", "boiler"],
+      "points": [
+        { "id": "supply_register", "label": "Supply Register Temperature", "quantity": "temperature", "units": ["°F", "°C"], "node": "hvac_temp_rise",
+          "aliases": ["supply register", "supply air", "supply", "register", "supply temperature", "supply temp", "at the register"] },
+        { "id": "return_air", "label": "Return Air Temperature", "quantity": "temperature", "units": ["°F", "°C"], "node": "hvac_temp_rise",
+          "aliases": ["return air", "return", "return temperature", "return temp", "return grille"] },
+        { "id": "temp_rise", "label": "Temperature Rise", "quantity": "temperature_difference", "units": ["°F", "°C"], "node": "hvac_temp_rise",
+          "aliases": ["temperature rise", "temp rise", "rise", "delta t", "temperature difference"] }
+      ]
+    },
+    "cooling": {
+      "assetAliases": ["air conditioner", "air conditioning", "a/c", "ac", "heat pump", "mini-split", "mini split", "ductless", "condenser", "cooling"],
+      "points": [
+        { "id": "supply_register", "label": "Supply Register Temperature", "quantity": "temperature", "units": ["°F", "°C"],
+          "aliases": ["supply register", "supply air", "supply", "register", "supply temperature", "supply temp", "at the register"] },
+        { "id": "return_air", "label": "Return Air Temperature", "quantity": "temperature", "units": ["°F", "°C"],
+          "aliases": ["return air", "return", "return temperature", "return temp", "return grille"] },
+        { "id": "temp_split", "label": "Temperature Split", "quantity": "temperature_difference", "units": ["°F", "°C"],
+          "aliases": ["temperature split", "temp split", "split", "delta t", "temperature difference"] },
+        { "id": "discharge", "label": "Discharge Air Temperature", "quantity": "temperature", "units": ["°F", "°C"],
+          "aliases": ["discharge", "discharging", "discharge air", "head", "indoor head", "coming out of the head"] }
+      ]
+    }
+  }
+}

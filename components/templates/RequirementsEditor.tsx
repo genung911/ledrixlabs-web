@@ -10,13 +10,13 @@
 import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
-import { ops } from '@/lib/templates/editorModel';
+import { locate, ops } from '@/lib/templates/editorModel';
 import {
   LEVEL_LABEL, LEVEL_MEANING, PURPOSE_LABEL, REQUIREMENT_LEVELS, REQUIREMENT_PURPOSES, issuesFor, methodsFor, newRequirement,
   readSatisfy, requirementIssues, requirementsOf, writeSatisfy, type RequirementDef, type RequirementLevel,
 } from '@/lib/templates/requirementModel';
 import { RuleEditor } from './RuleEditor';
-import { Banner, btn, field, label } from './ui';
+import { btn, field, label } from './ui';
 
 export const levelTone: Record<RequirementLevel, string> = {
   required: 'bg-safety/15 text-safety',
@@ -30,7 +30,8 @@ export function RequirementsEditor({ tree, node, onOps, disabled }: {
   tree: InspectionTemplate; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean;
 }) {
   const defs = requirementsOf(node);
-  const methods = useMemo(() => methodsFor(node), [node]);
+  const systemId = useMemo(() => locate(tree, node.id)?.system.id ?? null, [tree, node.id]);
+  const methods = useMemo(() => methodsFor(node, systemId), [node, systemId]);
   const issues = useMemo(() => issuesFor(requirementIssues(tree), node), [tree, node]);
   const [open, setOpen] = useState<string | null>(defs[0]?.id ?? null);
   const [adding, setAdding] = useState('');
@@ -46,9 +47,7 @@ export function RequirementsEditor({ tree, node, onOps, disabled }: {
 
   return (
     <div className="space-y-4 px-4 py-4">
-      <Banner tone="warn" title="Can’t publish yet.">
-        The phone can’t check requirements until the next update. Switch Requirements off to publish now — it’s kept for later.
-      </Banner>
+      <p className="text-xs text-muted">Checked on the phone before the report is sent. The inspector can send without it.</p>
       {unit && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">This is a repeated unit. It uses its definition’s requirements and can’t carry its own.</p>}
 
       <div className="flex items-end justify-between gap-3">

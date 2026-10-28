@@ -21,6 +21,7 @@
 // not built). Until then a website-authored key is a reference, not a storage key, and nothing reads it.
 //
 // PURE: no React, no store, no clock.
+import READINGS from '@/lib/templateBuilder/core/measurementPoints.json';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   REQUIREMENT_LEVELS, REQUIREMENT_PURPOSES, carriedRequirements, nodeShapeOf, validateTemplateRequirements,
@@ -28,6 +29,12 @@ import {
 } from '@/lib/templateBuilder/core/requirementsContract';
 
 export { REQUIREMENT_LEVELS, REQUIREMENT_PURPOSES, carriedRequirements };
+
+/** What still keeps a draft from publishing (Stage 2, 2026-10-27): company requirements on items ARE used now — the
+ *  phone checks them before the report is sent (soft). Changes to Ledrix's own default rules (overrides, another
+ *  default set) are not, so those still hold Publish. */
+export const unpublishableRequirements = (tree: Parameters<typeof carriedRequirements>[0]): string[] =>
+  carriedRequirements(tree).filter(x => !x.startsWith('requirements on '));
 export type { Clause, RequirementDef, RequirementIssue, RequirementLevel, RequirementPurpose };
 
 export const LEVEL_LABEL: Record<RequirementLevel, string> = { required: 'Required', recommended: 'Recommended', optional: 'Optional' };
@@ -96,12 +103,20 @@ export function clauseKey(c: Clause): string {
   }
 }
 
+/** The READINGS a system takes (the app's measurement catalog — the same points VAL records: hot water temperature,
+ *  water pressure, supply and return air…). A reading of that point taken in the item's system satisfies it. */
+export function readingsFor(systemId: string | null | undefined): Array<{ id: string; label: string; units: string[] }> {
+  const sys = systemId ? (READINGS as { systems?: Record<string, { points?: Array<{ id: string; label: string; units?: string[] }> }> }).systems?.[systemId] : undefined;
+  return (sys?.points ?? []).map(p => ({ id: p.id, label: p.label, units: p.units ?? [] }));
+}
+
 /** The methods the contract allows a company requirement on this item, given what the item records. */
-export function methodsFor(node: TemplateNode): Method[] {
+export function methodsFor(node: TemplateNode, systemId?: string | null): Method[] {
   const shape = nodeShapeOf(node);
   const out: Method[] = [
     { key: '', label: 'Photograph of this item', hint: 'A photo linked to the item', clause: { kind: 'evidence', media: 'photo' } },
     { key: '', label: 'Document', hint: 'A document linked to the item, e.g. a manual or permit', clause: { kind: 'evidence', media: 'document' } },
+    ...readingsFor(systemId).map(r => ({ key: '', label: `Reading — ${r.label}`, hint: r.units.length ? `Recorded in ${r.units.join(' or ')}` : 'A recorded reading', clause: { kind: 'measurement' as const, point: r.id } })),
   ];
   for (const a of node.attributes ?? []) {
     out.push({ key: '', label: `Specification — ${a.label}`, hint: 'The field has a recorded answer', clause: { kind: 'fields', fields: [{ attr: a.id, key: `${node.id}::${a.id}`, label: a.label }] } });
@@ -175,4 +190,23 @@ export function newRequirement(tree: InspectionTemplate, node: TemplateNode, lab
 export function issuesFor(issues: readonly RequirementIssue[], node: TemplateNode): RequirementIssue[] {
   const ids = new Set(requirementsOf(node).map(d => d.id));
   return issues.filter(i => (i.requirementId && ids.has(i.requirementId)) || (!i.requirementId && i.message.includes(`"${node.label}"`)));
+}
+
+// ── PROOF THE COMPANY ASKS FOR (Stage 2 — ledrix-app requirementProof.describeClause / needsOf) ─────────────────────
+// The preview has no photos or readings, so every required or recommended requirement shows as needed: "Needs Photo".
+const READING_LABEL = new Map<string, string>();
+for (const s of Object.values((READINGS as { systems?: Record<string, { points?: Array<{ id: string; label: string }> }> }).systems ?? {})) for (const p of s.points ?? []) if (!READING_LABEL.has(p.id)) READING_LABEL.set(p.id, p.label);
+type PClause = { kind: string; media?: string; point?: string; fields?: Array<{ label: string }> };
+const say = (c: PClause): string => c.kind === 'evidence' ? (c.media === 'photo' ? 'Photo' : c.media === 'document' ? 'Document' : 'Video')
+  : c.kind === 'measurement' ? `Reading — ${READING_LABEL.get(c.point ?? '') ?? c.point}`
+  : c.kind === 'fields' ? ((c.fields ?? []).map(f => f.label).join(', ') || 'Answer')
+  : c.kind === 'assessment' ? 'Condition' : 'Confirmed finding';
+/** What an item asks for before the report is sent ("Photo · Reading — Water Pressure"), or '' when nothing. */
+export function previewNeeds(node: TemplateNode): string {
+  const out: string[] = [];
+  for (const d of ((node as TemplateNode & { requirements?: Array<{ level?: string; satisfy?: { all?: Array<{ any?: PClause[] }> } }> }).requirements ?? [])) {
+    if (d.level === 'optional') continue;
+    for (const g of d.satisfy?.all ?? []) { const w = [...new Set((g.any ?? []).map(say))].join(' or '); if (w && !out.includes(w)) out.push(w); }
+  }
+  return out.join(' · ');
 }

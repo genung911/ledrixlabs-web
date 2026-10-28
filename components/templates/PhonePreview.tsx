@@ -33,6 +33,7 @@ import {
 import {
   crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
 } from '@/lib/templateBuilder/core/guidedOrder';
+import { previewNeeds } from '@/lib/templates/requirementModel';
 import { displayLabel } from './systemLabel';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
@@ -313,7 +314,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 <button key={st.key} type="button" data-pv-id={st.key} className={`pv-item${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
                   aria-label={`${st.label}, ${v}. Start guided coverage here`}>
                   <i className="pv-dot" style={{ background: q.met || q.finding || q.limited ? c : '#2a333a' }} />
-                  <span className="pv-itx"><b>{st.label}</b></span>
+                  <span className="pv-itx"><b>{st.label}</b>{n && previewNeeds(n) ? <small className="pv-needs">Needs {previewNeeds(n)}</small> : null}</span>
                   <span className="pv-iv" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
                   <Glyph d={G.chevR} size={14} color="#4a5a60" />
                 </button>
@@ -698,6 +699,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-itx{flex:1;min-width:0;display:flex;flex-direction:column}
 .ldx-pv .pv-itx em{font-style:normal;color:#8cc4ff;font-size:8.5px;font-weight:900;letter-spacing:1px}
 .ldx-pv .pv-itx b{color:#eef3f5;font-size:13px;font-weight:600;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-itx .pv-needs{color:#f0a020;font-size:10px;font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-iv{font-size:11px;font-weight:600;max-width:38%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-toprow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ldx-pv .pv-toprow .pv-eyebrow{flex:1;min-width:0}

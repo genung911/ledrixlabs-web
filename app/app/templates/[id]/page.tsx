@@ -32,7 +32,7 @@ import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTe
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { validateTemplate } from '@/lib/templateBuilder/core/templateValidate';
 import { applyManual, locate } from '@/lib/templates/editorModel';
-import { LEVEL_MEANING, REQUIREMENT_LEVELS, carriedRequirements, levelCounts, pinnedDefaultSet, requirementsOf } from '@/lib/templates/requirementModel';
+import { LEVEL_MEANING, REQUIREMENT_LEVELS, levelCounts, pinnedDefaultSet, requirementsOf, unpublishableRequirements } from '@/lib/templates/requirementModel';
 import { useDraft } from '@/lib/templates/useDraft';
 import { TemplateApiError } from '@/lib/templates/api';
 
@@ -149,10 +149,10 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
 
   const bIssues = buildingTypeIssues(tree);
   const bChanges = buildingTypeChanges(m.live?.tree ?? null, tree);
-  const reqs = carriedRequirements(tree);
+  const reqs = unpublishableRequirements(tree);
   const publishBlock = !server ? 'Publishing turns on with the next Ledrix app update.' : !owner ? 'Only the company owner can publish.'
     : bIssues.errors.length ? `Fix the building types first: ${bIssues.errors[0].message}`
-    : reqs.length ? `Not publishable yet — inspections can’t use requirements yet (${reqs.join('; ')}).` : null;
+    : reqs.length ? `Not publishable yet — inspections can’t use ${reqs.join('; ')} yet.` : null;
   const canSave = !busy && !readOnly && d.save.kind !== 'clean' && d.save.kind !== 'saved' && d.save.kind !== 'saving';
   const canDiscard = !busy && (m.hasDraft || d.save.kind !== 'clean');
   const canPublish = !publishBlock && !busy && !readOnly && !(!m.hasDraft && d.save.kind === 'clean');
@@ -328,7 +328,7 @@ function CompletionCard({ tree, nodeId }: { tree: InspectionTemplate; nodeId: st
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-hairline text-sm font-bold text-ink">0/{c.required}</div>
           <ul className="space-y-1">{REQUIREMENT_LEVELS.map(l => <li key={l} className="flex items-center gap-2"><LevelPill level={l} /><span className="text-body">{c[l]} — {LEVEL_MEANING[l].toLowerCase()}</span></li>)}</ul>
         </div>
-        <p className="mt-2 text-muted">Only Required items count toward what the item owes. Drafted only — inspections don’t evaluate these yet.</p>
+        <p className="mt-2 text-muted">Checked on the phone before the report is sent. The inspector can send without them.</p>
       </>) : <p className="mt-1 text-muted">No company requirements. Today the app’s built-in rules decide what this item owes.</p>}
     </section>
   );

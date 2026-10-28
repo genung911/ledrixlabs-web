@@ -260,7 +260,7 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
           <Row title="Details" hint="Material, type or count">
             <Toggle on={detailsOn} disabled={disabled} label="Details" onChange={onDetails} />
           </Row>
-          <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount} · not publishable yet` : 'Proof photos and readings'}>
+          <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount}` : 'Proof photos and readings'}>
             <Toggle on={reqsOn} disabled={disabled} label="Requirements" onChange={onReqs} />
           </Row>
         </div>

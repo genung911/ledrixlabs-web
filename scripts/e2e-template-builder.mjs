@@ -397,17 +397,12 @@ try {
     await page.getByRole('tab', { name: /^Requirements/ }).click();
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'light'));
   }
-  ok('8b · while the draft carries a requirement, Publish is disabled and the header says what to fix',
-    await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled() && (await page.getByRole('button', { name: /1 to fix before publishing/ }).count()) === 1);
-  // the header opens Review & Publish; the fix opens the item on its Requirements tab
-  await page.getByRole('button', { name: /1 to fix before publishing/ }).click();
-  const fixRow = page.getByRole('list', { name: 'To fix before publishing' }).getByRole('button', { name: /E2E Draft Hood/ });
-  ok('8b · Review & Publish lists the item to fix', await waitFor(async () => (await fixRow.count()) === 1, 5000));
-  await fixRow.click();
-  ok('8b · tapping it opens that item on its Requirements tab', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0
-    && (await page.getByRole('tab', { name: /^Requirements/, selected: true }).count()) === 1, 5000));
-  ok('8b · the completion card counts only what the item would owe, and says it is not used yet',
-    (await page.getByRole('region', { name: 'Completion logic for this item' }).getByText(/not evaluate these yet|don.t evaluate these yet/).count()) > 0);
+  // Stage 2 (2026-10-27): an item requirement publishes — the phone checks it before the report is sent (soft)
+  ok('8b · a draft carrying a requirement can still be published, and nothing says to fix it',
+    await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000)
+    && (await page.getByRole('button', { name: /to fix before publishing/ }).count()) === 0);
+  ok('8b · the completion card says the phone checks it before the report is sent',
+    (await page.getByRole('region', { name: 'Completion logic for this item' }).getByText(/Checked on the phone before the report is sent/).count()) > 0);
   await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Remove requirement' }).click();
   await sleep(1500); await saved();
   ok('8b · removing it removes the field, and Publish is available again', hood8()?.requirements === undefined
@@ -451,17 +446,16 @@ try {
   ok('10 · the stale save is refused and the editor says so (reload), never overwriting', await waitFor(async () => (await page.getByText(/saved somewhere else/i).count()) > 0, 10000)
     && !findByLabel(db.company_template_drafts.find(d => d.template_id === LIVE_ID).template, 'E2E second edit'));
 
-  // ── 11 · requirements cannot be published yet ──
-  step = '11'; console.log('\n11 · requirements are not publishable yet\n');
+  // ── 11 · what inspections can't use yet (changes to Ledrix's default requirements) cannot be published ──
+  step = '11'; console.log('\n11 · changes to Ledrix default requirements are not publishable yet\n');
   const d11 = db.company_template_drafts.find(d => d.template_id === LIVE_ID);
-  const rq = clone(d11.template); const n = findIn(rq, 'hvac_heating');
-  n.requirements = [{ id: 'rq_e2e', origin: 'company', label: 'Fuel recorded', purposes: ['report_support'], level: 'required', subject: { nodeId: 'hvac_heating' },
-    satisfy: { all: [{ any: [{ kind: 'finding' }] }] }, unmet: { limitation: 'resolves', exception: 'not_allowed' } }];
+  const rq = clone(d11.template);
+  rq.requirementOverrides = { 'ledrix:r0:facts:hvac_heating': { level: 'optional' } };
   d11.template = rq; d11.row_version += 1;                           // written outside the UI (a draft from elsewhere)
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitFor(async () => (await page.getByRole('button', { name: 'Publish', exact: true }).count()) > 0, 60000);
   const liveBefore = JSON.stringify(db.company_templates.find(t => t.id === LIVE_ID));
-  ok('11 · a template that carries requirements can\'t be published: Publish is disabled with the reason, and the live template is unchanged',
+  ok('11 · a template that changes Ledrix default requirements can\'t be published: Publish is disabled with the reason, and the live template is unchanged',
     await waitFor(async () => (await page.getByRole('button', { name: /to fix before publishing/ }).count()) > 0, 10000)
     && await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()
     && (await page.getByRole('button', { name: 'Publish', exact: true }).first().click({ timeout: 1500 }).then(() => false, () => true))

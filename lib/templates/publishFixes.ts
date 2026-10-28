@@ -35,19 +35,8 @@ export function publishFixes(tree: InspectionTemplate, issues: readonly Issue[],
   const at = (id: string | undefined) => (id ? locate(tree, id) : null);
   const whereOf = (l: NonNullable<ReturnType<typeof locate>>) => (l.node === l.system ? l.system.label : `${l.system.label} › ${l.node.label}`);
 
-  // 1 · requirements (inspections can't use them yet) — one per item, with "switch off" (kept, hidden) as the quick fix
-  const walk = (n: TemplateNode) => {
-    const r = (n as TemplateNode & { requirements?: unknown[] }).requirements;
-    if (Array.isArray(r) && r.length) {
-      const l = at(n.id);
-      out.push({ key: `req:${n.id}`, blocks: true, where: l ? whereOf(l) : n.label,
-        what: `${r.length} requirement${r.length === 1 ? '' : 's'} — inspections can’t check these yet`,
-        go: l ? { section: 'systems', systemId: l.system.id, nodeId: n.id, tab: 'requirements' } : { section: 'requirements' },
-        ...(l ? { quick: { label: 'Switch off (kept)', ops: ops.switchRequirements(n, false) } } : {}) });
-    }
-    (n.children ?? []).forEach(walk);
-  };
-  tree.systems.forEach(walk);
+  // 1 · item requirements no longer hold Publish (Stage 2, 2026-10-27 — the phone checks them, soft). Changes to Ledrix's
+  //     own default rules still do.
   const t = tree as InspectionTemplate & { requirementOverrides?: unknown; requirementDefaults?: unknown };
   if (t.requirementOverrides !== undefined && !(t.requirementOverrides && typeof t.requirementOverrides === 'object' && !Object.keys(t.requirementOverrides).length))
     out.push({ key: 'req:overrides', blocks: true, where: 'Requirements', what: 'Changes to Ledrix default requirements', go: { section: 'requirements' } });
