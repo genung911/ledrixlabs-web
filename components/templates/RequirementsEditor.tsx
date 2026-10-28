@@ -46,8 +46,8 @@ export function RequirementsEditor({ tree, node, onOps, disabled }: {
 
   return (
     <div className="space-y-4 px-4 py-4">
-      <Banner tone="warn" title="Draft only — not used in inspections yet.">
-        Inspections can’t evaluate requirements yet, so a template that carries any can’t be published. Today the app’s built-in rules (Ledrix defaults, r0) decide what an inspection owes.
+      <Banner tone="warn" title="Can’t publish yet.">
+        The phone can’t check requirements until the next update. Switch Requirements off to publish now — it’s kept for later.
       </Banner>
       {unit && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">This is a repeated unit. It uses its definition’s requirements and can’t carry its own.</p>}
 

@@ -84,9 +84,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled} />}
       {cur === 'condition' && <ComponentCondition node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'details' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
-      {cur === 'requirements' && <>
-        <p className="px-4 pt-4 text-xs text-muted">Proof the inspector collects. Checked before the report is sent — they can continue without it. <span className="text-ink">Not publishable yet — phone check next.</span></p>
-        <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} /></>}
+      {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
     </Shell>
   );
