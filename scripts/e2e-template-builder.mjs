@@ -182,7 +182,10 @@ function handle(method, url, headers, bodyText) {
 // ── the dev server, with the fake Supabase origin and no secrets ───────────────────────────────────────────────
 const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: FAKE, NEXT_PUBLIC_SUPABASE_ANON_KEY: 'e2e-anon', SUPABASE_SERVICE_ROLE_KEY: '',
   SUPABASE_URL: FAKE, GATEWAY_URL: '', GATEWAY_KEY: '', GOOGLE_PLACES_API_KEY: '', NEXT_TELEMETRY_DISABLED: '1' };
-const server = spawn('npx', ['next', 'dev', '-p', String(PORT)], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
+// E2E_PROD_DIR=<a checkout already built with these env values> runs `next start` there instead — the production server,
+// which serves fixed assets (no dev rebuilds, no ?v= stylesheet reloads).
+const PROD = process.env.E2E_PROD_DIR;
+const server = spawn('npx', PROD ? ['next', 'start', '-p', String(PORT)] : ['next', 'dev', '-p', String(PORT)], { cwd: PROD || ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
 let serverLog = '';
 server.stdout.on('data', d => { serverLog += d; }); server.stderr.on('data', d => { serverLog += d; });
 const stop = () => { try { server.kill('SIGTERM'); } catch { /* gone */ } };
@@ -210,6 +213,18 @@ await ctx.route('**/*', async (route) => {
 const page = await ctx.newPage();
 page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR_FAILED|ERR_BLOCKED|fonts\.g/.test(m.text())) consoleErrors.push(m.text().slice(0, process.env.E2E_FULL_ERRORS ? 4000 : 200)); });
 let step = 'start';
+// DEV-SERVER NOISE, AND ONLY THAT (2026-10-27): `next dev` re-fetches the app stylesheet with a `?v=` stamp while it
+// rebuilds a page on first visit; a fetch that lands mid-rebuild rejects with a bare Event. The production server serves
+// fixed, hashed CSS and never does this (E2E_PROD_DIR: 64/64, no error). Set aside ONLY that exact shape — a failed
+// <link> to /_next/static/css/…?v= under `next dev` — and count it; every other page error still fails the run.
+let devCssReloads = 0;
+if (!PROD) await page.addInitScript(() => {
+  addEventListener('unhandledrejection', ev => {
+    const t = ev.reason && typeof ev.reason === 'object' && 'target' in ev.reason ? ev.reason.target : null;
+    if (t && t.tagName === 'LINK' && /\/_next\/static\/css\/[^?]+\.css\?v=\d+$/.test(t.href || '')) { ev.preventDefault(); console.info('E2E-DEV-CSS-RELOAD', t.href); }
+  });
+});
+page.on('console', m => { if (m.type() === 'info' && m.text().startsWith('E2E-DEV-CSS-RELOAD')) devCssReloads++; });
 page.on('pageerror', e => consoleErrors.push(`pageerror @${step}: ${e?.name ?? ''} ${e?.message ?? ''} ${String(e?.stack ?? e).slice(0, 300)} [${Object.prototype.toString.call(e)}]`));
 
 const draftRow = () => db.company_template_drafts[0];
@@ -556,5 +571,6 @@ ok('no uncaught page errors or console errors', consoleErrors.length === 0, cons
 console.log(`\n  published tree: ${OUT}`);
 await browser.close();
 stop();
+if (devCssReloads) console.log(`  · ${devCssReloads} dev-server stylesheet reload${devCssReloads === 1 ? '' : 's'} set aside (next dev only — see above)`);
 console.log(`\n${pass + fail} checks · ${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
