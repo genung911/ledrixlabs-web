@@ -156,6 +156,12 @@ const srcs = Object.fromEntries(files.map(f => [f, read(f)]));
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 const RULES = {
+  // Photos (ledrix-app PLAN_2026-10-28_photos_to_server P5): a deleted photo is a tombstone on the server — never shown.
+  'photos: a deleted photo is never shown': all => {
+    const d = strip(all['lib/workspace/data.ts'] ?? '');
+    const fn = d.slice(d.indexOf('export async function loadPhotos('), d.indexOf('export async function loadItemLabels('));
+    return /from\('inspection_photos'\)/.test(fn) && /\.is\('deleted_at', null\)/.test(fn) ? [] : ['lib/workspace/data.ts'];
+  },
   'read-only: no write calls': all => Object.entries(all).filter(([, s]) => /\.(insert|update|upsert|delete|rpc)\s*\(/.test(strip(s))).map(([f]) => f),
   'read-only: no storage upload/remove': all => Object.entries(all).filter(([, s]) => /\.(upload|remove|move|copy)\s*\(/.test(strip(s))).map(([f]) => f),
   'no account creation': all => Object.entries(all).filter(([, s]) => /signUp\s*\(|signInWithOtp\s*\(|signInWithOAuth\s*\(/.test(strip(s))).map(([f]) => f),
@@ -199,6 +205,7 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
 // ── 3. Mutations: each rule must catch a broken copy ───────────────────────────
 console.log('mutations');
 const MUT = {
+  'photos: a deleted photo is never shown': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'].replace(".eq('inspection_id', inspectionId).is('deleted_at', null).order('taken_at'", ".eq('inspection_id', inspectionId).order('taken_at'") }),
   'read-only: no write calls': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'] + "\nworkspace.from('anomalies').update({ status: 'confirmed' });" }),
   'read-only: no storage upload/remove': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'] + "\nworkspace.storage.from('x').upload('a', b);" }),
   'no account creation': s => ({ ...s, 'app/app/login/page.tsx': s['app/app/login/page.tsx'] + "\nworkspace.auth.signUp({ email, password });" }),

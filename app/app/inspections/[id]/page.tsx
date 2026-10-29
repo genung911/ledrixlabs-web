@@ -11,12 +11,12 @@ import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { Card, Empty, ErrorBox, Loading, Page, PhasePill, PriorityPill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import {
-  loadFindings, loadInspection, loadMembers, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
-  type FindingRow, type SealRow, type SpecRow,
+  loadFindings, loadInspection, loadItemLabels, loadMembers, loadPhotos, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
+  type FindingRow, type PhotoRow, type SealRow, type SpecRow,
 } from '@/lib/workspace/data';
 import { inspectionPhase, isPriorityUnset, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
-type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'reports';
+type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'photos' | 'reports';
 type Data = {
   inspection: InspectionRow;
   findings: FindingRow[];
@@ -25,6 +25,8 @@ type Data = {
   seals: SealRow[];
   portal: string | null;
   names: Record<string, string>;
+  photos: PhotoRow[];
+  labels: Record<string, string>;
 };
 type State = { kind: 'loading' } | { kind: 'missing' } | { kind: 'error'; message: string } | { kind: 'ready'; data: Data };
 
@@ -42,18 +44,20 @@ export default function InspectionPage() {
     try {
       const inspection = await loadInspection(id);
       if (!inspection || inspection.deleted_at) { setState({ kind: 'missing' }); return; }
-      const [findings, specs, reports, seals, portal, members] = await Promise.all([
+      const [findings, specs, reports, seals, portal, members, photos, labels] = await Promise.all([
         findingsVisible ? loadFindings(id) : Promise.resolve([]),
         findingsVisible ? loadSpecs(id) : Promise.resolve([]),
         loadReports([id]),
         loadSeals(id),
         loadPortalLink(id).catch(() => null),
         access.companyId ? loadMembers().catch(() => []) : Promise.resolve([]),
+        findingsVisible ? loadPhotos(id).catch(() => [] as PhotoRow[]) : Promise.resolve([] as PhotoRow[]),
+        findingsVisible ? loadItemLabels(id).catch(() => ({} as Record<string, string>)) : Promise.resolve({} as Record<string, string>),
       ]);
       const names: Record<string, string> = {};
       for (const m of members) if (m.full_name) names[m.id] = m.full_name;
       if (access.name) names[access.userId] = access.name;
-      setState({ kind: 'ready', data: { inspection, findings, specs, reports, seals, portal, names } });
+      setState({ kind: 'ready', data: { inspection, findings, specs, reports, seals, portal, names, photos, labels } });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : 'This inspection could not load.' });
     }
@@ -64,7 +68,7 @@ export default function InspectionPage() {
   // Deep links from the dashboard (#review, #reports).
   useEffect(() => {
     const h = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
-    if (h === 'review' || h === 'findings' || h === 'specs' || h === 'reports' || h === 'rejected') setSection(h);
+    if (h === 'review' || h === 'findings' || h === 'specs' || h === 'photos' || h === 'reports' || h === 'rejected') setSection(h);
   }, []);
 
   const groups = useMemo(() => {
@@ -105,7 +109,7 @@ export default function InspectionPage() {
     </Page>
   );
 
-  const { inspection, specs, reports, seals, portal, names } = state.data;
+  const { inspection, specs, reports, seals, portal, names, photos, labels } = state.data;
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
@@ -113,6 +117,7 @@ export default function InspectionPage() {
     { id: 'findings', label: 'Confirmed findings', count: groups.findings.length, show: findingsVisible },
     { id: 'rejected', label: 'Rejected', count: groups.rejected.length, show: findingsVisible && groups.rejected.length > 0 },
     { id: 'specs', label: 'Specs', count: specs.length, show: findingsVisible },
+    { id: 'photos', label: 'Photos', count: photos.length, show: findingsVisible },
     { id: 'reports', label: 'Reports & delivery', count: reports.length, show: true },
   ];
   const activeSection: Section = rail.find(r => r.id === section && r.show) ? section : 'reports';
@@ -136,7 +141,7 @@ export default function InspectionPage() {
         </div>
       </div>
       <SyncLine lastSync={inspection.updated_at ?? null} />
-      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>
+      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -170,6 +175,8 @@ export default function InspectionPage() {
             <div className="lg:col-span-2 xl:col-span-1"><EvidencePanel finding={current} /></div>
           </>
         )}
+
+        {activeSection === 'photos' && <PhotosPanel photos={photos} labels={labels} />}
 
         {activeSection === 'specs' && (
           <Card title="Specs" count={specs.length} className="xl:col-span-2">
@@ -265,6 +272,54 @@ function EvidencePanel({ finding }: { finding: FindingRow | null }) {
           {finding.defect_type && <Field label="Defect type">{titleCase(finding.defect_type)}</Field>}
           <Field label="Captured">{formatWhen(finding.created_at)}</Field>
         </dl>
+      </div>
+    </Card>
+  );
+}
+
+/** Every photo of the inspection, by item (PLAN_2026-10-28_photos_to_server P5). Signed for 10 minutes as the viewer —
+ *  the storage policies decide; a photo the viewer may not see simply does not load. Click to open full size. */
+function PhotosPanel({ photos, labels }: { photos: PhotoRow[]; labels: Record<string, string> }) {
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    if (photos.length) signEvidence(photos.map(p => p.storage_path)).then(u => { if (live) setUrls(u); }).catch(() => {});
+    return () => { live = false; };
+  }, [photos]);
+  const name = (id: string | null) => (id ? labels[id] ?? titleCase(id.replace(/_/g, ' ')) : null);
+  const groups = useMemo(() => {
+    const m = new Map<string, PhotoRow[]>();
+    for (const p of photos) { const k = name(p.node_id ?? p.limitation_node_id) ?? 'General coverage'; m.set(k, [...(m.get(k) ?? []), p]); }
+    return [...m.entries()].sort((a, b) => (a[0] === 'General coverage' ? 1 : b[0] === 'General coverage' ? -1 : a[0].localeCompare(b[0])));
+  }, [photos, labels]);
+  if (!photos.length) return <Card title="Photos" className="xl:col-span-2"><Empty>No photos have synced yet. Photos upload from the phone in the background.</Empty></Card>;
+  return (
+    <Card title="Photos" count={photos.length} className="xl:col-span-2">
+      <div className="space-y-6">
+        {groups.map(([item, ps]) => (
+          <section key={item} aria-label={item}>
+            <h3 className="mb-2 text-sm font-semibold text-ink">{item} <span className="font-normal text-muted">· {ps.length}</span></h3>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {ps.map(p => {
+                const tags = [p.anomaly_id ? 'Finding' : null, p.limitation_node_id ? 'Limitation' : null,
+                  p.proof_of ? `Proof — ${titleCase(p.proof_of.replace(/^reading:/, '').replace(/_/g, ' '))}` : null, p.room].filter(Boolean);
+                return (
+                  <li key={p.id} className="overflow-hidden rounded-xl border border-hairline bg-ground">
+                    <a href={urls[p.storage_path]} target="_blank" rel="noreferrer" aria-label={`Open photo ${p.id}`} className="block aspect-[4/3] bg-ink/5">
+                      {urls[p.storage_path]
+                        ? <img src={urls[p.storage_path]} alt={item} loading="lazy" className="h-full w-full object-cover" />
+                        : <span className="flex h-full items-center justify-center text-xs text-muted">Loading…</span>}
+                    </a>
+                    <div className="px-2.5 py-2 text-xs">
+                      <p className="text-muted">{formatWhen(p.taken_at)}</p>
+                      {tags.length > 0 && <p className="mt-0.5 truncate text-body">{tags.join(' · ')}</p>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
       </div>
     </Card>
   );

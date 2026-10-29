@@ -157,6 +157,31 @@ export async function loadTemplateTree(companyId: string, id: string): Promise<T
   return (res.data as TemplateTreeRow | null) ?? null;
 }
 
+/** Every photo of an inspection (ledrix-app SQL #73, PLAN_2026-10-28_photos_to_server P5) — oldest first, deleted ones
+ *  left out. RLS (`can_read_inspection`) decides; another company simply gets none. */
+export type PhotoRow = {
+  id: string; storage_path: string; node_id: string | null; anomaly_id: string | null; limitation_node_id: string | null;
+  proof_of: string | null; room: string | null; source: string; taken_at: string; width: number | null; height: number | null;
+};
+export async function loadPhotos(inspectionId: string): Promise<PhotoRow[]> {
+  const res = await workspace.from('inspection_photos')
+    .select('id, storage_path, node_id, anomaly_id, limitation_node_id, proof_of, room, source, taken_at, width, height')
+    .eq('inspection_id', inspectionId).is('deleted_at', null).order('taken_at', { ascending: true });
+  if (res.error) throw new WorkspaceError('The photos could not be loaded', res.error);
+  return (res.data as PhotoRow[]) ?? [];
+}
+
+/** Item names from the inspection's own template copy (inspection_templates.snapshot): node id → label. Empty when the
+ *  copy is not visible or absent — callers then show the id prettified. */
+export async function loadItemLabels(inspectionId: string): Promise<Record<string, string>> {
+  const res = await workspace.from('inspection_templates').select('snapshot').eq('inspection_id', inspectionId).maybeSingle();
+  const out: Record<string, string> = {};
+  const walk = (n: any) => { if (n && typeof n === 'object') { if (n.id && n.label) out[String(n.id)] = String(n.label); (n.children ?? []).forEach(walk); } };
+  const snap: any = (res.data as any)?.snapshot;
+  ((snap?.resolvedTemplate ?? snap)?.systems ?? []).forEach(walk);
+  return out;
+}
+
 /** Short-lived signed URL for an evidence photo, as the signed-in user — the Phase 0 scoped storage
  *  policies decide. Null when the object is gone or the user may not read it. */
 export async function signEvidence(paths: string[]): Promise<Record<string, string>> {
