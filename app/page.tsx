@@ -5,6 +5,7 @@ import MarketingOrb from '@/components/MarketingOrb';
 import { GlowButton } from '@/components/marketing/ui/GlowButton';
 import { PhoneBezel } from '@/components/marketing/PhoneBezel';
 import { LedrixDelta } from '@/components/LedrixDelta';
+import { AuthHashForwarder } from '@/components/auth/AuthHashForwarder';
 
 // The Ledrix Labs parent landing — ledrixlabs.com's front door. Its whole job is to say what
 // Ledrix is (the intelligence layer for structures) and route to the two products: Inspect (the
@@ -36,6 +37,7 @@ function Shot({ src, alt }: { src: string; alt: string }) {
 export default function LedrixLabsHome() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
+      <AuthHashForwarder />
       <Navbar links={PARENT_LINKS} ctaHref="/inspect#demo" />
 
       <main>
