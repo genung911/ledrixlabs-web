@@ -102,30 +102,26 @@ export default function BookingPage() {
     }
     setSubmitting(true);
     try {
-      const bookingBody: Record<string, unknown> = {
-        inspector_id:  profile.id,
-        client_name:   name.trim(),
-        client_email:  email.trim(),
-        client_phone:  phone.trim() || null,
-        address:       address.trim(),
-        preferred_date: date || null,
-        preferred_time: time || null,
-        notes:          notes.trim() || null,
-        status:        'pending',
-        payment_status: 'pending',
-        amount_paid:   0,
-        agreement_accepted: false,
-      };
-      if (pkgId) bookingBody.package_id = pkgId;
-
-      const bRes = await fetch(`${SUPA_URL}/rest/v1/crm_bookings`, {
+      // A REQUEST, not a row (SQL #74, 2026-10-29): the server resolves the inspector from this link, checks the
+      // package, and sets status and payment itself. The browser never writes crm_bookings.
+      const bRes = await fetch(`${SUPA_URL}/rest/v1/rpc/create_public_booking`, {
         method:  'POST',
-        headers: { ...API_HEADERS, Prefer: 'return=representation' },
-        body:    JSON.stringify(bookingBody),
+        headers: API_HEADERS,
+        body:    JSON.stringify({
+          p_slug: slug, p_package_id: pkgId || null,
+          p_client_name: name.trim(), p_client_email: email.trim(), p_client_phone: phone.trim() || null,
+          p_address: address.trim(), p_preferred_date: date || null, p_preferred_time: time || null, p_notes: notes.trim() || null,
+        }),
       });
-      const bData = await bRes.json();
-      const booking = Array.isArray(bData) ? bData[0] : bData;
-      if (!booking?.id) throw new Error('Booking creation failed');
+      const bData = await bRes.json().catch(() => null);
+      if (!bRes.ok || typeof bData !== 'string') {
+        const why = String(bData?.message ?? '');
+        throw new Error(/email_invalid/.test(why) ? 'Please check your email address.'
+          : /booking_link_inactive/.test(why) ? 'This booking page is not accepting requests right now.'
+          : /date_out_of_range/.test(why) ? 'Please choose a date within the next year.'
+          : 'Booking could not be submitted. Please try again.');
+      }
+      const booking = { id: bData };
 
       const selectedPkg = packages.find(p => p.id === pkgId);
       if (selectedPkg && selectedPkg.price > 0) {

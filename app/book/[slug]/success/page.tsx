@@ -60,24 +60,16 @@ export default function SuccessPage() {
     if (!bookingId) { setError('Missing booking ID.'); setLoading(false); return; }
     (async () => {
       try {
-        const bRes = await fetch(
-          `${SUPA_URL}/rest/v1/crm_bookings?id=eq.${bookingId}&select=*,crm_packages(name,price,description)&limit=1`,
-          { headers: API_HEADERS },
-        );
-        const bData: Booking[] = await bRes.json();
-        if (!bData?.length) { setError('Booking not found.'); setLoading(false); return; }
-        const b = bData[0];
+        // One server read for one booking (SQL #74): the booking, its package and the inspector's display details.
+        const bRes = await fetch(`${SUPA_URL}/rest/v1/rpc/get_public_booking`, {
+          method: 'POST', headers: API_HEADERS, body: JSON.stringify({ p_booking_id: bookingId }),
+        });
+        const g = await bRes.json().catch(() => null);
+        if (!bRes.ok || !g?.id) { setError('Booking not found.'); setLoading(false); return; }
+        const b: Booking = { ...g, crm_packages: g.package ?? null };
         setBooking(b);
-        setSigned(b.agreement_accepted);
-
-        // Fetch inspector profile directly from inspector_profiles — bypasses booking_active filter
-        // so agreement signing works even after the portal is deactivated
-        const pRes = await fetch(
-          `${SUPA_URL}/rest/v1/inspector_profiles?id=eq.${(b as any).inspector_id}&select=id,full_name,business_name,phone,agreement_template&limit=1`,
-          { headers: API_HEADERS },
-        );
-        const pData: Profile[] = await pRes.json();
-        if (pData?.length) setProfile(pData[0]);
+        setSigned(!!b.agreement_accepted);
+        setProfile({ id: '', ...g.inspector });
       } catch {
         setError('Unable to load booking details.');
       } finally {
@@ -91,8 +83,6 @@ export default function SuccessPage() {
     if (!accepted) { alert('Please check the agreement acceptance box.'); return; }
     setSigning(true);
     try {
-      const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
-      const clientIp = ipRes ? (await ipRes.json().catch(() => ({}))).ip ?? 'unknown' : 'unknown';
 
       const agreementHash = Array.from(
         new Uint8Array(
@@ -100,17 +90,14 @@ export default function SuccessPage() {
         )
       ).map(b => b.toString(16).padStart(2, '0')).join('');
 
-      await fetch(`${SUPA_URL}/rest/v1/crm_bookings?id=eq.${bookingId}`, {
-        method:  'PATCH',
-        headers: { ...API_HEADERS, Prefer: 'return=minimal' },
-        body:    JSON.stringify({
-          agreement_accepted:    true,
-          agreement_signed_name: signedName.trim(),
-          agreement_accepted_at: new Date().toISOString(),
-          agreement_client_ip:   clientIp,
-          agreement_text_hash:   agreementHash,
-        }),
+      // Recorded once, server-side (SQL #74): name, time, this text's hash and the caller's IP. It used to PATCH the
+      // table as anon — which no policy allowed — and report success regardless.
+      const sRes = await fetch(`${SUPA_URL}/rest/v1/rpc/accept_public_booking_agreement`, {
+        method: 'POST', headers: API_HEADERS,
+        body: JSON.stringify({ p_booking_id: bookingId, p_signed_name: signedName.trim(), p_text_hash: agreementHash }),
       });
+      const ok = await sRes.json().catch(() => null);
+      if (!sRes.ok || ok !== true) throw new Error('not saved');
       setSigned(true);
     } catch {
       alert('Could not save signature. Please try again.');
