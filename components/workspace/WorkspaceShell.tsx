@@ -10,6 +10,7 @@ import { workspace } from '@/lib/workspace/client';
 import { loadCompanyName, loadProfile } from '@/lib/workspace/data';
 import { decideAccess, type Access } from '@/lib/workspace/model';
 import { THEME_PREFS, applyTheme, effectiveTheme, readThemePref, systemPrefersDark, writeThemePref, type ThemePref } from '@/lib/workspace/theme';
+import { loadMyCapabilities } from '@/lib/team/permissions';
 
 type Ctx = { access: Extract<Access, { ok: true }>; companyName: string | null; signOut: () => Promise<void> };
 const WorkspaceCtx = createContext<Ctx | null>(null);
@@ -103,6 +104,15 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { setNavOpen(false); }, [pathname]);
 
+  // Invoices are shown only to people the server lets read them (#79: the `invoices` permission, or an account with
+  // no company, which invoices for itself). The server decides either way; this only hides a page that would be empty.
+  const [canInvoice, setCanInvoice] = useState(false);
+  useEffect(() => {
+    if (gate.kind !== 'ready') return;
+    const companyId = gate.access.companyId;
+    loadMyCapabilities().then(c => setCanInvoice(!companyId || c?.invoices === true)).catch(() => setCanInvoice(false));
+  }, [gate]);
+
   const signOut = useCallback(async () => {
     await workspace.auth.signOut();
     router.replace('/app/login');
@@ -135,6 +145,7 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
     { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
     { href: '/app/reports', label: 'Reports', show: true },
+    { href: '/app/invoices', label: 'Invoices', show: canInvoice },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
     { href: '/app/team', label: 'Team', show: !!access.companyId },
     { href: '/app/company', label: 'Company', show: !!access.companyId },

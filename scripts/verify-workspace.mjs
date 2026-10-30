@@ -196,7 +196,8 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
   // 2026-10-21: one vocabulary with the phone, and the permanent banner replaced by the sync line.
   const shell = read('components/workspace/WorkspaceShell.tsx');
   const labels = [...shell.matchAll(/\{ href: '([^']+)', label: '([^']+)'/g)].map(m => m[2]);
-  ok('sidebar: Today · Inspections · Reports · Templates · Team · Company', labels.join(' · ') === 'Today · Inspections · Reports · Templates · Team · Company', labels.join(' · '));
+  // 2026-10-30: Invoices added (ledrix-app PLAN_2026-10-29 Part E4, approved mockup; the phone's name for it too).
+  ok('sidebar: Today · Inspections · Reports · Invoices · Templates · Team · Company', labels.join(' · ') === 'Today · Inspections · Reports · Invoices · Templates · Team · Company', labels.join(' · '));
   ok('every sidebar page exists', [...shell.matchAll(/\{ href: '\/app([^']*)'/g)].every(m => existsSync(join(ROOT, `app/app${m[1]}/page.tsx`))));
   const pages = ['app/app/page.tsx', 'app/app/inspections/page.tsx', 'app/app/inspections/[id]/page.tsx', 'app/app/reports/page.tsx'];
   ok('no page shows the permanent "View only" banner; each shows the sync line', pages.every(p => !/<ReadOnlyNotice/.test(read(p)) && /<SyncLine /.test(read(p))));
