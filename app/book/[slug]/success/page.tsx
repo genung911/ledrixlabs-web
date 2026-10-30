@@ -44,6 +44,7 @@ function fillTemplate(template: string, vars: Record<string, string>): string {
 export default function SuccessPage() {
   const searchParams = useSearchParams();
   const bookingId    = searchParams?.get('booking_id') ?? '';
+  const sessionId    = searchParams?.get('session_id') ?? '';
 
   const [booking,  setBooking]  = useState<Booking | null>(null);
   const [profile,  setProfile]  = useState<Profile | null>(null);
@@ -60,6 +61,15 @@ export default function SuccessPage() {
     if (!bookingId) { setError('Missing booking ID.'); setLoading(false); return; }
     (async () => {
       try {
+        // Back from Stripe: the SERVER confirms the payment by fetching the session from Stripe itself (payments
+        // function, PLAN Part E2) — this page never says what was paid. Best effort: the Stripe webhook covers a
+        // client who closed the tab, and the booking below shows whatever the server recorded.
+        if (sessionId) {
+          await fetch(`${SUPA_URL}/functions/v1/payments`, {
+            method: 'POST', headers: API_HEADERS,
+            body: JSON.stringify({ action: 'confirm-booking', booking_id: bookingId, session_id: sessionId }),
+          }).catch(() => null);
+        }
         // One server read for one booking (SQL #74): the booking, its package and the inspector's display details.
         const bRes = await fetch(`${SUPA_URL}/rest/v1/rpc/get_public_booking`, {
           method: 'POST', headers: API_HEADERS, body: JSON.stringify({ p_booking_id: bookingId }),
@@ -76,7 +86,7 @@ export default function SuccessPage() {
         setLoading(false);
       }
     })();
-  }, [bookingId]);
+  }, [bookingId, sessionId]);
 
   async function handleSign() {
     if (!signedName.trim()) { alert('Please type your full legal name to sign.'); return; }
