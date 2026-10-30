@@ -155,6 +155,7 @@ const files = [...walk('lib/workspace'), ...walk('app/app'), ...walk('components
 const srcs = Object.fromEntries(files.map(f => [f, read(f)]));
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
+const READ_RPCS = /\.rpc\('job_team',/g;
 const RULES = {
   // Photos (ledrix-app PLAN_2026-10-28_photos_to_server P5): a deleted photo is a tombstone on the server — never shown.
   'photos: a deleted photo is never shown': all => {
@@ -162,7 +163,9 @@ const RULES = {
     const fn = d.slice(d.indexOf('export async function loadPhotos('), d.indexOf('export async function loadItemLabels('));
     return /from\('inspection_photos'\)/.test(fn) && /\.is\('deleted_at', null\)/.test(fn) ? [] : ['lib/workspace/data.ts'];
   },
-  'read-only: no write calls': all => Object.entries(all).filter(([, s]) => /\.(insert|update|upsert|delete|rpc)\s*\(/.test(strip(s))).map(([f]) => f),
+  // 2026-10-30: READ_RPCS are server functions that only read (job_team returns the team of a job, #81). Named one by
+  // one — any other .rpc( is still a write.
+  'read-only: no write calls': all => Object.entries(all).filter(([, s]) => /\.(insert|update|upsert|delete|rpc)\s*\(/.test(strip(s).replace(READ_RPCS, ''))).map(([f]) => f),
   'read-only: no storage upload/remove': all => Object.entries(all).filter(([, s]) => /\.(upload|remove|move|copy)\s*\(/.test(strip(s))).map(([f]) => f),
   'no account creation': all => Object.entries(all).filter(([, s]) => /signUp\s*\(|signInWithOtp\s*\(|signInWithOAuth\s*\(/.test(strip(s))).map(([f]) => f),
   'no service-role key in browser code': all => Object.entries(all).filter(([, s]) => /SERVICE_ROLE/.test(s)).map(([f]) => f),

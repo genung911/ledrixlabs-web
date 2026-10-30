@@ -14,6 +14,7 @@ import {
   loadFindings, loadInspection, loadItemLabels, loadMembers, loadPhotos, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
   type FindingRow, type PhotoRow, type SealRow, type SpecRow,
 } from '@/lib/workspace/data';
+import { eventLine, loadJobTeam, loadLeaseEvents, teamLine, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
 import { inspectionPhase, isPriorityUnset, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
 type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'photos' | 'reports';
@@ -27,6 +28,8 @@ type Data = {
   names: Record<string, string>;
   photos: PhotoRow[];
   labels: Record<string, string>;
+  team: JobTeam | null;
+  events: LeaseEvent[];
 };
 type State = { kind: 'loading' } | { kind: 'missing' } | { kind: 'error'; message: string } | { kind: 'ready'; data: Data };
 
@@ -44,7 +47,7 @@ export default function InspectionPage() {
     try {
       const inspection = await loadInspection(id);
       if (!inspection || inspection.deleted_at) { setState({ kind: 'missing' }); return; }
-      const [findings, specs, reports, seals, portal, members, photos, labels] = await Promise.all([
+      const [findings, specs, reports, seals, portal, members, photos, labels, team, events] = await Promise.all([
         findingsVisible ? loadFindings(id) : Promise.resolve([]),
         findingsVisible ? loadSpecs(id) : Promise.resolve([]),
         loadReports([id]),
@@ -53,11 +56,15 @@ export default function InspectionPage() {
         access.companyId ? loadMembers().catch(() => []) : Promise.resolve([]),
         findingsVisible ? loadPhotos(id).catch(() => [] as PhotoRow[]) : Promise.resolve([] as PhotoRow[]),
         findingsVisible ? loadItemLabels(id).catch(() => ({} as Record<string, string>)) : Promise.resolve({} as Record<string, string>),
+        // Team inspections (#81): read only, and never a reason for the page to fail.
+        loadJobTeam(id).catch(() => null),
+        loadLeaseEvents(id).catch(() => [] as LeaseEvent[]),
       ]);
       const names: Record<string, string> = {};
       for (const m of members) if (m.full_name) names[m.id] = m.full_name;
       if (access.name) names[access.userId] = access.name;
-      setState({ kind: 'ready', data: { inspection, findings, specs, reports, seals, portal, names, photos, labels } });
+      for (const p of team?.people ?? []) if (p.name && !names[p.user_id]) names[p.user_id] = p.name;
+      setState({ kind: 'ready', data: { inspection, findings, specs, reports, seals, portal, names, photos, labels, team, events } });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : 'This inspection could not load.' });
     }
@@ -109,7 +116,9 @@ export default function InspectionPage() {
     </Page>
   );
 
-  const { inspection, specs, reports, seals, portal, names, photos, labels } = state.data;
+  const { inspection, specs, reports, seals, portal, names, photos, labels, team, events } = state.data;
+  // A team of one (or a server without #81) shows nothing: that is today's job.
+  const teamInfo = team && team.people.length > 1 ? teamLine(team, labels) : null;
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
@@ -141,6 +150,25 @@ export default function InspectionPage() {
         </div>
       </div>
       <SyncLine lastSync={inspection.updated_at ?? null} />
+      {teamInfo && (
+        <div role="status" className="mb-5 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span aria-hidden className={`h-2 w-2 rounded-full ${team!.people.some(p => p.live) ? 'bg-emerald-600' : 'bg-muted'}`} />
+            <p className="text-sm text-ink"><strong>{teamInfo.headline}</strong> {teamInfo.detail}</p>
+          </div>
+          {events.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs font-semibold text-accent-ink">Editing history</summary>
+              <ul className="mt-2 space-y-1">
+                {events.slice(0, 15).map((e, i) => (
+                  <li key={i} className="text-xs text-body"><span className="font-mono text-muted">{formatWhen(e.at)}</span> — {eventLine(e, names, labels)}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <p className="mt-2 text-xs text-muted">The lead assigns sections on the phone. Editing inspections on the website comes later.</p>
+        </div>
+      )}
       <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
