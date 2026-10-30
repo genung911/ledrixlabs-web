@@ -6,6 +6,8 @@ import { Card, Empty, ErrorBox, Loading, Page, PageHeader } from '@/components/w
 import { loadMembers, type MemberRow } from '@/lib/workspace/data';
 import { createInvitation, loadPendingInvitations, revokeInvitation, setMemberRole, type InvitationRow } from '@/lib/team/api';
 import { ROLE_SUMMARY, assignableRoles, canManageTeam, cleanInviteEmail, expiresLabel, roleLockReason } from '@/lib/team/model';
+import { PERMISSION_LABEL, accessLabel, loadMemberPermissions, loadMyCapabilities, resetMemberPermissions, setMemberPermission,
+  type Capability, type MemberPermissions } from '@/lib/team/permissions';
 
 // Team (2026-10-21, mockup approved by the owner): invite by email address, revoke a pending invitation, change a role.
 // Every change goes to the server as the signed-in user and is shown only once the server confirms it (lib/team/api).
@@ -21,7 +23,14 @@ const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wr
 
 export default function TeamPage() {
   const { companyName, access } = useWorkspace();
-  const manages = canManageTeam(access.role);
+  // Who may manage the team is the server's `team` permission since #76 (2026-10-29); the role is only its default and
+  // the fallback while the server has not answered.
+  const [caps, setCaps] = useState<Partial<Record<Capability, boolean>> | null>(null);
+  useEffect(() => { loadMyCapabilities().then(setCaps).catch(() => setCaps(null)); }, []);
+  const manages = typeof caps?.team === 'boolean' ? caps.team : canManageTeam(access.role);
+  const [perms, setPerms] = useState<Record<string, MemberPermissions>>({});
+  const [openPerm, setOpenPerm] = useState<string | null>(null);
+  const [permBusy, setPermBusy] = useState(false);
   const roles = assignableRoles(access.role);
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [email, setEmail] = useState('');
@@ -38,8 +47,15 @@ export default function TeamPage() {
         manages && access.companyId ? loadPendingInvitations(access.companyId) : Promise.resolve([] as InvitationRow[]),
       ]);
       setState({ kind: 'ready', rows, invites });
+      if (manages) {
+        const others = rows.filter(r => r.id !== access.userId && r.role !== 'owner' && r.role !== 'ledrix_admin');
+        const got = await Promise.allSettled(others.map(r => loadMemberPermissions(r.id)));
+        const next: Record<string, MemberPermissions> = {};
+        got.forEach((g, i) => { if (g.status === 'fulfilled') next[others[i].id] = g.value; });
+        setPerms(next);
+      }
     } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The team could not load.' }); }
-  }, [manages, access.companyId]);
+  }, [manages, access.companyId, access.userId]);
   useEffect(() => { load(); }, [load]);
 
   const invite = async () => {
@@ -75,6 +91,22 @@ export default function TeamPage() {
     } catch (e) { setNotice({ ok: false, text: msg(e) }); setPending(null); }
     finally { setBusy(false); }
   };
+
+  // Every switch shows the server's answer, never the click (lib/team/permissions returns the list as stored).
+  const togglePerm = async (memberId: string, cap: Capability, allowed: boolean) => {
+    setPermBusy(true); setNotice(null);
+    try { const p = await setMemberPermission(memberId, cap, allowed); setPerms(prev => ({ ...prev, [memberId]: p })); }
+    catch (e) { setNotice({ ok: false, text: msg(e) }); }
+    finally { setPermBusy(false); }
+  };
+  const resetPerms = async (memberId: string, who: string) => {
+    if (!window.confirm(`Reset ${who} to their role’s defaults? Every change you made for them is removed.`)) return;
+    setPermBusy(true); setNotice(null);
+    try { const p = await resetMemberPermissions(memberId); setPerms(prev => ({ ...prev, [memberId]: p })); }
+    catch (e) { setNotice({ ok: false, text: msg(e) }); }
+    finally { setPermBusy(false); }
+  };
+  const openMember = state.kind === 'ready' && openPerm ? state.rows.find(r => r.id === openPerm) ?? null : null;
 
   return (
     <Page>
@@ -134,16 +166,19 @@ export default function TeamPage() {
         )}
 
         {state.kind === 'ready' && (
+          <div className="flex flex-wrap items-start gap-6">
+          <div className="min-w-0 flex-[999_1_560px]">
           <Card count={state.rows.length} title="Members">
             {state.rows.length === 0 ? <Empty>No members found.</Empty> : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] text-left text-sm">
-                  <thead className="border-b border-hairline text-xs uppercase tracking-wide text-muted"><tr><th className="px-4 py-2.5 font-semibold">Name</th><th className="px-4 py-2.5 font-semibold">Role</th><th className="px-4 py-2.5 font-semibold">Email</th><th className="px-4 py-2.5 font-semibold">Phone</th></tr></thead>
+                  <thead className="border-b border-hairline text-xs uppercase tracking-wide text-muted"><tr><th className="px-4 py-2.5 font-semibold">Name</th><th className="px-4 py-2.5 font-semibold">Role</th>{manages && <th className="px-4 py-2.5 font-semibold">Access</th>}<th className="px-4 py-2.5 font-semibold">Email</th><th className="px-4 py-2.5 font-semibold">Phone</th>{manages && <th className="px-4 py-2.5"><span className="sr-only">Permissions</span></th>}</tr></thead>
                   <tbody className="divide-y divide-hairline">
                     {state.rows.map(m => {
-                      const lock = roleLockReason({ userId: access.userId, role: access.role }, m);
+                      const lock = roleLockReason({ userId: access.userId, role: access.role }, m, manages);
+                      const grantable = manages && m.id !== access.userId && m.role !== 'owner' && m.role !== 'ledrix_admin';
                       return (
-                        <tr key={m.id}>
+                        <tr key={m.id} className={openPerm === m.id ? 'bg-accent/5' : undefined}>
                           <td className="px-4 py-2.5 font-medium text-ink">{m.full_name || '—'}{m.id === access.userId && <span className="ml-2 text-xs text-muted">(you)</span>}</td>
                           <td className="px-4 py-2 text-body">
                             {manages && !lock ? (
@@ -159,8 +194,17 @@ export default function TeamPage() {
                               <>{roleLabel(m.role)}{manages && lock && <span className="block text-xs text-muted">{lock}</span>}</>
                             )}
                           </td>
+                          {manages && <td className="px-4 py-2.5 text-body">{m.id === access.userId && m.role !== 'owner' ? '—' : accessLabel(m.role, perms[m.id])}</td>}
                           <td className="px-4 py-2.5 text-body">{m.email || '—'}</td>
                           <td className="px-4 py-2.5 text-body">{m.phone || '—'}</td>
+                          {manages && (
+                            <td className="px-4 py-2 text-right">
+                              {grantable && (
+                                <button type="button" onClick={() => setOpenPerm(openPerm === m.id ? null : m.id)} aria-expanded={openPerm === m.id}
+                                  className="rounded-full border border-hairline px-3 py-1.5 text-xs font-semibold text-ink hover:bg-ink/5">Permissions</button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -170,12 +214,20 @@ export default function TeamPage() {
             )}
             {manages && <p className="border-t border-hairline px-4 py-3 text-xs text-muted">Removing someone from the team isn’t available yet.</p>}
           </Card>
+          </div>
+          {openMember && (
+            <PermissionsPanel member={openMember} perms={perms[openMember.id] ?? null} busy={permBusy}
+              onToggle={(cap, v) => togglePerm(openMember.id, cap, v)}
+              onReset={() => resetPerms(openMember.id, openMember.full_name || openMember.email || 'this person')}
+              onClose={() => setOpenPerm(null)} />
+          )}
+          </div>
         )}
 
         {manages ? (
           <Card title="What each role can do">
             <div className="p-4">
-              <p className="mb-3 text-sm text-body">A role is the permission — it’s the same on the phone and here, and the server enforces it.</p>
+              <p className="mb-3 text-sm text-body">A role is the starting point. You can turn single permissions on or off for one person under Permissions — it’s the same on the phone and here, and the server enforces it.</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {['inspector', 'office', 'manager', 'admin', 'owner'].map(r => (
                   <div key={r} className="rounded-lg border border-hairline p-3">
@@ -199,7 +251,7 @@ export default function TeamPage() {
               <div className="flex gap-3"><dt className="w-16 shrink-0 font-semibold text-ink">Now</dt><dd>{roleLabel(pending.member.role)} — {ROLE_SUMMARY[pending.member.role ?? ''] ?? ''}</dd></div>
               <div className="flex gap-3"><dt className="w-16 shrink-0 font-semibold text-ink">After</dt><dd>{roleLabel(pending.role)} — {ROLE_SUMMARY[pending.role] ?? ''}</dd></div>
             </dl>
-            <p className="mt-4 rounded-lg border border-hairline bg-ground px-3 py-2 text-xs text-body">It takes effect the next time their phone syncs. The change shows here only after the server confirms it.</p>
+            <p className="mt-4 rounded-lg border border-hairline bg-ground px-3 py-2 text-xs text-body">It takes effect the next time their phone syncs. Any permission changes you made for them are cleared — they start on the new role’s defaults. The change shows here only after the server confirms it.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" disabled={busy} onClick={() => setPending(null)} className={BTN_QUIET}>Cancel</button>
               <button type="button" disabled={busy} onClick={confirmRole} className={BTN}>Change role</button>
@@ -208,5 +260,71 @@ export default function TeamPage() {
         </div>
       )}
     </Page>
+  );
+}
+
+// Team → a person → Permissions, beside the member list (the approved mockup's website panel). Switches are real
+// controls only for the owner (`can_change`); anyone else who manages the team reads them.
+function PermissionsPanel({ member, perms, busy, onToggle, onReset, onClose }: {
+  member: { id: string; full_name: string | null; email: string | null; role: string | null };
+  perms: MemberPermissions | null; busy: boolean;
+  onToggle: (cap: Capability, allowed: boolean) => void; onReset: () => void; onClose: () => void;
+}) {
+  const role = roleLabel(perms?.role ?? member.role);
+  const changed = perms?.permissions.filter(p => p.changed).length ?? 0;
+  return (
+    <aside aria-label={`Permissions for ${member.full_name || member.email || 'member'}`}
+      className="min-w-0 flex-[1_1_360px] overflow-hidden rounded-2xl border border-hairline bg-surface">
+      <div className="flex flex-col gap-1.5 border-b border-hairline p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-ink">{member.full_name || member.email || 'Member'}</h2>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-hairline px-2.5 py-1 text-xs font-semibold text-body">{role}</span>
+            <button type="button" onClick={onClose} aria-label="Close permissions" className="rounded-full p-1.5 text-muted hover:bg-ink/5">✕</button>
+          </div>
+        </div>
+        <p className="text-sm text-body">The role sets the starting point. Changes apply to this person only, on the phone and the website.</p>
+      </div>
+      {!perms ? (
+        <div className="p-4"><Loading /></div>
+      ) : (
+        <ul className="divide-y divide-hairline">
+          {perms.permissions.map(p => (
+            <li key={p.capability} className={`flex items-center gap-3 px-4 py-2.5 ${p.changed ? 'bg-accent/5' : ''}`}>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+                  {PERMISSION_LABEL[p.capability] ?? p.capability}
+                  {p.changed && <span className="rounded bg-accent/10 px-1.5 py-px text-[11px] font-bold text-accent-ink">Changed</span>}
+                </span>
+                <span className="text-xs text-body">{role} default: {p.preset ? 'on' : 'off'}</span>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <span className="sr-only">{PERMISSION_LABEL[p.capability]}</span>
+                <input type="checkbox" role="switch" className="peer sr-only" checked={p.allowed}
+                  disabled={!perms.can_change || busy} onChange={e => onToggle(p.capability, e.target.checked)} />
+                <span className="h-[26px] w-11 rounded-full bg-ink/25 transition peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/40 peer-disabled:opacity-50" />
+                <span className="pointer-events-none absolute left-[3px] top-[3px] h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-[18px]" />
+              </label>
+            </li>
+          ))}
+          <li className="flex items-center gap-2 px-4 py-3 text-sm text-body">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            Templates stay yours — not grantable.
+          </li>
+        </ul>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline px-4 py-3">
+        <span className="text-sm text-body">
+          {!perms ? '' : changed ? `${changed} change${changed === 1 ? '' : 's'} from ${role} defaults` : `Same as ${role} defaults`}
+        </span>
+        {perms?.can_change && changed > 0 && (
+          <button type="button" disabled={busy} onClick={onReset}
+            className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5 disabled:opacity-50">
+            Reset to {role} defaults
+          </button>
+        )}
+        {perms && !perms.can_change && <span className="text-xs text-muted">Only the company owner can change these.</span>}
+      </div>
+    </aside>
   );
 }

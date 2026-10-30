@@ -22,7 +22,7 @@ import { stripTypeScriptTypes } from 'node:module';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const SRC = { model: read('lib/team/model.ts'), api: read('lib/team/api.ts'), page: read('app/app/team/page.tsx') };
+const SRC = { model: read('lib/team/model.ts'), api: read('lib/team/api.ts'), perm: read('lib/team/permissions.ts'), page: read('app/app/team/page.tsx') };
 
 let run = 0;
 async function load(src) {
@@ -31,10 +31,13 @@ async function load(src) {
   writeFileSync(join(dir, 'api.mjs'), stripTypeScriptTypes(src.api
     .replace("import { workspace } from '@/lib/workspace/client';", 'const workspace = new Proxy({}, { get: (_t, k) => globalThis.__WS[k] });')
     .replace("from './model';", "from './model.mjs';")));
+  writeFileSync(join(dir, 'perm.mjs'), stripTypeScriptTypes(src.perm
+    .replace("import { workspace } from '@/lib/workspace/client';", 'const workspace = new Proxy({}, { get: (_t, k) => globalThis.__WS[k] });')));
   run++;
   return {
     M: await import(pathToFileURL(join(dir, 'model.mjs')).href + `?r=${run}`),
     A: await import(pathToFileURL(join(dir, 'api.mjs')).href + `?r=${run}`),
+    P: await import(pathToFileURL(join(dir, 'perm.mjs')).href + `?r=${run}`),
   };
 }
 
@@ -72,7 +75,7 @@ async function suite(src) {
   const ok = (name, cond, detail = '') => out.push({ name, pass: !!cond, detail });
   let L;
   try { L = await load(src); } catch (e) { ok('modules load', false, String(e)); return out; }
-  const { M, A } = L;
+  const { M, A, P } = L;
 
   // §1
   ok('§1 owner, admin, manager and ledrix_admin manage the team; office and inspector do not',
@@ -146,6 +149,36 @@ async function suite(src) {
   ok('§4 the invite note says no email is sent', /Ledrix doesn’t send an email/.test(page));
   ok('§4 a role change asks first (a dialog), then calls the server', /setPending\(\{ member: m, role: e\.target\.value \}\)/.test(page) && /role="dialog"/.test(page) && /await setMemberRole\(pending\.member\.id, pending\.role\)/.test(page));
   ok('§4 no member removal is offered (the server has no such operation)', !/remove member|removeMember|Remove from team/i.test(page));
+
+  // §6 per-person permissions (#76, 2026-10-29)
+  const LIST = { role: 'office', can_change: true, permissions: [{ capability: 'crm', preset: true, allowed: false, changed: true }] };
+  let r6 = await ask({ answer: () => ({ data: LIST, error: null }) }, () => P.setMemberPermission('m1', 'crm', false));
+  const set = r6.calls.find(c => c.op === 'rpc');
+  ok('§6 a permission change is one call to set_member_permission with the member, the permission and the value',
+    !r6.err && r6.calls.length === 1 && set?.fn === 'set_member_permission' && set.args.p_member === 'm1' && set.args.p_cap === 'crm' && set.args.p_allowed === false);
+  let shown = null;
+  await ask({ answer: () => ({ data: LIST, error: null }) }, async () => { shown = await P.setMemberPermission('m1', 'crm', false); });
+  ok('§6 …and returns the list as the server has it', shown?.permissions?.[0]?.changed === true);
+  r6 = await ask({ answer: () => ({ data: null, error: { message: 'Only the company owner can change a member\'s permissions' } }) }, () => P.setMemberPermission('m1', 'crm', true));
+  ok('§6 a refusal reads in plain words', !!r6.err && /Only the company owner can change permissions/.test(r6.err.message));
+  r6 = await ask({ answer: () => ({ data: null, error: null }) }, () => P.resetMemberPermissions('m1'));
+  ok('§6 a reset the server did not confirm is reported', !!r6.err);
+  let caps = 'unset';
+  await ask({ answer: () => ({ data: null, error: { message: 'boom' } }) }, async () => { caps = await P.loadMyCapabilities(); });
+  ok('§6 when the server cannot say, my permissions are null (the page falls back to the role)', caps === null);
+  ok('§6 the Access column: owner Everything, changes counted, otherwise the role’s defaults',
+    P.accessLabel('owner', null) === 'Everything' && P.accessLabel('office', LIST) === 'Custom · 1 change'
+    && P.accessLabel('manager', { role: 'manager', can_change: true, permissions: [] }) === 'Manager defaults');
+  const perm = strip(src.perm);
+  const permCalls = [...perm.matchAll(/\.rpc\('([a-z_]+)'/g)].map(m => m[1]).sort();
+  ok('§6 lib/team/permissions calls exactly the four permission functions and touches no table',
+    JSON.stringify(permCalls) === JSON.stringify(['member_permissions', 'my_capabilities', 'reset_member_permissions', 'set_member_permission'])
+    && !/\.from\(|\.(insert|update|upsert|delete)\s*\(/.test(perm), JSON.stringify(permCalls));
+  ok('§6 who manages the team comes from the server’s team permission, the role only as fallback',
+    /const manages = typeof caps\?\.team === 'boolean' \? caps\.team : canManageTeam\(access\.role\);/.test(page));
+  ok('§6 a switch can be changed only when the server says this viewer may (the owner)', /disabled=\{!perms\.can_change \|\| busy\}/.test(page));
+  ok('§6 the Permissions button is never offered on yourself or an owner',
+    /const grantable = manages && m\.id !== access\.userId && m\.role !== 'owner' && m\.role !== 'ledrix_admin';/.test(page));
   return out;
 }
 
@@ -174,6 +207,9 @@ const MUTANTS = [
   { f: 'api', from: "  if (!(res.data ?? []).length) throw new TeamError('The invitation was not revoked — it may already be gone, or you may not be allowed');\n", to: '', why: 'a silent revoke refusal looks like success', expect: /^§3/ },
   { f: 'api', from: "  if (back.error || (back.data as { role?: string } | null)?.role !== role) {", to: "  if (back.error) {", why: 'a role change is shown without the read-back agreeing', expect: /^§3/ },
   { f: 'page', from: "{manages && (\n          <Card title=\"Invite someone\">", to: "{(\n          <Card title=\"Invite someone\">", why: 'the invite form shows for every role', expect: /^§4/ },
+  { f: 'page', from: "disabled={!perms.can_change || busy}", to: "disabled={busy}", why: 'a manager gets live permission switches', expect: /^§6/ },
+  { f: 'perm', from: "  if (res.error || !res.data) throw new PermissionError('Permissions were not reset', res.error);", to: "  if (res.error) throw new PermissionError('Permissions were not reset', res.error);", why: 'an unconfirmed reset looks done', expect: /^§6/ },
+  { f: 'page', from: "const manages = typeof caps?.team === 'boolean' ? caps.team : canManageTeam(access.role);", to: "const manages = canManageTeam(access.role);", why: 'the page ignores the owner’s team permission', expect: /^§6/ },
 ];
 for (const m of MUTANTS) {
   if (SRC[m.f].split(m.from).length !== 2) { fail++; console.log(`  ✗ mutation anchor present once: ${m.why}`); continue; }

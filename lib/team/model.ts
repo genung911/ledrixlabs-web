@@ -2,7 +2,10 @@
 // guard (scripts/verify-team.mjs) both run it.
 //
 // Mirrors the server, which decides regardless of what this returns (supabase_phase0_security.sql in ledrix-app):
-//   · company_invitations "Company admin manage invitations" — owner / admin / manager of the company invite and revoke.
+//   · SINCE #76 (2026-10-29) inviting, revoking and changing roles follow the per-person `team` PERMISSION, not the
+//     role: the role list below is only its DEFAULT (owner / admin / manager). The page asks the server
+//     (lib/team/permissions loadMyCapabilities) and passes the answer as `manages`; this list is the fallback.
+//   · company_invitations — owner / admin / manager of the company invite and revoke (by default; see above).
 //   · guard_invitation — only an owner (or ledrix_admin) may invite an owner.
 //   · set_company_member_role — owner / admin / manager / ledrix_admin of the SAME company; never your own role; only an
 //     owner may grant 'owner' or change an owner's role.
@@ -24,9 +27,10 @@ export function assignableRoles(actorRole: string | null | undefined): string[] 
 }
 
 /** Why this member's role cannot be changed by this actor — or null when it can. */
-export function roleLockReason(actor: { userId: string; role: string | null | undefined }, member: { id: string; role: string | null }): string | null {
+export function roleLockReason(actor: { userId: string; role: string | null | undefined }, member: { id: string; role: string | null },
+                               manages: boolean = canManageTeam(actor.role)): string | null {
   if (member.id === actor.userId) return 'You can’t change your own role';
-  if (!canManageTeam(actor.role)) return 'Only an owner, admin or manager can change roles';
+  if (!manages) return 'Only an owner, admin or manager can change roles';
   if (OWNERS.includes(String(member.role ?? '')) && !OWNERS.includes(String(actor.role ?? ''))) return 'Only an owner can change an owner’s role';
   return null;
 }
