@@ -107,7 +107,12 @@ console.log('model');
   ok('priority: a confirmed photo-only finding is graded', M.isPriorityUnset({ source: 'document_photo', status: 'confirmed' }) === false
     && M.isPriorityUnset({ source: 'document_photo', status: null }) === false);
   ok('priority: a worded proposal keeps its stated priority', M.isPriorityUnset({ source: 'text_chat', status: 'proposed' }) === false);
-  ok('priority: the inspection page passes it to the pill', /<PriorityPill severity=\{r\.severity\} unset=\{isPriorityUnset\(r\)\} \/>/.test(read('app/app/inspections/[id]/page.tsx')));
+  ok('priority: the inspection page passes it to the pill', /<PriorityPill severity=\{r\.severity\} unset=\{isPriorityUnset\(r\)\} suggested=\{isPrioritySuggested\(r\)\} \/>/.test(read('app/app/inspections/[id]/page.tsx')));
+  // 2026-11-01: Ledrix's recommended priority (ai_severity) is a priority, tagged LEDRIX SUGGESTS until decided.
+  ok('priority: a photo-only draft with Ledrix\'s recommendation is set', M.isPriorityUnset({ source: 'document_photo', status: 'proposed', severity: 'critical', ai_severity: 'critical' }) === false);
+  ok('priority: …and reads as Ledrix\'s suggestion', M.isPrioritySuggested({ source: 'document_photo', status: 'proposed', severity: 'critical', ai_severity: 'critical' }) === true);
+  ok('priority: changed or confirmed, it is no longer a suggestion', M.isPrioritySuggested({ source: 'document_photo', status: 'proposed', severity: 'maintenance', ai_severity: 'critical' }) === false
+    && M.isPrioritySuggested({ source: 'document_photo', status: 'confirmed', severity: 'critical', ai_severity: 'critical' }) === false);
 
   // 2026-10-21 (approved parity mockup): the Reports page and the sync line.
   const I = (id, status, extra = {}) => ({ id, status, inspector_id: null, assigned_inspector_id: null, updated_at: `2026-10-${10 + id.length}`, ...extra });

@@ -80,7 +80,7 @@ export function PhasePill({ phase }: { phase: Phase }) {
   return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${tone}`}>{PHASE_LABEL[phase]}</span>;
 }
 
-export function PriorityPill({ severity, unset }: { severity: unknown; unset?: boolean }) {
+export function PriorityPill({ severity, unset, suggested }: { severity: unknown; unset?: boolean; suggested?: boolean }) {
   if (unset) return <span className="inline-flex rounded-full bg-ground px-2 py-0.5 text-[11px] font-semibold text-muted">NOT SET</span>;
   const s = parseSeverity(severity);
   if (!s) return <span className="inline-flex rounded-full bg-ground px-2 py-0.5 text-[11px] font-semibold text-muted">UNRATED</span>;
@@ -89,6 +89,7 @@ export function PriorityPill({ severity, unset }: { severity: unknown; unset?: b
     <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide text-ink" style={{ background: `${c}1F` }}>
       <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
       {SEVERITY_SHORT_LABELS[s]}
+      {suggested && <span className="text-[10px] font-semibold tracking-wider text-muted">· LEDRIX SUGGESTS</span>}
     </span>
   );
 }

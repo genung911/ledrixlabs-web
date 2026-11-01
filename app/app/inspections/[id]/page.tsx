@@ -15,7 +15,7 @@ import {
   type FindingRow, type PhotoRow, type SealRow, type SpecRow,
 } from '@/lib/workspace/data';
 import { eventLine, loadJobTeam, loadLeaseEvents, teamLine, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
-import { inspectionPhase, isPriorityUnset, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
+import { inspectionPhase, isPriorityUnset, isPrioritySuggested, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
 type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'photos' | 'reports';
 type Data = {
@@ -191,7 +191,7 @@ export default function InspectionPage() {
                   {list.map(r => (
                     <li key={r.id} role="option" aria-selected={current?.id === r.id}>
                       <button onClick={() => setSelected(r.id)} className={`block w-full px-4 py-3 text-left focus:outline-none focus-visible:bg-ground ${current?.id === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
-                        <div className="flex items-center gap-2"><PriorityPill severity={r.severity} unset={isPriorityUnset(r)} />{r.is_safety && <span className="rounded-full bg-safety/10 px-2 py-0.5 text-[11px] font-semibold text-safety">SAFETY</span>}</div>
+                        <div className="flex items-center gap-2"><PriorityPill severity={r.severity} unset={isPriorityUnset(r)} suggested={isPrioritySuggested(r)} />{r.is_safety && <span className="rounded-full bg-safety/10 px-2 py-0.5 text-[11px] font-semibold text-safety">SAFETY</span>}</div>
                         <p className="mt-1.5 line-clamp-2 text-sm text-ink">{r.description || r.ai_description || 'No description'}</p>
                         <p className="mt-1 truncate text-xs text-muted">{uniq([r.room, r.location, titleCase(r.component)]).join(' · ') || 'No location'}</p>
                       </button>

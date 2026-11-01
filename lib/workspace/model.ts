@@ -60,8 +60,17 @@ export function normalizeFindingStatus(raw: unknown): FindingStatus {
 // A photo-only draft (`source = 'document_photo'`) that is not confirmed has NO priority yet (ledrix-app
 // cardDefinition.isPriorityUnset, 2026-10-26): its `severity` column holds a NOT NULL placeholder that no
 // inspector chose. Derived from synced columns, so this page reads it exactly as the phone does.
-export function isPriorityUnset(row: { source?: unknown; status?: unknown }): boolean {
-  return row.source === 'document_photo' && normalizeFindingStatus(row.status) !== 'confirmed';
+// LEDRIX RECOMMENDS (2026-11-01, ledrix-app isPrioritySuggested): a photo-only draft may carry Ledrix's
+// recommended priority in `ai_severity`. Then it has a priority — Ledrix's, shown as LEDRIX SUGGESTS until
+// the inspector confirms or changes it.
+type PriorityRow = { source?: unknown; status?: unknown; severity?: unknown; ai_severity?: unknown };
+const suggestionOf = (row: PriorityRow) => (typeof row.ai_severity === 'string' && row.ai_severity.trim() ? row.ai_severity.trim() : null);
+export function isPriorityUnset(row: PriorityRow): boolean {
+  return row.source === 'document_photo' && normalizeFindingStatus(row.status) !== 'confirmed' && !suggestionOf(row);
+}
+export function isPrioritySuggested(row: PriorityRow): boolean {
+  const s = suggestionOf(row);
+  return row.source === 'document_photo' && normalizeFindingStatus(row.status) !== 'confirmed' && !!s && s === row.severity;
 }
 
 // ─── Access ──────────────────────────────────────────────────────────────────
