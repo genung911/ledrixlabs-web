@@ -125,6 +125,16 @@ console.log('model');
   ok('reports: without one it is TO SEND — or REVIEW while proposed findings remain (the dashboard\'s rule)',
     rl.toSend.map(i => i.id).join() === 'ccc' && rl.review.map(i => i.id).join() === 'bb');
   ok('reports: in-progress and tombstoned inspections are not reports', ![...rl.toSend, ...rl.review, ...rl.sent.map(x => x.inspection)].some(i => i.id === 'dddd' || i.id === 'eeeee'));
+  // 2026-11-01: a sync that changed only findings must move the inspection's "Updated" (server times, not the phone's).
+  {
+    const rows = [{ id: 'k', updated_at: '2026-10-31T14:59:35Z', server_updated_at: '2026-10-31T15:03:41Z' }, { id: 'q', updated_at: '2026-10-20T00:00:00Z' }];
+    const out = M.withLatestActivity(rows, [{ inspection_id: 'k', server_updated_at: '2026-11-01T22:54:39Z' }, { inspection_id: 'k', server_updated_at: null }, { inspection_id: 'x', server_updated_at: '2026-12-01T00:00:00Z' }]);
+    ok('activity: a finding synced today moves its inspection\'s Updated to today', out[0].updated_at === '2026-11-01T22:54:39Z');
+    ok('activity: an inspection with no newer work keeps its own time', out[1].updated_at === '2026-10-20T00:00:00Z');
+    ok('activity: the inspection\'s server time wins over its phone clock', M.withLatestActivity([rows[0]], [])[0].updated_at === '2026-10-31T15:03:41Z');
+    ok('activity: the loaders apply it and re-sort the list on it', /return \(await withActivity\(rows\)\)\.sort\(/.test(read('lib/workspace/data.ts'))
+      && /return row \? \(await withActivity\(\[row\]\)\)\[0\] : null;/.test(read('lib/workspace/data.ts')));
+  }
   ok('sync line: the newest updated_at, or null for no rows', M.latestUpdate([{ updated_at: '2026-10-01' }, { updated_at: '2026-10-19' }, { updated_at: null }]) === '2026-10-19' && M.latestUpdate([]) === null);
 }
 

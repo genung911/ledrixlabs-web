@@ -8,9 +8,9 @@
 // silent loss the desktop brief forbids. Writes wait on versioned sync.
 import { workspace, EVIDENCE_BUCKET } from './client';
 import type { FindingCounts, InspectionRow, OrderRow, ProfileRow, ReportRow } from './model';
-import { countFindings } from './model';
+import { countFindings, withLatestActivity } from './model';
 
-const INSPECTION_COLS = 'id, inspector_id, assigned_inspector_id, address, inspection_type, status, started_at, completed_at, updated_at, deleted_at';
+const INSPECTION_COLS = 'id, inspector_id, assigned_inspector_id, address, inspection_type, status, started_at, completed_at, updated_at, server_updated_at, deleted_at';
 
 export class WorkspaceError extends Error {
   constructor(public what: string, cause: { message?: string } | null) {
@@ -40,15 +40,32 @@ export async function loadCompanyName(companyId: string | null): Promise<string 
 /** Every inspection RLS lets this user read (own, assigned, or — for managers/office — the
  *  company's), minus tombstones. */
 export async function loadInspections(): Promise<InspectionRow[]> {
-  return must('Inspections could not be loaded', await workspace
+  const rows = must('Inspections could not be loaded', await workspace
     .from('inspections').select(INSPECTION_COLS).is('deleted_at', null)
     .order('updated_at', { ascending: false }).limit(500)) as InspectionRow[];
+  // "Updated" is the last time ANY of the job's work reached the server (withLatestActivity), so re-sort on it.
+  return (await withActivity(rows)).sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
 }
 
 export async function loadInspection(id: string): Promise<InspectionRow | null> {
   const res = await workspace.from('inspections').select(INSPECTION_COLS).eq('id', id).maybeSingle();
   if (res.error) throw new WorkspaceError('This inspection could not be loaded', res.error);
-  return (res.data as InspectionRow | null) ?? null;
+  const row = (res.data as InspectionRow | null) ?? null;
+  return row ? (await withActivity([row]))[0] : null;
+}
+
+/** Findings' and specs' server times for these inspections. Best effort: a role that cannot read them (office —
+ *  anomalies RLS is can_write_inspection) or a failed read leaves the inspection's own time. */
+async function withActivity(rows: InspectionRow[]): Promise<InspectionRow[]> {
+  if (!rows.length) return rows;
+  const ids = rows.map(r => r.id);
+  const read = async (table: 'anomalies' | 'technical_specs') => {
+    const res = await workspace.from(table).select('inspection_id, server_updated_at').in('inspection_id', ids)
+      .order('server_updated_at', { ascending: false }).limit(5000);
+    return res.error ? [] : ((res.data ?? []) as { inspection_id: string | null; server_updated_at: string | null }[]);
+  };
+  const [findings, specs] = await Promise.all([read('anomalies'), read('technical_specs')]);
+  return withLatestActivity(rows, [...findings, ...specs]);
 }
 
 /** Status counts per inspection. anomalies RLS is can_write_inspection, so an office user gets

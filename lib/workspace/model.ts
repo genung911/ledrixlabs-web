@@ -115,6 +115,7 @@ export type InspectionRow = {
   started_at: string | null;
   completed_at: string | null;
   updated_at: string | null;
+  server_updated_at?: string | null;
   deleted_at?: string | null;
 };
 
@@ -171,6 +172,25 @@ export function localDate(d: Date): string {
 export function addDays(ymd: string, days: number): string {
   const [y, m, d] = ymd.split('-').map(Number);
   return localDate(new Date(y, m - 1, d + days));
+}
+
+/** WHEN AN INSPECTION LAST CHANGED ON THE SERVER (2026-11-01). `inspections.updated_at` is the phone's clock and
+ *  moves only when the inspection row itself is pushed, so a sync that changed only findings or specs left
+ *  "Updated" and the sync line days old (275 N Kimball read Oct 31 after a day of finding syncs). Each row's
+ *  `updated_at` becomes the newest SERVER time (`server_updated_at`, stamped by the sync trigger) among the
+ *  inspection and its findings and specs; a row without one keeps what it had. */
+export function withLatestActivity<T extends { id: string; updated_at: string | null; server_updated_at?: string | null }>(
+  rows: T[], children: ReadonlyArray<{ inspection_id: string | null; server_updated_at: string | null }>,
+): T[] {
+  const newest = new Map<string, string>();
+  const bump = (id: string | null | undefined, at: string | null | undefined) => {
+    if (!id || !at) return;
+    const cur = newest.get(id);
+    if (!cur || Date.parse(at) > Date.parse(cur)) newest.set(id, at);
+  };
+  for (const r of rows) bump(r.id, r.server_updated_at ?? r.updated_at);
+  for (const c of children) bump(c.inspection_id, c.server_updated_at);
+  return rows.map(r => ({ ...r, updated_at: newest.get(r.id) ?? r.updated_at }));
 }
 
 /** The newest `updated_at` among these rows — when a phone's work last reached the server — or null for none. */
