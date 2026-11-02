@@ -16,6 +16,9 @@ import { formatDate, formatWhen, titleCase } from './ui';
 
 type Row = EditableRow & { id: string; row_version: number | null; ai_description: string | null; rejected_at: string | null; updated_at: string | null; created_at: string | null };
 
+/** A page that has not saved for this long lets the job go, so the phone can edit without asking. */
+export const IDLE_RELEASE_MS = 5 * 60_000;
+
 // ── The job's edit lock for this page: one per page, taken at the first save ─────────────────────────────────────
 export type EditLock = {
   lease: Lease | null;
@@ -32,10 +35,12 @@ export function useEditLock(inspectionId: string, phoneHolder: string | null): E
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<Lease | null>(null);
   ref.current = lease;
+  const lastUse = useRef(0);   // the last save that used the lock (owner 2026-11-02: let go after IDLE_RELEASE_MS)
 
   useEffect(() => { if (!ref.current) setHeldBy(phoneHolder); }, [phoneHolder]);
 
   const ensure = useCallback(async () => {
+    lastUse.current = Date.now();
     if (ref.current) return ref.current;
     setError(null);
     const a = await takeLease(inspectionId);
@@ -55,10 +60,12 @@ export function useEditLock(inspectionId: string, phoneHolder: string | null): E
     else setError(a.message);
   }, [inspectionId]);
 
-  // Check in while the page holds it; let go when the page closes.
+  // Check in while the page holds it and is being used; let go when the page closes, or after IDLE_RELEASE_MS with no
+  // save (owner 2026-11-02: a tab left open must not keep the phone view only). The next save takes it again.
   useEffect(() => {
     if (!lease) return;
     const t = window.setInterval(async () => {
+      if (Date.now() - lastUse.current >= IDLE_RELEASE_MS) { void releaseLease(inspectionId, lease); setLease(null); return; }
       if (!(await checkInLease(inspectionId, lease))) { setLease(null); setHeldBy('your phone'); }
     }, 60_000);
     const leave = () => { void releaseLease(inspectionId, lease); };

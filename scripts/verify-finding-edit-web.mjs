@@ -99,6 +99,9 @@ async function suite(src) {
   const ui = src.ui, page = src.page;
   ok('§3 every save takes the lock first, and a refused lock shows the banner', /const lease = await lock\.ensure\(\);\s*if \(!lease\) return;/.test(ui) && /else if \(r\.kind === 'locked'\) lock\.lost\(\);/.test(ui));
   ok('§3 the lock is checked in while held and let go when the page closes', /checkInLease\(inspectionId, lease\)/.test(ui) && /addEventListener\('pagehide', leave\)/.test(ui) && /leave\(\); \};/.test(ui));
+  ok('§3 a page that stops saving lets the job go after 5 minutes (a forgotten tab never blocks the phone)',
+    /export const IDLE_RELEASE_MS = 5 \* 60_000;/.test(ui) && /if \(Date\.now\(\) - lastUse\.current >= IDLE_RELEASE_MS\) \{ void releaseLease\(inspectionId, lease\); setLease\(null\); return; \}/.test(ui)
+    && /const ensure = useCallback\(async \(\) => \{\s*lastUse\.current = Date\.now\(\);/.test(ui));
   ok('§3 controls only for someone who may edit, and not while their phone has the job', /const editable = access === 'edit' && !lock\.heldBy;/.test(ui));
   ok('§3 Confirm waits for a complete card', /disabled=\{!!busy \|\| missing\.length > 0\}/.test(ui));
   ok('§3 one lock per page, and a save replaces the row', /const lock = useEditLock\(id, phoneHolderOf\(/.test(page) && /findings: s\.data\.findings\.map\(f => f\.id === row\.id \? row : f\)/.test(page));
@@ -120,6 +123,8 @@ const MUTANTS = [
   { f: 'edit', why: 'a kept field is reported as saved', from: "return missed.length ? { kind: 'changed', row: saved, fields: missed } : { kind: 'saved', row: saved };", to: "return { kind: 'saved', row: saved };", expect: /^§2 a field the server kept/ },
   { f: 'ui', why: 'controls shown while the phone has the job', from: "const editable = access === 'edit' && !lock.heldBy;", to: "const editable = access === 'edit';", expect: /^§3 controls only/ },
   { f: 'ui', why: 'the lock is never let go', from: "window.addEventListener('pagehide', leave);", to: '', expect: /^§3 the lock is checked/ },
+  { f: 'ui', why: 'an idle tab keeps the job', from: "if (Date.now() - lastUse.current >= IDLE_RELEASE_MS) { void releaseLease(inspectionId, lease); setLease(null); return; }", to: '', expect: /^§3 a page that stops saving/ },
+  { f: 'ui', why: 'saves never count as use', from: '    lastUse.current = Date.now();\n', to: '', expect: /^§3 a page that stops saving/ },
 ];
 for (const m of MUTANTS) {
   if (SRC[m.f].split(m.from).length !== 2) { fail++; console.log(`  ✗ mutation anchor present once: ${m.why}`); continue; }
