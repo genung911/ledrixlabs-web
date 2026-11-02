@@ -6,6 +6,7 @@
 // findings/specs and pushes are blind upserts with no version check (ledrix-app SyncService.ts), so
 // a browser write would either never reach the phone or be overwritten by its next push — the
 // silent loss the desktop brief forbids. Writes wait on versioned sync.
+import { FINDING_COLUMNS } from '@/lib/findings/edit';
 import { workspace, EVIDENCE_BUCKET } from './client';
 import type { FindingCounts, InspectionRow, OrderRow, ProfileRow, ReportRow } from './model';
 import { countFindings, withLatestActivity } from './model';
@@ -112,12 +113,19 @@ export type FindingRow = {
   created_at: string | null;
   updated_at: string | null;
   rejected_at: string | null;
+  // For editing on the website (2026-11-02, lib/findings/edit.ts).
+  level: string | null;
+  unit: string | null;
+  restored_at: string | null;
+  inspector_id: string | null;
+  staged_limitation: boolean | null;
+  row_version: number | null;
 };
 
 export async function loadFindings(inspectionId: string): Promise<FindingRow[]> {
   return must('Findings could not be loaded', await workspace.from('anomalies')
-    .select('id, inspection_id, status, severity, description, inspector_notes, location, room, component, defect_type, is_safety, source, ai_description, ai_severity, ai_confidence, image_uri, evidence, created_at, updated_at, rejected_at')
-    .eq('inspection_id', inspectionId).order('created_at', { ascending: true }).limit(2000)) as FindingRow[];
+    .select(FINDING_COLUMNS)
+    .eq('inspection_id', inspectionId).order('created_at', { ascending: true }).limit(2000)) as unknown as FindingRow[];
 }
 
 export type SpecRow = {

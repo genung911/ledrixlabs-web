@@ -2,13 +2,13 @@
 
 // One inspection, desktop layout: section rail · record list · evidence panel.
 //
-// HITL is preserved by omission: a PROPOSED finding is shown as a proposal, with Ledrix's original
-// wording beside it, and there is no control here that confirms, rejects or edits it. That decision
-// is made by the inspector in the app (findingConfirmation.ts), whose record is authoritative until
-// versioned two-way sync exists.
+// HITL: a PROPOSED finding is shown as a proposal, with Ledrix's original wording beside it, and only a person
+// confirms, adjusts or rejects it — in the app, or here (2026-11-02, components/workspace/FindingEditor.tsx) under the
+// app's own rules: the job's lead or the finding's inspector, holding the job's edit lock, through versioned saves.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
+import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
 import { Card, Empty, ErrorBox, Loading, Page, PhasePill, PriorityPill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import {
   loadFindings, loadInspection, loadItemLabels, loadMembers, loadPhotos, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
@@ -71,6 +71,12 @@ export default function InspectionPage() {
   }, [id, findingsVisible, access.companyId, access.name, access.userId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // One edit lock for the page, taken at the first save (FindingEditor). A finding saved here replaces its row.
+  const lock = useEditLock(id, phoneHolderOf(state.kind === 'ready' ? state.data.team : null));
+  const onSaved = useCallback((row: FindingRow) => {
+    setState(s => s.kind === 'ready' ? { kind: 'ready', data: { ...s.data, findings: s.data.findings.map(f => f.id === row.id ? row : f) } } : s);
+  }, []);
 
   // Deep links from the dashboard (#review, #reports).
   useEffect(() => {
@@ -185,7 +191,7 @@ export default function InspectionPage() {
           <p className="border-t border-hairline px-4 py-2 text-xs text-muted">The lead assigns sections on the phone. Editing inspections on the website comes later.</p>
         </div>
       )}
-      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>
+      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected here or in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -201,7 +207,7 @@ export default function InspectionPage() {
         {(activeSection === 'review' || activeSection === 'findings' || activeSection === 'rejected') && (
           <>
             <Card title={activeSection === 'review' ? 'Proposed — awaiting the inspector' : activeSection === 'findings' ? 'Confirmed findings' : 'Rejected'} count={list.length}>
-              {activeSection === 'review' && <p className="border-b border-hairline px-4 py-2.5 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects in the app. Nothing here becomes a finding until they do.</p>}
+              {activeSection === 'review' && <p className="border-b border-hairline px-4 py-2.5 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects, in the app or here. Nothing becomes a finding until they do.</p>}
               {list.length === 0 ? <Empty>{activeSection === 'review' ? 'No proposals waiting.' : activeSection === 'findings' ? 'No confirmed findings yet.' : 'None.'}</Empty> : (
                 <ul role="listbox" aria-label="Findings" className="divide-y divide-hairline">
                   {list.map(r => (
@@ -216,7 +222,7 @@ export default function InspectionPage() {
                 </ul>
               )}
             </Card>
-            <div className="lg:col-span-2 xl:col-span-1"><EvidencePanel finding={current} /></div>
+            <div className="lg:col-span-2 xl:col-span-1"><EvidencePanel finding={current} team={team} names={names} lock={lock} onSaved={onSaved} /></div>
           </>
         )}
 
@@ -274,12 +280,14 @@ function specDetail(s: SpecRow): string {
   return parts.join(' · ') || '—';
 }
 
-function EvidencePanel({ finding }: { finding: FindingRow | null }) {
+function EvidencePanel({ finding, team, names, lock, onSaved }: {
+  finding: FindingRow | null; team: JobTeam | null; names: Record<string, string>; lock: ReturnType<typeof useEditLock>; onSaved: (row: FindingRow) => void;
+}) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const refs = useMemo(() => {
     if (!finding) return [];
     return [finding.image_uri, ...(Array.isArray(finding.evidence) ? finding.evidence : [])].map(photoRef).filter((r): r is NonNullable<typeof r> => !!r);
-  }, [finding]);
+  }, [finding?.id, finding?.image_uri, finding?.evidence]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let live = true;
@@ -289,34 +297,26 @@ function EvidencePanel({ finding }: { finding: FindingRow | null }) {
     return () => { live = false; };
   }, [refs]);
 
-  if (!finding) return <Card title="Evidence"><Empty>Select a finding to see its photos and history.</Empty></Card>;
-  const status = normalizeFindingStatus(finding.status);
-  const aiDiffers = !!finding.ai_description && finding.ai_description !== finding.description;
+  if (!finding) return <Card title="Finding"><Empty>Select a finding to see its photos and change it.</Empty></Card>;
+
+  const photos = (
+    <>
+      {refs.length === 0 && <p className="text-sm text-muted">No photo on this finding.</p>}
+      <div className="grid grid-cols-2 gap-2">
+        {refs.map((r, i) => {
+          if (r.kind === 'device') return <div key={i} className="flex aspect-[4/3] items-center justify-center rounded-lg bg-ground p-2 text-center text-xs text-muted">Photo is still on the phone</div>;
+          const src = r.kind === 'url' ? r.url : urls[r.path];
+          return src
+            ? <a key={i} href={src} target="_blank" rel="noreferrer" className={i === 0 ? 'col-span-2' : ''}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={`Evidence ${i + 1}`} className="aspect-[4/3] w-full rounded-lg bg-ground object-cover" /></a>
+            : <div key={i} className={`flex aspect-[4/3] items-center justify-center rounded-lg bg-ground text-xs text-muted ${i === 0 ? 'col-span-2' : ''}`}>Photo unavailable</div>;
+        })}
+      </div>
+    </>
+  );
 
   return (
-    <Card title="Evidence" className="xl:sticky xl:top-6">
-      <div className="space-y-4 p-4">
-        {refs.length === 0 && <p className="text-sm text-muted">No photo on this finding.</p>}
-        <div className="grid grid-cols-2 gap-2">
-          {refs.map((r, i) => {
-            if (r.kind === 'device') return <div key={i} className="flex aspect-[4/3] items-center justify-center rounded-lg bg-ground p-2 text-center text-xs text-muted">Photo is still on the phone</div>;
-            const src = r.kind === 'url' ? r.url : urls[r.path];
-            return src
-              ? <a key={i} href={src} target="_blank" rel="noreferrer" className={i === 0 ? 'col-span-2' : ''}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src} alt={`Evidence ${i + 1}`} className="aspect-[4/3] w-full rounded-lg bg-ground object-cover" /></a>
-              : <div key={i} className={`flex aspect-[4/3] items-center justify-center rounded-lg bg-ground text-xs text-muted ${i === 0 ? 'col-span-2' : ''}`}>Photo unavailable</div>;
-          })}
-        </div>
-
-        <dl className="space-y-3 text-sm">
-          <Field label="Status">{status === 'confirmed' ? 'Confirmed by the inspector' : status === 'rejected' ? `Rejected${finding.rejected_at ? ` ${formatWhen(finding.rejected_at)}` : ''}` : 'Proposed — awaiting the inspector'}</Field>
-          <Field label="Description">{finding.description || '—'}</Field>
-          {finding.inspector_notes && <Field label="Inspector notes">{finding.inspector_notes}</Field>}
-          {aiDiffers && <Field label="Ledrix’s original proposal">{finding.ai_description}{finding.ai_severity && finding.ai_severity !== finding.severity ? ` (${titleCase(finding.ai_severity)})` : ''}</Field>}
-          <Field label="Location">{uniq([finding.room, finding.location]).join(' · ') || '—'}</Field>
-          {finding.defect_type && <Field label="Defect type">{titleCase(finding.defect_type)}</Field>}
-          <Field label="Captured">{formatWhen(finding.created_at)}</Field>
-        </dl>
-      </div>
+    <Card title="Finding" className="xl:sticky xl:top-6">
+      <FindingEditor finding={finding} team={team} names={names} lock={lock} onSaved={onSaved} photos={photos} />
     </Card>
   );
 }
@@ -367,10 +367,6 @@ function PhotosPanel({ photos, labels }: { photos: PhotoRow[]; labels: Record<st
       </div>
     </Card>
   );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-0.5 whitespace-pre-wrap text-ink">{children}</dd></div>;
 }
 
 function ReportsPanel({ reports, seals, portal, phase }: { reports: ReportRow[]; seals: SealRow[]; portal: string | null; phase: string }) {
