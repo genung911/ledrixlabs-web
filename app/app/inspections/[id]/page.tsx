@@ -9,6 +9,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
+import dynamic from 'next/dynamic';
+// Loaded only when Scope is opened: it carries the Ledrix core pack the checklist's keys are decided from.
+const ScopePanel = dynamic(() => import('@/components/workspace/ScopePanel').then(m => m.ScopePanel), { ssr: false, loading: () => <Card className="xl:col-span-2"><Loading label="Loading the checklist…" /></Card> });
 import { Card, Empty, ErrorBox, Loading, Page, PhasePill, PriorityPill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import {
   loadFindings, loadInspection, loadItemLabels, loadMembers, loadPhotos, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
@@ -17,7 +20,7 @@ import {
 import { eventLine, loadJobTeam, loadLeaseEvents, teamStrip, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
 import { inspectionPhase, isPriorityUnset, isPrioritySuggested, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
-type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'photos' | 'reports';
+type Section = 'review' | 'findings' | 'rejected' | 'scope' | 'specs' | 'photos' | 'reports';
 type Data = {
   inspection: InspectionRow;
   findings: FindingRow[];
@@ -81,7 +84,7 @@ export default function InspectionPage() {
   // Deep links from the dashboard (#review, #reports).
   useEffect(() => {
     const h = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
-    if (h === 'review' || h === 'findings' || h === 'specs' || h === 'photos' || h === 'reports' || h === 'rejected') setSection(h);
+    if (h === 'review' || h === 'findings' || h === 'scope' || h === 'specs' || h === 'photos' || h === 'reports' || h === 'rejected') setSection(h);
   }, []);
 
   const groups = useMemo(() => {
@@ -125,12 +128,17 @@ export default function InspectionPage() {
   const { inspection, specs, reports, seals, portal, names, photos, labels, team, events } = state.data;
   // A team of one (or a server without #81) shows nothing: that is today's job.
   const teamInfo = team && team.people.length > 1 ? teamStrip(team, labels) : null;
+  // The Scope section's FINDING / PHOTO tags: per checklist item, findings not rejected and photos on file.
+  const scopeCounts = { findings: {} as Record<string, number>, photos: {} as Record<string, number> };
+  for (const f of state.data.findings) if (f.node_id && normalizeFindingStatus(f.status) !== 'rejected') scopeCounts.findings[f.node_id] = (scopeCounts.findings[f.node_id] ?? 0) + 1;
+  for (const ph of photos) if (ph.node_id) scopeCounts.photos[ph.node_id] = (scopeCounts.photos[ph.node_id] ?? 0) + 1;
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
     { id: 'review', label: 'Review queue', count: groups.review.length, show: findingsVisible },
     { id: 'findings', label: 'Confirmed findings', count: groups.findings.length, show: findingsVisible },
     { id: 'rejected', label: 'Rejected', count: groups.rejected.length, show: findingsVisible && groups.rejected.length > 0 },
+    { id: 'scope', label: 'Scope', show: findingsVisible },
     { id: 'specs', label: 'Specs', count: specs.length, show: findingsVisible },
     { id: 'photos', label: 'Photos', count: photos.length, show: findingsVisible },
     { id: 'reports', label: 'Reports & delivery', count: reports.length, show: true },
@@ -224,6 +232,11 @@ export default function InspectionPage() {
             </Card>
             <div className="lg:col-span-2 xl:col-span-1"><EvidencePanel finding={current} team={team} names={names} lock={lock} onSaved={onSaved} /></div>
           </>
+        )}
+
+        {activeSection === 'scope' && (
+          <ScopePanel inspectionId={id} team={team} names={names} lock={lock} counts={scopeCounts}
+            onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }} />
         )}
 
         {activeSection === 'photos' && <PhotosPanel photos={photos} labels={labels} />}

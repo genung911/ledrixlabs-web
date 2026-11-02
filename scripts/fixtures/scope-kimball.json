@@ -1,0 +1,41 @@
+{
+  "_note": "Test data, 2026-11-02: two systems of the 275 N Kimball test inspection's template snapshot (trimmed to the nodes the check reads) and the checklist rows the PHONE wrote for them (inspection_values). verify-scope-web proves the website builds the same keys and labels the phone stored.",
+  "template": { "systems": [
+    { "id": "cooling", "kind": "system", "label": "COOLING", "inScope": true, "trimmed": [], "sectionType": "system", "children": [
+      { "id": "hvac_cooling", "kind": "component", "label": "AC System Type", "condition": false, "attributes": [
+        { "id": "spec", "label": "AC System Type", "values": ["Split System", "Package Unit", "Ductless Mini-Split", "Window / Wall AC", "Heat Pump AC", "Evaporative Cooler"] },
+        { "id": "age", "label": "Age", "values": ["Under 5 years old", "5–10 years old", "10–15 years old", "15–20 years old", "20–25 years old", "Over 25 years old", "Not determined"] } ] },
+      { "id": "hvac_condenser", "kind": "component", "label": "Condenser", "condition": true },
+      { "id": "hvac_compressor", "kind": "component", "label": "Compressor", "condition": true },
+      { "id": "cooling__link_hvac_thermostat", "kind": "component", "label": "Thermostat", "pointsTo": { "nodeId": "hvac_thermostat", "systemId": "heating" } } ] },
+    { "id": "roofing", "kind": "system", "label": "ROOFING", "inScope": true, "sectionType": "system",
+      "trimmed": [ { "id": "roofing__roofing", "kind": "subsystem", "label": "ROOFING", "children": [ { "id": "roofing_manufactured_roof_tie_downs", "kind": "component", "label": "Roof Tie-Downs" } ] } ],
+      "children": [
+      { "id": "roofing__covering", "kind": "subsystem", "label": "Covering", "trimmed": [], "children": [
+        { "id": "roof_material", "kind": "component", "label": "Roof Material", "condition": false, "limitations": ["Not Accessed"], "attributes": [
+          { "id": "type", "label": "Type", "values": ["Asphalt Shingle", "Metal", "Clay / Concrete Tile", "Wood Shake", "TPO (Flat)", "EPDM (Flat)", "Modified Bitumen", "Slate"] },
+          { "id": "layer_count", "label": "Layer Count", "values": ["1 Layer", "2 Layers"] },
+          { "id": "estimated_age", "label": "Estimated Age", "values": ["Under 5 years old", "5–10 years old", "10–15 years old", "15–20 years old", "20–25 years old", "Over 25 years old", "Not determined"] } ] },
+        { "id": "roof_cov_asphalt", "kind": "component", "label": "Asphalt Shingle", "condition": true, "limitations": ["Not Accessed"] },
+        { "id": "roof_method", "kind": "component", "label": "Method of Inspection", "condition": false, "method": ["Walked", "From Ground / Eaves", "Drone", "Binoculars"] } ] },
+      { "id": "roofing__flashing_penetrations", "kind": "subsystem", "label": "Flashing & Penetrations", "trimmed": [], "children": [
+        { "id": "roof_flashing", "kind": "component", "label": "Flashings", "condition": true, "limitations": ["Not Visible"] },
+        { "id": "roof_skylights", "kind": "component", "label": "Skylights", "condition": true, "limitations": ["Not Visible"] } ] },
+      { "id": "roofing__drainage", "kind": "subsystem", "label": "Drainage", "trimmed": [], "children": [
+        { "id": "roof_gutters", "kind": "component", "label": "Gutters", "condition": true, "attributes": [ { "id": "material", "label": "Material", "values": ["Aluminum", "Vinyl", "Galvanized Steel", "Copper", "Wood"] } ] },
+        { "id": "roof_discharge", "kind": "component", "label": "Downspout Extensions / Discharge", "condition": true, "attributes": [ { "id": "spec", "label": "Downspout Extensions / Discharge", "values": ["Splash Blocks Only", "Underground — Verify Daylight"] } ] } ] } ] }
+  ] },
+  "values": [
+    { "seq": 1, "kind": "condition", "value": { "label": "Asphalt Shingle", "values": ["OK"] }, "node_key": "roof_cov_asphalt", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 2, "kind": "spec", "value": { "label": "Roof Material — Type", "value": "Asphalt Shingle" }, "node_key": "roof_material::type", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 4, "kind": "spec", "value": { "label": "Roof Material — Estimated Age", "value": "Under 5 years old" }, "node_key": "roof_material::estimated_age", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 5, "kind": "spec", "value": { "label": "Method of Inspection", "value": "Walked" }, "node_key": "roof_method", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 6, "kind": "condition", "value": { "label": "Flashings", "values": ["OK"] }, "node_key": "roof_flashing", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 8, "kind": "condition", "value": { "label": "Skylights", "values": ["OK"] }, "node_key": "roof_skylights", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 10, "kind": "spec", "value": { "label": "Roof Material — Layer Count", "value": "2 Layers" }, "node_key": "roof_material::layer_count", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 11, "kind": "spec", "value": { "label": "Gutters", "value": "Vinyl" }, "node_key": "roof_gutters", "section_key": "roofing", "structure_id": "main" },
+    { "seq": 18, "kind": "spec", "value": { "label": "AC System Type — AC System Type", "value": "Window / Wall AC" }, "node_key": "hvac_cooling::spec", "section_key": "cooling", "structure_id": "main" },
+    { "seq": 19, "kind": "condition", "value": { "label": "Condenser", "values": [] }, "node_key": "hvac_condenser", "section_key": "cooling", "structure_id": "main" },
+    { "seq": 20, "kind": "spec", "value": { "label": "AC System Type — Age", "value": "Under 5 years old" }, "node_key": "hvac_cooling::age", "section_key": "cooling", "structure_id": "main" }
+  ]
+}

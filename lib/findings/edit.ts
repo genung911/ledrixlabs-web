@@ -12,7 +12,7 @@
 // the write, the server keeps their fields (it records the conflict) and the columns that did not take come back.
 import { workspace } from '@/lib/workspace/client';
 
-export const FINDING_COLUMNS = 'id, inspection_id, status, severity, description, inspector_notes, location, room, level, unit, component, defect_type, is_safety, source, ai_description, ai_severity, ai_confidence, image_uri, evidence, created_at, updated_at, rejected_at, restored_at, inspector_id, staged_limitation, row_version';
+export const FINDING_COLUMNS = 'id, inspection_id, status, severity, description, inspector_notes, location, room, level, unit, component, defect_type, is_safety, source, ai_description, ai_severity, ai_confidence, image_uri, evidence, created_at, updated_at, rejected_at, restored_at, inspector_id, staged_limitation, row_version, node_id';
 
 export const WEB_DEVICE_NAME = 'Website';
 const DEVICE_KEY = 'ledrix-web-edit-device';

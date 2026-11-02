@@ -120,6 +120,7 @@ export type FindingRow = {
   inspector_id: string | null;
   staged_limitation: boolean | null;
   row_version: number | null;
+  node_id: string | null;   // the checklist item it was filed on (the Scope section counts by it)
 };
 
 export async function loadFindings(inspectionId: string): Promise<FindingRow[]> {
