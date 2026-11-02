@@ -14,7 +14,7 @@ import {
   loadFindings, loadInspection, loadItemLabels, loadMembers, loadPhotos, loadPortalLink, loadReports, loadSeals, loadSpecs, signEvidence, signReportFile,
   type FindingRow, type PhotoRow, type SealRow, type SpecRow,
 } from '@/lib/workspace/data';
-import { eventLine, loadJobTeam, loadLeaseEvents, teamLine, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
+import { eventLine, loadJobTeam, loadLeaseEvents, teamStrip, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
 import { inspectionPhase, isPriorityUnset, isPrioritySuggested, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
 type Section = 'review' | 'findings' | 'rejected' | 'specs' | 'photos' | 'reports';
@@ -118,7 +118,7 @@ export default function InspectionPage() {
 
   const { inspection, specs, reports, seals, portal, names, photos, labels, team, events } = state.data;
   // A team of one (or a server without #81) shows nothing: that is today's job.
-  const teamInfo = team && team.people.length > 1 ? teamLine(team, labels) : null;
+  const teamInfo = team && team.people.length > 1 ? teamStrip(team, labels) : null;
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
@@ -151,13 +151,29 @@ export default function InspectionPage() {
       </div>
       <SyncLine lastSync={inspection.updated_at ?? null} />
       {teamInfo && (
-        <div role="status" className="mb-5 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span aria-hidden className={`h-2 w-2 rounded-full ${team!.people.some(p => p.live) ? 'bg-emerald-600' : 'bg-muted'}`} />
-            <p className="text-sm text-ink"><strong>{teamInfo.headline}</strong> {teamInfo.detail}</p>
+        <div role="status" className="mb-5 rounded-xl border border-hairline bg-surface">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-4 py-2.5">
+            <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-muted">TEAM{teamInfo.live ? ` · ${teamInfo.live} EDITING NOW` : ''}</span>
+            {teamInfo.unsent.length > 0 && (
+              <span className="flex flex-wrap gap-1.5">
+                {teamInfo.unsent.map(u => (
+                  <span key={u.user_id} className="rounded-full bg-amber-600/10 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-amber-700 dark:text-amber-400">{u.first.toUpperCase()} · {u.count} NOT SENT</span>
+                ))}
+              </span>
+            )}
           </div>
+          <ul className="flex flex-wrap gap-2 px-4 py-3">
+            {teamInfo.chips.map(c => (
+              <li key={c.user_id} className="flex items-center gap-2 rounded-full border border-hairline bg-ground py-1 pl-1 pr-3 text-sm text-ink">
+                <span aria-hidden className={`grid h-7 w-7 place-items-center rounded-full font-mono text-[10px] font-bold ${c.live ? 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-400' : 'bg-accent/10 text-accent-ink'}`}>{c.initials}</span>
+                <span className="font-medium">{c.first}</span>
+                {c.is_lead && <span className="font-mono text-[9px] font-bold tracking-wider text-amber-700 dark:text-amber-400">LEAD</span>}
+                <span className="text-xs text-muted">· {c.detail}</span>
+              </li>
+            ))}
+          </ul>
           {events.length > 0 && (
-            <details className="mt-2">
+            <details className="border-t border-hairline px-4 py-2">
               <summary className="cursor-pointer text-xs font-semibold text-accent-ink">Editing history</summary>
               <ul className="mt-2 space-y-1">
                 {events.slice(0, 15).map((e, i) => (
@@ -166,7 +182,7 @@ export default function InspectionPage() {
               </ul>
             </details>
           )}
-          <p className="mt-2 text-xs text-muted">The lead assigns sections on the phone. Editing inspections on the website comes later.</p>
+          <p className="border-t border-hairline px-4 py-2 text-xs text-muted">The lead assigns sections on the phone. Editing inspections on the website comes later.</p>
         </div>
       )}
       <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected in the Ledrix app.</p>

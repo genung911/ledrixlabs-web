@@ -6,7 +6,8 @@
 // (null / []) and the page looks exactly as it did.
 import { workspace } from './client';
 
-export type JobPerson = { user_id: string; name: string | null; is_lead: boolean; device_name: string | null; live: boolean; heartbeat_at: string | null };
+// unsent / reported_at arrive with SQL #87 (each phone reports what it has not sent); before it they are absent → 0.
+export type JobPerson = { user_id: string; name: string | null; is_lead: boolean; device_name: string | null; live: boolean; heartbeat_at: string | null; unsent?: number; reported_at?: string | null };
 export type JobTeam = { lead: string; me: string; people: JobPerson[]; sections: Record<string, string>; lease_period_seconds: number };
 export type LeaseEvent = { at: string; action: string; subject_user: string | null; actor: string | null; device_name: string | null; detail: string | null };
 
@@ -30,19 +31,25 @@ export async function loadLeaseEvents(inspectionId: string): Promise<LeaseEvent[
 const first = (n: string | null | undefined) => (n ?? 'Someone').split(/\s+/)[0];
 const titled = (k: string) => k.replace(/[_.:-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-/** The one status line: "Team of 3 working. Lead: Kelly Genung (iPhone). Sam Rivera: Roof, Exterior." */
-export function teamLine(team: JobTeam, labels: Record<string, string>): { headline: string; detail: string } {
-  const lead = team.people.find(p => p.is_lead);
-  const live = team.people.filter(p => p.live).length;
+export type TeamChip = { user_id: string; initials: string; first: string; is_lead: boolean; detail: string; live: boolean };
+export type TeamStrip = { live: number; chips: TeamChip[]; unsent: { user_id: string; first: string; count: number }[] };
+
+/** The team strip (owner pick B, 2026-11-02): one chip per person and a NOT SENT warning per phone holding work.
+ *  "Kelly · LEAD · the rest · editing", "Sam · Roof, Exterior". Sections nobody was given are the lead's. */
+export function teamStrip(team: JobTeam, labels: Record<string, string>): TeamStrip {
   const bySection = new Map<string, string[]>();
   for (const [k, u] of Object.entries(team.sections)) bySection.set(u, [...(bySection.get(u) ?? []), labels[k] ?? titled(k)]);
-  const parts = [
-    lead ? `Lead: ${lead.name ?? 'Inspector'}${lead.live && lead.device_name ? ` (${lead.device_name})` : lead.live ? '' : ' (not on the job right now)'}.` : '',
-    ...team.people.filter(p => !p.is_lead && bySection.has(p.user_id)).map(p => `${p.name ?? 'Inspector'}: ${bySection.get(p.user_id)!.join(', ')}.`),
-  ].filter(Boolean);
+  const initials = (n: string | null) => (n ?? '?').split(/[\s@]+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join('');
+  const chips = team.people.map(p => {
+    const mine = bySection.get(p.user_id) ?? [];
+    const secs = p.is_lead ? (mine.length ? [...mine, 'the rest'] : ['the rest']) : mine;
+    return { user_id: p.user_id, initials: initials(p.name), first: first(p.name), is_lead: p.is_lead, live: p.live,
+      detail: [secs.join(', ') || 'no sections yet', p.live ? 'editing' : ''].filter(Boolean).join(' · ') };
+  });
   return {
-    headline: `Team of ${team.people.length}${live ? `, ${live} editing now` : ''}.`,
-    detail: parts.join(' '),
+    live: team.people.filter(p => p.live).length,
+    chips,
+    unsent: team.people.filter(p => (p.unsent ?? 0) > 0).map(p => ({ user_id: p.user_id, first: first(p.name), count: p.unsent! })),
   };
 }
 
