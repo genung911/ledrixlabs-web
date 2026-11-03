@@ -14,7 +14,7 @@ export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; compa
   publish?: { inspectorId: string; photoUrl: (uri: string) => string | undefined } };
 export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string; gates?: ReleaseGate[]; hardGate?: boolean;
   seal?: { payload: unknown; canonical: string }; homeRecord?: Record<string, unknown> | null; findingPhotos?: string[] };
-export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details';
+export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details' | 'report extras' | 'home profile';
 export type Assembler = {
   assembleServerRecord(a: AssembleArgs): Promise<AssembledRecord>;
   serverNow(rows: ServerJobRows): number;
