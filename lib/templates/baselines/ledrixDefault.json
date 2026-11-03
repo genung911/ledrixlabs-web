@@ -1269,7 +1269,16 @@
               "id": "location",
               "label": "Location",
               "freeText": true,
-              "values": []
+              "values": [
+                "Garage",
+                "Basement",
+                "Utility Room",
+                "Closet",
+                "Laundry Room",
+                "Attic",
+                "Crawlspace",
+                "Exterior"
+              ]
             }
           ],
           "condition": false,

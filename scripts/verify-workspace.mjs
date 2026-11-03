@@ -132,6 +132,9 @@ console.log('model');
     ok('activity: a finding synced today moves its inspection\'s Updated to today', out[0].updated_at === '2026-11-01T22:54:39Z');
     ok('activity: an inspection with no newer work keeps its own time', out[1].updated_at === '2026-10-20T00:00:00Z');
     ok('activity: the inspection\'s server time wins over its phone clock', M.withLatestActivity([rows[0]], [])[0].updated_at === '2026-10-31T15:03:41Z');
+    // A phone's photo-to-room records (empty value, ledrix-app capturePipeline) are not specs: the Specs table skips them
+    ok('specs: a photo-to-room placeholder (empty value) is not listed as a spec', /return rows\.filter\(r => !isPhotoPlaceholder\(r\)\);/.test(read('lib/workspace/data.ts'))
+      && /export const isPhotoPlaceholder = \(s: \{ id\?: string \| null; material\?: string \| null \}\) => !String\(s\?\.material \?\? ''\)\.trim\(\);/.test(read('lib/workspace/data.ts')));
     ok('activity: the loaders apply it and re-sort the list on it', /return \(await withActivity\(rows\)\)\.sort\(/.test(read('lib/workspace/data.ts'))
       && /return row \? \(await withActivity\(\[row\]\)\)\[0\] : null;/.test(read('lib/workspace/data.ts')));
   }

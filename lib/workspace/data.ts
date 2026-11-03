@@ -142,10 +142,16 @@ export type SpecRow = {
   updated_at: string | null;
 };
 
+/** A phone's photo-to-room record, not a spec: every Coverage shot writes one into the spec list with an EMPTY value
+ *  (ledrix-app capturePipeline.enqueueSave, category CAPTURE / UNCATEGORIZED, id cya_…), and every phone reader and the
+ *  report skip rows by that empty value. They sync with the specs, so the website skips them the same way. */
+export const isPhotoPlaceholder = (s: { id?: string | null; material?: string | null }) => !String(s?.material ?? '').trim();
+
 export async function loadSpecs(inspectionId: string): Promise<SpecRow[]> {
-  return must('Specs could not be loaded', await workspace.from('technical_specs')
+  const rows = must('Specs could not be loaded', await workspace.from('technical_specs')
     .select('id, category, material, attributes, status, system, room, instance_label, image_uri, updated_at')
     .eq('inspection_id', inspectionId).limit(2000)) as SpecRow[];
+  return rows.filter(r => !isPhotoPlaceholder(r));
 }
 
 export type SealRow = { hash: string; parent_hash: string | null; created_at: string | null };
