@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
+import { ConflictsCard } from '@/components/workspace/ConflictsCard';
 import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
 import dynamic from 'next/dynamic';
 // Loaded only when Scope is opened: it carries the Ledrix core pack the checklist's keys are decided from.
@@ -199,6 +200,8 @@ export default function InspectionPage() {
           <p className="border-t border-hairline px-4 py-2 text-xs text-muted">The lead assigns sections on the phone. Editing inspections on the website comes later.</p>
         </div>
       )}
+      {/* When two devices disagree (2026-11-03): only when something does; the job's team settles it. */}
+      <ConflictsCard inspectionId={id} lock={lock} canEdit={!!team && team.people.some(p => p.user_id === team.me)} onSettled={load} />
       <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected here or in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
