@@ -21,7 +21,7 @@ import meta from './render.meta.json';
 import type * as Render from './render.mjs';
 
 /** The report builder's API (lib/report/render.d.mts, generated with the bundle). */
-export type RenderModule = Pick<typeof Render, 'BUNDLED_PACK_VERSION' | 'packDecision' | 'serverPhotoFor' | 'renderSealedReportHtml'>;
+export type RenderModule = Pick<typeof Render, 'BUNDLED_PACK_VERSION' | 'packDecision' | 'serverPhotoFor' | 'renderSealedReportHtml' | 'phoneOnlyParts'>;
 export type SealedRecord = Render.SealedRecord;
 
 export type SealedReportDeps = {
@@ -44,6 +44,9 @@ export type SealedReport = {
   photos: { shown: number; phoneOnly: number };
   /** The QR code to the homeowner's report is printed (the report has been published). */
   qr: boolean;
+  /** Parts of this report the server does not hold yet — only the phone has them (ledrix-app serverCoverage.ts). The
+   *  sealed record carries them, so this page is complete; it is what the website could not assemble itself. */
+  notOnServer: { key: string; label: string; family: string }[];
 };
 export type SealedReportRefusal = { ok: false; status: number; code: string; error: string };
 
@@ -136,6 +139,7 @@ export async function loadSealedReport(inspectionId: string, version: number | n
     return {
       ok: true, html, version: Number(row.version), digest, sealedAt: row.created_at ?? null,
       packVersion: (record.refs?.taxonomyPackVersion as string | undefined) ?? null, photos: { shown, phoneOnly }, qr: !!shareToken,
+      notOnServer: R.phoneOnlyParts(record.inputs),
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

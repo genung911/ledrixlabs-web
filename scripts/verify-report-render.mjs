@@ -139,6 +139,7 @@ const deps = (srv, extra = {}) => ({ supaUrl: BASE, anonKey: 'anon-key', token: 
   }
   const v2 = fakeServer({ rows: [{ version: 2, digest: srv.digest, object_path: `${INSP}/${srv.digest}.json`, input_schema_version: 1 }, { version: 3, digest: 'f'.repeat(64), object_path: `${INSP}/${'f'.repeat(64)}.json`, input_schema_version: 1 }] });
   const r2 = await quiet(() => S.loadSealedReport(INSP, 2, deps(v2)));
+  ok('§3 it says which parts of the report are still only on the phone', r.ok && Array.isArray(r.notOnServer) && (!FIX || (r.notOnServer.some(p => p.label === 'System limitations') && r.notOnServer.some(p => p.label === 'Cover photos'))), JSON.stringify(r.notOnServer));
   ok('§3 a named version is that version', r2.ok && r2.version === 2 && v2.calls[0].url.includes('version=eq.2'));
 }
 const code = async (srvOpts, version = null, dep = {}) => { const r = await quiet(() => S.loadSealedReport(INSP, version, deps(fakeServer(srvOpts), dep))); return r.ok ? 'ok' : r.code; };
