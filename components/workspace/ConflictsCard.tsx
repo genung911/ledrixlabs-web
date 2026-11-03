@@ -4,7 +4,7 @@
 // when something disagrees; each row offers the saved value and the other device's, the same choices as the phone
 // (lib/conflicts/rules.ts, copied from the app). The job cannot be sealed until each is settled (ledrix-app SQL #97).
 import { useCallback, useEffect, useState } from 'react';
-import { choicesFor, deviceLabel, fieldLabel, valueLabel } from '@/lib/conflicts/rules';
+import { choicesFor, deviceLabel, fieldLabel, savedValue, valueLabel } from '@/lib/conflicts/rules';
 import { keepSaved, listBlockingConflicts, useOther, type OpenConflict } from '@/lib/conflicts/api';
 import { webDevice } from '@/lib/findings/edit';
 import type { EditLock } from './FindingEditor';
@@ -43,13 +43,13 @@ export function ConflictsCard({ inspectionId, lock, canEdit, onSettled }: { insp
             <li key={c.id} className="grid grid-cols-1 gap-2 px-4 py-3 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
               <div className="min-w-0">
                 <p className="truncate text-ink">{c.title} · {fieldLabel(c.field)}</p>
-                <p className="text-xs text-muted">Saved: {valueLabel(c.field, c.server_value)} · {from} ({formatWhen(c.created_at)}): {valueLabel(c.field, c.client_value)}</p>
+                <p className="text-xs text-muted">Saved: {valueLabel(c.field, savedValue(c))} · {from} ({formatWhen(c.created_at)}): {valueLabel(c.field, c.client_value)}</p>
                 {ch.note && <p className="mt-1 text-xs text-muted">{ch.note}</p>}
               </div>
               {canEdit && (
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" disabled={!!busy} onClick={() => settle(c, 'keep')} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent/90 disabled:opacity-50">
-                    {busy === `${c.id}:keep` ? 'Saving…' : `Keep ${valueLabel(c.field, c.server_value)}`}</button>
+                    {busy === `${c.id}:keep` ? 'Saving…' : `Keep ${valueLabel(c.field, savedValue(c))}`}</button>
                   {ch.useOther && <button type="button" disabled={!!busy} onClick={() => settle(c, 'other')} className="rounded-full border border-hairline px-3 py-1.5 text-xs font-semibold text-ink hover:bg-ink/5 disabled:opacity-50">
                     {busy === `${c.id}:other` ? 'Saving…' : `Use ${valueLabel(c.field, c.client_value)}`}</button>}
                 </div>

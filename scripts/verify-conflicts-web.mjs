@@ -15,7 +15,7 @@ function suite(src) {
   const out = []; const ok = (n, c) => out.push({ n, c: !!c });
   if (existsSync(join(APP, 'src/core/services/conflictRules.ts'))) ok('§1 the rules are the app’s, byte for byte', read('lib/conflicts/rules.ts') === readFileSync(join(APP, 'src/core/services/conflictRules.ts'), 'utf8'));
   else if (!process.env.ALLOW_NO_APP) ok(`§1 ledrix-app found at ${APP}`, false);
-  ok('§2 keep resolves to the saved value', /p_selected_source: 'original_server'/.test(src.api));
+  ok('§2 keep settles on the field’s value now (recorded, or proposed first when it has moved on)', /const how = keepSource\(c\);/.test(src.api) && /rpc\('propose_conflict_value'/.test(src.api) && /current_value: current\.get\(r\.id\)/.test(src.api));
   ok('§2 use the other writes through the versioned path with the lock, then resolves to it',
     /sync_base_version: \(row as \{ row_version: number \}\)\.row_version, sync_device: webDevice\(\), lease_epoch: lease\.epoch/.test(src.api) && /p_selected_source: 'original_client'/.test(src.api)
     && /const lease = await lock\.ensure\(\); if \(!lease\) return; r = await useOther\(c, lease\);/.test(src.card));

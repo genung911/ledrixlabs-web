@@ -22,17 +22,30 @@ export type ConflictRow = {
   client_device: string | null;
   created_at: string;
   report_relevance: string | null;
+  /** The field's value NOW. It can have moved on since the conflict was recorded (someone decided again); "keep what's
+   *  saved" means this value, not the one recorded at the time. Absent → server_value. */
+  current_value?: unknown;
 };
+
+/** What "Saved" shows and what Keep settles on. */
+export const savedValue = (c: Pick<ConflictRow, 'server_value' | 'current_value'>): unknown =>
+  'current_value' in c && c.current_value !== undefined ? c.current_value : c.server_value;
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+/** How Keep settles: the recorded saved value, the recorded other value, or the current value as a new proposal. */
+export function keepSource(c: Pick<ConflictRow, 'server_value' | 'client_value' | 'current_value'>): 'original_server' | 'original_client' | 'propose' {
+  const v = savedValue(c);
+  return same(v, c.server_value) ? 'original_server' : same(v, c.client_value) ? 'original_client' : 'propose';
+}
 
 /** Open conflicts with this relevance hold the seal (plan §3.2: a new conflict is 'unknown' and blocks). */
 export const BLOCKING_RELEVANCE = ['affects', 'unknown'] as const;
 
 export type ConflictChoices = { keep: true; useOther: boolean; note: string | null };
 
-export function choicesFor(c: Pick<ConflictRow, 'reason' | 'server_value' | 'client_value' | 'field'>): ConflictChoices {
+export function choicesFor(c: Pick<ConflictRow, 'reason' | 'server_value' | 'client_value' | 'field' | 'current_value'>): ConflictChoices {
   if (c.reason === 'status_regression') {
     return { keep: true, useOther: false,
-      note: `A ${valueLabel('status', c.server_value).toLowerCase()} finding can’t go back to ${valueLabel('status', c.client_value).toLowerCase()} this way. If it should be looked at again, reopen it in the review queue.` };
+      note: `A ${valueLabel('status', savedValue(c)).toLowerCase()} finding can’t go back to ${valueLabel('status', c.client_value).toLowerCase()} this way. If it should be looked at again, reopen it in the review queue.` };
   }
   if (c.reason === 'edit_on_tombstone') {
     return { keep: true, useOther: false, note: 'This was deleted on another device. The deletion stands; the edit made without seeing it is kept on record.' };

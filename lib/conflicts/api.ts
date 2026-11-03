@@ -4,7 +4,7 @@
 //   useOther  write the other value through the versioned path under the job's edit lock, then resolve('original_client')
 import { workspace } from '@/lib/workspace/client';
 import { webDevice, type Lease } from '@/lib/findings/edit';
-import { BLOCKING_RELEVANCE, type ConflictRow } from './rules';
+import { BLOCKING_RELEVANCE, keepSource, savedValue, type ConflictRow } from './rules';
 
 export type OpenConflict = ConflictRow & { inspection_id: string; through: number; title: string };
 const COLS = 'id, inspection_id, table_name, record_id, field, reason, server_value, client_value, client_device, created_at, report_relevance';
@@ -28,7 +28,13 @@ export async function listBlockingConflicts(inspectionId: string): Promise<OpenC
     const { data: s } = await workspace.from('technical_specs').select('id, category').in('id', ids('technical_specs'));
     for (const r of (s ?? []) as { id: string; category: string | null }[]) titles.set(`technical_specs:${r.id}`, r.category || 'A spec');
   }
-  return rows.map(r => ({ ...r, through: through.get(r.id) ?? 0,
+  // The field's value NOW — it can have moved on since the conflict was recorded.
+  const current = new Map<string, unknown>();
+  for (const r of rows) {
+    const { data: cur } = await workspace.from(r.table_name).select(r.field).eq('id', r.record_id).maybeSingle();
+    if (cur) current.set(r.id, (cur as unknown as Record<string, unknown>)[r.field] ?? null);
+  }
+  return rows.map(r => ({ ...r, ...(current.has(r.id) ? { current_value: current.get(r.id) } : {}), through: through.get(r.id) ?? 0,
     title: r.table_name === 'inspections' ? 'Job details' : (titles.get(`${r.table_name}:${r.record_id}`) ?? 'A record') }));
 }
 
@@ -39,7 +45,18 @@ const words = (m: string) => /current value is not the selected value/i.test(m) 
   : /not allowed|42501/i.test(m) ? 'You can’t change this job.' : (m || 'It could not be settled. Try again.');
 
 export async function keepSaved(c: OpenConflict): Promise<SettleResult> {
-  const { error } = await workspace.rpc('resolve_inspection_conflict', { p_conflict: c.id, p_selected_source: 'original_server', p_selected_value_id: null, p_expected_through_seq: c.through });
+  // Keep = what the field holds NOW: the recorded saved value, the recorded other value, or — when it has moved on
+  // since — the current value, first recorded as a resolution proposal (propose_conflict_value, CR-1), then picked.
+  const how = keepSource(c);
+  if (how !== 'propose') {
+    const { error } = await workspace.rpc('resolve_inspection_conflict', { p_conflict: c.id, p_selected_source: how, p_selected_value_id: null, p_expected_through_seq: c.through });
+    return error ? { ok: false, message: words(error.message) } : { ok: true };
+  }
+  const { data: vid, error: pErr } = await workspace.rpc('propose_conflict_value', { p_conflict: c.id, p_value: savedValue(c), p_client_device: webDevice() });
+  if (pErr || !vid) return { ok: false, message: words(pErr?.message ?? '') };
+  const { data: vals } = await workspace.from('inspection_conflict_values').select('seq').eq('conflict_id', c.id);
+  const through = Math.max(0, ...((vals ?? []) as { seq: number }[]).map(v => Number(v.seq)));
+  const { error } = await workspace.rpc('resolve_inspection_conflict', { p_conflict: c.id, p_selected_source: 'value', p_selected_value_id: vid, p_expected_through_seq: through });
   return error ? { ok: false, message: words(error.message) } : { ok: true };
 }
 
