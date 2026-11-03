@@ -3,7 +3,7 @@ type Row = Record<string, any>;
 export type ServerJobRows = {
   inspection: Row; anomalies: Row[]; technicalSpecs: Row[];
   values: { structure_id: string; node_key: string; kind: string; value: unknown; updated_by: string | null; updated_at: string; seq: number }[];
-  template: Row | null; measurements: Row[];
+  template: Row | null; measurements: Row[]; photos?: Row[];
   sealer: { id: string; email?: string | null; full_name?: string | null; company_name?: string | null; license_number?: string | null };
 };
 export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; companyLogo?: string | null; systemsOverview?: string; readPhoto?: (uri: string) => Promise<string | null> };
