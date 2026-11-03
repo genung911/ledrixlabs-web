@@ -68,6 +68,19 @@ if (!hasApp) {
   }
 }
 
+// ── §2b the record ASSEMBLY (10a): the website's copy assembles what the app's own code does ─────────────────────────
+if (hasApp) {
+  const SF = await import(pathToFileURL(join(APP, 'scripts/report-bundle/serverFixture.mjs')).href);
+  const DL = await import(pathToFileURL(join(APP, 'scripts/report-bundle/direct.mjs')).href);
+  const { rows } = await quiet(() => SF.recordOnPhone(DL.createLoader()));
+  const args = () => ({ rows, timeZone: 'America/Boise', systemsOverview: 'x', readPhoto: async (u) => SF.PHOTO_BYTES(u) });
+  const A = await quiet(() => import(pathToFileURL(join(ROOT, 'lib/report/assemble.mjs')).href));
+  const web = await quiet(() => A.createAssembler().assembleServerRecord(args()));
+  const app = await quiet(() => DL.createLoader({ assembly: true }).require(join(APP, 'scripts/report-bundle/assemble-entry.ts')).assembleServerRecord(args()));
+  ok('§2b the website\'s assembly gives the app\'s record and digest for the same server rows', web.digest === app.digest && web.canonical === app.canonical, `${web.digest.slice(0, 12)} / ${app.digest.slice(0, 12)}`);
+  ok('§2b …and that record renders with the website\'s report builder', (await quiet(() => R.renderSealedReportHtml({ inspectionId: rows.inspection.id, record: JSON.parse(web.canonical), revision: null, photoUrl: () => null }))).length > 40000);
+}
+
 // ── §3 sealedReport against a fake Supabase ─────────────────────────────────────────────────────────────────────────
 const S = await import(pathToFileURL(join(ROOT, 'lib/report/sealedReport.ts')).href);
 const INSP = 'insp_fixture_0001';
