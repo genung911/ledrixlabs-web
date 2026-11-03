@@ -56,9 +56,10 @@ const ID = /^[A-Za-z0-9_.-]{1,120}$/;
 const refuse = (status: number, code: string, error: string): SealedReportRefusal => ({ ok: false, status, code, error });
 const sha256 = (s: string | Uint8Array) => createHash('sha256').update(s).digest('hex');
 
-// One render at a time: the builder keeps its page and its pack in module state (a Node server, one bundle).
+// One render at a time: the builder keeps its page and its pack in module state (a Node server, one bundle). The seal
+// check (lib/seal/check.ts) runs its record assembly through the same queue — the assembler refuses a second job at once.
 let queue: Promise<unknown> = Promise.resolve();
-function serial<T>(fn: () => Promise<T>): Promise<T> {
+export function serial<T>(fn: () => Promise<T>): Promise<T> {
   const run = queue.then(fn, fn);
   queue = run.catch(() => undefined);
   return run;
@@ -152,14 +153,14 @@ async function defaultLoad(): Promise<RenderModule> {
   return (await import('./render.mjs')) as unknown as RenderModule;
 }
 
-function walkStrings(v: unknown, fn: (s: string) => void, depth = 0): void {
+export function walkStrings(v: unknown, fn: (s: string) => void, depth = 0): void {
   if (depth > 40 || v == null) return;
   if (typeof v === 'string') { if (v.length < 2048) fn(v); return; }
   if (Array.isArray(v)) { for (const x of v) walkStrings(x, fn, depth + 1); return; }
   if (typeof v === 'object') for (const x of Object.values(v as Record<string, unknown>)) walkStrings(x, fn, depth + 1);
 }
 
-async function signAll(f: typeof fetch, base: string, H: Record<string, string>, paths: string[]): Promise<Map<string, string>> {
+export async function signAll(f: typeof fetch, base: string, H: Record<string, string>, paths: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   for (let i = 0; i < paths.length; i += 100) {
     const chunk = paths.slice(i, i + 100);

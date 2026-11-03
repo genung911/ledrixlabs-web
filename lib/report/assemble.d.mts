@@ -6,13 +6,19 @@ export type ServerJobRows = {
   template: Row | null; measurements: Row[]; photos?: Row[];
   sealer: { id: string; email?: string | null; full_name?: string | null; company_name?: string | null; license_number?: string | null };
 };
-export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; companyLogo?: string | null; systemsOverview?: string; readPhoto?: (uri: string) => Promise<string | null> };
-export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string };
+/** 10c: decide the release gates on the same assembly (the phone's releaseGates; phone-only probes left out). */
+export type GateOptions = { isFinalized: boolean; openConflicts: number | null; significantSeverities?: string[] };
+export type ReleaseGate = { key: string; hard: boolean; title: string; detail?: string; fix?: { label: string; route: { pathname: string; params?: Record<string, string> } } };
+export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; companyLogo?: string | null; systemsOverview?: string; readPhoto?: (uri: string) => Promise<string | null>; gates?: GateOptions };
+export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string; gates?: ReleaseGate[]; hardGate?: boolean };
+export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details';
 export type Assembler = {
   assembleServerRecord(a: AssembleArgs): Promise<AssembledRecord>;
   serverNow(rows: ServerJobRows): number;
-  /** live: the step 3 families whose SQL is applied (#98 evidence index + cover photos, #99 serial and model, #100 limitations). */
-  phoneOnlyParts(inputs: Record<string, unknown> | null | undefined, live?: ReadonlySet<'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations'>): { key: string; label: string; family: string }[];
+  /** live: the step 3 families whose SQL is applied (#98 evidence index + cover photos, #99 serial and model, #100 limitations, #101 client details). */
+  phoneOnlyParts(inputs: Record<string, unknown> | null | undefined, live?: ReadonlySet<LiveFamily>): { key: string; label: string; family: string }[];
+  /** The families whose SQL is applied on the production server (serverCoverage.SERVER_LIVE_FAMILIES). */
+  SERVER_LIVE_FAMILIES: readonly LiveFamily[];
 };
 /** A fresh assembler: fresh module state, a fresh in-memory phone. One per assembly. */
 export declare function createAssembler(): Assembler;
