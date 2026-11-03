@@ -11,7 +11,8 @@ export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<st
 export type Assembler = {
   assembleServerRecord(a: AssembleArgs): Promise<AssembledRecord>;
   serverNow(rows: ServerJobRows): number;
-  phoneOnlyParts(inputs: Record<string, unknown> | null | undefined): { key: string; label: string; family: string }[];
+  /** live: the step 3 families whose SQL is applied (#98 evidence index + cover photos, #99 serial and model, #100 limitations). */
+  phoneOnlyParts(inputs: Record<string, unknown> | null | undefined, live?: ReadonlySet<'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations'>): { key: string; label: string; family: string }[];
 };
 /** A fresh assembler: fresh module state, a fresh in-memory phone. One per assembly. */
 export declare function createAssembler(): Assembler;

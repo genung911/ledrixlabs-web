@@ -184,7 +184,8 @@ export async function loadTemplateTree(companyId: string, id: string): Promise<T
 }
 
 /** Every photo of an inspection (ledrix-app SQL #73, PLAN_2026-10-28_photos_to_server P5) — oldest first, deleted ones
- *  left out. RLS (`can_read_inspection`) decides; another company simply gets none. */
+ *  and cover photos (source 'cover', ledrix-app SQL #98: the report's cover, not inspection evidence) left out. RLS
+ *  (`can_read_inspection`) decides; another company simply gets none. */
 export type PhotoRow = {
   id: string; storage_path: string; node_id: string | null; anomaly_id: string | null; limitation_node_id: string | null;
   proof_of: string | null; room: string | null; source: string; taken_at: string; width: number | null; height: number | null;
@@ -192,7 +193,7 @@ export type PhotoRow = {
 export async function loadPhotos(inspectionId: string): Promise<PhotoRow[]> {
   const res = await workspace.from('inspection_photos')
     .select('id, storage_path, node_id, anomaly_id, limitation_node_id, proof_of, room, source, taken_at, width, height')
-    .eq('inspection_id', inspectionId).is('deleted_at', null).order('taken_at', { ascending: true });
+    .eq('inspection_id', inspectionId).is('deleted_at', null).neq('source', 'cover').order('taken_at', { ascending: true });
   if (res.error) throw new WorkspaceError('The photos could not be loaded', res.error);
   return (res.data as PhotoRow[]) ?? [];
 }
