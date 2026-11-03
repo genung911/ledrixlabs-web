@@ -132,8 +132,99 @@ function suiteStatic() {
   ok('§3 the route takes the user\'s bearer token and holds no service key', /Bearer\\s\+\(\\S\+\)/.test(route) && !/SERVICE_ROLE|service_role/i.test(route + lib));
   ok('§3 the check writes nothing (no insert/update/upsert/delete, no write RPC)', !/\.(insert|update|upsert|delete)\(|method: '(PATCH|DELETE|PUT)'/.test(lib) && [...lib.matchAll(/rpc\('(\w+)'/g)].every(m => ['job_phone_only', 'job_team'].includes(m[1])));
   ok('§3 the preview frame runs no script (sandbox="")', /<iframe[^>]*sandbox=""/.test(panel) && !/allow-scripts/.test(panel));
-  ok('§3 the panel does not seal yet (10d): its button is disabled', /<button type="button" disabled/.test(panel) && !/record_report_version|report_seals/.test(panel + lib));
+  const seal = read('lib/seal/seal.ts'); const sroute = read('app/api/inspections/[id]/seal/route.ts');
+  ok('§3 the panel seals only through the route, after the attestation is ticked (never pre-ticked)', /disabled=\{!confirm\.attest \|\| confirm\.busy\}/.test(panel) && /attest: false/.test(panel) && !/record_report_version|report_seals|\.rpc\(/.test(panel));
+  ok('§3 the seal route takes the bearer token; the seal holds no service key', /Bearer\\s\+\(\\S\+\)/.test(sroute) && !/SERVICE_ROLE|service_role/i.test(sroute + seal));
+  ok('§3 the PDF goes through /api/render-pdf with the user\'s own session (its budget applies)', /\/api\/render-pdf/.test(seal) && /Authorization: H\.Authorization/.test(seal));
   ok('§3 the page has the Seal & send section', /id: 'seal', label: 'Seal & send'/.test(page) && /<SealPanel inspectionId=\{id\} lock=\{lock\} \/>/.test(page));
+  return out;
+}
+
+// ── §5 the seal (10d) against a fake Supabase ──────────────────────────────────────────────────────────────────────
+import { createHash } from 'node:crypto';
+const shaHex = (x) => createHash('sha256').update(x).digest('hex');
+function sealServer({ heartbeat = true, versions = [], reports = [rep([], 'Kelly')], sealsBefore = [], shareToken = null } = {}) {
+  const base = fakeServer({ versions, reports });
+  const inspRow = { ...FIX.inspection, status: 'in_progress', row_version: 4 };
+  const writes = [];
+  const seals = [...sealsBefore];
+  const objects = new Map();
+  const fetch = async (url, init = {}) => {
+    const u = new URL(url); const m = init.method ?? 'GET'; const h = init.headers ?? {};
+    const json = (v, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'content-type': 'application/json' } });
+    if (h.Authorization !== `Bearer ${TOKEN}`) return json({ message: 'JWT' }, 401);
+    const w = (kind, extra = {}) => writes.push({ kind, path: u.pathname, ...extra });
+    if (u.pathname === '/rest/v1/rpc/heartbeat_edit') { const b = JSON.parse(init.body); w('heartbeat', { b }); return heartbeat ? json(null) : json({ message: 'not_lease_holder' }, 400); }
+    if (u.pathname === '/rest/v1/report_seals' && m === 'GET') return json(seals.slice(-1).map(x => ({ hash: x.hash })));
+    if (u.pathname === '/rest/v1/report_seals' && m === 'POST') { const b = JSON.parse(init.body); seals.push(b); w('seal', { b }); return new Response(null, { status: 201 }); }
+    if (u.pathname === '/rest/v1/rpc/record_report_version') { const b = JSON.parse(init.body); w('version', { b }); return json({ version: versions.length + 1, digest: b.p_digest }); }
+    if (u.pathname === '/rest/v1/home_records' && m === 'GET') return json(shareToken ? [{ share_token: shareToken }] : []);
+    if (u.pathname === '/rest/v1/home_records' && m === 'POST') { w('commit', { b: JSON.parse(init.body) }); return new Response(null, { status: 201 }); }
+    if (u.pathname === '/rest/v1/home_reports') { w('history', { b: JSON.parse(init.body) }); return new Response(null, { status: 201 }); }
+    if (u.pathname === '/rest/v1/inspections' && m === 'PATCH') { w('complete', { b: JSON.parse(init.body) }); return new Response(null, { status: 204 }); }
+    if (u.pathname === '/rest/v1/inspections' && m === 'GET') return json([inspRow]);
+    if (u.pathname.startsWith('/storage/v1/object/authenticated/inspection-evidence/')) return new Response(Buffer.from(`jpeg:${u.pathname.split('/').pop()}`), { status: 200 });
+    if (m === 'POST' && u.pathname.startsWith('/storage/v1/object/inspection-records/')) { w('record', { body: init.body }); return json({ Key: 'x' }); }
+    if (m === 'POST' && u.pathname.startsWith('/storage/v1/object/inspection-pdfs/')) {
+      const key = u.pathname.replace('/storage/v1/object/inspection-pdfs/', '');
+      if (objects.has(key) && h['x-upsert'] !== 'true') return json({ error: 'Duplicate' }, 409);
+      objects.set(key, true); w('pdfs', { key, upsert: h['x-upsert'] }); return json({ Key: key });
+    }
+    return base.fetch(url, init);
+  };
+  return { fetch, writes, calls: base.calls };
+}
+// The fixture owes required facts (a hard gate); the success path is run with those two facts' gate removed — the
+// orchestration is what §5 tests; the gate itself is §2's and §5's refusal below.
+const softOnly = async () => { const A = await import(pathToFileURL(join(ROOT, 'lib/report/assemble.mjs')).href);
+  return { createAssembler: () => { const a = A.createAssembler(); return { ...a, assembleServerRecord: async (x) => { const r = await a.assembleServerRecord(x); return { ...r, gates: (r.gates ?? []).filter(g => !g.hard), hardGate: false }; } }; } }; };
+const PDF = new Uint8Array(Buffer.from('%PDF-1.7 ' + 'x'.repeat(200)));
+async function suiteSeal(file = 'lib/seal/seal.ts') {
+  const out = []; const ok = (name, c, d = '') => out.push({ name, pass: !!c, detail: d });
+  try {
+    const S = await fresh(file);
+    const REQ = { attest: true, device: 'web_abc123', epoch: 7, expectNext: 1 };
+    const run = (srv, req = REQ, extra = {}) => quiet(() => S.sealFromWebsite(INSP, req, { supaUrl: BASE, anonKey: 'anon', token: TOKEN, fetch: srv.fetch, origin: 'https://site', timeZone: 'America/Boise',
+      renderPdf: async () => PDF, now: () => new Date('2026-11-03T20:00:00Z'), ...extra }));
+    const writesOf = (srv) => srv.writes.filter(w => w.kind !== 'heartbeat');
+    // refusals: nothing written
+    const s1 = sealServer(); const r1 = await run(s1, { ...REQ, attest: false });
+    ok('§5 not attested → refused, nothing written', !r1.ok && r1.code === 'not_attested' && s1.writes.length === 0, JSON.stringify(r1));
+    const s2 = sealServer({ heartbeat: false }); const r2 = await run(s2, REQ, { loadAssemble: softOnly });
+    ok('§5 without the edit lock on this browser → refused, nothing written', !r2.ok && r2.code === 'no_lock' && writesOf(s2).length === 0, JSON.stringify(r2));
+    const s3 = sealServer({ versions: [{ version: 1 }] }); const r3 = await run(s3, REQ, { loadAssemble: softOnly });
+    ok('§5 a version sealed since the person looked → refused, nothing written', !r3.ok && r3.code === 'changed' && writesOf(s3).length === 0, JSON.stringify(r3));
+    const s4 = sealServer(); const r4 = await run(s4);
+    ok('§5 a hard gate (the fixture\'s missing facts) → refused, nothing written', !r4.ok && r4.code === 'locked' && /missing required facts/.test(r4.error) && writesOf(s4).length === 0, JSON.stringify(r4));
+    const s4b = sealServer({ reports: [] }); const r4b = await run(s4b, REQ, { loadAssemble: softOnly });
+    ok('§5 no phone report → refused, nothing written', !r4b.ok && r4b.code === 'locked' && writesOf(s4b).length === 0);
+    // success
+    const s5 = sealServer(); const r5 = await run(s5, REQ, { loadAssemble: softOnly });
+    const kinds = writesOf(s5).map(w => w.kind).filter((k, i, a) => !(k === 'pdfs' && a[i - 1] === 'pdfs'));
+    ok('§5 sealed and sent: version 1, the homeowner link', r5.ok && r5.version === 1 && /^https:\/\/www\.ledrixlabs\.com\/share\/[0-9a-f]{32}$/.test(r5.shareUrl), JSON.stringify(r5).slice(0, 300));
+    const order = ['seal', 'record', 'version', 'pdfs', 'commit', 'history', 'complete'];
+    const firstIdx = (k) => kinds.indexOf(k);
+    ok('§5 in the phone\'s order: seal → record → version → staged files → ONE commit → history → completed', order.every((k, i) => i === 0 || firstIdx(order[i - 1]) < firstIdx(k)) && kinds.filter(k => k === 'commit').length === 1, JSON.stringify(kinds));
+    const seal = s5.writes.find(w => w.kind === 'seal')?.b; const rec = s5.writes.find(w => w.kind === 'record');
+    const canon = (v) => v === null || typeof v !== 'object' ? JSON.stringify(v) : Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+    ok('§5 the seal attests the record: its hash is the payload\'s, its digest the uploaded record\'s', seal && rec && seal.payload.input_digest === shaHex(rec.body) && seal.hash === shaHex(canon(seal.payload)) && seal.inspector_id === UID && seal.parent_hash === null,
+      JSON.stringify(seal).slice(0, 300));
+    const commit = s5.writes.find(w => w.kind === 'commit')?.b;
+    const staged = s5.writes.filter(w => w.kind === 'pdfs').map(w => w.key);
+    ok('§5 the commit switches the Home App to the staged PDF, with the token the report printed', commit && commit.pdf_url.endsWith(staged.find(k => k.endsWith('/report.pdf'))) && r5.shareUrl.endsWith(commit.share_token) && commit.share_id === INSP && commit.inspector_id === UID,
+      JSON.stringify({ pdf: commit?.pdf_url, staged }));
+    ok('§5 only confirmed findings are published, with public photo copies', commit && commit.anomalies.length > 0 && commit.anomalies.every(a => !a.imageUri || /\/object\/public\/inspection-pdfs\/insp_fixture_0001\/findings\/[0-9a-f]{32}\.jpg$/.test(a.imageUri)) && staged.some(k => /\/findings\//.test(k)), JSON.stringify(commit?.anomalies?.map(a => a.imageUri)));
+    const fixed = s5.writes.filter(w => w.kind === 'pdfs' && w.upsert === 'true').map(w => w.key);
+    ok('§5 the only overwrite is the fixed report.html, after the commit', JSON.stringify(fixed) === JSON.stringify([`${INSP}/report.html`]) && kinds.lastIndexOf('pdfs') > firstIdx('commit'), JSON.stringify(fixed));
+    const done = s5.writes.find(w => w.kind === 'complete')?.b;
+    ok('§5 completed under the lock: base version, this device, its epoch', done?.status === 'completed' && done.sync_device === 'web_abc123' && done.lease_epoch === 7 && done.sync_base_version === 4, JSON.stringify(done));
+    // re-seal of an unchanged record: no second seal row
+    const s6 = sealServer({ sealsBefore: [{ hash: seal.hash }] }); const r6 = await run(s6, REQ, { loadAssemble: softOnly });
+    ok('§5 sealing the same record again writes no second seal (same hash)', r6.ok && r6.reSealed && !s6.writes.some(w => w.kind === 'seal'), JSON.stringify(r6).slice(0, 200));
+    // the PDF fails: sealed, nothing on the Home App
+    const s7 = sealServer(); const r7 = await run(s7, REQ, { loadAssemble: softOnly, renderPdf: async () => null });
+    ok('§5 a failed PDF: sealed (says so), and nothing on the Home App changed', !r7.ok && r7.sealed === true && r7.code === 'pdf_failed' && !s7.writes.some(w => w.kind === 'commit' || w.kind === 'pdfs'), JSON.stringify(r7));
+  } catch (e) { ok('§5 the seal completed', false, String(e?.stack ?? e).slice(0, 700)); }
   return out;
 }
 
@@ -142,10 +233,15 @@ const report = (rs) => { for (const r of rs) { if (r.pass) { pass++; console.log
 console.log('verify-seal-check-web');
 report(await suiteDecide());
 report(await suiteCheck());
+report(await suiteSeal());
 report(suiteStatic());
 
 console.log('\n§4 mutations');
 const MUT = [
+  { f: 'lib/seal/seal.ts', why: 'the edit lock is not checked', from: "  if (!hb.ok) return refuse(409, 'no_lock',", to: "  if (false) return refuse(409, 'no_lock',", suite: suiteSeal, expect: /^§5 without the edit lock/ },
+  { f: 'lib/seal/seal.ts', why: 'a locked job is sealed anyway', from: "  if (!decision.sealable) return refuse(", to: "  if (false) return refuse(", suite: suiteSeal, expect: /^§5 (a hard gate|no phone report)/ },
+  { f: 'lib/seal/seal.ts', why: 'the attestation is not required', from: "  if (req?.attest !== true) return refuse(", to: "  if (false) return refuse(", suite: suiteSeal, expect: /^§5 not attested/ },
+  { f: 'lib/seal/seal.ts', why: 'the same record seals twice', from: "  const reSealed = parent === hash;", to: "  const reSealed = false;", suite: suiteSeal, expect: /^§5 sealing the same record again/ },
   { f: 'lib/seal/decide.ts', why: 'an unreported job is not locked', from: "  if (state === 'unreported') {", to: "  if (false) {", suite: suiteDecide, expect: /^§1 a job no phone/ },
   { f: 'lib/seal/decide.ts', why: 'unsent work does not lock', from: '    if (n > 0) locks.push(', to: '    if (false) locks.push(', suite: suiteDecide, expect: /^§1 unsent/ },
   { f: 'lib/seal/decide.ts', why: 'a soft gate locks', from: '      if (g.hard) locks.push(', to: '      if (true) locks.push(', suite: suiteDecide, expect: /^§1 nothing hard/ },

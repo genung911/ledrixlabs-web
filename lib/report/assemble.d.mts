@@ -9,8 +9,11 @@ export type ServerJobRows = {
 /** 10c: decide the release gates on the same assembly (the phone's releaseGates; phone-only probes left out). */
 export type GateOptions = { isFinalized: boolean; openConflicts: number | null; significantSeverities?: string[] };
 export type ReleaseGate = { key: string; hard: boolean; title: string; detail?: string; fix?: { label: string; route: { pathname: string; params?: Record<string, string> } } };
-export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; companyLogo?: string | null; systemsOverview?: string; readPhoto?: (uri: string) => Promise<string | null>; gates?: GateOptions };
-export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string; gates?: ReleaseGate[]; hardGate?: boolean };
+export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; companyLogo?: string | null; systemsOverview?: string; readPhoto?: (uri: string) => Promise<string | null>; gates?: GateOptions;
+  /** 10d: also compose what a seal writes (the seal payload, the Home App record); photo URLs the caller's. */
+  publish?: { inspectorId: string; photoUrl: (uri: string) => string | undefined } };
+export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string; gates?: ReleaseGate[]; hardGate?: boolean;
+  seal?: { payload: unknown; canonical: string }; homeRecord?: Record<string, unknown> | null; findingPhotos?: string[] };
 export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details';
 export type Assembler = {
   assembleServerRecord(a: AssembleArgs): Promise<AssembledRecord>;

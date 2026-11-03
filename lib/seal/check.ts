@@ -40,6 +40,8 @@ export type SealCheck = SealDecision & {
   dataMap: { label: string; where: 'server' | 'phone' }[];
   preview: { html: string; photos: { shown: number; missing: number } } | null;
   assembledAt: string;
+  /** The client the report is for (the record's), for "goes live on <client>'s Home App". */
+  clientName: string | null;
 };
 export type SealCheckRefusal = { ok: false; status: number; code: string; error: string };
 
@@ -52,7 +54,20 @@ const EXTRA_LABELS: Record<string, string> = {
 /** The server-held parts shown first in "Where this job's data is". */
 const SERVER_PARTS = ['Findings', 'Checklist answers', 'Equipment and specs', 'Readings', 'Photos', 'Client and intake details'];
 
-export async function loadSealCheck(inspectionId: string, deps: SealCheckDeps): Promise<SealCheck | SealCheckRefusal> {
+/** The server's view of one job, read as the signed-in user: the rows the record assembly takes, and what the decision
+ *  needs besides. Shared by the check and the seal (lib/seal/seal.ts), so both read the job the same way. */
+export type JobRead = {
+  ok: true;
+  rows: Assemble.ServerJobRows;
+  uid: string;
+  conflicts: number | null;
+  lastVersion: number;
+  reports: PhoneReport[];
+  team: TeamPerson[];
+  io: { f: typeof fetch; base: string; H: Record<string, string>; get: (path: string) => Promise<any[] | null>; rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown> };
+};
+
+export async function readJob(inspectionId: string, deps: Pick<SealCheckDeps, 'supaUrl' | 'anonKey' | 'token' | 'fetch'>): Promise<JobRead | SealCheckRefusal> {
   if (!ID.test(inspectionId)) return refuse(400, 'bad_request', 'Not an inspection.');
   if (!deps.token) return refuse(401, 'signed_out', 'Sign in to check this report.');
   const f = deps.fetch ?? fetch;
@@ -68,7 +83,6 @@ export async function loadSealCheck(inspectionId: string, deps: SealCheckDeps): 
     const r = await f(`${base}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(args), cache: 'no-store' });
     return r.ok ? r.json() : null;
   };
-
   try {
     // 1 · the rows
     const [insp, anomalies, specs, values, templates, measurements, photos, user] = await Promise.all([
@@ -96,17 +110,33 @@ export async function loadSealCheck(inspectionId: string, deps: SealCheckDeps): 
       rpc('job_phone_only', { p_inspection: inspectionId }),
       rpc('job_team', { p_inspection: inspectionId }),
     ]);
-    const conflicts = conf ? conf.length : null;
-    const lastVersion = Number(versions?.[0]?.version ?? 0);
-    const isFinalized = lastVersion > 0;
-
-    // 3 · assemble + gates, one at a time (the assembler holds module state)
-    const R = await (deps.loadRender ?? (async () => (await import('../report/render.mjs')) as any))();
-    const A = await (deps.loadAssemble ?? (async () => (await import('../report/assemble.mjs')) as any))();
     const rows: Assemble.ServerJobRows = {
       inspection, anomalies, technicalSpecs: specs, values: values as any, template: templates[0] ?? null, measurements, photos,
       sealer: { id: uid, email: (user as any)?.email ?? null, full_name: prof.full_name ?? null, company_name: prof.company_name ?? null, license_number: prof.license_number ?? null },
     };
+    return {
+      ok: true, rows, uid,
+      conflicts: conf ? conf.length : null,
+      lastVersion: Number(versions?.[0]?.version ?? 0),
+      reports: Array.isArray(reports) ? (reports as PhoneReport[]) : [],
+      team: Array.isArray((team as any)?.people) ? (team as any).people : [],
+      io: { f, base, H, get, rpc },
+    };
+  } catch (e) {
+    if ((e as any)?.signedOut) return refuse(401, 'signed_out', 'Sign in to check this report.');
+    return refuse(502, 'unavailable', 'The report check could not run. Try again.');
+  }
+}
+
+export async function loadSealCheck(inspectionId: string, deps: SealCheckDeps): Promise<SealCheck | SealCheckRefusal> {
+  const job = await readJob(inspectionId, deps);
+  if (!job.ok) return job;
+  const { rows, conflicts, lastVersion, io: { f, base, H } } = job;
+  const isFinalized = lastVersion > 0;
+  try {
+    // 3 · assemble + gates, one at a time (the assembler holds module state)
+    const R = await (deps.loadRender ?? (async () => (await import('../report/render.mjs')) as any))();
+    const A = await (deps.loadAssemble ?? (async () => (await import('../report/assemble.mjs')) as any))();
     let rec: Awaited<ReturnType<Assemble.Assembler['assembleServerRecord']>> | null = null;
     try {
       rec = await serial(() => A.createAssembler().assembleServerRecord({ rows, timeZone: deps.timeZone ?? null, gates: { isFinalized, openConflicts: conflicts } }));
@@ -135,15 +165,14 @@ export async function loadSealCheck(inspectionId: string, deps: SealCheckDeps): 
     // 5 · decide
     const labels: Record<string, string> = { ...EXTRA_LABELS };
     for (const [k, p] of Object.entries(R.RECORD_PARTS)) labels[k] = (p as any).label;
-    const phoneReports: PhoneReport[] = Array.isArray(reports) ? (reports as PhoneReport[]) : [];
-    const people: TeamPerson[] = Array.isArray((team as any)?.people) ? (team as any).people : [];
-    const decision = decideSeal({ gates: rec?.gates ?? null, reports: phoneReports, team: people, labels });
+    const decision = decideSeal({ gates: rec?.gates ?? null, reports: job.reports, team: job.team, labels });
     const onPhones = new Set(decision.phoneOnly.phones.flatMap(p => p.parts));
     const dataMap: SealCheck['dataMap'] = [
       ...SERVER_PARTS.filter(l => !onPhones.has(l)).map(label => ({ label, where: 'server' as const })),
       ...[...onPhones].map(label => ({ label, where: 'phone' as const })),
     ];
-    return { ok: true, ...decision, isFinalized, nextVersion: lastVersion + 1, conflicts, dataMap, preview, assembledAt: new Date().toISOString() };
+    return { ok: true, ...decision, isFinalized, nextVersion: lastVersion + 1, conflicts, dataMap, preview, assembledAt: new Date().toISOString(),
+      clientName: ((rec?.inputs as any)?.inspection?.clientName as string | undefined)?.trim() || null };
   } catch (e) {
     if ((e as any)?.signedOut) return refuse(401, 'signed_out', 'Sign in to check this report.');
     return refuse(502, 'unavailable', 'The report check could not run. Try again.');
