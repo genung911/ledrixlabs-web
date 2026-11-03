@@ -4,6 +4,8 @@ export type ServerJobRows = {
   inspection: Row; anomalies: Row[]; technicalSpecs: Row[];
   values: { structure_id: string; node_key: string; kind: string; value: unknown; updated_by: string | null; updated_at: string; seq: number }[];
   template: Row | null; measurements: Row[]; photos?: Row[];
+  /** #104 inspection_documents rows; optional (none before #104 is applied). */
+  documents?: { doc_key: string; payload: unknown; updated_by?: string; updated_at?: string; seq: number | string }[];
   sealer: { id: string; email?: string | null; full_name?: string | null; company_name?: string | null; license_number?: string | null };
 };
 /** 10c: decide the release gates on the same assembly (the phone's releaseGates; phone-only probes left out). */
@@ -14,7 +16,7 @@ export type AssembleArgs = { rows: ServerJobRows; timeZone: string | null; compa
   publish?: { inspectorId: string; photoUrl: (uri: string) => string | undefined } };
 export type AssembledRecord = { inputs: Record<string, unknown>; refs: Record<string, unknown>; evidence: unknown[]; digest: string; canonical: string; gates?: ReleaseGate[]; hardGate?: boolean;
   seal?: { payload: unknown; canonical: string }; homeRecord?: Record<string, unknown> | null; findingPhotos?: string[] };
-export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details' | 'report extras' | 'home profile';
+export type LiveFamily = 'evidence index' | 'cover photos' | 'serial and model numbers' | 'limitations' | 'client details' | 'report extras' | 'home profile' | 'report-configuration documents';
 export type Assembler = {
   assembleServerRecord(a: AssembleArgs): Promise<AssembledRecord>;
   serverNow(rows: ServerJobRows): number;

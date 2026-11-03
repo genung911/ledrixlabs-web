@@ -79,13 +79,20 @@ export async function readJob(inspectionId: string, deps: Pick<SealCheckDeps, 's
     if (r.status === 401) throw Object.assign(new Error('signed_out'), { signedOut: true });
     return r.ok ? ((await r.json()) as any[]) : null;
   };
+  /** A table that may not exist yet (#104 inspection_documents before it is applied): missing (404) = no rows; any other
+   *  failure = null (unreadable — the job is not sealed on a partial read). */
+  const getIfThere = async (path: string): Promise<any[] | null> => {
+    const r = await f(`${base}/rest/v1/${path}`, { headers: H, cache: 'no-store' });
+    if (r.status === 401) throw Object.assign(new Error('signed_out'), { signedOut: true });
+    return r.ok ? ((await r.json()) as any[]) : r.status === 404 ? [] : null;
+  };
   const rpc = async (fn: string, args: Record<string, unknown>): Promise<unknown> => {
     const r = await f(`${base}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(args), cache: 'no-store' });
     return r.ok ? r.json() : null;
   };
   try {
     // 1 · the rows
-    const [insp, anomalies, specs, values, templates, measurements, photos, user] = await Promise.all([
+    const [insp, anomalies, specs, values, templates, measurements, photos, user, documents] = await Promise.all([
       get(`inspections?id=eq.${q}&select=*&limit=1`),
       get(`anomalies?inspection_id=eq.${q}&select=*`),
       get(`technical_specs?inspection_id=eq.${q}&select=*`),
@@ -94,11 +101,12 @@ export async function readJob(inspectionId: string, deps: Pick<SealCheckDeps, 's
       get(`measurements?inspection_id=eq.${q}&select=*`),
       get(`inspection_photos?inspection_id=eq.${q}&select=*`),
       f(`${base}/auth/v1/user`, { headers: H, cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null),
+      getIfThere(`inspection_documents?inspection_id=eq.${q}&select=doc_key,payload,updated_by,updated_at,seq`),
     ]);
     const inspection = insp?.[0];
     if (!insp) return refuse(502, 'unavailable', 'The inspection could not be loaded. Try again.');
     if (!inspection || inspection.deleted_at) return refuse(404, 'not_found', 'This inspection is not on the server.');
-    if (!anomalies || !specs || !values || !templates || !measurements || !photos) return refuse(502, 'unavailable', 'Part of this inspection could not be loaded. Try again.');
+    if (!anomalies || !specs || !values || !templates || !measurements || !photos || !documents) return refuse(502, 'unavailable', 'Part of this inspection could not be loaded. Try again.');
     const uid = (user as any)?.id as string | undefined;
     if (!uid) return refuse(401, 'signed_out', 'Sign in to check this report.');
     const prof = (await get(`inspector_profiles?id=eq.${encodeURIComponent(uid)}&select=full_name,company_name,license_number&limit=1`))?.[0] ?? {};
@@ -111,7 +119,7 @@ export async function readJob(inspectionId: string, deps: Pick<SealCheckDeps, 's
       rpc('job_team', { p_inspection: inspectionId }),
     ]);
     const rows: Assemble.ServerJobRows = {
-      inspection, anomalies, technicalSpecs: specs, values: values as any, template: templates[0] ?? null, measurements, photos,
+      inspection, anomalies, technicalSpecs: specs, values: values as any, template: templates[0] ?? null, measurements, photos, documents,
       sealer: { id: uid, email: (user as any)?.email ?? null, full_name: prof.full_name ?? null, company_name: prof.company_name ?? null, license_number: prof.license_number ?? null },
     };
     return {

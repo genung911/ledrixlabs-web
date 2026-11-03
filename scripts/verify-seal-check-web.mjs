@@ -60,7 +60,7 @@ const INSP = FIX.inspection.id;
 const BASE = 'https://proj.supabase.example';
 const TOKEN = 'user-jwt-123';
 const UID = FIX.sealer.id;
-function fakeServer({ conflicts = 0, conflictsFail = false, versions = [], reports = [], team = { people: [] } } = {}) {
+function fakeServer({ conflicts = 0, conflictsFail = false, versions = [], reports = [], team = { people: [] }, docs = 'missing' } = {}) {
   const calls = [];
   const fetch = async (url, init = {}) => {
     const u = new URL(url); const h = init.headers ?? {};
@@ -74,6 +74,8 @@ function fakeServer({ conflicts = 0, conflictsFail = false, versions = [], repor
     if (u.pathname === '/auth/v1/user') return json({ id: UID, email: FIX.sealer.email });
     if (u.pathname === '/rest/v1/inspection_conflicts') return conflictsFail ? json({ message: 'down' }, 500) : json(Array.from({ length: conflicts }, (_, i) => ({ id: `c${i}` })));
     if (u.pathname === '/rest/v1/rpc/job_phone_only') return json(reports);
+    // #104 inspection_documents: 'missing' = before it is applied (404), 'down' = a failed read, or the rows
+    if (u.pathname === '/rest/v1/inspection_documents') return docs === 'missing' ? json({ code: 'PGRST205', message: 'no table' }, 404) : docs === 'down' ? json({ message: 'down' }, 500) : json(docs);
     if (u.pathname === '/rest/v1/rpc/job_team') return json(team);
     if (u.pathname === '/storage/v1/object/sign/inspection-evidence') {
       const { paths } = JSON.parse(init.body);
@@ -115,6 +117,9 @@ async function suiteCheck(file = 'lib/seal/check.ts') {
     ok('§2 the preview renders from the assembled record, photos signed', r0.ok && r0.preview?.html?.length > 40000 && r0.preview.photos.shown > 0, JSON.stringify(r0.preview?.photos));
     const writes = s0.calls.filter(c => c.method !== 'GET' && !['/rest/v1/rpc/job_phone_only', '/rest/v1/rpc/job_team', '/storage/v1/object/sign/inspection-evidence'].includes(c.path));
     ok('§2 every request is the user\'s own and read-only', s0.calls.length > 8 && s0.calls.every(c => c.auth === `Bearer ${TOKEN}`) && writes.length === 0, JSON.stringify(writes));
+    const rd = await run(fakeServer({ docs: 'down', reports: [rep([], 'Kelly')] }));
+    const rdOk = await run(fakeServer({ docs: [{ doc_key: 'report_mapping', payload: { order: ['roofing'] }, updated_at: '2026-11-03T02:00:00.000Z', seq: 1 }], reports: [rep([], 'Kelly')] }));
+    ok('§2 #104\'s documents: before the table exists the check runs (none); a failed read refuses; rows are read', r0.ok && !rd.ok && rd.code === 'unavailable' && rdOk.ok, JSON.stringify([rd, rdOk.ok]).slice(0, 300));
     const so = await run(fakeServer(), '');
     const sb = await run(fakeServer(), 'someone-else');
     ok('§2 signed out (no token, or a token the server refuses) is refused', !so.ok && so.code === 'signed_out' && !sb.ok && sb.code === 'signed_out', JSON.stringify([so, sb]));
@@ -246,6 +251,7 @@ const MUT = [
   { f: 'lib/seal/decide.ts', why: 'unsent work does not lock', from: '    if (n > 0) locks.push(', to: '    if (false) locks.push(', suite: suiteDecide, expect: /^§1 unsent/ },
   { f: 'lib/seal/decide.ts', why: 'a soft gate locks', from: '      if (g.hard) locks.push(', to: '      if (true) locks.push(', suite: suiteDecide, expect: /^§1 nothing hard/ },
   { f: 'lib/seal/check.ts', why: 'conflicts not passed to the gates', from: 'gates: { isFinalized, openConflicts: conflicts }', to: 'gates: { isFinalized, openConflicts: 0 }', suite: suiteCheck, expect: /^§2 (two blocking|conflicts that could not)/ },
+  { f: 'lib/seal/check.ts', why: 'a failed read of the documents is taken as none', from: '|| !photos || !documents) return', to: '|| !photos) return', suite: suiteCheck, expect: /^§2 #104/ },
   { f: 'lib/seal/check.ts', why: 'a sealed job not treated as a re-seal', from: 'const isFinalized = lastVersion > 0;', to: 'const isFinalized = false;', suite: suiteCheck, expect: /^§2 a job sealed before/ },
 ];
 for (const m of MUT) {

@@ -174,3 +174,49 @@ export function answerNodeFor(node: TemplateNode, paired: TemplateNode | undefin
   if (material) return material;
   return componentAxes(node).method.length ? node : null;
 }
+
+// ── Whole-area limitations (owner, 2026-11-03: mockup approved) ──────────────────────────────────────────────────
+// "Crawlspace not entered" is one limitation about an AREA, and the items it covers FALL OFF: they leave every count
+// (owner: "They should fall off as they are not part of the count anymore"), the seal's owed facts and the report's
+// unanswered rows, and are listed under the limitation instead. "Inspect one anyway" brings a single item back.
+// Stored where a system's limitation already is (sop_limitations.systems / inspection_values 'system:<id>', #100):
+// the area's id is a template section (subsystem) id, or a system id for a whole-system area (Attic). `except` lists
+// the items brought back. Basement and Attic take the same limitation as Crawlspace (owner, same day).
+export const AREA_LIMITS: readonly { id: string; label: string }[] = [
+  { id: 'foundation__crawlspace', label: 'Crawlspace' },
+  { id: 'foundation__basement',   label: 'Basement' },
+  { id: 'attic',                  label: 'Attic' },
+];
+/** The reasons offered when limiting a whole area. "Other" (free text) lives at the call site. */
+export const AREA_LIMIT_REASONS: readonly string[] = ['Viewed from hatch', 'Partial entry', 'No access'];
+const areaBase = (id: string) => String(id).replace(/~i\d+$/, '');
+export const areaLimitOf = (nodeId: string): { id: string; label: string } | null =>
+  AREA_LIMITS.find(a => a.id === areaBase(nodeId)) ?? null;
+/** One area's limitation as either store holds it: only `except` matters to coverage. */
+export type AreaLimitLike = { except?: readonly unknown[] | null } | null | undefined;
+/** Every node an area limitation covers: the area node's whole subtree (its own id included) minus the items brought
+ *  back with "Inspect one anyway" (and their subtrees). `limits` is keyed by area id, as sop_limitations.systems is —
+ *  any other key in it (an ordinary system limitation) covers nothing here. Pure. */
+export function areaCoveredNodes(systems: readonly TemplateNode[] | null | undefined,
+  limits: Record<string, AreaLimitLike> | null | undefined): Set<string> {
+  const out = new Set<string>();
+  if (!limits) return out;
+  const add = (n: TemplateNode, except: Set<string>) => {
+    if (except.has(n.id)) return;
+    out.add(n.id);
+    for (const c of n.children ?? []) add(c, except);
+  };
+  const walk = (n: TemplateNode) => {
+    const area = areaLimitOf(n.id);
+    const lim = area ? (limits[n.id] ?? limits[area.id]) : undefined;
+    if (area && lim) {
+      const except = new Set((Array.isArray(lim.except) ? lim.except : []).map(String));
+      add(n, except);
+      // a brought-back item still sits under the area: its own rows are not covered
+      return;
+    }
+    for (const c of n.children ?? []) walk(c);
+  };
+  for (const s of systems ?? []) walk(s);
+  return out;
+}

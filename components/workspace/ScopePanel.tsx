@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Empty, Loading, formatWhen } from './ui';
 import type { EditLock } from './FindingEditor';
-import { buildScope, holderOf, sectionAccess, valueId, valueMapOf, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
+import { buildScope, holderOf, sectionAccess, valueId, valueMapOf, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
 import { loadTemplate, loadValues, putValue } from '@/lib/scope/api';
 import { CONDITION_OK, joinSpecPicks, limitationReasonOf, nextConditionValues } from '@/lib/scope/core/taxonomy/scopeRules';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
@@ -118,11 +118,13 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
           )}
           {lock.error && access === 'edit' && <Banner tone="bad">{lock.error}</Banner>}
           {note && <Banner tone={note.tone}>{note.text}</Banner>}
+          {current.limit && <AreaLimit limit={current.limit} />}
         </div>
 
         {current.tiles.map(tile => (
           <div key={tile.node.id}>
-            {current.tiles.length > 1 && <p className="px-4 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{tile.node.label}</p>}
+            {current.tiles.length > 1 && <p className="px-4 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{tile.node.label}{tile.limit ? ' · Limited' : ''}</p>}
+            {tile.limit && <div className="px-4 pb-2 pt-1"><AreaLimit limit={tile.limit} /></div>}
             <ul className="divide-y divide-hairline">
               {tile.rows.map(row => (
                 <li key={row.node.id} className="grid grid-cols-1 gap-2 px-4 py-3 text-sm md:grid-cols-[minmax(9rem,13rem)_minmax(0,1fr)_auto] md:gap-4">
@@ -181,6 +183,16 @@ function ConditionPicks({ row, editable, busy, onOk, limitOpen, onLimit, onReaso
         </span>
       )}
     </>
+  );
+}
+
+/** A whole-area limitation (Crawlspace, Basement, Attic — set on the phone, owner 2026-11-03): why, and the items it
+ *  covers, which are not on the checklist or in the count. */
+function AreaLimit({ limit }: { limit: AreaLimitView }) {
+  return (
+    <Banner tone="warn"><b>{limit.label} limited:</b> {limit.cause}
+      {limit.covered.length > 0 && <span className="mt-1 block text-xs text-body">{limit.covered.length} item{limit.covered.length === 1 ? '' : 's'} covered, not counted: {limit.covered.join(', ')}. Change it on the phone.</span>}
+    </Banner>
   );
 }
 

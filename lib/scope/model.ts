@@ -11,8 +11,8 @@
 import './core/taxonomy/specKeyDefs';   // registers the Ledrix definitions every spec key is decided from
 import { componentAxes, recordsNothing, specStoreKey, METHOD_KEY_ATTR, type ComponentAttribute } from './core/taxonomy/conditionMatch';
 import {
-  answerNodeFor, childrenOf, computePairsWith, factFieldsOf, fieldAnswered, limitReasonsFor, materialNodeFor, scopeRowsOf,
-  sectionsOfTemplate, specLabel, splitSpecValue, tileNodesOf, type SectionOf,
+  answerNodeFor, areaCoveredNodes, areaLimitOf, childrenOf, computePairsWith, factFieldsOf, fieldAnswered, limitReasonsFor,
+  materialNodeFor, scopeRowsOf, sectionsOfTemplate, specLabel, splitSpecValue, tileNodesOf, type SectionOf,
 } from './core/taxonomy/scopeRules';
 import { leafVerdict } from './core/taxonomy/leafProgress';
 import type { TemplateNode } from './core/templates/InspectionTemplate';
@@ -46,8 +46,25 @@ export type ScopeRow = {
   findings: number; photos: number;
   last: { by: string | null; at: string | null } | null;     // the newest change to this row's values
 };
-export type ScopeTile = { node: TemplateNode; rows: ScopeRow[] };
-export type ScopeSystem = { node: TemplateNode; section: string; kind: 'system' | 'room' | 'structure'; tiles: ScopeTile[]; done: number; total: number };
+/** A whole-area limitation (Crawlspace, Basement, Attic — owner 2026-11-03): its reason and the items it covers, which
+ *  fall off the rows and the count. Set on the phone; shown here. */
+export type AreaLimitView = { label: string; cause: string; covered: string[] };
+export type ScopeTile = { node: TemplateNode; rows: ScopeRow[]; limit?: AreaLimitView };
+export type ScopeSystem = { node: TemplateNode; section: string; kind: 'system' | 'room' | 'structure'; tiles: ScopeTile[]; done: number; total: number;
+  limit?: AreaLimitView };
+
+/** The area limitations among the server's rows (#100's 'system:<id>' limitation rows), keyed by area id. */
+export function areaLimitsOf(values: ValueMap): Record<string, { cause: string; except?: string[] }> {
+  const out: Record<string, { cause: string; except?: string[] }> = {};
+  for (const [k, r] of values) {
+    if (!k.startsWith('limitation|system:') || !r.value) continue;
+    const id = r.node_key.slice('system:'.length);
+    const v = r.value as { cause?: unknown; except?: unknown };
+    if (!areaLimitOf(id) || typeof v.cause !== 'string') continue;
+    out[id] = { cause: v.cause, ...(Array.isArray(v.except) ? { except: v.except.map(String) } : {}) };
+  }
+  return out;
+}
 
 const kindOf = (n: TemplateNode): 'system' | 'room' | 'structure' =>
   n.sectionType === 'room' || n.sectionType === 'structure' ? n.sectionType : String(n.id).startsWith('croom_') ? 'room' : 'system';
@@ -56,7 +73,17 @@ export function buildScope(template: { systems?: TemplateNode[] } | null, values
   counts: { findings: (nodeId: string) => number; photos: (nodeId: string) => number }): { systems: ScopeSystem[]; sectionOf: SectionOf } {
   const systems = template?.systems ?? [];
   const sectionOf = sectionsOfTemplate(systems);
-  const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n); };
+  // Covered by a whole-area limitation: falls off (owner 2026-11-03), as on the phone (scopeRules.areaCoveredNodes).
+  const areaLimits = areaLimitsOf(values);
+  const covered = areaCoveredNodes(systems, areaLimits);
+  const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id); };
+  const limitView = (n: TemplateNode, tiles: TemplateNode[]): AreaLimitView | undefined => {
+    const area = areaLimitOf(n.id); const e = area ? areaLimits[n.id] : undefined;
+    if (!area || !e) return undefined;
+    const labels: string[] = [];
+    for (const t of tiles) for (const r of scopeRowsOf(t, new Map(), () => true)) if (covered.has(r.id)) labels.push(r.label);
+    return { label: area.label, cause: e.cause, covered: labels };
+  };
 
   const fieldsOf = (row: TemplateNode, material: TemplateNode | null): SpecField[] => {
     const out: SpecField[] = [];
@@ -118,10 +145,12 @@ export function buildScope(template: { systems?: TemplateNode[] } | null, values
     const active = isActive(byId);
     const tiles = tileNodesOf(sys).map(t => {
       const pairMap = new Map<string, TemplateNode>();
-      return { node: t, rows: scopeRowsOf(t, pairMap, active).map(r => rowOf(r, pairMap)) };
-    }).filter(t => t.rows.length > 0);
+      const limit = limitView(t, [t]);
+      return { node: t, rows: scopeRowsOf(t, pairMap, active).map(r => rowOf(r, pairMap)), ...(limit ? { limit } : {}) };
+    }).filter(t => t.rows.length > 0 || t.limit);
     const p = tileNodesOf(sys).reduce((acc, t) => { const q = progress(t, active); return { done: acc.done + q.done, total: acc.total + q.total }; }, { done: 0, total: 0 });
-    out.push({ node: sys, section: sectionOf(sys.id) ?? sys.id, kind, tiles, ...p });
+    const limit = limitView(sys, tileNodesOf(sys));
+    out.push({ node: sys, section: sectionOf(sys.id) ?? sys.id, kind, tiles, ...p, ...(limit ? { limit } : {}) });
   }
   return { systems: out, sectionOf };
 }

@@ -2260,7 +2260,26 @@
         "concrete slab",
         "slab on grade",
         "cinder block",
-        "stone foundation"
+        "stone foundation",
+        "crack",
+        "hairline crack",
+        "step crack",
+        "horizontal crack",
+        "vertical crack",
+        "diagonal crack",
+        "settlement",
+        "movement",
+        "heaving",
+        "bowing",
+        "leaning",
+        "displacement",
+        "differential",
+        "efflorescence",
+        "moisture",
+        "water stain",
+        "damp",
+        "mineral deposit",
+        "seepage stain"
        ],
        "attributes": [
         {
@@ -2402,69 +2421,6 @@
      ]
     },
     {
-     "id": "foundation__walls_slab",
-     "label": "Walls / Slab",
-     "kind": "subsystem",
-     "children": [
-      {
-       "id": "found_cracks",
-       "label": "Cracks",
-       "kind": "component",
-       "keywords": [
-        "crack",
-        "hairline crack",
-        "step crack",
-        "horizontal crack",
-        "vertical crack",
-        "diagonal crack"
-       ],
-       "condition": true
-      },
-      {
-       "id": "found_movement",
-       "label": "Movement / Settlement",
-       "kind": "component",
-       "keywords": [
-        "settlement",
-        "movement",
-        "heaving",
-        "bowing",
-        "leaning",
-        "displacement",
-        "differential"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Determinable"
-       ]
-      },
-      {
-       "id": "found_moisture",
-       "label": "Moisture / Efflorescence",
-       "kind": "component",
-       "keywords": [
-        "efflorescence",
-        "moisture",
-        "water stain",
-        "damp",
-        "mineral deposit",
-        "seepage stain"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Visible"
-       ]
-      },
-      {
-       "id": "foundation_found_wall_setback",
-       "label": "Wall Setback",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      }
-     ]
-    },
-    {
      "id": "foundation__crawlspace",
      "label": "Crawlspace",
      "kind": "subsystem",
@@ -2479,7 +2435,13 @@
         "crawl hatch",
         "crawl door",
         "too tight",
-        "no access crawl"
+        "no access crawl",
+        "crawl moisture",
+        "standing water crawl",
+        "damp crawl",
+        "wet crawl",
+        "mold crawl",
+        "fungal"
        ],
        "condition": true,
        "limitations": [
@@ -2556,23 +2518,6 @@
        ]
       },
       {
-       "id": "found_cs_moisture",
-       "label": "Crawlspace Moisture",
-       "kind": "component",
-       "keywords": [
-        "crawl moisture",
-        "standing water crawl",
-        "damp crawl",
-        "wet crawl",
-        "mold crawl",
-        "fungal"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Visible"
-       ]
-      },
-      {
        "id": "found_cs_ins_type",
        "label": "Crawl Insulation — Type",
        "kind": "component",
@@ -2637,22 +2582,6 @@
      "kind": "subsystem",
      "children": [
       {
-       "id": "found_bsmt_moist",
-       "label": "Basement Moisture / Seepage",
-       "kind": "component",
-       "keywords": [
-        "basement moisture",
-        "seepage",
-        "wet basement",
-        "water stain basement",
-        "efflorescence basement"
-       ],
-       "condition": true,
-       "limitations": [
-        "Finished — Concealed"
-       ]
-      },
-      {
        "id": "found_bsmt_sump",
        "label": "Basement Sump Pump",
        "kind": "component",
@@ -2676,7 +2605,12 @@
         "basement floor",
         "slab crack basement",
         "parging",
-        "block wall basement"
+        "block wall basement",
+        "basement moisture",
+        "seepage",
+        "wet basement",
+        "water stain basement",
+        "efflorescence basement"
        ],
        "condition": true,
        "limitations": [

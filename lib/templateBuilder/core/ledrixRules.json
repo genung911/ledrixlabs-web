@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.1",
+ "packVersion": "2026.11.03.2",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -332,15 +332,6 @@
     ]
    }
   },
-  "found_cs_moisture": {
-   "dependsOnSpec": {
-    "nodeId": "found_type::type",
-    "includes": [
-     "crawlspace",
-     "pier & beam"
-    ]
-   }
-  },
   "found_cs_ins_type": {
    "dependsOnSpec": {
     "nodeId": "found_type::type",
@@ -365,14 +356,6 @@
     "includes": [
      "crawlspace",
      "pier & beam"
-    ]
-   }
-  },
-  "found_bsmt_moist": {
-   "dependsOnSpec": {
-    "nodeId": "found_type::type",
-    "includes": [
-     "basement"
     ]
    }
   },
