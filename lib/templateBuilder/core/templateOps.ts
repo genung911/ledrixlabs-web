@@ -450,7 +450,10 @@ const posOf = (w: Where) => positionHash(parentIdOf(w), w.pocket, w.index);
 const listHash = (list: readonly { id: string }[]) => hashOf(list.map(n => n.id));
 const placedHash = (node: unknown, w: Where) => hashOf({ node, at: posOf(w) });
 
-const collapse = (parent: N | null) => { if (parent && parent.kind === 'component' && parent.children && !parent.children.length) delete parent.children; };
+// A LINK takes its kind from its record (a section linked elsewhere is kind 'subsystem'), so an item added under it and
+// undone left `children: []` behind and the link's own undo then refused as "changed" (verify:template-ops property test,
+// surfaced 2026-11-03 by a new random path after round 2's pack edit). A link collapses like a component.
+const collapse = (parent: N | null) => { if (parent && (parent.kind === 'component' || parent.pointsTo) && parent.children && !parent.children.length) delete parent.children; };
 
 /** Apply ONE op. Never mutates `tpl`. The inverse, applied to the result, restores a template with the same hash. */
 export function applyOp(tpl: InspectionTemplate, op: TemplateOp): ApplyResult {

@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.5",
+ "packVersion": "2026.11.03.6",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -416,6 +416,104 @@
     }
    ]
   },
+  "plumb_sup_copper": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "Copper"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_pex": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "PEX"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_cpvc": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "CPVC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_galv": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "Galvanized Steel",
+      "Galvanized"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_pvc": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "PVC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_pb": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [
+      "Polybutylene"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_sup_other": {
+   "requires": [
+    {
+     "specNodeId": "plumb_supply",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Copper",
+      "PEX",
+      "CPVC",
+      "Galvanized Steel",
+      "PVC",
+      "Polybutylene"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
   "plumb_flow": {
    "requires": [
     {
@@ -427,6 +525,118 @@
    "requires": [
     {
      "utility": "water"
+    }
+   ]
+  },
+  "plumb_dwv_pvc": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "PVC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_abs": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "ABS"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_castiron": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "Cast Iron"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_galv": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "Galvanized"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_copper": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "Copper DWV",
+      "Copper"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_orangeburg": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "Orangeburg"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_clay": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [
+      "Clay"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "plumb_dwv_other": {
+   "requires": [
+    {
+     "specNodeId": "plumb_drain",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "PVC",
+      "ABS",
+      "Cast Iron",
+      "Galvanized",
+      "Copper DWV",
+      "Orangeburg",
+      "Clay"
+     ],
+     "attr": "spec"
     }
    ]
   },

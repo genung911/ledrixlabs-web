@@ -61,7 +61,9 @@ export type Utility = 'water' | 'gas' | 'power';
  *  (templates/templateRules.ts). `exact` matches whole entries of the stored value instead of fragments — the
  *  authored values are the field's own choices, and "gas" must not match "Natural Gas" by accident (2026-10-17
  *  decision 1). `origin: 'template'` tells typeConditions this is not a Ledrix per-type card. Absent = unchanged. */
-export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; unlisted?: readonly string[]; exact?: true; origin?: 'template' };
+/** `attr` (2026-11-03, round 2): the field id, for a per-type card whose host keeps its field at the BARE id
+ *  (`plumb_supply`) — read only by typeConditions' card link; the resolver ignores it. */
+export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string };
 export type UtilityPredicate = { utility: Utility };
 export type Predicate = SpecPredicate | UtilityPredicate;
 

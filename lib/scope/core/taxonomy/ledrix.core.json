@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.5",
+  "packVersion": "2026.11.03.6",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -1509,11 +1509,206 @@
                 "PEX",
                 "CPVC",
                 "Galvanized Steel",
-                "PVC"
+                "PVC",
+                "Polybutylene"
               ]
             }
           ],
-          "condition": true
+          "condition": false
+        },
+        {
+          "id": "plumb_sup_copper",
+          "label": "Copper Supply Piping",
+          "keywords": [
+            "copper supply",
+            "copper pipe",
+            "pinhole leak",
+            "green corrosion",
+            "copper piping"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "Copper"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_pex",
+          "label": "PEX Supply Piping",
+          "keywords": [
+            "pex",
+            "pex piping",
+            "pex fitting",
+            "crimp ring",
+            "pex supply"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "PEX"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_cpvc",
+          "label": "CPVC Supply Piping",
+          "keywords": [
+            "cpvc",
+            "cpvc piping",
+            "brittle cpvc",
+            "cpvc supply"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "CPVC"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_galv",
+          "label": "Galvanized Supply Piping",
+          "keywords": [
+            "galvanized supply",
+            "galvanized pipe",
+            "galvanized piping",
+            "restricted flow",
+            "rusty water"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "Galvanized Steel",
+                "Galvanized"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_pvc",
+          "label": "PVC Supply Piping",
+          "keywords": [
+            "pvc supply",
+            "pvc water line",
+            "pvc main"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "PVC"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_pb",
+          "label": "Polybutylene Supply Piping",
+          "keywords": [
+            "polybutylene",
+            "poly b",
+            "gray poly pipe",
+            "quest pipe",
+            "pb pipe"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [
+                "Polybutylene"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_sup_other",
+          "label": "Other Supply Piping",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_supply",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "Copper",
+                "PEX",
+                "CPVC",
+                "Galvanized Steel",
+                "PVC",
+                "Polybutylene"
+              ],
+              "attr": "spec"
+            }
+          ]
         },
         {
           "id": "plumb_main",
@@ -1613,11 +1808,228 @@
                 "PVC",
                 "ABS",
                 "Cast Iron",
-                "Galvanized"
+                "Galvanized",
+                "Copper DWV",
+                "Orangeburg",
+                "Clay"
               ]
             }
           ],
-          "condition": true
+          "condition": false
+        },
+        {
+          "id": "plumb_dwv_pvc",
+          "label": "PVC Drain Piping",
+          "keywords": [
+            "pvc drain",
+            "white drain pipe",
+            "pvc dwv"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "PVC"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_abs",
+          "label": "ABS Drain Piping",
+          "keywords": [
+            "abs",
+            "black drain pipe",
+            "abs dwv"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "ABS"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_castiron",
+          "label": "Cast Iron Drain Piping",
+          "keywords": [
+            "cast iron",
+            "cast iron drain",
+            "cast iron stack",
+            "scaling",
+            "cracked cast iron"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "Cast Iron"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_galv",
+          "label": "Galvanized Drain Piping",
+          "keywords": [
+            "galvanized drain",
+            "galvanized waste"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "Galvanized"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_copper",
+          "label": "Copper Drain Piping",
+          "keywords": [
+            "copper drain",
+            "copper dwv"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "Copper DWV",
+                "Copper"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_orangeburg",
+          "label": "Orangeburg Drain Piping",
+          "keywords": [
+            "orangeburg",
+            "fiber pipe",
+            "tar paper pipe",
+            "bituminous fiber"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "Orangeburg"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_clay",
+          "label": "Clay Drain Piping",
+          "keywords": [
+            "clay drain",
+            "clay tile pipe",
+            "vitrified clay",
+            "sewer clay"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [
+                "Clay"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "plumb_dwv_other",
+          "label": "Other Drain Piping",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_drain",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "PVC",
+                "ABS",
+                "Cast Iron",
+                "Galvanized",
+                "Copper DWV",
+                "Orangeburg",
+                "Clay"
+              ],
+              "attr": "spec"
+            }
+          ]
         },
         {
           "id": "plumb_vent",
@@ -2127,6 +2539,13 @@
           "name": "Supply",
           "nodeIds": [
             "plumb_supply",
+            "plumb_sup_copper",
+            "plumb_sup_pex",
+            "plumb_sup_cpvc",
+            "plumb_sup_galv",
+            "plumb_sup_pvc",
+            "plumb_sup_pb",
+            "plumb_sup_other",
             "plumb_main",
             "plumb_flow",
             "plumb_pressure"
@@ -2137,6 +2556,14 @@
           "name": "Drain · Waste · Vent",
           "nodeIds": [
             "plumb_drain",
+            "plumb_dwv_pvc",
+            "plumb_dwv_abs",
+            "plumb_dwv_castiron",
+            "plumb_dwv_galv",
+            "plumb_dwv_copper",
+            "plumb_dwv_orangeburg",
+            "plumb_dwv_clay",
+            "plumb_dwv_other",
             "plumb_vent",
             "plumb_drainage",
             "plumb_cleanout",
