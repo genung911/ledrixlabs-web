@@ -222,3 +222,16 @@ export function otherBuildingsOf(template: { buildings?: unknown } | null, rows:
     .map(b => ({ id: String(b.id), name: String(b.name), systems: Array.isArray(b.systems) ? b.systems.map(String) : [],
       answered: rows.filter(r => r.structure_id === b.id && r.value != null).length }));
 }
+
+/** Where a Seal & send item opens (owner 2026-11-04: "click on those and go straight to the section to fix"): the system
+ *  whose list holds the item's row — the exact id, else the same item without its unit suffix (`~i2`) — and that row.
+ *  An item that is not a row here (trimmed, or only on the phone) opens its system with no row; unknown → null. */
+export function locateItem(view: { systems: ScopeSystem[] }, nodeId: string): { systemId: string; rowId: string | null } | null {
+  const base = nodeId.split('~i')[0];
+  for (const want of [nodeId, base]) {
+    for (const s of view.systems) for (const t of s.tiles) for (const r of t.rows) if (r.node.id === want) return { systemId: s.node.id, rowId: r.node.id };
+  }
+  const holds = (n: TemplateNode): boolean => n.id === nodeId || n.id === base || (n.children ?? []).some(holds);
+  const sys = view.systems.find(s => holds(s.node));
+  return sys ? { systemId: sys.node.id, rowId: null } : null;
+}

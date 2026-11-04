@@ -40,6 +40,15 @@ async function suiteDecide(file = 'lib/seal/decide.ts') {
   ok('§1 nothing hard, every phone clear → sealable; a soft gate is a note', clear.sealable && clear.locks.length === 0 && clear.notes.length === 1 && clear.phoneOnly.state === 'clear', JSON.stringify(clear));
   const h = D.decideSeal({ gates: [hard, soft], reports: [rep([])], team: [], labels: LABELS });
   ok('§1 a hard gate locks, with its detail', !h.sealable && h.locks.some(l => l.key === 'gate:facts' && /Location/.test(l.detail)), JSON.stringify(h.locks));
+  // 2026-11-04 (owner: "click on those and go straight to the section to fix"): the phone's per-item list comes through,
+  // each item carrying the Scope item it opens; an item the phone gave no link keeps its words and opens nothing.
+  const listed = { ...hard, title: '2 components missing required facts', items: [
+    { label: 'Heating System — Age', sub: 'Heating', fix: { label: 'Edit', route: { pathname: '/ScopeScreen', params: { inspectionId: 'i', nodeId: 'hvac_heating' } } } },
+    { label: 'Mystery — Size' }] };
+  const li = D.decideSeal({ gates: [listed], reports: [rep([])], team: [], labels: LABELS }).locks.find(l => l.key === 'gate:facts');
+  ok('§1 a gate\'s items reach the lock, each with the Scope item it opens', li?.items?.length === 2 && li.items[0].nodeId === 'hvac_heating' && li.items[0].label === 'Heating System — Age' && li.items[0].sub === 'Heating', JSON.stringify(li));
+  ok('§1 an item with no link keeps its words and opens nothing', li?.items?.[1]?.label === 'Mystery — Size' && !('nodeId' in (li?.items?.[1] ?? {})), JSON.stringify(li?.items?.[1]));
+  ok('§1 a gate with no items has none on its lock (the detail text is shown)', !('items' in (h.locks.find(l => l.key === 'gate:facts') ?? {})));
   const un = D.decideSeal({ gates: [], reports: [], team: [], labels: LABELS });
   ok('§1 a job no phone has reported on locks (the website cannot know what a phone holds)', !un.sealable && un.phoneOnly.state === 'unreported' && un.locks.some(l => l.key === 'phone-only'), JSON.stringify(un));
   const parts = D.decideSeal({ gates: [], reports: [rep(['coverImageUris', 'extras']), rep([], 'Kelly')], team: [], labels: LABELS });
@@ -104,6 +113,9 @@ async function suiteCheck(file = 'lib/seal/check.ts') {
       r0.ok && JSON.stringify(lockKeys(r0)) === JSON.stringify(want0.filter(g => g.hard).map(g => `gate:${g.key}`).sort())
       && JSON.stringify(r0.notes.map(g => g.key)) === JSON.stringify(want0.filter(g => !g.hard).map(g => g.key)), JSON.stringify([r0.locks, r0.notes, want0]));
     ok('§2 …the fixture owes required facts, so it is locked, and says which', r0.ok && !r0.sealable && r0.locks.some(l => l.key === 'gate:facts' && /—/.test(l.detail)));
+    const factsLock = r0.ok ? r0.locks.find(l => l.key === 'gate:facts') : null;
+    ok('§2 …and every one of those facts opens its own Scope item (the phone\'s own nodeId, through the real gates)',
+      !!factsLock?.items?.length && factsLock.items.every(it => typeof it.nodeId === 'string' && it.nodeId.length > 0 && /—/.test(it.label)), JSON.stringify(factsLock?.items));
     const r2 = await run(fakeServer({ conflicts: 2, reports: [rep([], 'Kelly')] }));
     ok('§2 two blocking conflicts lock it', r2.ok && r2.conflicts === 2 && r2.locks.some(l => /conflict/.test(l.key)), JSON.stringify(r2.locks?.map(l => l.key)));
     const rf = await run(fakeServer({ conflictsFail: true, reports: [rep([], 'Kelly')] }));
@@ -141,7 +153,10 @@ function suiteStatic() {
   ok('§3 the panel seals only through the route, after the attestation is ticked (never pre-ticked)', /disabled=\{!confirm\.attest \|\| confirm\.busy\}/.test(panel) && /attest: false/.test(panel) && !/record_report_version|report_seals|\.rpc\(/.test(panel));
   ok('§3 the seal route takes the bearer token; the seal holds no service key', /Bearer\\s\+\(\\S\+\)/.test(sroute) && !/SERVICE_ROLE|service_role/i.test(sroute + seal));
   ok('§3 the PDF goes through /api/render-pdf with the user\'s own session (its budget applies)', /\/api\/render-pdf/.test(seal) && /Authorization: H\.Authorization/.test(seal));
-  ok('§3 the page has the Seal & send section', /id: 'seal', label: 'Seal & send'/.test(page) && /<SealPanel inspectionId=\{id\} lock=\{lock\} \/>/.test(page));
+  ok('§3 the page has the Seal & send section', /id: 'seal', label: 'Seal & send'/.test(page) && /<SealPanel inspectionId=\{id\} lock=\{lock\} onOpenItem=/.test(page));
+  // 2026-11-04: an item opens Scope at that item, and Scope can take you back
+  ok('§3 a Seal & send item opens Scope at that item, with a way back', /onOpenItem=\{nodeId => \{ setScopeFocus\(\{ nodeId, n: Date\.now\(\) \}\); setSection\('scope'\)/.test(page)
+    && /focus=\{scopeFocus\} onBackToSeal=/.test(page));
   return out;
 }
 
@@ -249,7 +264,9 @@ const MUT = [
   { f: 'lib/seal/seal.ts', why: 'the same record seals twice', from: "  const reSealed = parent === hash;", to: "  const reSealed = false;", suite: suiteSeal, expect: /^§5 sealing the same record again/ },
   { f: 'lib/seal/decide.ts', why: 'an unreported job is not locked', from: "  if (state === 'unreported') {", to: "  if (false) {", suite: suiteDecide, expect: /^§1 a job no phone/ },
   { f: 'lib/seal/decide.ts', why: 'unsent work does not lock', from: '    if (n > 0) locks.push(', to: '    if (false) locks.push(', suite: suiteDecide, expect: /^§1 unsent/ },
-  { f: 'lib/seal/decide.ts', why: 'a soft gate locks', from: '      if (g.hard) locks.push(', to: '      if (true) locks.push(', suite: suiteDecide, expect: /^§1 nothing hard/ },
+  { f: 'lib/seal/decide.ts', why: 'a soft gate locks', from: '      if (g.hard) { const items', to: '      if (true) { const items', suite: suiteDecide, expect: /^§1 nothing hard/ },
+  { f: 'lib/seal/decide.ts', why: 'the items are dropped (owner 2026-11-04)', from: "...(items ? { items } : {}) });", to: "});", suite: suiteDecide, expect: /^§1 a gate's items reach/ },
+  { f: 'lib/seal/decide.ts', why: 'an item loses the Scope item it opens', from: "...(typeof nodeId === 'string' && nodeId ? { nodeId } : {})", to: "", suite: suiteDecide, expect: /^§1 a gate's items reach/ },
   { f: 'lib/seal/check.ts', why: 'conflicts not passed to the gates', from: 'gates: { isFinalized, openConflicts: conflicts }', to: 'gates: { isFinalized, openConflicts: 0 }', suite: suiteCheck, expect: /^§2 (two blocking|conflicts that could not)/ },
   { f: 'lib/seal/check.ts', why: 'a failed read of the documents is taken as none', from: '|| !photos || !documents) return', to: '|| !photos) return', suite: suiteCheck, expect: /^§2 #104/ },
   { f: 'lib/seal/check.ts', why: 'a sealed job not treated as a re-seal', from: 'const isFinalized = lastVersion > 0;', to: 'const isFinalized = false;', suite: suiteCheck, expect: /^§2 a job sealed before/ },

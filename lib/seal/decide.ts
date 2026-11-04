@@ -9,11 +9,25 @@
 //     the server does not have yet
 // 10d adds the seal itself; this only says whether it would be allowed and why not.
 
-export type Gate = { key: string; hard: boolean; title: string; detail?: string };
+export type Gate = { key: string; hard: boolean; title: string; detail?: string;
+  /** The phone's per-item list (releaseGates `items`): one row per thing to fix, with the Scope item it opens. */
+  items?: { label: string; sub?: string; fix?: { route?: { params?: Record<string, string> } } }[] };
 export type PhoneReport = { user_id: string; name: string | null; device: string; parts: string[]; reported_at: string };
 export type TeamPerson = { user_id: string; name: string | null; unsent?: number; reported_at?: string | null };
 
-export type Lock = { key: string; title: string; detail: string };
+/** `items` (owner 2026-11-04, testing a seal: "For the required facts, we should be able to click on those and go straight
+ *  to the section to fix"): each row of a gate that has them, with the Scope item (`nodeId`) it opens, when it has one. */
+export type LockItem = { label: string; sub?: string; nodeId?: string };
+export type Lock = { key: string; title: string; detail: string; items?: LockItem[] };
+
+/** A gate's rows as the website shows them: the phone's `fix.route.params.nodeId` becomes the item to open. */
+export function lockItemsOf(g: Gate): LockItem[] | undefined {
+  if (!Array.isArray(g.items) || !g.items.length) return undefined;
+  return g.items.map(it => {
+    const nodeId = it.fix?.route?.params?.nodeId;
+    return { label: String(it.label ?? ''), ...(it.sub ? { sub: String(it.sub) } : {}), ...(typeof nodeId === 'string' && nodeId ? { nodeId } : {}) };
+  });
+}
 export type SealDecision = {
   /** Hard gates and the website's own locks; empty = the seal would be allowed (10d). */
   locks: Lock[];
@@ -40,7 +54,7 @@ export function decideSeal(i: {
     locks.push({ key: 'gates', title: 'The report checks could not run', detail: 'Reload to try again. Nothing is sealed while they cannot be checked.' });
   } else {
     for (const g of i.gates) {
-      if (g.hard) locks.push({ key: `gate:${g.key}`, title: g.title, detail: g.detail ?? '' });
+      if (g.hard) { const items = lockItemsOf(g); locks.push({ key: `gate:${g.key}`, title: g.title, detail: g.detail ?? '', ...(items ? { items } : {}) }); }
       else notes.push(g);
     }
   }

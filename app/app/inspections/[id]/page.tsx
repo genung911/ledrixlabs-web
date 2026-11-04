@@ -47,6 +47,8 @@ export default function InspectionPage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [section, setSection] = useState<Section>('review');
   const [selected, setSelected] = useState<string | null>(null);
+  // Seal & send → Scope at one item (owner 2026-11-04). `n` makes a second click on the same item scroll to it again.
+  const [scopeFocus, setScopeFocus] = useState<{ nodeId: string; n: number } | null>(null);
 
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
@@ -210,7 +212,7 @@ export default function InspectionPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
           {rail.filter(r => r.show).map(r => (
-            <button key={r.id} onClick={() => { setSection(r.id); setSelected(null); }} aria-current={activeSection === r.id ? 'true' : undefined}
+            <button key={r.id} onClick={() => { setSection(r.id); setSelected(null); setScopeFocus(null); }} aria-current={activeSection === r.id ? 'true' : undefined}
               className={`flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${activeSection === r.id ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
               {r.label}{typeof r.count === 'number' && <span className="font-mono text-xs">{r.count}</span>}
             </button>
@@ -242,7 +244,8 @@ export default function InspectionPage() {
 
         {activeSection === 'scope' && (
           <ScopePanel inspectionId={id} team={team} names={names} lock={lock} counts={scopeCounts}
-            onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }} />
+            onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }}
+            focus={scopeFocus} onBackToSeal={scopeFocus ? () => { setScopeFocus(null); setSection('seal'); } : undefined} />
         )}
 
         {activeSection === 'photos' && <PhotosPanel photos={photos} labels={labels} />}
@@ -269,7 +272,7 @@ export default function InspectionPage() {
           </Card>
         )}
 
-        {activeSection === 'seal' && <SealPanel inspectionId={id} lock={lock} />}
+        {activeSection === 'seal' && <SealPanel inspectionId={id} lock={lock} onOpenItem={nodeId => { setScopeFocus({ nodeId, n: Date.now() }); setSection('scope'); setSelected(null); }} />}
 
         {activeSection === 'reports' && <ReportsPanel reports={reports} seals={seals} portal={portal} phase={phase} />}
       </div>

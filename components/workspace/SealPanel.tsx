@@ -21,7 +21,9 @@ type Sealed = { version: number; digest: string; shareUrl: string; warnings: str
 type Confirm = { open: boolean; attest: boolean; busy: boolean; error: string | null };
 const authHeader = async () => ({ Authorization: `Bearer ${(await workspace.auth.getSession()).data.session?.access_token ?? ''}` });
 
-export function SealPanel({ inspectionId, lock }: { inspectionId: string; lock: EditLock }) {
+export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: string; lock: EditLock;
+  /** Opens Scope at this item (owner 2026-11-04: "click on those and go straight to the section to fix"). */
+  onOpenItem?: (nodeId: string) => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [confirm, setConfirm] = useState<Confirm>({ open: false, attest: false, busy: false, error: null });
   const [sealed, setSealed] = useState<Sealed | null>(null);
@@ -89,7 +91,21 @@ export function SealPanel({ inspectionId, lock }: { inspectionId: string; lock: 
               <LockIcon />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink">{l.title}</p>
-                {l.detail && <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-body">{l.detail}</p>}
+                {l.items?.length ? (
+                  <ul className="-mx-2 mt-1">
+                    {l.items.map((it, i) => (
+                      <li key={`${it.nodeId ?? ''}:${i}`}>
+                        {it.nodeId && onOpenItem ? (
+                          <button type="button" onClick={() => onOpenItem(it.nodeId!)}
+                            className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1 text-left text-sm leading-relaxed text-body hover:bg-ink/5 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                            <span>{it.label}</span>
+                            <span aria-hidden className="shrink-0 text-xs font-semibold text-accent-ink opacity-70 group-hover:opacity-100">Fix ›</span>
+                          </button>
+                        ) : <p className="px-2 py-1 text-sm leading-relaxed text-body">{it.label}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : l.detail && <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-body">{l.detail}</p>}
               </div>
             </li>
           ))}

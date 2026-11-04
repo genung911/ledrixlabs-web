@@ -9,15 +9,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Empty, Loading, formatWhen } from './ui';
 import type { EditLock } from './FindingEditor';
 import { gateOfRow, gateRowAction, gateStoreKey } from '@/lib/scope/core/taxonomy/gates';
-import { buildScope, gatesOfTemplate, otherBuildingsOf, type OtherBuilding, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
+import { buildScope, gatesOfTemplate, locateItem, otherBuildingsOf, type OtherBuilding, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
 import { loadTemplate, loadUtilities, loadValues, putValue } from '@/lib/scope/api';
 import { CONDITION_OK, joinSpecPicks, limitationReasonOf, nextConditionValues } from '@/lib/scope/core/taxonomy/scopeRules';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
 
 type Counts = { findings: Record<string, number>; photos: Record<string, number> };
-type Props = { inspectionId: string; team: TeamLike; names: Record<string, string>; lock: EditLock; counts: Counts; onOpenFindings: () => void; onOpenPhotos: () => void };
+type Props = { inspectionId: string; team: TeamLike; names: Record<string, string>; lock: EditLock; counts: Counts; onOpenFindings: () => void; onOpenPhotos: () => void;
+  /** Opened from a Seal & send item (owner 2026-11-04): open its system, scroll to its row, mark it. */
+  focus?: { nodeId: string; n: number } | null; onBackToSeal?: () => void };
 
-export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos }: Props) {
+export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos, focus, onBackToSeal }: Props) {
   const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities; others: OtherBuilding[] }>({ kind: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
@@ -35,6 +37,21 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
   const view = useMemo(() => state.kind === 'ready'
     ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 }, state.utilities)
     : null, [state, counts]);
+
+  // A Seal & send item: open its system once the checklist is loaded, then bring its row into view and mark it.
+  const [marked, setMarked] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    if (!focus || !view) return;
+    const at = locateItem(view, focus.nodeId);
+    setMissing(!at?.rowId);
+    if (!at) return;
+    setOpen(at.systemId); setNote(null); setLimitFor(null); setMarked(at.rowId);
+    if (!at.rowId) return;
+    const t = setTimeout(() => document.getElementById(`scope-row-${at.rowId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.n, !!view]);
 
   if (state.kind === 'loading') return <Card className="xl:col-span-2"><Loading label="Loading the checklist…" /></Card>;
   if (state.kind === 'error') return <Card className="xl:col-span-2"><Empty>{state.message}</Empty></Card>;
@@ -150,6 +167,10 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
                 className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent/90 disabled:opacity-50">{busy === 'move' ? 'Moving…' : 'Edit here instead'}</button></div></Banner>
           )}
           {lock.error && access === 'edit' && <Banner tone="bad">{lock.error}</Banner>}
+          {focus && onBackToSeal && (
+            <Banner tone="info">{missing ? <><b>That item isn’t on this list here.</b> It may be set on the phone.</> : <>Fix the highlighted item, then go back to seal.</>}
+              <button type="button" onClick={onBackToSeal} className="ml-2 text-xs font-semibold text-accent-ink hover:underline">‹ Back to Seal &amp; send</button></Banner>
+          )}
           {note && <Banner tone={note.tone}>{note.text}</Banner>}
           {current.limit && <AreaLimit limit={current.limit} />}
           {(current.gates ?? []).map((g, i) => <Banner key={i} tone={g.tone === 'info' ? 'info' : 'warn'}><b>{g.head}</b> <span className="mt-1 block text-xs text-body">{g.text}</span></Banner>)}
@@ -161,7 +182,8 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
             {tile.limit && <div className="px-4 pb-2 pt-1"><AreaLimit limit={tile.limit} /></div>}
             <ul className="divide-y divide-hairline">
               {tile.rows.map(row => (
-                <li key={row.node.id} className="grid grid-cols-1 gap-2 px-4 py-3 text-sm md:grid-cols-[minmax(9rem,13rem)_minmax(0,1fr)_auto] md:gap-4">
+                <li key={row.node.id} id={`scope-row-${row.node.id}`}
+                  className={`grid scroll-mt-24 grid-cols-1 gap-2 px-4 py-3 text-sm md:grid-cols-[minmax(9rem,13rem)_minmax(0,1fr)_auto] md:gap-4 ${marked === row.node.id ? 'bg-accent/10 ring-2 ring-inset ring-accent' : ''}`}>
                   <div className="font-semibold text-ink">{row.node.label}
                     {!row.condition && row.specs.length > 0 && <span className="block text-[11px] font-normal text-muted">Spec · pick any that apply</span>}
                   </div>

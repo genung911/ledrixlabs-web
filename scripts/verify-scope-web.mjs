@@ -112,6 +112,21 @@ ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 
   ok('§5 the Scope panel shows them read-only', /others: otherBuildingsOf\(template/.test(panel) && /aria-label="Other buildings"/.test(panel) && /edited on the phone/.test(panel));
 }
 
+// §6 (2026-11-04, owner testing a seal: "click on those and go straight to the section to fix"): a Seal & send item
+// opens Scope at its row — exact id, else the same item without its unit suffix; an item that is no row here opens its
+// system; an unknown id opens nothing. The panel scrolls to and marks that row, with a way back.
+{
+  const at = (id) => JSON.stringify(M.locateItem(view, id));
+  ok('§6 an item opens its system at its row (AC System Type → Cooling)', at('hvac_cooling') === '{"systemId":"cooling","rowId":"hvac_cooling"}', at('hvac_cooling'));
+  ok('§6 a second unit opens the same row (hvac_cooling~i2)', at('hvac_cooling~i2') === '{"systemId":"cooling","rowId":"hvac_cooling"}', at('hvac_cooling~i2'));
+  ok('§6 an item that is no row here opens its system without a row (a window unit’s Condenser)', at('hvac_condenser') === '{"systemId":"cooling","rowId":null}', at('hvac_condenser'));
+  ok('§6 an unknown item opens nothing', M.locateItem(view, 'no_such_item') === null);
+  const panel = read('components/workspace/ScopePanel.tsx');
+  ok('§6 the panel opens that system, scrolls to the row and marks it, with a way back to Seal & send',
+    /const at = locateItem\(view, focus\.nodeId\)/.test(panel) && /setOpen\(at\.systemId\)/.test(panel) && /id=\{`scope-row-\$\{row\.node\.id\}`\}/.test(panel)
+    && /getElementById\(`scope-row-\$\{at\.rowId\}`\)\?\.scrollIntoView/.test(panel) && /marked === row\.node\.id \?/.test(panel) && /onClick=\{onBackToSeal\}/.test(panel));
+}
+
 let pass = 0, fail = 0;
 if (process.env.SCOPE_MUTANT) { console.log(JSON.stringify(out.filter(r => !r.pass).map(r => r.name))); process.exit(0); }
 for (const r of out) { if (r.pass) { pass++; console.log(`  ✓ ${r.name}`); } else { fail++; console.log(`  ✗ ${r.name}${r.detail ? `\n      ${r.detail}` : ''}`); } }
@@ -121,6 +136,9 @@ const { mkdtempSync, cpSync, writeFileSync } = await import('node:fs');
 const { tmpdir } = await import('node:os');
 // Amended 2026-11-03: the pointer-row anchor carries the area-limit clause (`&& !covered.has(id)`, pack 2026.11.03.2).
 const MUTANTS = [
+  { f: 'lib/scope/model.ts', why: 'a second unit opens nothing (2026-11-04)', from: 'for (const want of [nodeId, base])', to: 'for (const want of [nodeId])', expect: /^§6 a second unit/ },
+  { f: 'lib/scope/model.ts', why: 'an item that is no row opens nothing (2026-11-04)', from: 'return sys ? { systemId: sys.node.id, rowId: null } : null;', to: 'return null;', expect: /^§6 an item that is no row/ },
+  { f: 'components/workspace/ScopePanel.tsx', why: 'the row is not marked (2026-11-04)', from: "${marked === row.node.id ? 'bg-accent/10 ring-2 ring-inset ring-accent' : ''}", to: '', expect: /^§6 the panel opens/ },
   { f: 'lib/scope/model.ts', why: 'the main house listed as another building (2026-11-03)', from: "b.id !== 'main' && typeof b.name", to: "typeof b.name", expect: /^§5 the snapshot’s other buildings/ },
   { f: 'lib/scope/model.ts', why: 'empty answers counted (2026-11-03)', from: 'r.structure_id === b.id && r.value != null', to: 'r.structure_id === b.id', expect: /^§5 the snapshot’s other buildings/ },
   { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', to: 'return !!n && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', expect: /^§2 a pointer row/ },
