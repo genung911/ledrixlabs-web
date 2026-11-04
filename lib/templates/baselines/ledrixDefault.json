@@ -27,16 +27,21 @@
                 "hvac age",
                 "unit age",
                 "manufactured",
-                "install year"
+                "install year",
+                "electric furnace",
+                "baseboard heat",
+                "wall heater"
               ],
               "trimmed": [],
               "attributes": [
                 {
                   "id": "fuel_source",
-                  "label": "Fuel Source",
+                  "label": "Heating System Type",
                   "values": [
                     "Gas Furnace",
-                    "Electric Heat",
+                    "Electric Furnace",
+                    "Electric Baseboard",
+                    "Electric Wall Heater",
                     "Heat Pump",
                     "Propane",
                     "Oil Furnace",
@@ -454,6 +459,23 @@
                 "cadet heater",
                 "electric wall heater",
                 "fan forced heater"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "hvac_elec_furnace_elements",
+              "label": "Heating Elements / Sequencers",
+              "kind": "component",
+              "keywords": [
+                "electric furnace",
+                "heat strips",
+                "heating elements",
+                "sequencer",
+                "electric furnace element"
               ],
               "trimmed": [],
               "condition": true,
@@ -2599,11 +2621,31 @@
               "label": "Sub-Panel",
               "kind": "component",
               "keywords": [
+                "sub panel",
+                "subpanel",
+                "sub-panel",
+                "secondary panel",
                 "garage subpanel",
                 "sub panel garage",
-                "garage panel"
+                "garage panel",
+                "detached panel"
               ],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "location",
+                  "label": "Location",
+                  "values": [
+                    "Garage",
+                    "Basement",
+                    "Exterior",
+                    "Detached Structure"
+                  ],
+                  "freeText": true,
+                  "optional": true,
+                  "emptyLabel": "Unknown"
+                }
+              ]
             }
           ],
           "trimmed": []

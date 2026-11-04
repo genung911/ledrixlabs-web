@@ -167,7 +167,7 @@ export const EQUIPMENT_CATALOG: CatalogEquipmentType[] = [
       R('draft', 'Over-fire / breech draft', ['in. w.c.'], 'Draft Reading', undefined, 'if your company tests combustion'),
     ]),
   ] },
-  { id: 'electric_furnace', label: 'Electric furnace', system: 'heating', intro: 'Components Ledrix knows for an electric furnace — no combustion, no fuel supply.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Electric Heat'] }, groups: [
+  { id: 'electric_furnace', label: 'Electric furnace', system: 'heating', intro: 'Components Ledrix knows for an electric furnace — no combustion, no fuel supply.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Electric Furnace', 'Electric Heat'] }, groups: [
     { id: 'elements', label: 'Heating elements', why: 'electric resistance heat', components: [
       T('elements', 'Heating elements'), T('sequencers', 'Sequencers / relays'), T('elimits', 'High-limit switches'),
     ] },

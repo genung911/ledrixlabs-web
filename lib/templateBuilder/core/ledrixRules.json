@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.9",
+ "packVersion": "2026.11.03.10",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -21,6 +21,15 @@
       "fan coil",
       "ductless"
      ]
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater"
+     ],
+     "exact": true
     }
    ]
   },
@@ -82,6 +91,15 @@
      "includes": [
       "forced air"
      ]
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater"
+     ],
+     "exact": true
     }
    ]
   },
@@ -150,7 +168,8 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Electric Heat"
+      "Electric Heat",
+      "Electric Baseboard"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -162,7 +181,20 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Electric Heat"
+      "Electric Heat",
+      "Electric Wall Heater"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_elec_furnace_elements": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Electric Furnace"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
