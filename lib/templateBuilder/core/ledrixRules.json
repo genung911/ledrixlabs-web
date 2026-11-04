@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.6",
+ "packVersion": "2026.11.03.7",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -689,6 +689,22 @@
     }
    ]
   },
+  "plumb_wh_expansion": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tank — Electric",
+      "Tank — Oil",
+      "Heat Pump (Hybrid)",
+      "Solar Assisted"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "plumb_wh_flue": {
    "dependsOnSpec": {
     "nodeId": "plumb_wh_type::type",
@@ -698,6 +714,107 @@
      "oil"
     ]
    }
+  },
+  "plumb_wh_pan": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tank — Electric",
+      "Tank — Oil",
+      "Heat Pump (Hybrid)",
+      "Solar Assisted"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "plumb_wh_gas_shutoff": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tankless — Natural Gas",
+      "Tankless — Propane"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_wh_combustion": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tank — Oil",
+      "Tankless — Natural Gas",
+      "Tankless — Propane"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_wh_burner": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tank — Oil",
+      "Tankless — Natural Gas",
+      "Tankless — Propane"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_wh_isolation": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tankless — Natural Gas",
+      "Tankless — Propane",
+      "Tankless — Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_wh_hp_condensate": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Heat Pump (Hybrid)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_wh_hp_air": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Heat Pump (Hybrid)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
   },
   "roof_surface": {
    "requires": [
@@ -934,6 +1051,68 @@
     ]
    }
   },
+  "fp_damper": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry",
+      "Wood Burning — Prefab",
+      "Gas Insert",
+      "Gas Log Set",
+      "Decorative Only"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "fp_chimney": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry",
+      "Wood Burning — Prefab",
+      "Gas Insert",
+      "Gas Log Set",
+      "Pellet Stove",
+      "Decorative Only"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "fp_liner": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry",
+      "Wood Burning — Prefab",
+      "Gas Insert",
+      "Gas Log Set",
+      "Decorative Only"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "fp_cap": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry",
+      "Wood Burning — Prefab",
+      "Gas Insert",
+      "Gas Log Set",
+      "Pellet Stove",
+      "Decorative Only"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "fp_arrestor": {
    "dependsOnSpec": {
     "nodeId": "fp_chimney",
@@ -995,6 +1174,42 @@
      "pellet"
     ]
    }
+  },
+  "fp_pellet_op": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Pellet Stove"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "fp_pellet_vent": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Pellet Stove"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "fp_electric_op": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
   },
   "kit_dishwasher": {
    "requires": [

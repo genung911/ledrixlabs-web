@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.6",
+  "packVersion": "2026.11.03.7",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -2757,7 +2757,21 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Heat Pump (Hybrid)",
+                "Solar Assisted"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_flue",
@@ -2817,7 +2831,21 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Heat Pump (Hybrid)",
+                "Solar Assisted"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "plumb_wh",
@@ -2830,6 +2858,163 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "plumb_wh_gas_shutoff",
+          "label": "Gas Shutoff & Sediment Trap",
+          "keywords": [
+            "gas valve",
+            "gas shutoff",
+            "sediment trap",
+            "drip leg"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "plumb_wh_combustion",
+          "label": "Combustion Air & Clearances",
+          "keywords": [
+            "combustion air",
+            "clearance to combustibles",
+            "flammable vapor",
+            "closet louvers"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "plumb_wh_burner",
+          "label": "Burner / Ignition",
+          "keywords": [
+            "burner",
+            "pilot",
+            "igniter",
+            "thermocouple",
+            "burner flame"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "plumb_wh_isolation",
+          "label": "Isolation / Service Valves",
+          "keywords": [
+            "isolation valves",
+            "service valves",
+            "flush valves"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tankless — Natural Gas",
+                "Tankless — Propane",
+                "Tankless — Electric"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "plumb_wh_hp_condensate",
+          "label": "Condensate Drain",
+          "keywords": [
+            "hpwh condensate",
+            "heat pump condensate"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Heat Pump (Hybrid)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "plumb_wh_hp_air",
+          "label": "Air Filter & Room Volume",
+          "keywords": [
+            "hpwh filter",
+            "air filter",
+            "room volume"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Heat Pump (Hybrid)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
         }
       ],
       "subsystems": [
@@ -2842,7 +3027,13 @@
             "plumb_wh_operation",
             "plumb_wh_expansion",
             "plumb_wh_flue",
-            "plumb_wh_pan"
+            "plumb_wh_pan",
+            "plumb_wh_gas_shutoff",
+            "plumb_wh_combustion",
+            "plumb_wh_burner",
+            "plumb_wh_isolation",
+            "plumb_wh_hp_condensate",
+            "plumb_wh_hp_air"
           ]
         }
       ],
@@ -6426,7 +6617,20 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
+                "Gas Insert",
+                "Gas Log Set",
+                "Decorative Only"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "fp_chimney",
@@ -6453,7 +6657,21 @@
               ]
             }
           ],
-          "condition": false
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
+                "Gas Insert",
+                "Gas Log Set",
+                "Pellet Stove",
+                "Decorative Only"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "fp_liner",
@@ -6482,6 +6700,19 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
+                "Gas Insert",
+                "Gas Log Set",
+                "Decorative Only"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -6500,6 +6731,20 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
+                "Gas Insert",
+                "Gas Log Set",
+                "Pellet Stove",
+                "Decorative Only"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -6736,6 +6981,85 @@
             "multi_unit"
           ],
           "condition": true
+        },
+        {
+          "id": "fp_pellet_op",
+          "label": "Hopper / Auger / Igniter",
+          "keywords": [
+            "pellet hopper",
+            "auger",
+            "pellet igniter",
+            "pellet stove operation"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Pellet Stove"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "fp_pellet_vent",
+          "label": "Pellet Vent Pipe",
+          "keywords": [
+            "pellet vent",
+            "pl vent",
+            "pellet exhaust"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Pellet Stove"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "fp_electric_op",
+          "label": "Electric Unit Operation",
+          "keywords": [
+            "electric fireplace operation",
+            "electric insert",
+            "heater fan"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Electric"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
         }
       ],
       "subsystems": [
@@ -6766,6 +7090,15 @@
             "fp_gas_shutoff",
             "fp_gas_vent",
             "fp_co_prox"
+          ]
+        },
+        {
+          "id": "fireplace__pellet_electric",
+          "name": "Pellet / Electric",
+          "nodeIds": [
+            "fp_pellet_op",
+            "fp_pellet_vent",
+            "fp_electric_op"
           ]
         },
         {
@@ -7395,6 +7728,51 @@
         },
         {
           "node": "kit_dishwasher"
+        },
+        {
+          "node": "kit_supplydrain"
+        },
+        {
+          "node": "kit_leaks"
+        },
+        {
+          "node": "primary_bathroom_shower_head"
+        },
+        {
+          "node": "primary_bathroom_drain_traps"
+        },
+        {
+          "node": "primary_bathroom_toilet_flapper"
+        },
+        {
+          "node": "kit_disposal"
+        },
+        {
+          "node": "plumb_fixtures"
+        },
+        {
+          "node": "plumb_wh_operation"
+        },
+        {
+          "node": "plumb_softener"
+        },
+        {
+          "node": "plumb_ro"
+        },
+        {
+          "node": "ext_irrigation"
+        },
+        {
+          "node": "appl_washer"
+        },
+        {
+          "node": "appl_dishwasher"
+        },
+        {
+          "node": "appl_disposal"
+        },
+        {
+          "node": "hvac_evap_water"
         }
       ],
       "reasons": [
@@ -7468,6 +7846,16 @@
             "specNodeId": "fp_type",
             "includes": [
               "gas"
+            ]
+          }
+        },
+        {
+          "node": "plumb_wh_burner",
+          "when": {
+            "specNodeId": "plumb_wh_type::type",
+            "includes": [
+              "natural gas",
+              "propane"
             ]
           }
         }
@@ -7547,6 +7935,12 @@
               "dual fuel"
             ]
           }
+        },
+        {
+          "node": "fp_electric_op"
+        },
+        {
+          "node": "fp_pellet_op"
         }
       ],
       "reasons": [

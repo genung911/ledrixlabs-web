@@ -1994,6 +1994,84 @@
           ],
           "trimmed": [],
           "condition": true
+        },
+        {
+          "id": "plumb_wh_gas_shutoff",
+          "label": "Gas Shutoff & Sediment Trap",
+          "kind": "component",
+          "keywords": [
+            "gas valve",
+            "gas shutoff",
+            "sediment trap",
+            "drip leg"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_combustion",
+          "label": "Combustion Air & Clearances",
+          "kind": "component",
+          "keywords": [
+            "combustion air",
+            "clearance to combustibles",
+            "flammable vapor",
+            "closet louvers"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_burner",
+          "label": "Burner / Ignition",
+          "kind": "component",
+          "keywords": [
+            "burner",
+            "pilot",
+            "igniter",
+            "thermocouple",
+            "burner flame"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "plumb_wh_isolation",
+          "label": "Isolation / Service Valves",
+          "kind": "component",
+          "keywords": [
+            "isolation valves",
+            "service valves",
+            "flush valves"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_hp_condensate",
+          "label": "Condensate Drain",
+          "kind": "component",
+          "keywords": [
+            "hpwh condensate",
+            "heat pump condensate"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "plumb_wh_hp_air",
+          "label": "Air Filter & Room Volume",
+          "kind": "component",
+          "keywords": [
+            "hpwh filter",
+            "air filter",
+            "room volume"
+          ],
+          "trimmed": [],
+          "condition": true
         }
       ],
       "trimmed": [
@@ -5349,6 +5427,59 @@
             }
           ],
           "trimmed": []
+        },
+        {
+          "id": "fireplace__pellet_electric",
+          "label": "Pellet / Electric",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "fp_pellet_op",
+              "label": "Hopper / Auger / Igniter",
+              "kind": "component",
+              "keywords": [
+                "pellet hopper",
+                "auger",
+                "pellet igniter",
+                "pellet stove operation"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "fp_pellet_vent",
+              "label": "Pellet Vent Pipe",
+              "kind": "component",
+              "keywords": [
+                "pellet vent",
+                "pl vent",
+                "pellet exhaust"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "fp_electric_op",
+              "label": "Electric Unit Operation",
+              "kind": "component",
+              "keywords": [
+                "electric fireplace operation",
+                "electric insert",
+                "heater fan"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            }
+          ]
         },
         {
           "id": "fireplace__service",
