@@ -98,6 +98,20 @@ ok('§3 Satisfactory is off while the item has a finding', /disabled=\{!editable
 ok('§3 a spec pick keeps the entry’s other fields (room, age)', /\{ \.\.\.prev, label: f\.label, value: joinSpecPicks\(picked\) \}/.test(panel));
 ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 'scope', label: 'Scope', show: findingsVisible \}/.test(page) && /<ScopePanel inspectionId=\{id\} team=\{team\} names=\{names\} lock=\{lock\}/.test(page));
 
+// §5 the job's other buildings (step 3 F6, option A — owner 2026-11-03: "A"), from the template snapshot, read-only
+{
+  const tpl = { systems: [], buildings: [{ id: 'main', name: 'Main' }, { id: 'st_shop', name: 'Back Shop', systems: ['roofing', 'electrical'] }, { bad: true }] };
+  const rows = [{ structure_id: 'st_shop', node_key: 'roof_material', kind: 'spec', value: { value: 'Metal' }, seq: 1 },
+    { structure_id: 'main', node_key: 'roof_material', kind: 'spec', value: { value: 'Asphalt' }, seq: 2 },
+    { structure_id: 'st_shop', node_key: 'roof_gutters', kind: 'condition', value: null, seq: 3 }];
+  const ob = M.otherBuildingsOf(tpl, rows);
+  ok('§5 the snapshot’s other buildings are listed (not the main house, not a malformed entry), with their answers',
+    ob.length === 1 && ob[0].name === 'Back Shop' && ob[0].systems.length === 2 && ob[0].answered === 1, JSON.stringify(ob));
+  ok('§5 a job without buildings lists none', M.otherBuildingsOf({ systems: [] }, rows).length === 0 && M.otherBuildingsOf(null, rows).length === 0);
+  const panel = read('components/workspace/ScopePanel.tsx');
+  ok('§5 the Scope panel shows them read-only', /others: otherBuildingsOf\(template/.test(panel) && /aria-label="Other buildings"/.test(panel) && /edited on the phone/.test(panel));
+}
+
 let pass = 0, fail = 0;
 if (process.env.SCOPE_MUTANT) { console.log(JSON.stringify(out.filter(r => !r.pass).map(r => r.name))); process.exit(0); }
 for (const r of out) { if (r.pass) { pass++; console.log(`  ✓ ${r.name}`); } else { fail++; console.log(`  ✗ ${r.name}${r.detail ? `\n      ${r.detail}` : ''}`); } }
@@ -107,6 +121,8 @@ const { mkdtempSync, cpSync, writeFileSync } = await import('node:fs');
 const { tmpdir } = await import('node:os');
 // Amended 2026-11-03: the pointer-row anchor carries the area-limit clause (`&& !covered.has(id)`, pack 2026.11.03.2).
 const MUTANTS = [
+  { f: 'lib/scope/model.ts', why: 'the main house listed as another building (2026-11-03)', from: "b.id !== 'main' && typeof b.name", to: "typeof b.name", expect: /^§5 the snapshot’s other buildings/ },
+  { f: 'lib/scope/model.ts', why: 'empty answers counted (2026-11-03)', from: 'r.structure_id === b.id && r.value != null', to: 'r.structure_id === b.id', expect: /^§5 the snapshot’s other buildings/ },
   { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', to: 'return !!n && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', expect: /^§2 a pointer row/ },
   { f: 'lib/scope/model.ts', why: 'type rules ignored on the website (2026-11-03)', from: ' && typeApplies(id, n); };', to: '; };', expect: /^§2 type rules/ },
   { f: 'lib/scope/model.ts', why: 'the core pack not registered (keys from the template’s shape)', from: "import './core/taxonomy/specKeyDefs';", to: '', expect: /^§2 a company-added field/ },

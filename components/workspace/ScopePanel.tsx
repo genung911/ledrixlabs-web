@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Empty, Loading, formatWhen } from './ui';
 import type { EditLock } from './FindingEditor';
 import { gateOfRow, gateRowAction, gateStoreKey } from '@/lib/scope/core/taxonomy/gates';
-import { buildScope, gatesOfTemplate, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
+import { buildScope, gatesOfTemplate, otherBuildingsOf, type OtherBuilding, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
 import { loadTemplate, loadUtilities, loadValues, putValue } from '@/lib/scope/api';
 import { CONDITION_OK, joinSpecPicks, limitationReasonOf, nextConditionValues } from '@/lib/scope/core/taxonomy/scopeRules';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
@@ -18,7 +18,7 @@ type Counts = { findings: Record<string, number>; photos: Record<string, number>
 type Props = { inspectionId: string; team: TeamLike; names: Record<string, string>; lock: EditLock; counts: Counts; onOpenFindings: () => void; onOpenPhotos: () => void };
 
 export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos }: Props) {
-  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities }>({ kind: 'loading' });
+  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities; others: OtherBuilding[] }>({ kind: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
   const load = useCallback(async () => {
     try {
       const [template, rows, utilities] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId), loadUtilities(inspectionId)]);
-      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows), utilities });
+      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows), utilities, others: otherBuildingsOf(template as { buildings?: unknown } | null, rows) });
     } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The checklist could not be loaded.' }); }
   }, [inspectionId]);
   useEffect(() => { void load(); }, [load]);
@@ -116,6 +116,18 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
             </button>
           );
         })}
+        {state.others.length > 0 && (
+          // THE OTHER BUILDINGS (step 3 F6, option A): read-only here; they are inspected and edited on the phone.
+          <div className="mt-3 hidden border-t border-hairline pt-3 lg:block" aria-label="Other buildings">
+            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Other buildings</p>
+            {state.others.map(b => (
+              <div key={b.id} className="px-3 py-1.5 text-sm text-body">
+                <span className="font-semibold text-ink">{b.name}</span>
+                <span className="block text-[11px] text-muted">{b.systems.length} system{b.systems.length === 1 ? '' : 's'} · {b.answered} answer{b.answered === 1 ? '' : 's'} · edited on the phone</span>
+              </div>
+            ))}
+          </div>
+        )}
       </nav>
 
       <Card>

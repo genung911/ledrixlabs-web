@@ -209,3 +209,16 @@ export function sectionAccess(team: TeamLike, section: string | null): SectionAc
   if (team.me === team.lead) return 'edit';
   return holderOf(team, section) === team.me ? 'edit' : 'not_yours';
 }
+
+
+/** The job's other buildings (step 3 F6, option A — owner 2026-11-03: "A"): the template snapshot's `buildings`, the
+ *  list each phone records (ledrix-app buildings.ts). Shown READ-ONLY here — the website edits the main building only —
+ *  with how many checklist answers the server holds for each, so a multi-building job is visible before it is sealed. */
+export type OtherBuilding = { id: string; name: string; systems: string[]; answered: number };
+export function otherBuildingsOf(template: { buildings?: unknown } | null, rows: ServerValue[]): OtherBuilding[] {
+  const list = Array.isArray(template?.buildings) ? (template!.buildings as Record<string, unknown>[]) : [];
+  return list
+    .filter(b => b && typeof b.id === 'string' && b.id !== 'main' && typeof b.name === 'string')
+    .map(b => ({ id: String(b.id), name: String(b.name), systems: Array.isArray(b.systems) ? b.systems.map(String) : [],
+      answered: rows.filter(r => r.structure_id === b.id && r.value != null).length }));
+}
