@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.4",
+  "packVersion": "2026.11.03.5",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -834,7 +834,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_win_mount",
@@ -857,7 +858,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_win_outlet",
@@ -880,7 +882,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_evap_pads",
@@ -903,7 +906,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_evap_water",
@@ -929,7 +933,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_evap_blower",
@@ -955,7 +960,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_heads",
@@ -994,7 +1000,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_1",
@@ -1054,7 +1061,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_2",
@@ -1110,7 +1118,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_3",
@@ -1165,7 +1174,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_4",
@@ -1219,7 +1229,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_5",
@@ -1272,7 +1283,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_6",
@@ -1324,7 +1336,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_7",
@@ -1375,7 +1388,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         },
         {
           "id": "hvac_ms_head_8",
@@ -1425,7 +1439,8 @@
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
-          ]
+          ],
+          "layout": "row"
         }
       ],
       "subsystems": [
@@ -7116,6 +7131,78 @@
           "value": "Off — vacant",
           "effect": "remove"
         }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "id": "water_heaters",
+      "label": "Water heaters",
+      "kind": "units",
+      "node": "plumb_wh_type",
+      "asks": true,
+      "question": "How many water heaters?",
+      "unitName": "Water Heater",
+      "noun": "water heaters",
+      "min": 1,
+      "max": 8,
+      "plateSuggest": false
+    },
+    {
+      "id": "heating_systems",
+      "label": "Heating systems",
+      "kind": "units",
+      "node": "hvac_furnace",
+      "asks": true,
+      "question": "How many heating systems?",
+      "unitName": "Furnace",
+      "noun": "heating systems",
+      "min": 1,
+      "max": 8,
+      "plateSuggest": false
+    },
+    {
+      "id": "cooling_systems",
+      "label": "Cooling systems",
+      "kind": "units",
+      "node": "hvac_condenser",
+      "asks": true,
+      "question": "How many cooling systems?",
+      "unitName": "AC Condenser",
+      "noun": "cooling systems",
+      "min": 1,
+      "max": 8,
+      "plateSuggest": false
+    },
+    {
+      "id": "mini_split_heads",
+      "label": "Mini-split indoor heads",
+      "kind": "slots",
+      "node": "hvac_ms_heads",
+      "asks": true,
+      "question": "How many indoor heads?",
+      "unitName": "Indoor Head",
+      "noun": "indoor heads",
+      "lead": "Ductless mini-split",
+      "slots": [
+        "hvac_ms_head_1",
+        "hvac_ms_head_2",
+        "hvac_ms_head_3",
+        "hvac_ms_head_4",
+        "hvac_ms_head_5",
+        "hvac_ms_head_6",
+        "hvac_ms_head_7",
+        "hvac_ms_head_8"
+      ],
+      "locationAttr": "location",
+      "askLocation": true,
+      "min": 1,
+      "max": 8,
+      "plateSuggest": true,
+      "plateNodes": [
+        "hvac_condenser",
+        "hvac_cooling",
+        "hvac_ms_heads"
       ]
     }
   ]

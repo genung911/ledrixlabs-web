@@ -147,7 +147,30 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   // 2026-11-03 (owner: gates are part of the checklist; companies change Ledrix's per template, "Reset to Ledrix"):
   // this template's changes to Ledrix's gates and its own gates (taxonomy/gates.ts). Captured into each new inspection.
   gates: { check: checkGates, class: 'policy', why: 'what an access row, a method or a utility removes or qualifies' },
+  // 2026-11-03 ("Yes finish the leftovers"): this template's changes to Ledrix's "How many …?" rules (taxonomy/countRules.ts),
+  // by id — Reset to Ledrix removes the entry. Captured into each new inspection, which is shaped by them then.
+  counts: { check: checkCounts, class: 'policy', why: 'which systems ask how many, and what each unit asks' },
 };
+
+/** A template's changes to Ledrix's count rules: `{ id, ...the fields a company may change }`. Identity (kind, node,
+ *  rows) is Ledrix's and is never carried here. */
+const COUNT_EDITABLE = new Set(['id', 'label', 'asks', 'question', 'unitName', 'noun', 'lead', 'askLocation', 'min', 'max', 'plateSuggest']);
+function checkCounts(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  const ids = new Set<string>();
+  for (const c of v) {
+    if (!obj(c) || typeof c.id !== 'string' || !c.id.trim()) return 'each count rule needs an id';
+    if (ids.has(c.id)) return `count rule ${c.id} is listed twice`;
+    ids.add(c.id);
+    const extra = Object.keys(c).find(k => !COUNT_EDITABLE.has(k));
+    if (extra) return `count rule ${c.id}: ${extra} is Ledrix's and cannot be changed`;
+    for (const k of ['asks', 'askLocation', 'plateSuggest']) if (c[k] !== undefined && typeof c[k] !== 'boolean') return `count rule ${c.id}: ${k} must be yes or no`;
+    for (const k of ['label', 'question', 'unitName', 'noun', 'lead']) if (c[k] !== undefined && (typeof c[k] !== 'string' || !String(c[k]).trim() || String(c[k]).length > 120)) return `count rule ${c.id}: ${k} must be a short text`;
+    for (const k of ['min', 'max']) if (c[k] !== undefined && !(Number.isInteger(c[k]) && (c[k] as number) >= 1 && (c[k] as number) <= 99)) return `count rule ${c.id}: ${k} must be a whole number from 1`;
+    if (Number.isInteger(c.min) && Number.isInteger(c.max) && (c.min as number) > (c.max as number)) return `count rule ${c.id}: the lowest is above the highest`;
+  }
+  return null;
+}
 
 /** A template's gates (taxonomy/gates.ts Gate, or `{ id, removed: true }` turning a Ledrix gate off). */
 function checkGates(v: unknown): string | null {

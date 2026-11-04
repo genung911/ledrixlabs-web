@@ -278,7 +278,9 @@ const baseOf = (id: string) => id.split('~i')[0];                  // ledrix-app
 
 /** typeConditions.typeConditionLinkOf: the host a per-type card hangs off, or null for an ordinary node. */
 function cardHostOf(nodeId: string): string | null {
-  const reqs = (PACK[baseOf(nodeId)] as { requires?: unknown } | undefined)?.requires;
+  const pn = PACK[baseOf(nodeId)] as { requires?: unknown; layout?: string } | undefined;
+  if (pn?.layout === 'row') return null;   // an equipment part is its own row, never a card (owner 2026-11-03 on 692)
+  const reqs = pn?.requires;
   if (!Array.isArray(reqs)) return null;
   for (const r of reqs as Array<{ specNodeId?: string; whenUnanswered?: string; origin?: string }>) {
     if (!r || typeof r.specNodeId !== 'string' || r.whenUnanswered !== 'not_applicable' || r.origin === 'template') continue;
