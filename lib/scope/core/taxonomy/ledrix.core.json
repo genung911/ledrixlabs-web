@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.8",
+  "packVersion": "2026.11.03.9",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -422,6 +422,14 @@
           "condition": true,
           "limitations": [
             "Not Measured"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_distribution",
+              "includes": [
+                "forced air"
+              ]
+            }
           ]
         },
         {
@@ -540,6 +548,244 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "hvac_boiler_expansion",
+          "label": "Boiler Expansion Tank",
+          "keywords": [
+            "boiler expansion tank",
+            "hydronic expansion tank",
+            "waterlogged expansion tank"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_boiler_relief",
+          "label": "Boiler Relief Valve",
+          "keywords": [
+            "boiler relief valve",
+            "boiler pressure relief",
+            "relief valve discharge boiler"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_boiler_circulator",
+          "label": "Circulator Pump",
+          "keywords": [
+            "circulator pump",
+            "boiler circulator",
+            "hydronic pump"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_boiler_lwco",
+          "label": "Low-Water Cutoff",
+          "keywords": [
+            "low water cutoff",
+            "lwco",
+            "boiler low water"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested",
+            "Not Present"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_boiler_piping",
+          "label": "Distribution Piping / Radiators",
+          "keywords": [
+            "radiator",
+            "baseboard hydronic",
+            "boiler piping",
+            "hydronic piping",
+            "radiator valve"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_elec_baseboard",
+          "label": "Baseboard Heaters / Elements",
+          "keywords": [
+            "electric baseboard",
+            "baseboard heater",
+            "heating element",
+            "electric heat element"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Electric Heat"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_elec_wall",
+          "label": "Wall Heaters",
+          "keywords": [
+            "wall heater",
+            "cadet heater",
+            "electric wall heater",
+            "fan forced heater"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Electric Heat"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_radiant_manifold",
+          "label": "Radiant Manifold / Zone Valves",
+          "keywords": [
+            "radiant manifold",
+            "zone valve",
+            "radiant zone",
+            "pex manifold heating"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Radiant Heat"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_radiant_panels",
+          "label": "Radiant Floor / Panels",
+          "keywords": [
+            "radiant floor",
+            "in-floor heat",
+            "radiant ceiling",
+            "heated floor"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Radiant Heat"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
         }
       ],
       "subsystems": [
@@ -565,6 +811,21 @@
           "nodeIds": [
             "hvac_distribution",
             "hvac_filter"
+          ]
+        },
+        {
+          "id": "heating__boiler_electric_radiant",
+          "name": "Boiler · Electric · Radiant",
+          "nodeIds": [
+            "hvac_boiler_expansion",
+            "hvac_boiler_relief",
+            "hvac_boiler_circulator",
+            "hvac_boiler_lwco",
+            "hvac_boiler_piping",
+            "hvac_elec_baseboard",
+            "hvac_elec_wall",
+            "hvac_radiant_manifold",
+            "hvac_radiant_panels"
           ]
         },
         {
@@ -5400,13 +5661,298 @@
                 "Brick",
                 "Stone",
                 "Aluminum",
-                "Metal Panel"
+                "Metal Panel",
+                "Engineered Wood (LP)",
+                "EIFS (Synthetic Stucco)"
               ]
             }
           ],
+          "condition": false
+        },
+        {
+          "id": "ext_sid_vinyl",
+          "label": "Vinyl Siding",
+          "keywords": [
+            "vinyl siding",
+            "buckled vinyl",
+            "loose vinyl panel",
+            "vinyl cracked"
+          ],
+          "kind": "spec",
+          "origin": "core",
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Vinyl"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_fibercement",
+          "label": "Fiber Cement Siding",
+          "keywords": [
+            "fiber cement",
+            "hardie",
+            "hardieplank",
+            "cement board siding"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Hardie Board (Fiber Cement)",
+                "Fiber Cement"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_wood",
+          "label": "Wood Siding",
+          "keywords": [
+            "wood siding",
+            "cedar siding",
+            "clapboard",
+            "rot siding",
+            "wood rot siding"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Wood"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_lp",
+          "label": "Engineered Wood Siding",
+          "keywords": [
+            "lp siding",
+            "engineered wood",
+            "osb siding",
+            "swollen siding",
+            "lp smartside"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Engineered Wood (LP)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_stucco",
+          "label": "Stucco",
+          "keywords": [
+            "stucco",
+            "stucco crack",
+            "weep screed",
+            "hard coat stucco"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Stucco"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_eifs",
+          "label": "EIFS (Synthetic Stucco)",
+          "keywords": [
+            "eifs",
+            "synthetic stucco",
+            "dryvit",
+            "foam stucco"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "EIFS (Synthetic Stucco)",
+                "EIFS"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_brick",
+          "label": "Brick Veneer",
+          "keywords": [
+            "brick veneer",
+            "brick siding",
+            "mortar joint",
+            "spalling brick"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Brick",
+                "Brick Veneer"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_stone",
+          "label": "Stone Veneer",
+          "keywords": [
+            "stone veneer",
+            "manufactured stone",
+            "cultured stone",
+            "stone siding"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Stone",
+                "Stone Veneer"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_metal",
+          "label": "Metal / Aluminum Siding",
+          "keywords": [
+            "aluminum siding",
+            "metal siding",
+            "metal panel",
+            "dented siding"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Aluminum",
+                "Metal Panel"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_other",
+          "label": "Other Siding",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "Vinyl",
+                "Hardie Board (Fiber Cement)",
+                "Wood",
+                "Stucco",
+                "Brick",
+                "Stone",
+                "Aluminum",
+                "Metal Panel",
+                "Engineered Wood (LP)",
+                "EIFS (Synthetic Stucco)",
+                "Fiber Cement",
+                "EIFS",
+                "Brick Veneer",
+                "Stone Veneer"
+              ],
+              "attr": "spec"
+            }
           ]
         },
         {
@@ -5971,6 +6517,16 @@
           "name": "Cladding",
           "nodeIds": [
             "ext_siding",
+            "ext_sid_vinyl",
+            "ext_sid_fibercement",
+            "ext_sid_wood",
+            "ext_sid_lp",
+            "ext_sid_stucco",
+            "ext_sid_eifs",
+            "ext_sid_brick",
+            "ext_sid_stone",
+            "ext_sid_metal",
+            "ext_sid_other",
             "ext_trim",
             "ext_paint"
           ]
@@ -8283,6 +8839,18 @@
         },
         {
           "node": "fp_pellet_op"
+        },
+        {
+          "node": "hvac_boiler_circulator"
+        },
+        {
+          "node": "hvac_elec_baseboard"
+        },
+        {
+          "node": "hvac_elec_wall"
+        },
+        {
+          "node": "hvac_radiant_manifold"
         }
       ],
       "reasons": [

@@ -350,6 +350,152 @@
           "trimmed": []
         },
         {
+          "id": "heating__boiler_electric_radiant",
+          "label": "Boiler · Electric · Radiant",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "hvac_boiler_expansion",
+              "label": "Boiler Expansion Tank",
+              "kind": "component",
+              "keywords": [
+                "boiler expansion tank",
+                "hydronic expansion tank",
+                "waterlogged expansion tank"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "hvac_boiler_relief",
+              "label": "Boiler Relief Valve",
+              "kind": "component",
+              "keywords": [
+                "boiler relief valve",
+                "boiler pressure relief",
+                "relief valve discharge boiler"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "hvac_boiler_circulator",
+              "label": "Circulator Pump",
+              "kind": "component",
+              "keywords": [
+                "circulator pump",
+                "boiler circulator",
+                "hydronic pump"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "hvac_boiler_lwco",
+              "label": "Low-Water Cutoff",
+              "kind": "component",
+              "keywords": [
+                "low water cutoff",
+                "lwco",
+                "boiler low water"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested",
+                "Not Present"
+              ]
+            },
+            {
+              "id": "hvac_boiler_piping",
+              "label": "Distribution Piping / Radiators",
+              "kind": "component",
+              "keywords": [
+                "radiator",
+                "baseboard hydronic",
+                "boiler piping",
+                "hydronic piping",
+                "radiator valve"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "hvac_elec_baseboard",
+              "label": "Baseboard Heaters / Elements",
+              "kind": "component",
+              "keywords": [
+                "electric baseboard",
+                "baseboard heater",
+                "heating element",
+                "electric heat element"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "hvac_elec_wall",
+              "label": "Wall Heaters",
+              "kind": "component",
+              "keywords": [
+                "wall heater",
+                "cadet heater",
+                "electric wall heater",
+                "fan forced heater"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            },
+            {
+              "id": "hvac_radiant_manifold",
+              "label": "Radiant Manifold / Zone Valves",
+              "kind": "component",
+              "keywords": [
+                "radiant manifold",
+                "zone valve",
+                "radiant zone",
+                "pex manifold heating"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "hvac_radiant_panels",
+              "label": "Radiant Floor / Panels",
+              "kind": "component",
+              "keywords": [
+                "radiant floor",
+                "in-floor heat",
+                "radiant ceiling",
+                "heated floor"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ]
+            }
+          ]
+        },
+        {
           "id": "heating__controls",
           "label": "Controls",
           "kind": "subsystem",
@@ -3987,10 +4133,166 @@
                     "Brick",
                     "Stone",
                     "Aluminum",
-                    "Metal Panel"
+                    "Metal Panel",
+                    "Engineered Wood (LP)",
+                    "EIFS (Synthetic Stucco)"
                   ]
                 }
               ],
+              "condition": false
+            },
+            {
+              "id": "ext_sid_vinyl",
+              "label": "Vinyl Siding",
+              "kind": "component",
+              "keywords": [
+                "vinyl siding",
+                "buckled vinyl",
+                "loose vinyl panel",
+                "vinyl cracked"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_fibercement",
+              "label": "Fiber Cement Siding",
+              "kind": "component",
+              "keywords": [
+                "fiber cement",
+                "hardie",
+                "hardieplank",
+                "cement board siding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_wood",
+              "label": "Wood Siding",
+              "kind": "component",
+              "keywords": [
+                "wood siding",
+                "cedar siding",
+                "clapboard",
+                "rot siding",
+                "wood rot siding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_lp",
+              "label": "Engineered Wood Siding",
+              "kind": "component",
+              "keywords": [
+                "lp siding",
+                "engineered wood",
+                "osb siding",
+                "swollen siding",
+                "lp smartside"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_stucco",
+              "label": "Stucco",
+              "kind": "component",
+              "keywords": [
+                "stucco",
+                "stucco crack",
+                "weep screed",
+                "hard coat stucco"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_eifs",
+              "label": "EIFS (Synthetic Stucco)",
+              "kind": "component",
+              "keywords": [
+                "eifs",
+                "synthetic stucco",
+                "dryvit",
+                "foam stucco"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_brick",
+              "label": "Brick Veneer",
+              "kind": "component",
+              "keywords": [
+                "brick veneer",
+                "brick siding",
+                "mortar joint",
+                "spalling brick"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_stone",
+              "label": "Stone Veneer",
+              "kind": "component",
+              "keywords": [
+                "stone veneer",
+                "manufactured stone",
+                "cultured stone",
+                "stone siding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_metal",
+              "label": "Metal / Aluminum Siding",
+              "kind": "component",
+              "keywords": [
+                "aluminum siding",
+                "metal siding",
+                "metal panel",
+                "dented siding"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ]
+            },
+            {
+              "id": "ext_sid_other",
+              "label": "Other Siding",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
               "condition": true,
               "limitations": [
                 "Not Visible"

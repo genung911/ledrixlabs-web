@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.8",
+ "packVersion": "2026.11.03.9",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -72,6 +72,124 @@
       "oil furnace",
       "boiler"
      ]
+    }
+   ]
+  },
+  "hvac_temp_rise": {
+   "requires": [
+    {
+     "specNodeId": "hvac_distribution",
+     "includes": [
+      "forced air"
+     ]
+    }
+   ]
+  },
+  "hvac_boiler_expansion": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_boiler_relief": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_boiler_circulator": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_boiler_lwco": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_boiler_piping": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_elec_baseboard": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Electric Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_elec_wall": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Electric Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_radiant_manifold": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Radiant Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_radiant_panels": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Radiant Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -1194,6 +1312,155 @@
      "basement"
     ]
    }
+  },
+  "ext_sid_vinyl": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Vinyl"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_fibercement": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Hardie Board (Fiber Cement)",
+      "Fiber Cement"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_wood": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Wood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_lp": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Engineered Wood (LP)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_stucco": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Stucco"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_eifs": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "EIFS (Synthetic Stucco)",
+      "EIFS"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_brick": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Brick",
+      "Brick Veneer"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_stone": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Stone",
+      "Stone Veneer"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_metal": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Aluminum",
+      "Metal Panel"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ext_sid_other": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Vinyl",
+      "Hardie Board (Fiber Cement)",
+      "Wood",
+      "Stucco",
+      "Brick",
+      "Stone",
+      "Aluminum",
+      "Metal Panel",
+      "Engineered Wood (LP)",
+      "EIFS (Synthetic Stucco)",
+      "Fiber Cement",
+      "EIFS",
+      "Brick Veneer",
+      "Stone Veneer"
+     ],
+     "attr": "spec"
+    }
+   ]
   },
   "fp_damper": {
    "requires": [
