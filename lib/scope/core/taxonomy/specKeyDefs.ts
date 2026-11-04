@@ -11,13 +11,24 @@ import corePack from './ledrix.core.json';
 import { registerSpecKeyDefs, type SpecKeyDef } from './conditionMatch';
 
 const defs = new Map<string, SpecKeyDef>();
-for (const sys of (corePack as any).systems ?? []) {
-  for (const n of sys.nodes ?? []) {
-    defs.set(n.id, {
-      attributes: (n.attributes ?? []).map((a: any) => ({ id: a.id, ...(a.legacyBareKey ? { legacyBareKey: true } : {}), ...(a.formerBareKey ? { formerBareKey: true } : {}) })),
-      hasMethod: Array.isArray(n.method) && n.method.length > 0,
-    });
-  }
+const keyAttr = (a: any) => ({ id: a.id, ...(a.legacyBareKey ? { legacyBareKey: true } : {}), ...(a.formerBareKey ? { formerBareKey: true } : {}) });
+const nodes: any[] = ((corePack as any).systems ?? []).flatMap((sys: any) => sys.nodes ?? []);
+const labelOf = new Map<string, string>(nodes.map(n => [String(n.id), String(n.label ?? n.id)]));
+for (const n of nodes) {
+  defs.set(n.id, {
+    // AGE ROWS (owner 2026-11-04): a row with `storedOn` stores its field on that owner's key, under the owner's label.
+    attributes: (n.attributes ?? []).map((a: any) => ({ ...keyAttr(a),
+      ...(n.storedOn ? { storedOn: String(n.storedOn), storedOnLabel: labelOf.get(String(n.storedOn)) ?? String(n.storedOn) } : {}) })),
+    hasMethod: Array.isArray(n.method) && n.method.length > 0,
+  });
+}
+// …and the owner's definition still lists that field (marked `movedTo`), so the owner's keys — and the shape that
+// decides them — are exactly what they were before the row existed. verify:spec-keys holds the golden list.
+for (const n of nodes) {
+  if (!n.storedOn) continue;
+  const owner = defs.get(String(n.storedOn));
+  if (!owner) continue;
+  defs.set(String(n.storedOn), { ...owner, attributes: [...owner.attributes, ...(n.attributes ?? []).map((a: any) => ({ ...keyAttr(a), movedTo: n.id }))] });
 }
 registerSpecKeyDefs(id => defs.get(id));
 

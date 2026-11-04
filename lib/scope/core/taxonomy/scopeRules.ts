@@ -12,7 +12,7 @@
 // PURE: imports only those files (and a type, erased). No React Native, no Expo, no storage, no network. Every
 // function here was moved out of a device file unchanged; that file now re-exports it, so no phone call site moved.
 import type { TemplateNode } from '../templates/InspectionTemplate';
-import { componentAxes, specStoreKey, specLegacyKey, METHOD_KEY_ATTR, type ComponentAttribute } from './conditionMatch';
+import { componentAxes, specStoreKey, specLegacyKey, savedFieldCount, storedOnLabelOf, METHOD_KEY_ATTR, type ComponentAttribute } from './conditionMatch';
 import { norm } from './roomMatching';
 import { MAIN_STRUCTURE_ID } from '../services/structureIds';
 import { evaluateGates, gateOfRow, type Gate, type GateUtility } from './gates';
@@ -87,7 +87,10 @@ export const specLabel = (node: TemplateNode, attr?: ComponentAttribute): string
   // A METHOD value on a component that also has attributes (Attic Access) names itself — it now has its own
   // key (Phase 1), and the report must not print it under the component's bare name as if it were the access.
   attr?.id === METHOD_KEY_ATTR ? (componentAxes(node).attributes.length ? `${node.label} — Method` : node.label)
-  : attr && componentAxes(node).attributes.length > 1 ? `${node.label} — ${attr.label}` : node.label;
+  // AGE ROWS (owner 2026-11-04): the Age row saves under its owner's label ("Heating System — Age"), and the owner
+  // still counts the field it gave away ("Heating System — Heating System Type") — the labels the report always printed.
+  : attr && storedOnLabelOf(node.id, attr.id) ? `${storedOnLabelOf(node.id, attr.id)} — ${attr.label}`
+  : attr && savedFieldCount(node) > 1 ? `${node.label} — ${attr.label}` : node.label;
 
 // ── The tree (from componentPairing) ────────────────────────────────────────────────────────────────────────────
 export const childrenOf = (n: TemplateNode): TemplateNode[] => n.children ?? [];

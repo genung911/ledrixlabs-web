@@ -115,7 +115,7 @@ async function suiteCheck(file = 'lib/seal/check.ts') {
     ok('§2 …the fixture owes required facts, so it is locked, and says which', r0.ok && !r0.sealable && r0.locks.some(l => l.key === 'gate:facts' && /—/.test(l.detail)));
     const factsLock = r0.ok ? r0.locks.find(l => l.key === 'gate:facts') : null;
     ok('§2 …and every one of those facts opens its own Scope item (the phone\'s own nodeId, through the real gates)',
-      !!factsLock?.items?.length && factsLock.items.every(it => typeof it.nodeId === 'string' && it.nodeId.length > 0 && /—/.test(it.label)), JSON.stringify(factsLock?.items));
+      !!factsLock?.items?.length && factsLock.items.every(it => typeof it.nodeId === 'string' && it.nodeId.length > 0 && String(it.label ?? '').trim().length > 0)   /* 2026-11-04: an Age row reads "Heating Age", no dash */, JSON.stringify(factsLock?.items));
     const r2 = await run(fakeServer({ conflicts: 2, reports: [rep([], 'Kelly')] }));
     ok('§2 two blocking conflicts lock it', r2.ok && r2.conflicts === 2 && r2.locks.some(l => /conflict/.test(l.key)), JSON.stringify(r2.locks?.map(l => l.key)));
     const rf = await run(fakeServer({ conflictsFail: true, reports: [rep([], 'Kelly')] }));

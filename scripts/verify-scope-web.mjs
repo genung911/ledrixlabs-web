@@ -127,6 +127,21 @@ ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 
     && /getElementById\(`scope-row-\$\{at\.rowId\}`\)\?\.scrollIntoView/.test(panel) && /marked === row\.node\.id \?/.test(panel) && /onClick=\{onBackToSeal\}/.test(panel));
 }
 
+// §7 (2026-11-04, owner: "age should be its own category like data plate is"): on a job made from the Ledrix default,
+// Heating Age is its own row after Heating System, saving on the unit's key under the unit's label, and a Seal & send
+// item for it lands on that row. (Older jobs' snapshots keep Age inside the unit — the Kimball fixture above.)
+{
+  const base = JSON.parse(read('lib/templates/baselines/ledrixDefault.json'));
+  const v = M.buildScope({ ...base, systems: base.systems.map(x => ({ ...x, inScope: true })) }, M.valueMapOf([]), { findings: () => 0, photos: () => 0 });
+  const heatRows = v.systems.find(x => x.node.id === 'heating')?.tiles.flatMap(t => t.rows) ?? [];
+  const ids = heatRows.map(r => r.node.id);
+  const ageRow = heatRows.find(r => r.node.id === 'hvac_heating_age');
+  ok('§7 Heating Age is its own row after Heating System, saving on hvac_heating::system_age as "Heating System — Age"',
+    ids[ids.indexOf('hvac_heating') + 1] === 'hvac_heating_age' && ageRow?.specs.length === 1 && ageRow.specs[0].key === 'hvac_heating::system_age'
+    && ageRow.specs[0].label === 'Heating System — Age' && !heatRows.find(r => r.node.id === 'hvac_heating')?.specs.some(f => f.key === 'hvac_heating::system_age'), ids.slice(0, 4).join(','));
+  ok('§7 a Seal & send Age item opens the Age row', JSON.stringify(M.locateItem(v, 'hvac_heating_age')) === '{"systemId":"heating","rowId":"hvac_heating_age"}');
+}
+
 let pass = 0, fail = 0;
 if (process.env.SCOPE_MUTANT) { console.log(JSON.stringify(out.filter(r => !r.pass).map(r => r.name))); process.exit(0); }
 for (const r of out) { if (r.pass) { pass++; console.log(`  ✓ ${r.name}`); } else { fail++; console.log(`  ✗ ${r.name}${r.detail ? `\n      ${r.detail}` : ''}`); } }

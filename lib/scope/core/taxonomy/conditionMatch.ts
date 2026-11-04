@@ -194,7 +194,16 @@ export const METHOD_KEY_ATTR = '__method';
 
 /** `formerBareKey` (2026-10-27): the field's answers USED to be stored under the bare node id and now take the normal
  *  `<id>::<attr>` key (AC System Type). Only the old-rule reader uses it — saved answers stay readable. */
-type KeyAttr = { id: string; legacyBareKey?: boolean; formerBareKey?: boolean };
+type KeyAttr = { id: string; legacyBareKey?: boolean; formerBareKey?: boolean;
+  /** AGE ROWS (owner 2026-11-04: "age should be its own category like data plate is"). On the Age row's definition:
+   *  the field is stored on THIS node's key instead of its own (`hvac_heating_age` → `hvac_heating::system_age`), so
+   *  every answer already given, and every reader of the owner's key, is untouched. */
+  storedOn?: string;
+  /** With `storedOn`: the owner's Ledrix label ("Heating System"), so the answer is saved under the label it always had
+   *  ("Heating System — Age") and the report prints it as before. */
+  storedOnLabel?: string;
+  /** On the owner's definition: the field now asked on that row (it still counts toward the owner's key shape). */
+  movedTo?: string };
 /** The shape a key depends on: the attributes and whether a method axis exists. */
 export type SpecKeyDef = { attributes: readonly KeyAttr[]; hasMethod: boolean };
 
@@ -211,16 +220,63 @@ const shapeOf = (n: TemplateNode): SpecKeyDef => {
 /** The key the PRE-2026-10-16 rule gave, from the template node as it is now. */
 function oldRuleKey(n: TemplateNode, attributeId?: string): string {
   const axes = componentAxes(n);
-  if (axes.attributes.length <= 1 || !attributeId) return n.id;
+  // An Age row's field: the old rule keyed it on its owner, where it then lived — the canonical key, no legacy.
+  if (attributeId && storedOnAttr(n.id, attributeId)) return specStoreKey(n, attributeId);
+  // An owner still counts the field it gave its Age row (2026-11-04), so its other fields keep their old keys — but
+  // only while it holds every other Ledrix field. A company that trimmed the owner gets the old rule on what it kept,
+  // exactly as before the row existed (a Water Heater kept to Type & Fuel still reads its bare-key answer).
+  if (savedFieldCount(n) <= 1 || !attributeId) return n.id;
   if (axes.attributes.find(a => a.id === attributeId)?.legacyBareKey) return n.id;
   if (keyDefOf?.(keyBaseId(n.id))?.attributes.find(a => a.id === attributeId)?.formerBareKey) return n.id;
   return `${n.id}::${attributeId}`;
+}
+
+/** The Age row's field definition when `nodeId`'s field is stored on another node (its owner) — else undefined. */
+function storedOnAttr(nodeId: string, attributeId: string): KeyAttr | undefined {
+  const a = keyDefOf?.(keyBaseId(nodeId))?.attributes.find(x => x.id === attributeId);
+  return a?.storedOn ? a : undefined;
+}
+/** AGE ROWS (2026-11-04): the node a row's field is stored on — the owner, with this row's unit suffix (`~i2`) — when
+ *  the Ledrix definition says so; null for every other node and field. */
+export function storedOnNode(nodeId: string, attributeId: string): string | null {
+  const a = storedOnAttr(nodeId, attributeId);
+  return a?.storedOn ? `${a.storedOn}${String(nodeId).slice(keyBaseId(String(nodeId)).length)}` : null;
+}
+/** AGE ROWS: the unit an Age row belongs to (`hvac_heating_age~i2` → `hvac_heating~i2`), else null. */
+export function storedOnOwner(nodeId: string): string | null {
+  const a = keyDefOf?.(keyBaseId(String(nodeId ?? '')))?.attributes.find(x => x.storedOn);
+  return a?.storedOn ? `${a.storedOn}${String(nodeId).slice(keyBaseId(String(nodeId)).length)}` : null;
+}
+/** AGE ROWS: the owner's label for an Age row's field ("Heating System"), else null. */
+export function storedOnLabelOf(nodeId: string, attributeId: string): string | null {
+  return storedOnAttr(nodeId, attributeId)?.storedOnLabel ?? null;
+}
+/** How many fields a node's answers are SAVED as having — its own, plus a field it gave its Age row while it holds
+ *  every other Ledrix field (see oldRuleKey). The spec label and the old key rule both read this. */
+export function savedFieldCount(n: TemplateNode): number {
+  const own = componentAxes(n).attributes;
+  const def = keyDefOf?.(keyBaseId(n.id));
+  if (!def) return own.length;
+  const has = (id: string) => own.some(x => x.id === id);
+  const whole = def.attributes.filter(a => !a.movedTo).every(a => has(a.id));
+  return own.length + (whole ? def.attributes.filter(a => a.movedTo && !has(a.id)).length : 0);
+}
+/** AGE ROWS: the Ledrix rows that hold fields of this owner (`hvac_heating` → [{ row: 'hvac_heating_age', attr:
+ *  'system_age' }]). Empty for every other node. */
+export function movedFieldsOf(ownerId: string): { row: string; attr: string }[] {
+  return (keyDefOf?.(keyBaseId(ownerId))?.attributes ?? []).filter(a => a.movedTo).map(a => ({ row: a.movedTo!, attr: a.id }));
 }
 
 /** The canonical key for one field, from a definition. */
 function keyFromDef(id: string, def: SpecKeyDef, attributeId: string, isLedrix: boolean): string {
   if (attributeId === METHOD_KEY_ATTR) return def.attributes.length ? `${id}::${METHOD_KEY_ATTR}` : id;
   const attr = def.attributes.find(a => a.id === attributeId);
+  // An Age row's field lives on its owner's key — exactly where it was stored before the row existed.
+  if (attr?.storedOn && isLedrix) {
+    const ownerDef = keyDefOf?.(attr.storedOn);
+    const owner = `${attr.storedOn}${id.slice(keyBaseId(id).length)}`;
+    if (ownerDef) return keyFromDef(owner, ownerDef, attributeId, true);
+  }
   if (!attr || !isLedrix) return `${id}::${attributeId}`;          // company-added field / company node
   if (def.hasMethod) return attr.legacyBareKey ? id : `${id}::${attributeId}`;   // bare id would be shared
   if (def.attributes.length <= 1 || attr.legacyBareKey) return id;

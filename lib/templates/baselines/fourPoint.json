@@ -47,7 +47,16 @@
           "Boiler",
           "Radiant Heat"
          ]
-        },
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "hvac_heating_age",
+       "label": "Heating Age",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
         {
          "id": "system_age",
          "label": "Age",
@@ -617,7 +626,16 @@
         "Evaporative Cooler"
        ],
        "formerBareKey": true
-      },
+      }
+     ],
+     "condition": false
+    },
+    {
+     "id": "hvac_cooling_age",
+     "label": "AC Age",
+     "kind": "component",
+     "keywords": [],
+     "attributes": [
       {
        "id": "age",
        "label": "Age",
@@ -1879,17 +1897,6 @@
        ]
       },
       {
-       "id": "age_est",
-       "label": "Age",
-       "values": [
-        "Under 5 years old",
-        "5–10 years old",
-        "10–15 years old",
-        "Over 15 years old — budget replacement",
-        "Not determined"
-       ]
-      },
-      {
        "id": "location",
        "label": "Location",
        "freeText": true,
@@ -1909,6 +1916,26 @@
      "limitations": [
       "Not Determined"
      ]
+    },
+    {
+     "id": "plumb_wh_type_age",
+     "label": "Water Heater Age",
+     "kind": "component",
+     "keywords": [],
+     "attributes": [
+      {
+       "id": "age_est",
+       "label": "Age",
+       "values": [
+        "Under 5 years old",
+        "5–10 years old",
+        "10–15 years old",
+        "Over 15 years old — budget replacement",
+        "Not determined"
+       ]
+      }
+     ],
+     "condition": false
     },
     {
      "id": "plumb_wh_tpr",
@@ -2810,7 +2837,19 @@
           "1 Layer",
           "2 Layers"
          ]
-        },
+        }
+       ],
+       "condition": false,
+       "limitations": [
+        "Not Accessed"
+       ]
+      },
+      {
+       "id": "roof_material_age",
+       "label": "Roof Age",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
         {
          "id": "estimated_age",
          "label": "Estimated Age",
@@ -2825,10 +2864,7 @@
          ]
         }
        ],
-       "condition": false,
-       "limitations": [
-        "Not Accessed"
-       ]
+       "condition": false
       },
       {
        "id": "roof_surface",

@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.10",
+  "packVersion": "2026.11.04.1",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -51,7 +51,18 @@
                 "Boiler",
                 "Radiant Heat"
               ]
-            },
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "hvac_heating_age",
+          "label": "Heating Age",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "storedOn": "hvac_heating",
+          "attributes": [
             {
               "id": "system_age",
               "label": "Age",
@@ -844,6 +855,7 @@
           "name": "Heating Plant",
           "nodeIds": [
             "hvac_heating",
+            "hvac_heating_age",
             "hvac_backup_heat",
             "hvac_dataplate",
             "hvac_burner",
@@ -939,7 +951,18 @@
                 "Evaporative Cooler"
               ],
               "formerBareKey": true
-            },
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "hvac_cooling_age",
+          "label": "AC Age",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "storedOn": "hvac_cooling",
+          "attributes": [
             {
               "id": "age",
               "label": "Age",
@@ -1761,6 +1784,7 @@
           "name": "Cooling",
           "nodeIds": [
             "hvac_cooling",
+            "hvac_cooling_age",
             "hvac_condenser",
             "hvac_compressor",
             "hvac_evaporator_coil",
@@ -2987,17 +3011,6 @@
               ]
             },
             {
-              "id": "age_est",
-              "label": "Age",
-              "values": [
-                "Under 5 years old",
-                "5–10 years old",
-                "10–15 years old",
-                "Over 15 years old — budget replacement",
-                "Not determined"
-              ]
-            },
-            {
               "id": "location",
               "label": "Location",
               "freeText": true,
@@ -3021,6 +3034,28 @@
           "instanceScope": "system",
           "unitLabel": "Water Heater",
           "countLabel": "water heaters"
+        },
+        {
+          "id": "plumb_wh_type_age",
+          "label": "Water Heater Age",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "storedOn": "plumb_wh_type",
+          "attributes": [
+            {
+              "id": "age_est",
+              "label": "Age",
+              "values": [
+                "Under 5 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "Over 15 years old — budget replacement",
+                "Not determined"
+              ]
+            }
+          ],
+          "condition": false
         },
         {
           "id": "plumb_wh_tpr",
@@ -3335,6 +3370,7 @@
           "name": "Water Heater",
           "nodeIds": [
             "plumb_wh_type",
+            "plumb_wh_type_age",
             "plumb_wh_tpr",
             "plumb_wh_operation",
             "plumb_wh_expansion",
@@ -4377,7 +4413,21 @@
                 "1 Layer",
                 "2 Layers"
               ]
-            },
+            }
+          ],
+          "condition": false,
+          "limitations": [
+            "Not Accessed"
+          ]
+        },
+        {
+          "id": "roof_material_age",
+          "label": "Roof Age",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "storedOn": "roof_material",
+          "attributes": [
             {
               "id": "estimated_age",
               "label": "Estimated Age",
@@ -4392,10 +4442,7 @@
               ]
             }
           ],
-          "condition": false,
-          "limitations": [
-            "Not Accessed"
-          ]
+          "condition": false
         },
         {
           "id": "roof_surface",
@@ -5002,6 +5049,7 @@
           "name": "Covering",
           "nodeIds": [
             "roof_material",
+            "roof_material_age",
             "roof_cov_asphalt",
             "roof_cov_metal",
             "roof_cov_tile",
