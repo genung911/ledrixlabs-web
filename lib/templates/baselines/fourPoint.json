@@ -1997,6 +1997,54 @@
        ]
       },
       {
+       "id": "elec_svc_drop",
+       "label": "Service Drop & Clearances",
+       "kind": "component",
+       "keywords": [
+        "service drop",
+        "drop clearance",
+        "overhead conductors",
+        "drop height",
+        "tree contact service"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_svc_mast",
+       "label": "Mast / Weatherhead / Drip Loop",
+       "kind": "component",
+       "keywords": [
+        "weatherhead",
+        "drip loop",
+        "service mast",
+        "mast strap",
+        "mast flashing"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_svc_lateral",
+       "label": "Underground Lateral / Riser",
+       "kind": "component",
+       "keywords": [
+        "underground lateral",
+        "riser conduit",
+        "service lateral",
+        "meter riser",
+        "lateral conduit"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
        "id": "elec_meter",
        "label": "Meter Base",
        "kind": "component",
@@ -2070,7 +2118,20 @@
           "Eaton / Cutler-Hammer",
           "GE",
           "Murray",
+          "Federal Pacific (Stab-Lok)",
+          "Zinsco / Sylvania",
+          "Challenger",
+          "Pushmatic / Bulldog",
           "Other"
+         ]
+        },
+        {
+         "id": "protection",
+         "label": "Overcurrent Protection",
+         "values": [
+          "Circuit Breakers",
+          "Fuses — Edison / Type S",
+          "Cartridge Fuses"
          ]
         },
         {
@@ -2117,6 +2178,23 @@
         "tandem"
        ],
        "condition": true
+      },
+      {
+       "id": "elec_fuses",
+       "label": "Fuses / Fuse Holders",
+       "kind": "component",
+       "keywords": [
+        "fuse",
+        "fuses",
+        "edison base",
+        "type s fuse",
+        "cartridge fuse",
+        "overfusing"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
       },
       {
        "id": "elec_bonding",
@@ -2190,7 +2268,11 @@
          "label": "Type",
          "values": [
           "Copper NM-B (Romex)",
-          "Copper in Conduit"
+          "Copper in Conduit",
+          "Aluminum Branch Circuit",
+          "Knob & Tube",
+          "Cloth-Sheathed (Ungrounded)",
+          "Armored / MC (BX)"
          ]
         },
         {
@@ -2203,7 +2285,107 @@
          ]
         }
        ],
-       "condition": true
+       "condition": false
+      },
+      {
+       "id": "elec_wir_nm",
+       "label": "Copper NM-B Wiring",
+       "kind": "component",
+       "keywords": [
+        "romex wiring",
+        "nm-b cable",
+        "nonmetallic cable",
+        "copper romex"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_conduit",
+       "label": "Copper in Conduit",
+       "kind": "component",
+       "keywords": [
+        "emt conduit",
+        "wiring in conduit",
+        "conduit wiring"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_al",
+       "label": "Aluminum Branch Wiring",
+       "kind": "component",
+       "keywords": [
+        "aluminum branch",
+        "aluminum wiring",
+        "solid aluminum",
+        "co/alr",
+        "alumiconn"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_kt",
+       "label": "Knob & Tube Wiring",
+       "kind": "component",
+       "keywords": [
+        "knob and tube",
+        "knob & tube",
+        "porcelain knob",
+        "k&t"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_cloth",
+       "label": "Cloth-Sheathed / Ungrounded Wiring",
+       "kind": "component",
+       "keywords": [
+        "cloth wiring",
+        "cloth sheathed",
+        "ungrounded wiring",
+        "two-wire ungrounded"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_mc",
+       "label": "Armored / MC (BX) Cable",
+       "kind": "component",
+       "keywords": [
+        "armored cable",
+        "bx cable",
+        "mc cable",
+        "metal clad cable"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "elec_wir_other",
+       "label": "Other Wiring",
+       "kind": "component",
+       "keywords": [],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
       },
       {
        "id": "kit_circuits",

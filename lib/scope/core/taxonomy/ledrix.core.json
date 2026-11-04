@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.7",
+  "packVersion": "2026.11.03.8",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -3121,6 +3121,107 @@
           ]
         },
         {
+          "id": "elec_svc_drop",
+          "label": "Service Drop & Clearances",
+          "keywords": [
+            "service drop",
+            "drop clearance",
+            "overhead conductors",
+            "drop height",
+            "tree contact service"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_entrance",
+              "includes": [
+                "Overhead",
+                "Service Mast"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "elec_svc_mast",
+          "label": "Mast / Weatherhead / Drip Loop",
+          "keywords": [
+            "weatherhead",
+            "drip loop",
+            "service mast",
+            "mast strap",
+            "mast flashing"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_entrance",
+              "includes": [
+                "Overhead",
+                "Service Mast"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "elec_svc_lateral",
+          "label": "Underground Lateral / Riser",
+          "keywords": [
+            "underground lateral",
+            "riser conduit",
+            "service lateral",
+            "meter riser",
+            "lateral conduit"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_entrance",
+              "includes": [
+                "Underground (Lateral)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ],
+          "layout": "row"
+        },
+        {
           "id": "elec_meter",
           "label": "Meter Base",
           "keywords": [
@@ -3198,7 +3299,20 @@
                 "Eaton / Cutler-Hammer",
                 "GE",
                 "Murray",
+                "Federal Pacific (Stab-Lok)",
+                "Zinsco / Sylvania",
+                "Challenger",
+                "Pushmatic / Bulldog",
                 "Other"
+              ]
+            },
+            {
+              "id": "protection",
+              "label": "Overcurrent Protection",
+              "values": [
+                "Circuit Breakers",
+                "Fuses — Edison / Type S",
+                "Cartridge Fuses"
               ]
             },
             {
@@ -3253,6 +3367,36 @@
           "kind": "spec",
           "origin": "core",
           "condition": true
+        },
+        {
+          "id": "elec_fuses",
+          "label": "Fuses / Fuse Holders",
+          "keywords": [
+            "fuse",
+            "fuses",
+            "edison base",
+            "type s fuse",
+            "cartridge fuse",
+            "overfusing"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_panel::protection",
+              "includes": [
+                "Fuses — Edison / Type S",
+                "Cartridge Fuses"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
         },
         {
           "id": "elec_bonding",
@@ -3310,7 +3454,11 @@
               "label": "Type",
               "values": [
                 "Copper NM-B (Romex)",
-                "Copper in Conduit"
+                "Copper in Conduit",
+                "Aluminum Branch Circuit",
+                "Knob & Tube",
+                "Cloth-Sheathed (Ungrounded)",
+                "Armored / MC (BX)"
               ]
             },
             {
@@ -3323,7 +3471,190 @@
               ]
             }
           ],
-          "condition": true
+          "condition": false
+        },
+        {
+          "id": "elec_wir_nm",
+          "label": "Copper NM-B Wiring",
+          "keywords": [
+            "romex wiring",
+            "nm-b cable",
+            "nonmetallic cable",
+            "copper romex"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Copper NM-B (Romex)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_conduit",
+          "label": "Copper in Conduit",
+          "keywords": [
+            "emt conduit",
+            "wiring in conduit",
+            "conduit wiring"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Copper in Conduit"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_al",
+          "label": "Aluminum Branch Wiring",
+          "keywords": [
+            "aluminum branch",
+            "aluminum wiring",
+            "solid aluminum",
+            "co/alr",
+            "alumiconn"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Aluminum Branch Circuit"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_kt",
+          "label": "Knob & Tube Wiring",
+          "keywords": [
+            "knob and tube",
+            "knob & tube",
+            "porcelain knob",
+            "k&t"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Knob & Tube"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_cloth",
+          "label": "Cloth-Sheathed / Ungrounded Wiring",
+          "keywords": [
+            "cloth wiring",
+            "cloth sheathed",
+            "ungrounded wiring",
+            "two-wire ungrounded"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Cloth-Sheathed (Ungrounded)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_mc",
+          "label": "Armored / MC (BX) Cable",
+          "keywords": [
+            "armored cable",
+            "bx cable",
+            "mc cable",
+            "metal clad cable"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [
+                "Armored / MC (BX)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
+        },
+        {
+          "id": "elec_wir_other",
+          "label": "Other Wiring",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "elec_wiring::type",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "Copper NM-B (Romex)",
+                "Copper in Conduit",
+                "Aluminum Branch Circuit",
+                "Knob & Tube",
+                "Cloth-Sheathed (Ungrounded)",
+                "Armored / MC (BX)"
+              ]
+            }
+          ]
         },
         {
           "id": "elec_grounding",
@@ -3593,6 +3924,9 @@
           "nodeIds": [
             "elec_service",
             "elec_entrance",
+            "elec_svc_drop",
+            "elec_svc_mast",
+            "elec_svc_lateral",
             "elec_meter",
             "elec_main"
           ]
@@ -3604,6 +3938,7 @@
             "elec_panel",
             "elec_deadfront",
             "elec_breakers",
+            "elec_fuses",
             "elec_bonding",
             "gar_subpanel"
           ]
@@ -3613,6 +3948,13 @@
           "name": "Branch Wiring",
           "nodeIds": [
             "elec_wiring",
+            "elec_wir_nm",
+            "elec_wir_conduit",
+            "elec_wir_al",
+            "elec_wir_kt",
+            "elec_wir_cloth",
+            "elec_wir_mc",
+            "elec_wir_other",
             "kit_circuits",
             "laundry_dryer"
           ]

@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.7",
+ "packVersion": "2026.11.03.8",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -813,6 +813,150 @@
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_svc_drop": {
+   "requires": [
+    {
+     "specNodeId": "elec_entrance",
+     "includes": [
+      "Overhead",
+      "Service Mast"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "elec_svc_mast": {
+   "requires": [
+    {
+     "specNodeId": "elec_entrance",
+     "includes": [
+      "Overhead",
+      "Service Mast"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "elec_svc_lateral": {
+   "requires": [
+    {
+     "specNodeId": "elec_entrance",
+     "includes": [
+      "Underground (Lateral)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "elec_fuses": {
+   "requires": [
+    {
+     "specNodeId": "elec_panel::protection",
+     "includes": [
+      "Fuses — Edison / Type S",
+      "Cartridge Fuses"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_nm": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Copper NM-B (Romex)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_conduit": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Copper in Conduit"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_al": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Aluminum Branch Circuit"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_kt": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Knob & Tube"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_cloth": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Cloth-Sheathed (Ungrounded)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_mc": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [
+      "Armored / MC (BX)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "elec_wir_other": {
+   "requires": [
+    {
+     "specNodeId": "elec_wiring::type",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Copper NM-B (Romex)",
+      "Copper in Conduit",
+      "Aluminum Branch Circuit",
+      "Knob & Tube",
+      "Cloth-Sheathed (Ungrounded)",
+      "Armored / MC (BX)"
+     ]
     }
    ]
   },
