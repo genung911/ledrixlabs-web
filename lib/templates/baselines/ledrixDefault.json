@@ -1305,6 +1305,25 @@
           ]
         },
         {
+          "id": "plumb_wh_operation",
+          "label": "Operation / Hot Water",
+          "kind": "component",
+          "keywords": [
+            "hot water",
+            "water heater operation",
+            "burner fired",
+            "elements heating",
+            "no hot water",
+            "water heater on",
+            "pilot lit"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
           "id": "plumb_wh_expansion",
           "label": "Expansion Tank",
           "kind": "component",
@@ -2178,7 +2197,13 @@
                 "From Ground / Eaves",
                 "Drone",
                 "Binoculars"
-              ]
+              ],
+              "limitations": [
+                "Steep",
+                "Snow",
+                "Too high"
+              ],
+              "limitLabel": "Not walked / not inspected"
             }
           ],
           "trimmed": []

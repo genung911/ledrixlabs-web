@@ -97,6 +97,7 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   condition:        { check: bool, class: 'policy', why: 'whether this item is assessed (inspection work)' },
   method:           { check: strList, class: 'policy', why: 'method values are disclosures in the report' },
   limitations:      { check: strList, class: 'policy', why: 'limitation reasons are disclosures in the report' },
+  limitLabel:       { check: nonEmpty, class: 'content', why: 'the method row\'s "could not be done" chip (2026-11-03)' },
   defaultActive:    { check: bool, class: 'policy', why: 'what a new inspection covers' },
   appliesToTypes:   { check: strList, class: 'policy', why: 'when this item is inspected (legacy Equipment Types)' },
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },
@@ -138,7 +139,35 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   requirementOverrides: { check: (v) => (obj(v) ? null : 'must be a map of requirement ids'), class: 'policy', why: 'changes to Ledrix default requirements' },
   // 2026-10-27: what kind of property the template is for (propertyTypes.ts) — a label and a filter; no inspection reads it.
   propertyTypes: { check: checkPropertyTypes, class: 'content', why: 'which kinds of property it is for' },
+  // 2026-11-03 (owner: gates are part of the checklist; companies change Ledrix's per template, "Reset to Ledrix"):
+  // this template's changes to Ledrix's gates and its own gates (taxonomy/gates.ts). Captured into each new inspection.
+  gates: { check: checkGates, class: 'policy', why: 'what an access row, a method or a utility removes or qualifies' },
 };
+
+/** A template's gates (taxonomy/gates.ts Gate, or `{ id, removed: true }` turning a Ledrix gate off). */
+function checkGates(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  const ids = new Set<string>();
+  for (const g of v) {
+    if (!obj(g) || typeof g.id !== 'string' || !g.id.trim()) return 'each gate needs an id';
+    if (ids.has(g.id)) return `gate ${g.id} is listed twice`;
+    ids.add(g.id);
+    if (g.removed === true) { if (Object.keys(g).some(k => k !== 'id' && k !== 'removed')) return `gate ${g.id}: a removed gate carries only its id`; continue; }
+    if (typeof g.label !== 'string' || !g.label.trim()) return `gate ${g.id} needs a label`;
+    const isRow = typeof g.row === 'string' && !!g.row, isUtil = g.utility === 'water' || g.utility === 'gas' || g.utility === 'power';
+    if (isRow === isUtil) return `gate ${g.id} is a row or a utility (exactly one)`;
+    if (g.area !== undefined && !(Array.isArray(g.area) && g.area.every((a: unknown) => typeof a === 'string' && a))) return `gate ${g.id}: area must be a list of ids`;
+    if (g.items !== undefined && !(Array.isArray(g.items) && g.items.every((i: any) => obj(i) && typeof i.node === 'string' && i.node
+      && (i.when === undefined || (obj(i.when) && typeof i.when.specNodeId === 'string' && Array.isArray(i.when.includes)))))) return `gate ${g.id}: items must be {node, when?}`;
+    if (!Array.isArray(g.reasons) || !g.reasons.length) return `gate ${g.id} needs its reasons`;
+    for (const r of g.reasons) {
+      if (!obj(r) || typeof r.value !== 'string' || !r.value.trim()) return `gate ${g.id}: each reason needs a value`;
+      if (!['remove', 'qualify', 'none'].includes(r.effect as string)) return `gate ${g.id}: ${r.value} must remove, qualify or do nothing`;
+      if (r.effect === 'qualify' && (typeof r.phrase !== 'string' || !r.phrase.trim())) return `gate ${g.id}: ${r.value} qualifies — it needs its phrase`;
+    }
+  }
+  return null;
+}
 
 const NODE_KINDS = ['system', 'subsystem', 'component'];
 

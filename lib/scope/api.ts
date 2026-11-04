@@ -7,12 +7,20 @@
 // both changing the same job.
 import { workspace } from '@/lib/workspace/client';
 import { webDevice } from '@/lib/findings/edit';
-import type { ServerValue, ValueKind } from './model';
+import type { ServerValue, Utilities, ValueKind } from './model';
 
 export async function loadTemplate(inspectionId: string): Promise<{ systems?: unknown[] } | null> {
   const { data, error } = await workspace.from('inspection_templates').select('snapshot').eq('inspection_id', inspectionId).maybeSingle();
   if (error) throw new Error(error.message || 'The checklist could not be loaded');
   return ((data as { snapshot?: { systems?: unknown[] } } | null)?.snapshot) ?? null;
+}
+
+/** The visit's utility states (#103 columns) — what the utility gates read. A server without them answers none. */
+export async function loadUtilities(inspectionId: string): Promise<Utilities> {
+  const { data, error } = await workspace.from('inspections').select('water_state, gas_state, power_state').eq('id', inspectionId).maybeSingle();
+  if (error || !data) return {};
+  const d = data as { water_state?: string | null; gas_state?: string | null; power_state?: string | null };
+  return { water: d.water_state ?? null, gas: d.gas_state ?? null, power: d.power_state ?? null };
 }
 
 export async function loadValues(inspectionId: string): Promise<ServerValue[]> {
@@ -29,7 +37,7 @@ export async function loadValues(inspectionId: string): Promise<ServerValue[]> {
   }
 }
 
-export type PutRow = { key: string; kind: ValueKind; section: string | null; value: Record<string, unknown>; baseSeq: number | null };
+export type PutRow = { key: string; kind: ValueKind | 'limitation'; section: string | null; value: Record<string, unknown> | null; baseSeq: number | null };
 export type PutAnswer = { kind: 'saved'; seq: number } | { kind: 'refused'; reason: string } | { kind: 'error'; message: string };
 
 /** One item's value, on the main building. */

@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.03.2",
+  "packVersion": "2026.11.03.3",
   "revision": 269,
   "locale": "en-US",
   "severityVocabulary": [
@@ -1592,6 +1592,25 @@
           ]
         },
         {
+          "id": "plumb_wh_operation",
+          "label": "Operation / Hot Water",
+          "keywords": [
+            "hot water",
+            "water heater operation",
+            "burner fired",
+            "elements heating",
+            "no hot water",
+            "water heater on",
+            "pilot lit"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
           "id": "plumb_wh_expansion",
           "label": "Expansion Tank",
           "keywords": [
@@ -1683,6 +1702,7 @@
           "nodeIds": [
             "plumb_wh_type",
             "plumb_wh_tpr",
+            "plumb_wh_operation",
             "plumb_wh_expansion",
             "plumb_wh_flue",
             "plumb_wh_pan"
@@ -2682,7 +2702,13 @@
             "From Ground / Eaves",
             "Drone",
             "Binoculars"
-          ]
+          ],
+          "limitations": [
+            "Steep",
+            "Snow",
+            "Too high"
+          ],
+          "limitLabel": "Not walked / not inspected"
         },
         {
           "id": "roof_flashing",
@@ -6080,6 +6106,322 @@
       "sub": "Your firm's template.",
       "layout": "canonical",
       "editable": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "crawlspace_access",
+      "label": "Crawlspace",
+      "row": "found_cs_access",
+      "area": [
+        "foundation__crawlspace"
+      ],
+      "storeKey": "foundation__crawlspace",
+      "reasons": [
+        {
+          "value": "No Access",
+          "effect": "remove",
+          "cause": "No access"
+        },
+        {
+          "value": "Viewed from Hatch",
+          "effect": "qualify",
+          "phrase": "as viewed from the hatch",
+          "line": "Crawlspace viewed from the hatch only: conditions reported for the crawlspace are for the areas visible from the hatch."
+        },
+        {
+          "value": "Partial Entry",
+          "effect": "qualify",
+          "phrase": "in the areas entered",
+          "line": "Crawlspace partially entered: conditions reported for the crawlspace are for the areas entered."
+        }
+      ]
+    },
+    {
+      "id": "attic_access",
+      "label": "Attic",
+      "row": "attic_access",
+      "area": [
+        "attic"
+      ],
+      "storeKey": "attic",
+      "reasons": [
+        {
+          "value": "No Access",
+          "effect": "remove",
+          "cause": "No access"
+        },
+        {
+          "value": "Viewed from Hatch",
+          "effect": "qualify",
+          "phrase": "as viewed from the hatch",
+          "line": "Attic viewed from the hatch only: conditions reported for the attic are for the areas visible from the hatch."
+        },
+        {
+          "value": "Partial Entry",
+          "effect": "qualify",
+          "phrase": "in the areas entered",
+          "line": "Attic partially entered: conditions reported for the attic are for the areas entered."
+        }
+      ]
+    },
+    {
+      "id": "roof_method",
+      "label": "Roof covering, flashing and penetrations",
+      "row": "roof_method",
+      "area": [
+        "roofing__covering",
+        "roofing__flashing_penetrations"
+      ],
+      "reasons": [
+        {
+          "value": "Walked",
+          "effect": "none"
+        },
+        {
+          "value": "From Ground / Eaves",
+          "effect": "qualify",
+          "phrase": "as viewed from the ground and eaves"
+        },
+        {
+          "value": "Drone",
+          "effect": "qualify",
+          "phrase": "as viewed by drone"
+        },
+        {
+          "value": "Binoculars",
+          "effect": "qualify",
+          "phrase": "as viewed through binoculars from the ground"
+        },
+        {
+          "value": "*limitation",
+          "effect": "remove"
+        }
+      ]
+    },
+    {
+      "id": "panel_dead_front",
+      "label": "Panel interior",
+      "row": "elec_deadfront",
+      "items": [
+        {
+          "node": "elec_breakers"
+        },
+        {
+          "node": "elec_bonding"
+        }
+      ],
+      "reasons": [
+        {
+          "value": "Not Removed",
+          "effect": "remove",
+          "cause": "Dead front not removed"
+        },
+        {
+          "value": "Painted / Stuck",
+          "effect": "remove",
+          "cause": "Dead front painted / stuck"
+        }
+      ]
+    },
+    {
+      "id": "utility_water",
+      "label": "Water",
+      "utility": "water",
+      "items": [
+        {
+          "node": "plumb_flow"
+        },
+        {
+          "node": "plumb_pressure"
+        },
+        {
+          "node": "plumb_drainage"
+        },
+        {
+          "node": "plumb_sinks"
+        },
+        {
+          "node": "plumb_toilets"
+        },
+        {
+          "node": "plumb_tubshower"
+        },
+        {
+          "node": "plumb_hosebibs"
+        },
+        {
+          "node": "laundry_washer"
+        },
+        {
+          "node": "laundry_drain"
+        },
+        {
+          "node": "kit_dishwasher"
+        }
+      ],
+      "reasons": [
+        {
+          "value": "Off at meter",
+          "effect": "remove"
+        },
+        {
+          "value": "Off — vacant",
+          "effect": "remove"
+        }
+      ]
+    },
+    {
+      "id": "utility_gas",
+      "label": "Gas",
+      "utility": "gas",
+      "items": [
+        {
+          "node": "hvac_burner",
+          "when": {
+            "specNodeId": "hvac_heating::fuel_source",
+            "includes": [
+              "gas",
+              "propane"
+            ]
+          }
+        },
+        {
+          "node": "hvac_temp_rise",
+          "when": {
+            "specNodeId": "hvac_heating::fuel_source",
+            "includes": [
+              "gas",
+              "propane"
+            ]
+          }
+        },
+        {
+          "node": "plumb_wh_operation",
+          "when": {
+            "specNodeId": "plumb_wh_type::type",
+            "includes": [
+              "natural gas",
+              "propane"
+            ]
+          }
+        },
+        {
+          "node": "kit_range",
+          "when": {
+            "specNodeId": "kit_range",
+            "includes": [
+              "gas",
+              "dual fuel"
+            ]
+          }
+        },
+        {
+          "node": "fp_gas_logs",
+          "when": {
+            "specNodeId": "fp_type",
+            "includes": [
+              "gas"
+            ]
+          }
+        },
+        {
+          "node": "fp_gas_vent",
+          "when": {
+            "specNodeId": "fp_type",
+            "includes": [
+              "gas"
+            ]
+          }
+        }
+      ],
+      "reasons": [
+        {
+          "value": "Off at meter",
+          "effect": "remove"
+        },
+        {
+          "value": "Off — vacant",
+          "effect": "remove"
+        }
+      ]
+    },
+    {
+      "id": "utility_power",
+      "label": "Power",
+      "utility": "power",
+      "items": [
+        {
+          "node": "hvac_burner"
+        },
+        {
+          "node": "hvac_temp_rise"
+        },
+        {
+          "node": "hvac_thermostat"
+        },
+        {
+          "node": "hvac_compressor"
+        },
+        {
+          "node": "elec_grounding"
+        },
+        {
+          "node": "elec_receptacles"
+        },
+        {
+          "node": "int_lighting"
+        },
+        {
+          "node": "elec_ext_lighting"
+        },
+        {
+          "node": "kit_fridge"
+        },
+        {
+          "node": "kit_oven"
+        },
+        {
+          "node": "kit_dishwasher"
+        },
+        {
+          "node": "kit_disposal"
+        },
+        {
+          "node": "kit_hood"
+        },
+        {
+          "node": "plumb_wh_operation",
+          "when": {
+            "specNodeId": "plumb_wh_type::type",
+            "includes": [
+              "electric",
+              "heat pump"
+            ]
+          }
+        },
+        {
+          "node": "kit_range",
+          "when": {
+            "specNodeId": "kit_range",
+            "includes": [
+              "electric",
+              "induction",
+              "dual fuel"
+            ]
+          }
+        }
+      ],
+      "reasons": [
+        {
+          "value": "Off at meter",
+          "effect": "remove"
+        },
+        {
+          "value": "Off — vacant",
+          "effect": "remove"
+        }
+      ]
     }
   ]
 }

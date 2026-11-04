@@ -26,7 +26,8 @@ registerHooks({
 const out = []; const ok = (name, c, d = '') => out.push({ name, pass: !!c, detail: d });
 
 // §1
-const COPIES = ['taxonomy/scopeRules.ts', 'taxonomy/conditionMatch.ts', 'taxonomy/specKeyDefs.ts', 'taxonomy/ledrix.core.json', 'taxonomy/roomMatching.ts', 'taxonomy/leafProgress.ts', 'services/structureIds.ts'];
+// 2026-11-03: + taxonomy/gates.ts (gates are part of the checklist; scopeRules reads them).
+const COPIES = ['taxonomy/scopeRules.ts', 'taxonomy/gates.ts', 'taxonomy/conditionMatch.ts', 'taxonomy/specKeyDefs.ts', 'taxonomy/ledrix.core.json', 'taxonomy/roomMatching.ts', 'taxonomy/leafProgress.ts', 'services/structureIds.ts'];
 if (!existsSync(join(APP, 'src/core/taxonomy/scopeRules.ts'))) {
   if (process.env.ALLOW_NO_APP) console.log(`  · §1 SKIPPED — no ledrix-app at ${APP}`);
   else ok(`§1 ledrix-app found at ${APP} (LEDRIX_APP, or ALLOW_NO_APP=1 to skip)`, false);
@@ -101,8 +102,9 @@ for (const r of out) { if (r.pass) { pass++; console.log(`  ✓ ${r.name}`); } e
 const { execFileSync } = await import('node:child_process');
 const { mkdtempSync, cpSync, writeFileSync } = await import('node:fs');
 const { tmpdir } = await import('node:os');
+// Amended 2026-11-03: the pointer-row anchor carries the area-limit clause (`&& !covered.has(id)`, pack 2026.11.03.2).
 const MUTANTS = [
-  { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n);', to: 'return !!n && !recordsNothing(n);', expect: /^§2 a pointer row/ },
+  { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id);', to: 'return !!n && !recordsNothing(n) && !covered.has(id);', expect: /^§2 a pointer row/ },
   { f: 'lib/scope/model.ts', why: 'the core pack not registered (keys from the template’s shape)', from: "import './core/taxonomy/specKeyDefs';", to: '', expect: /^§2 a company-added field/ },
   { f: 'lib/scope/model.ts', why: 'a spec alone counts an item that takes a condition', from: "const ans = componentAxes(k).condition === false ? answerNodeFor(k, pairMap.get(k.id)) : null;", to: "const ans = answerNodeFor(k, pairMap.get(k.id));", expect: /^§2 the count/ },
   { f: 'lib/scope/model.ts', why: 'a teammate may change any section', from: "return holderOf(team, section) === team.me ? 'edit' : 'not_yours';", to: "return 'edit';", expect: /^§2 the section gate/ },

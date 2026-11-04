@@ -15,6 +15,7 @@ import type { TemplateNode } from '../templates/InspectionTemplate';
 import { componentAxes, specStoreKey, specLegacyKey, METHOD_KEY_ATTR, type ComponentAttribute } from './conditionMatch';
 import { norm } from './roomMatching';
 import { MAIN_STRUCTURE_ID } from '../services/structureIds';
+import { evaluateGates, gateOfRow, type Gate, type GateUtility } from './gates';
 
 // ── Structures: a secondary building's keys are prefixed; the main building's are bare (from StructureService) ──
 const SCOPE_PREFIX = 'struct:';
@@ -187,22 +188,44 @@ export const AREA_LIMITS: readonly { id: string; label: string }[] = [
   { id: 'foundation__basement',   label: 'Basement' },
   { id: 'attic',                  label: 'Attic' },
 ];
-/** The reasons offered when limiting a whole area. "Other" (free text) lives at the call site. */
-export const AREA_LIMIT_REASONS: readonly string[] = ['Viewed from hatch', 'Partial entry', 'No access'];
+/** The reasons offered when limiting a whole area. "Other" (free text) lives at the call site.
+ *  2026-11-03 (owner on 690): "Viewed from hatch changes wording in the report, not remove items" — and "partial entry
+ *  is the same". Both left this list: they are recorded on the area's ACCESS row and qualify the report's wording
+ *  (accessQualifierText); only an area that was not entered at all is limited as a whole. */
+export const AREA_LIMIT_REASONS: readonly string[] = ['No access'];
+/** The cause an access row's "No Access" writes on its area (and the only cause clearing that row takes back). */
+export const AREA_NO_ACCESS_CAUSE = 'No access';
 const areaBase = (id: string) => String(id).replace(/~i\d+$/, '');
 export const areaLimitOf = (nodeId: string): { id: string; label: string } | null =>
   AREA_LIMITS.find(a => a.id === areaBase(nodeId)) ?? null;
+/** What the gates read on this job (owner 2026-11-03). */
+export type GateContext = {
+  gates?: readonly Gate[];
+  utility?: (u: GateUtility) => string | undefined;
+  specValue?: (key: string) => string | undefined;
+  rowValues?: (nodeId: string) => readonly string[];
+};
 /** One area's limitation as either store holds it: only `except` matters to coverage. */
 export type AreaLimitLike = { except?: readonly unknown[] | null } | null | undefined;
 /** Every node an area limitation covers: the area node's whole subtree (its own id included) minus the items brought
  *  back with "Inspect one anyway" (and their subtrees). `limits` is keyed by area id, as sop_limitations.systems is —
  *  any other key in it (an ordinary system limitation) covers nothing here. Pure. */
 export function areaCoveredNodes(systems: readonly TemplateNode[] | null | undefined,
-  limits: Record<string, AreaLimitLike> | null | undefined): Set<string> {
+  limits: Record<string, AreaLimitLike> | null | undefined, ctx?: GateContext): Set<string> {
   const out = new Set<string>();
+  // GATES (owner 2026-11-03: mockup approved) — what a gate removes falls off exactly as an area limitation's items do:
+  // a row gate's stored REMOVE (Crawlspace / Attic No Access, Roof not inspected, the panel's dead front) and a
+  // utility that is off. `ctx` absent = no gates (the header's area limitations only, as before).
+  if (ctx?.gates?.length) {
+    const ev = evaluateGates(ctx.gates, systems as any, { stored: limits as any, utility: ctx.utility, specValue: ctx.specValue, rowValues: ctx.rowValues });
+    for (const id of ev.removed.keys()) out.add(id);
+  }
   if (!limits) return out;
   const add = (n: TemplateNode, except: Set<string>) => {
     if (except.has(n.id)) return;
+    // A gate's ROW is never covered (2026-11-03): it is where the access is recorded — "No Access" there sets the
+    // area's limitation — so it stays an answered row, not one of the items the limitation lists.
+    if (gateOfRow(ctx?.gates, n.id)) return;
     out.add(n.id);
     for (const c of n.children ?? []) add(c, except);
   };

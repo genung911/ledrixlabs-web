@@ -27,6 +27,7 @@ import { LevelPill } from '@/components/templates/RequirementsEditor';
 import { LedrixPanel } from '@/components/templates/LedrixPanel';
 import { PhonePreview } from '@/components/templates/PhonePreview';
 import { BuildingTypesPanel, buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
+import { GatesPanel } from '@/components/templates/GatesPanel';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
@@ -37,12 +38,13 @@ import { useDraft } from '@/lib/templates/useDraft';
 import { TemplateApiError } from '@/lib/templates/api';
 
 type Sel = { systemId: string | null; nodeId: string | null };
-type Section = 'overview' | 'buildings' | 'systems' | 'requirements' | 'report' | 'review';
+type Section = 'overview' | 'buildings' | 'systems' | 'gates' | 'requirements' | 'report' | 'review';
 
 const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'overview', label: 'Overview', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
   { id: 'buildings', label: 'Building Types', icon: 'M3 10.5L12 4l9 6.5V20h-6v-6H9v6H3z' },
   { id: 'systems', label: 'Systems & Components', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
+  { id: 'gates', label: 'Gates', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
   { id: 'requirements', label: 'Requirements', icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' },
   { id: 'report', label: 'Report Content', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7' },
   { id: 'review', label: 'Review & Publish', icon: 'M4 12l16-8-6 16-3-7-7-1z' },
@@ -233,6 +235,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 onOpenSystem={id => { select({ systemId: id, nodeId: null }); setSection('systems'); }} />
             </div>
           )}
+          {section === 'gates' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><GatesPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'requirements' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><RequirementsSection tree={tree} onGo={go} /></div>}
           {section === 'report' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><ReportSection tree={tree} onGo={go} /></div>}
           {section === 'review' && (

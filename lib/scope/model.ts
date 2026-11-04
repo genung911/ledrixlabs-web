@@ -15,6 +15,8 @@ import {
   materialNodeFor, scopeRowsOf, sectionsOfTemplate, specLabel, splitSpecValue, tileNodesOf, type SectionOf,
 } from './core/taxonomy/scopeRules';
 import { leafVerdict } from './core/taxonomy/leafProgress';
+import { effectiveGates, evaluateGates, gateStoreKey, type Gate } from './core/taxonomy/gates';
+import ledrixPack from './core/taxonomy/ledrix.core.json';
 import type { TemplateNode } from './core/templates/InspectionTemplate';
 
 export type ValueKind = 'condition' | 'spec';
@@ -51,7 +53,16 @@ export type ScopeRow = {
 export type AreaLimitView = { label: string; cause: string; covered: string[] };
 export type ScopeTile = { node: TemplateNode; rows: ScopeRow[]; limit?: AreaLimitView };
 export type ScopeSystem = { node: TemplateNode; section: string; kind: 'system' | 'room' | 'structure'; tiles: ScopeTile[]; done: number; total: number;
-  limit?: AreaLimitView };
+  limit?: AreaLimitView;
+  /** GATES in effect on this system (owner 2026-11-03): a row gate's REMOVE, a utility that is off, a qualified view. */
+  gates?: { tone: 'warn' | 'info'; head: string; text: string }[] };
+/** The visit's utility states (inspections.water_state / gas_state / power_state, #103). */
+export type Utilities = { water?: string | null; gas?: string | null; power?: string | null };
+/** The gates a job runs: its snapshot's own, or Ledrix's with the template's changes (the phone's templateGates.gatesOf). */
+export function gatesOfTemplate(template: { gates?: unknown; gateDefinitions?: unknown } | null): Gate[] {
+  if (template && Array.isArray(template.gateDefinitions)) return template.gateDefinitions as Gate[];
+  return effectiveGates(((ledrixPack as { gates?: Gate[] }).gates ?? []), Array.isArray(template?.gates) ? (template!.gates as Gate[]) : null);
+}
 
 /** The area limitations among the server's rows (#100's 'system:<id>' limitation rows), keyed by area id. */
 export function areaLimitsOf(values: ValueMap): Record<string, { cause: string; except?: string[] }> {
@@ -60,7 +71,8 @@ export function areaLimitsOf(values: ValueMap): Record<string, { cause: string; 
     if (!k.startsWith('limitation|system:') || !r.value) continue;
     const id = r.node_key.slice('system:'.length);
     const v = r.value as { cause?: unknown; except?: unknown };
-    if (!areaLimitOf(id) || typeof v.cause !== 'string') continue;
+    // An area's limitation, or a GATE's stored REMOVE (`gate.<id>` — Roof not inspected, the panel's dead front; 2026-11-03).
+    if ((!areaLimitOf(id) && !id.startsWith('gate.')) || typeof v.cause !== 'string') continue;
     out[id] = { cause: v.cause, ...(Array.isArray(v.except) ? { except: v.except.map(String) } : {}) };
   }
   return out;
@@ -69,13 +81,18 @@ export function areaLimitsOf(values: ValueMap): Record<string, { cause: string; 
 const kindOf = (n: TemplateNode): 'system' | 'room' | 'structure' =>
   n.sectionType === 'room' || n.sectionType === 'structure' ? n.sectionType : String(n.id).startsWith('croom_') ? 'room' : 'system';
 
-export function buildScope(template: { systems?: TemplateNode[] } | null, values: ValueMap,
-  counts: { findings: (nodeId: string) => number; photos: (nodeId: string) => number }): { systems: ScopeSystem[]; sectionOf: SectionOf } {
+export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown; gateDefinitions?: unknown } | null, values: ValueMap,
+  counts: { findings: (nodeId: string) => number; photos: (nodeId: string) => number }, utilities: Utilities = {}): { systems: ScopeSystem[]; sectionOf: SectionOf } {
   const systems = template?.systems ?? [];
   const sectionOf = sectionsOfTemplate(systems);
-  // Covered by a whole-area limitation: falls off (owner 2026-11-03), as on the phone (scopeRules.areaCoveredNodes).
+  // Covered by a whole-area limitation or a GATE: falls off (owner 2026-11-03), as on the phone (scopeRules.areaCoveredNodes).
   const areaLimits = areaLimitsOf(values);
-  const covered = areaCoveredNodes(systems, areaLimits);
+  const gates = gatesOfTemplate(template);
+  const rowValues = (nodeId: string): string[] => [...conditionValues(values, nodeId),
+    ...[...values.values()].filter(r => r.kind === 'spec' && r.node_key.split('::')[0] === nodeId).map(r => String((r.value as { value?: unknown } | null)?.value ?? '')).filter(Boolean)];
+  const gateCtx = { gates, utility: (u: 'water' | 'gas' | 'power') => utilities[u] ?? undefined, specValue: (k: string) => specValue(values, k), rowValues };
+  const covered = areaCoveredNodes(systems, areaLimits, gateCtx);
+  const gateEval = evaluateGates(gates, systems, { ...gateCtx, stored: areaLimits });
   const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id); };
   const limitView = (n: TemplateNode, tiles: TemplateNode[]): AreaLimitView | undefined => {
     const area = areaLimitOf(n.id); const e = area ? areaLimits[n.id] : undefined;
@@ -150,7 +167,18 @@ export function buildScope(template: { systems?: TemplateNode[] } | null, values
     }).filter(t => t.rows.length > 0 || t.limit);
     const p = tileNodesOf(sys).reduce((acc, t) => { const q = progress(t, active); return { done: acc.done + q.done, total: acc.total + q.total }; }, { done: 0, total: 0 });
     const limit = limitView(sys, tileNodesOf(sys));
-    out.push({ node: sys, section: sectionOf(sys.id) ?? sys.id, kind, tiles, ...p, ...(limit ? { limit } : {}) });
+    const label = (id: string) => byId.get(id)?.label;
+    const sysGates: NonNullable<ScopeSystem['gates']> = [];
+    for (const a of gateEval.active) {
+      const here = a.nodes.filter(id => byId.has(id) && !childrenOf(byId.get(id)!).length).map(label).filter((x): x is string => !!x);
+      const rowHere = !!a.gate.row && byId.has(a.gate.row);
+      if (!rowHere && !here.length) continue;
+      if (a.reason.effect === 'remove' && a.gate.row && areaLimitOf(gateStoreKey(a.gate))) continue;   // the area banner says it
+      sysGates.push(a.reason.effect === 'qualify'
+        ? { tone: 'info', head: `${a.gate.label}: ${a.cause}`, text: `Ratings here print "${a.reason.phrase}". Nothing is removed.` }
+        : { tone: 'warn', head: `${a.gate.label}: ${a.cause}`, text: `${here.length} item${here.length === 1 ? '' : 's'} ${a.gate.utility ? 'not tested' : 'not inspected'}, not counted: ${here.join(', ')}. Change it on the phone.` });
+    }
+    out.push({ node: sys, section: sectionOf(sys.id) ?? sys.id, kind, tiles, ...p, ...(limit ? { limit } : {}), ...(sysGates.length ? { gates: sysGates } : {}) });
   }
   return { systems: out, sectionOf };
 }

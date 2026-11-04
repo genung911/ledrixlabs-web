@@ -8,8 +8,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Empty, Loading, formatWhen } from './ui';
 import type { EditLock } from './FindingEditor';
-import { buildScope, holderOf, sectionAccess, valueId, valueMapOf, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
-import { loadTemplate, loadValues, putValue } from '@/lib/scope/api';
+import { gateOfRow, gateRowAction, gateStoreKey } from '@/lib/scope/core/taxonomy/gates';
+import { buildScope, gatesOfTemplate, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
+import { loadTemplate, loadUtilities, loadValues, putValue } from '@/lib/scope/api';
 import { CONDITION_OK, joinSpecPicks, limitationReasonOf, nextConditionValues } from '@/lib/scope/core/taxonomy/scopeRules';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
 
@@ -17,7 +18,7 @@ type Counts = { findings: Record<string, number>; photos: Record<string, number>
 type Props = { inspectionId: string; team: TeamLike; names: Record<string, string>; lock: EditLock; counts: Counts; onOpenFindings: () => void; onOpenPhotos: () => void };
 
 export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos }: Props) {
-  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap }>({ kind: 'loading' });
+  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities }>({ kind: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -25,14 +26,14 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
 
   const load = useCallback(async () => {
     try {
-      const [template, rows] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId)]);
-      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows) });
+      const [template, rows, utilities] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId), loadUtilities(inspectionId)]);
+      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows), utilities });
     } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The checklist could not be loaded.' }); }
   }, [inspectionId]);
   useEffect(() => { void load(); }, [load]);
 
   const view = useMemo(() => state.kind === 'ready'
-    ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 })
+    ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 }, state.utilities)
     : null, [state, counts]);
 
   if (state.kind === 'loading') return <Card className="xl:col-span-2"><Loading label="Loading the checklist…" /></Card>;
@@ -73,8 +74,28 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
 
   const tapOk = (row: ScopeRow) => row.condition && save(row, 'condition', row.condition.key, row.section,
     { label: row.node.label, values: nextConditionValues(row.condition.values, { ok: true }) }, row.condition.seq, row.node.label);
-  const tapLimitation = (row: ScopeRow, reason: string) => { setLimitFor(null); if (row.condition) void save(row, 'condition', row.condition.key, row.section,
-    { label: row.node.label, values: nextConditionValues(row.condition.values, { limitation: reason }) }, row.condition.seq, row.node.label); };
+  const tapLimitation = (row: ScopeRow, reason: string) => {
+    setLimitFor(null);
+    if (!row.condition) return;
+    const before = row.condition.values, after = nextConditionValues(row.condition.values, { limitation: reason });
+    void save(row, 'condition', row.condition.key, row.section, { label: row.node.label, values: after }, row.condition.seq, row.node.label)
+      .then(() => gateFollow(row, before, after));
+  };
+  // A GATE's row (owner 2026-11-03: "No Access" on Crawlspace / Attic Access, Roof not inspected, the panel's dead front):
+  // the same edge rule the phone runs (gates.gateRowAction) stores or takes back the gate's REMOVE, so the website and
+  // the phone remove the same items.
+  const gateFollow = async (row: ScopeRow, before: string[], after: string[]) => {
+    if (state.kind !== 'ready') return;
+    const gate = gateOfRow(gatesOfTemplate(state.template as any), row.node.id);
+    if (!gate) return;
+    const key = `system:${gateStoreKey(gate)}`;
+    const cur = state.values.get(`limitation|${key}`);
+    const act = gateRowAction(gate, before, after, (cur?.value as { cause?: string } | null) ?? null);
+    if (!act) return;
+    const r = await putValue(inspectionId, { key, kind: 'limitation', section: row.section,
+      value: act.act === 'set' ? { cause: act.cause, at: new Date().toISOString(), kind: 'not_inspected' } : null, baseSeq: cur?.seq ?? null });
+    if (r.kind === 'saved') await load();
+  };
   const tapSpec = (row: ScopeRow, f: SpecField, option: string) => {
     const picked = f.picked.includes(option) ? f.picked.filter(p => p !== option) : [...f.picked, option];
     const prev = (state.kind === 'ready' ? state.values.get(valueId('spec', f.key))?.value : null) ?? {};
@@ -119,6 +140,7 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
           {lock.error && access === 'edit' && <Banner tone="bad">{lock.error}</Banner>}
           {note && <Banner tone={note.tone}>{note.text}</Banner>}
           {current.limit && <AreaLimit limit={current.limit} />}
+          {(current.gates ?? []).map((g, i) => <Banner key={i} tone={g.tone === 'info' ? 'info' : 'warn'}><b>{g.head}</b> <span className="mt-1 block text-xs text-body">{g.text}</span></Banner>)}
         </div>
 
         {current.tiles.map(tile => (
