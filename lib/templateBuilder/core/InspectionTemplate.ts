@@ -61,6 +61,9 @@ export type TemplateNode = {
   condition?: boolean;
   limitations?: string[];
   method?: string[];
+  /** A method row's "could not be done" chip, opening its limitation reasons (app 2026-11-03: Roof Method's
+   *  "Not walked / not inspected"). Absent = no chip. */
+  limitLabel?: string;
   freeFormValue?: boolean;
   pointsTo?: { systemId: string; nodeId: string };
   /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */
@@ -95,4 +98,14 @@ export type InspectionTemplate = {
   propertyTypes?: import('./propertyTypes').PropertyTypeId[];
   /** Company overrides of the pinned set's requirements (app Phase A). */
   requirementOverrides?: Record<string, import('./requirementsContract').RequirementOverride>;
+  /** GATES (app 2026-11-03, taxonomy/gates.ts — the copy in lib/scope/core). On a company template: its changes to
+   *  Ledrix's gates by id (a gate, or `{ id, removed: true }`); "Reset to Ledrix" removes the entry. */
+  gates?: Array<import('../../scope/core/taxonomy/gates').Gate | { id: string; removed: true }>;
+  /** Inspection snapshots only (app 2026-11-03): the effective gates, captured at creation and kept. */
+  gateDefinitions?: import('../../scope/core/taxonomy/gates').Gate[];
+  /** COUNT RULES (app 2026-11-03, taxonomy/countRules.ts — "How many …?"). On a company template: its changes to
+   *  Ledrix's rules by id; "Reset to Ledrix" removes the entry. */
+  counts?: Array<Partial<import('../../scope/core/taxonomy/countRules').CountRule> & { id: string }>;
+  /** Inspection snapshots only (app 2026-11-03): the effective count rules, captured at creation and kept. */
+  countDefinitions?: import('../../scope/core/taxonomy/countRules').CountRule[];
 };

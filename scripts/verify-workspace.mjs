@@ -227,7 +227,7 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
 // ── 3. Mutations: each rule must catch a broken copy ───────────────────────────
 console.log('mutations');
 const MUT = {
-  'photos: a deleted photo is never shown': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'].replace(".eq('inspection_id', inspectionId).is('deleted_at', null).order('taken_at'", ".eq('inspection_id', inspectionId).order('taken_at'") }),
+  'photos: a deleted photo is never shown': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'].replace(".eq('inspection_id', inspectionId).is('deleted_at', null).", ".eq('inspection_id', inspectionId).") }),   // anchored on the filter alone (2026-11-04: the cover-photo .neq after it moved the old anchor)
   'read-only: no write calls': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'] + "\nworkspace.from('anomalies').update({ status: 'confirmed' });" }),
   'read-only: no storage upload/remove': s => ({ ...s, 'lib/workspace/data.ts': s['lib/workspace/data.ts'] + "\nworkspace.storage.from('x').upload('a', b);" }),
   'no account creation': s => ({ ...s, 'app/app/login/page.tsx': s['app/app/login/page.tsx'] + "\nworkspace.auth.signUp({ email, password });" }),
