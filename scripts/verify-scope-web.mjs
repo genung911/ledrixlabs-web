@@ -57,8 +57,10 @@ ok('§2 a single field is the bare node id, named by the component (Gutters)', J
 ok('§2 a method-only row writes the bare id under its own name (Method of Inspection)', JSON.stringify(keysOf(row('roofing', 'roof_method'))) === '["roof_method"]' && row('roofing', 'roof_method').specs[0].label === 'Method of Inspection');
 ok('§2 what the phone stored is what the page shows', JSON.stringify(row('roofing', 'roof_material').specs.map(f => f.picked)) === '[["Asphalt Shingle"],["2 Layers"],["Under 5 years old"]]'
   && JSON.stringify(row('roofing', 'roof_flashing').condition.values) === '["OK"]');
+// Amended 2026-11-03 (round 1, type rules): this job's AC is a Window / Wall unit, so Condenser and Compressor are not
+// rows any more; the phone's EMPTY condenser entry ({values: []}) is the one key with no row, and it holds nothing.
 ok('§2 every key the page would write is one the phone wrote (no drift on the real rows)',
-  fx.values.every(v => view.systems.some(s => s.tiles.some(t => t.rows.some(r => (v.kind === 'condition' ? r.condition?.key === v.node_key : r.specs.some(f => f.key === v.node_key)))))));
+  fx.values.filter(v => !(v.node_key === 'hvac_condenser' && !(v.value?.values ?? []).length)).every(v => view.systems.some(s => s.tiles.some(t => t.rows.some(r => (v.kind === 'condition' ? r.condition?.key === v.node_key : r.specs.some(f => f.key === v.node_key)))))));
 // A company that ADDS a field keeps the Ledrix field on its old key (the core pack decides, not the template's field
 // count): Gutters + a company "Guard Type" → material stays bare `roof_gutters`, the new one is `roof_gutters::guard_type`.
 const added = M.buildScope({ systems: [{ id: 'roofing', kind: 'system', label: 'ROOFING', inScope: true, children: [
@@ -71,10 +73,11 @@ ok('§2 a company-added field never moves the Ledrix field’s key (core pack, n
 ok('§2 tiles are the subsystems; a system with none is its own tile', JSON.stringify(sys('roofing').tiles.map(t => t.node.id)) === '["roofing__covering","roofing__flashing_penetrations","roofing__drainage"]'
   && JSON.stringify(sys('cooling').tiles.map(t => t.node.id)) === '["cooling"]');
 ok('§2 a pointer row and anything trimmed are not rows', !rows('cooling').some(r => r.node.id.startsWith('cooling__link')) && !rows('roofing').some(r => r.node.id.startsWith('roofing_manufactured')));
-ok('§2 sections are the system ids', row('roofing', 'roof_gutters').section === 'roofing' && row('cooling', 'hvac_condenser').section === 'cooling');
+ok('§2 sections are the system ids', row('roofing', 'roof_gutters').section === 'roofing' && row('cooling', 'hvac_cooling').section === 'cooling');
+ok('§2 type rules: a Window / Wall AC has no Condenser or Compressor rows (owner 2026-11-03)', !rows('cooling').some(r => ['hvac_condenser', 'hvac_compressor'].includes(r.node.id)) && rows('cooling').some(r => r.node.id === 'hvac_cooling'));
 // Roofing: Roof Material (3/3 fields) and Method (answered) are described; Asphalt Shingle, Flashings, Skylights are
 // Satisfactory; Gutters and Discharge take a condition and have none yet, so their spec alone does not count (phone rule).
-ok('§2 the count: an empty condition entry ({values: []}) is not checked; a fully described spec is; a spec alone does not check an item that takes a condition', sys('cooling').done === 1 && sys('cooling').total === 3
+ok('§2 the count: an empty condition entry ({values: []}) is not checked; a fully described spec is; a spec alone does not check an item that takes a condition', sys('cooling').done === 1 && sys('cooling').total === 1   // 2026-11-03: a window unit has no condenser/compressor
   && sys('roofing').done === 5 && sys('roofing').total === 7, JSON.stringify([sys('cooling').done, sys('cooling').total, sys('roofing').done, sys('roofing').total]));
 ok('§2 limitation reasons: the item’s own first, the standard ones underneath', JSON.stringify(row('roofing', 'roof_skylights').condition.reasons.slice(0, 2)) === '["Not Visible","Not visible during inspection"]');
 ok('§2 a limitation is stored as the phone stores it, and replaces Satisfactory', JSON.stringify(R.nextConditionValues(['OK'], { limitation: 'Not Visible' })) === '["Not Visible (Limitation)"]');
@@ -104,7 +107,8 @@ const { mkdtempSync, cpSync, writeFileSync } = await import('node:fs');
 const { tmpdir } = await import('node:os');
 // Amended 2026-11-03: the pointer-row anchor carries the area-limit clause (`&& !covered.has(id)`, pack 2026.11.03.2).
 const MUTANTS = [
-  { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id);', to: 'return !!n && !recordsNothing(n) && !covered.has(id);', expect: /^§2 a pointer row/ },
+  { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', to: 'return !!n && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', expect: /^§2 a pointer row/ },
+  { f: 'lib/scope/model.ts', why: 'type rules ignored on the website (2026-11-03)', from: ' && typeApplies(id, n); };', to: '; };', expect: /^§2 type rules/ },
   { f: 'lib/scope/model.ts', why: 'the core pack not registered (keys from the template’s shape)', from: "import './core/taxonomy/specKeyDefs';", to: '', expect: /^§2 a company-added field/ },
   { f: 'lib/scope/model.ts', why: 'a spec alone counts an item that takes a condition', from: "const ans = componentAxes(k).condition === false ? answerNodeFor(k, pairMap.get(k.id)) : null;", to: "const ans = answerNodeFor(k, pairMap.get(k.id));", expect: /^§2 the count/ },
   { f: 'lib/scope/model.ts', why: 'a teammate may change any section', from: "return holderOf(team, section) === team.me ? 'edit' : 'not_yours';", to: "return 'edit';", expect: /^§2 the section gate/ },

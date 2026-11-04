@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.03.3",
+ "packVersion": "2026.11.03.4",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -72,6 +72,347 @@
       "oil furnace",
       "boiler"
      ]
+    }
+   ]
+  },
+  "hvac_condenser": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System",
+      "Package Unit",
+      "Heat Pump AC",
+      "Ductless Mini-Split"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_compressor": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System",
+      "Package Unit",
+      "Heat Pump AC",
+      "Ductless Mini-Split"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_evaporator_coil": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System",
+      "Package Unit",
+      "Heat Pump AC"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_condensate": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System",
+      "Package Unit",
+      "Heat Pump AC",
+      "Ductless Mini-Split"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_disconnect": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System",
+      "Package Unit",
+      "Heat Pump AC",
+      "Ductless Mini-Split"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_win_operation": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Window / Wall AC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_win_mount": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Window / Wall AC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_win_outlet": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Window / Wall AC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_evap_pads": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Evaporative Cooler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_evap_water": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Evaporative Cooler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_evap_blower": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Evaporative Cooler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_heads": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_1": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_2": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_3": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_4": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "4",
+      "5",
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_5": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "5",
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_6": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "6",
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_7": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "7",
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_head_8": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    },
+    {
+     "specNodeId": "hvac_ms_heads",
+     "includes": [
+      "8"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
     }
    ]
   },

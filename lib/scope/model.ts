@@ -17,6 +17,7 @@ import {
 import { leafVerdict } from './core/taxonomy/leafProgress';
 import { effectiveGates, evaluateGates, gateStoreKey, type Gate } from './core/taxonomy/gates';
 import ledrixPack from './core/taxonomy/ledrix.core.json';
+import { resolveApplicability, type ApplicabilityNode } from './core/taxonomy/applicability';
 import type { TemplateNode } from './core/templates/InspectionTemplate';
 
 export type ValueKind = 'condition' | 'spec';
@@ -93,7 +94,23 @@ export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown
   const gateCtx = { gates, utility: (u: 'water' | 'gas' | 'power') => utilities[u] ?? undefined, specValue: (k: string) => specValue(values, k), rowValues };
   const covered = areaCoveredNodes(systems, areaLimits, gateCtx);
   const gateEval = evaluateGates(gates, systems, { ...gateCtx, stored: areaLimits });
-  const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id); };
+  // TYPE RULES (owner 2026-11-03, round 1 of the dynamic checklist): an item that applies only to some types — a window
+  // unit has no condenser, a mini-split shows as many Indoor Heads as its count — follows the same resolver as the phone
+  // (applicability.ts, copied byte for byte). The node's own rule (snapshot) wins over the pack's, per field; a unit's
+  // facts are read at its own ordinal (`plumb_wh_type~i2` reads `…~i2::type`); recorded work always keeps an item.
+  const packNodes = new Map<string, ApplicabilityNode>();
+  for (const sys of ((ledrixPack as unknown as { systems?: { nodes?: ApplicabilityNode[] }[] }).systems ?? [])) for (const n of sys.nodes ?? []) packNodes.set(n.id, n);
+  const typeApplies = (id: string, n: TemplateNode): boolean => {
+    const base = id.split('~i')[0];
+    const m = id.match(/~i(\d+)$/); const ord = m ? Number(m[1]) : 1;
+    const pk = packNodes.get(base);
+    const own = n as unknown as ApplicabilityNode;
+    const node: ApplicabilityNode = { id, requires: own.requires ?? pk?.requires, dependsOnSpec: own.dependsOnSpec ?? pk?.dependsOnSpec };
+    const scoped = (key: string) => { if (ord <= 1) return key; const [b, a] = key.split('::'); const sk = `${b.split('~i')[0]}~i${ord}`; return a ? `${sk}::${a}` : sk; };
+    const r = resolveApplicability(node, { specValue: k => specValue(values, scoped(k)), hasRecordedAssessment: x => conditionValues(values, x).length > 0 });
+    return r.state !== 'not_applicable';
+  };
+  const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n); };
   const limitView = (n: TemplateNode, tiles: TemplateNode[]): AreaLimitView | undefined => {
     const area = areaLimitOf(n.id); const e = area ? areaLimits[n.id] : undefined;
     if (!area || !e) return undefined;

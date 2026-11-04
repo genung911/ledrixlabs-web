@@ -155,7 +155,9 @@ export const factFieldsOf = (n: TemplateNode | null | undefined): { key: string;
   if (!n) return [];
   const axes = componentAxes(n);
   const withLegacy = (attrId: string) => { const l = specLegacyKey(n, attrId); return l ? { legacyKey: l } : {}; };
-  const fields: { key: string; label: string; legacyKey?: string }[] = axes.attributes.map(a => ({ key: specStoreKey(n, a.id), label: a.label, ...withLegacy(a.id) }));
+  // An OPTIONAL attribute (`optional: true`, 2026-11-03 — a mini-split head's Location: "Unknown" never blocks) is
+  // asked for, never owed.
+  const fields: { key: string; label: string; legacyKey?: string }[] = axes.attributes.filter(a => (a as any).optional !== true).map(a => ({ key: specStoreKey(n, a.id), label: a.label, ...withLegacy(a.id) }));
   if (axes.method.length) fields.push({ key: specStoreKey(n, METHOD_ATTR_ID), label: 'Method', ...withLegacy(METHOD_ATTR_ID) });
   return fields;
 };

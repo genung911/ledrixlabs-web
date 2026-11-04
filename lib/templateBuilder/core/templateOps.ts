@@ -127,6 +127,11 @@ export const ATTR_FIELDS: Record<string, FieldSpec> = {
   values:     { check: (v) => (Array.isArray(v) && v.every(x => typeof x === 'string' && x.trim()) ? null : 'must be a list of non-empty text'), class: 'content', why: 'the choices offered' },
   multi:      { check: bool, class: 'content', why: 'one answer or several' },
   allowTyped: { check: bool, class: 'content', pending: true, why: 'whether Other (typed) is offered' },
+  // 2026-11-03: authored on Ledrix fields already (the water heater's and a mini-split head's Location); a template that
+  // round-trips one must carry them, so they are fields here too.
+  freeText:   { check: bool, class: 'content', why: 'whether the inspector may type their own answer' },
+  optional:   { check: bool, class: 'content', why: 'asked, never owed at Seal & Send' },
+  emptyLabel: { check: nonEmpty, class: 'content', why: 'what an unanswered field shows ("Unknown")' },
 };
 
 export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
