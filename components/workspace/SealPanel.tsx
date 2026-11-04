@@ -144,28 +144,22 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
       </section>
 
       {locked ? (
-        <Card title="Where this job’s data is">
-          <ul className="grid grid-cols-1 gap-x-8 px-5 py-2 sm:grid-cols-2">
-            {c.dataMap.map(d => (
-              <li key={d.label} className="flex justify-between gap-3 border-b border-hairline py-3 text-sm">
-                <span className="text-ink">{d.label}</span>
-                <span className={`font-semibold ${d.where === 'server' ? 'text-emerald-700 dark:text-emerald-400' : 'text-safety'}`}>{d.where === 'server' ? 'On the server' : 'Phone only'}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="px-5 pb-4 pt-2 text-xs leading-relaxed text-muted">
-            {c.phoneOnly.state === 'unreported'
-              ? 'No phone has said what it holds for this job yet. Phones report after they sync, on Ledrix 685 or later.'
-              : 'Only the parts this job uses are listed as phone-only. A report sealed on a phone carries all of them, and opens here in full.'}
-          </p>
-          {c.phoneOnly.phones.length > 0 && (
-            <ul className="border-t border-hairline px-5 py-3 text-xs text-muted">
-              {c.phoneOnly.phones.map(p => (
-                <li key={`${p.name}:${p.device}`}>{p.name} · {p.parts.length ? `${p.parts.length} phone-only` : 'nothing phone-only'} · reported {new Date(p.reportedAt).toLocaleString()}</li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        // THE WARNING LINE (owner 2026-11-04: "yes build the warning line"). The "Where this job's data is" grid listed
+        // every part as server or phone; since #105 every part has a server home, so the only thing worth saying is
+        // which phone still holds something — and only while one does. Nothing phone-only → no line.
+        <div className="flex min-w-0 flex-col gap-3">
+          {phoneWarnings(c.phoneOnly).map(w => (
+            <div key={w.key} role="status" className="flex gap-3 rounded-xl border border-safety/40 bg-safety/5 px-5 py-4">
+              <span aria-hidden className="mt-0.5 text-safety">⚠</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink">{w.title}</p>
+                <p className="mt-0.5 text-sm text-body">Open the job on that phone and tap Sync.</p>
+              </div>
+              {w.reportedAt && <span className="shrink-0 self-end text-xs text-muted">reported {new Date(w.reportedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>}
+            </div>
+          ))}
+          <p className="rounded-xl border border-hairline bg-surface px-5 py-4 text-sm text-muted">The report preview shows here once nothing is locked.</p>
+        </div>
       ) : (
         <section className="flex min-w-0 flex-col rounded-xl border border-hairline bg-surface">
           <header className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-5 py-3">
@@ -249,3 +243,12 @@ const InfoIcon = () => (
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
 );
+
+/** One warning per phone that still holds part of this job; one line when no phone has reported at all. Empty = nothing. */
+export function phoneWarnings(p: { state: 'clear' | 'parts' | 'unreported'; phones: { name: string; device: string; parts: string[]; reportedAt: string }[] }):
+  { key: string; title: string; reportedAt: string | null }[] {
+  if (p.state === 'unreported') return [{ key: 'unreported', title: 'No phone has reported this job yet.', reportedAt: null }];
+  return p.phones.filter(ph => ph.parts.length > 0).map(ph => ({
+    key: `${ph.name}:${ph.device}`, title: `${ph.name ? `${ph.name}’s phone` : 'A phone'} hasn’t sent everything for this job yet.`, reportedAt: ph.reportedAt,
+  }));
+}
