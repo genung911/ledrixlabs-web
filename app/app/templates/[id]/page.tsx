@@ -36,6 +36,9 @@ import { validateTemplate } from '@/lib/templateBuilder/core/templateValidate';
 import { applyManual, locate, locateOff } from '@/lib/templates/editorModel';
 import { LEVEL_MEANING, REQUIREMENT_LEVELS, levelCounts, pinnedDefaultSet, requirementsOf, unpublishableRequirements } from '@/lib/templates/requirementModel';
 import { useDraft } from '@/lib/templates/useDraft';
+import { previewAnswer, typeLayoutOf, type TypeLayout } from '@/lib/templates/typeLayout';
+import { rulesFor } from '@/components/templates/phonePreviewModel';
+import type { TypeView } from '@/components/templates/EditorParts';
 import { TemplateApiError } from '@/lib/templates/api';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -102,6 +105,26 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
     if (sel.nodeId && !locate(tree, sel.nodeId) && !locateOff(tree, sel.nodeId)) setSel(s => ({ ...s, nodeId: null }));
     if (sel.systemId && !tree.systems.some(s => s.id === sel.systemId) && !locateOff(tree, sel.systemId)) setSel({ systemId: tree.systems[0]?.id ?? null, nodeId: null });
   }, [tree, sel]);
+
+  // BUILT BY TYPE (owner 2026-11-05): each typed system's layout, read from the rules a new inspection would capture from
+  // this draft (the preview's own rulesFor), and the type the builder is looking at, per system. The preview follows it.
+  const layouts = useMemo(() => {
+    const out = new Map<string, TypeLayout>();
+    if (!tree) return out;
+    const defs = rulesFor(tree);
+    for (const s of tree.systems) { const L = typeLayoutOf(tree, s, defs); if (L) out.set(s.id, L); }
+    return out;
+  }, [tree]);
+  const [typePick, setTypePick] = useState<Record<string, string>>({});
+  const typeViewFor = useCallback((systemId: string | null): TypeView | null => {
+    const L = systemId ? layouts.get(systemId) : undefined;
+    if (!L || !systemId) return null;
+    const want = typePick[systemId];
+    const pick = want && (want.startsWith('__') || L.question.values.includes(want)) ? want : L.question.values[0];
+    return { layout: L, pick, onPick: v => setTypePick(p => ({ ...p, [systemId]: v })) };
+  }, [layouts, typePick]);
+  const selView = typeViewFor(sel.systemId);
+  const answer = selView ? previewAnswer(selView.layout, selView.pick) : null;
 
   const readOnly = d.conflict === 'draft' ? 'This draft was saved somewhere else. Reload it to keep editing.'
     : d.conflict === 'base' ? 'The live template changed (for example on a phone) before your first change was saved. Reload to start from the newest version — your unsaved change is not kept.'
@@ -260,7 +283,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             </div>
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
-                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} />
+                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} typeViewFor={typeViewFor} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
                 <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">
@@ -269,7 +292,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                     {t === 'edit' ? 'Editor' : <>Ask Ledrix <Pill tone="accent">AI</Pill></>}</button>)}
                 </div>
                 <div className={`${mode === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
-                  <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab}
+                  <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab} typeView={selView}
                     onOpenBuildingTypes={() => setSection('buildings')} />
                 </div>
                 <div className={`min-h-0 flex-1 ${mode === 'ledrix' ? 'flex flex-col' : 'hidden'}`}>
@@ -278,7 +301,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 </div>
               </section>
               <aside aria-label="Inspector preview" className={`${view === 'preview' ? 'flex' : 'hidden'} min-h-0 flex-col items-center gap-3 overflow-y-auto lg:col-span-2 2xl:col-span-1 2xl:flex`}>
-                <PhonePreview tree={tree} selection={sel} onSelect={s => select(s)} />
+                <PhonePreview tree={tree} selection={sel} onSelect={s => select(s)} answer={answer} />
                 <CompletionCard tree={tree} nodeId={sel.nodeId} />
               </aside>
             </div>

@@ -120,6 +120,10 @@ const sourceFiles = () => Object.fromEntries([
   ['core/measurementPoints.json', read('lib/templateBuilder/core/measurementPoints.json')],
   ...BUILDER.map(f => [`${f}.ts`, read(`lib/templateBuilder/${f}.ts`)]),
   ...DESKTOP.map(f => [`${f}.ts`, read(`lib/templates/${f}.ts`)]),
+  // BUILT BY TYPE (2026-11-05): the layout, and the preview's own rule capture it reads (one source with the phone).
+  ['typeLayout.ts', read('lib/templates/typeLayout.ts')],
+  ['phonePreviewModel.ts', read('components/templates/phonePreviewModel.ts')],
+  ['core/ledrixRules.json', read('lib/templateBuilder/core/ledrixRules.json')],
 ]);
 
 const clone = x => JSON.parse(JSON.stringify(x));
@@ -597,11 +601,121 @@ async function runDesktop(files) {
   return results;
 }
 
+// ── BUILT BY TYPE (owner 2026-11-05, approved mockup RUWz7xuKn2qPkq22eFEMS9) ─────────────────────────────────────────
+// Run on the REAL Ledrix Default. The expected per-type item sets are read straight from the pack's own rules (the
+// generated ledrixRules.json), not from the module under test; the phone's verdict is the preview's rulesFor +
+// itemApplies (templateRules + applicability, byte copies of the app's).
+const DEFAULT_TREE = JSON.parse(read('lib/templates/baselines/ledrixDefault.json'));
+const PACK_RULES = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json')).nodes;
+async function runTypes(files) {
+  const dir = stage(files);
+  const E = await import(pathToFileURL(join(dir, 'editorModel.ts')).href);
+  const TL = await import(pathToFileURL(join(dir, 'typeLayout.ts')).href);
+  const PM = await import(pathToFileURL(join(dir, 'phonePreviewModel.ts')).href);
+  const T = await import(pathToFileURL(join(dir, 'core/templateDraft.ts')).href);
+  const results = {};
+  const r = (k, v) => { results[k] = !!v; };
+  const OWNER = { userId: 'u1', role: 'owner' };
+  const KEY = 'hvac_cooling::spec';
+  try {
+    let d = T.createDraft({ companyId: 'co_1', templateId: 'tpl_1', live: clone(DEFAULT_TREE), now: 1000 });
+    const step = (ops, now) => { const x = E.applyManual(d, ops, OWNER, now); if (x.ok) d = x.draft; return x; };
+    const sys = id => d.tree.systems.find(s => s.id === id);
+    const layout = id => TL.typeLayoutOf(d.tree, sys(id), PM.rulesFor(d.tree));
+    // the phone's verdict for one item with ONLY the type answered
+    const phoneShows = (tree, id, v) => PM.itemApplies(PM.rulesFor(tree), id, k => (k === KEY || k === 'hvac_cooling' ? v : undefined));
+    const expand = (L, ns) => ns.flatMap(n => TL.copyGroupOf(L, n.id)?.items ?? [n]).map(n => n.id).sort();
+
+    const L = layout('cooling');
+    r('types: Cooling is laid out by its type question, AC System Type, with its six values',
+      L && L.question.field === KEY && L.question.label === 'AC System Type'
+      && L.question.values.join('|') === 'Split System|Package Unit|Ductless Mini-Split|Window / Wall AC|Heat Pump AC|Evaporative Cooler');
+    const coolingItems = E.flatItems(sys('cooling')).map(x => x.node).filter(n => n.kind === 'component' && n.id !== 'hvac_cooling');
+    const packFor = (id, v) => (PACK_RULES[id]?.requires ?? []).filter(p => p.specNodeId === KEY).every(p => p.includes.includes(v))
+      && (PACK_RULES[id]?.requires ?? []).some(p => p.specNodeId === KEY);
+    r('types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', L && L.question.values.every(v =>
+      JSON.stringify(expand(L, TL.itemsForType(L, v))) === JSON.stringify(coolingItems.filter(n => packFor(n.id, v)).map(n => n.id).sort())));
+    r('types: items with no type rule are "Every cooling system"; Heat Pump and Backup Heat follow the heating answer in their own section',
+      L && L.every.map(n => n.label).join('|') === 'AC Age|Thermostat'
+      && L.other.map(o => `${o.node.label}<${o.question.label}`).join('|') === 'Heat Pump<Heating System Type|Backup Heat<Heating System Type');
+    const H = layout('heating'), WH = layout('water_heater');
+    r('types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list',
+      H?.question.label === 'Heating System Type' && WH?.question.label === 'Type & Fuel' && layout('fireplace')?.question.label === 'Fireplace Type'
+      && layout('plumbing') === null && layout('attic') === null);
+    const g = L && L.copies[0];
+    r('types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only',
+      L && L.copies.length === 1 && g.items.length === 8 && g.items.every((n, i) => n.id === `hvac_ms_head_${i + 1}`) && /one per head \(1–8\)/.test(g.label)
+      && TL.itemsForType(L, 'Ductless Mini-Split').filter(n => TL.copyGroupOf(L, n.id)).length === 1
+      && L.question.values.filter(v => v !== 'Ductless Mini-Split').every(v => !TL.itemsForType(L, v).some(n => TL.copyGroupOf(L, n.id))));
+    const nLog = d.log.length;
+    const cp = step(TL.copiesOps(g, n => E.ops.describe(n.id, "Note the head's location and drain.")), 2000);
+    r('types: editing the copies row changes every copy at once, as ONE change set (one undo)',
+      cp.ok && d.log.length === nLog + 1 && Array.from({ length: 8 }, (_, i) => E.locate(d.tree, `hvac_ms_head_${i + 1}`).node.description).every(x => x === "Note the head's location and drain."));
+
+    // a grid untick: Condenser no longer for Package Unit
+    const t1 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], ['Split System', 'Ductless Mini-Split', 'Heat Pump AC']);
+    const n1 = d.log.length; const a1 = t1.ok && step(t1.ops, 3000);
+    const cond = E.locate(d.tree, 'hvac_condenser').node;
+    r("types: a grid untick writes the item's appliesWhen through the validated op — one change set",
+      a1 && a1.ok && d.log.length === n1 + 1 && JSON.stringify(cond.appliesWhen) === JSON.stringify({ field: KEY, anyOf: ['Split System', 'Ductless Mini-Split', 'Heat Pump AC'] }));
+    const L2 = layout('cooling');
+    r("types: after the untick the phone's resolver and the grid agree for EVERY type",
+      L2.question.values.every(v => phoneShows(d.tree, 'hvac_condenser', v) === ['Split System', 'Ductless Mini-Split', 'Heat Pump AC'].includes(v))
+      && L2.question.values.every(v => (L2.shows.hvac_condenser ?? []).includes(v) === phoneShows(d.tree, 'hvac_condenser', v)));
+    // a rule on another field is kept beside the type clause
+    const hp = 'cooling__link_hvac_heating';
+    const t0 = TL.typeRuleOps(d.tree, L2, [hp], L2.question.values.filter(v => v !== 'Evaporative Cooler'));
+    step(t0.ok ? t0.ops : [], 3050);
+    const hpRule = E.locate(d.tree, hp).node.appliesWhen;
+    r('types: a grid untick keeps the item\'s other rule (Heat Pump still follows the heating answer)',
+      t0.ok && Array.isArray(hpRule?.all) && hpRule.all.some(c => c.field === 'hvac_heating::fuel_source') && hpRule.all.some(c => c.field === KEY));
+    // an item with no Ledrix type rule becomes typed by a grid untick
+    const t2 = TL.typeRuleOps(d.tree, L2, ['hvac_cooling_age'], L2.question.values.filter(v => v !== 'Evaporative Cooler'));
+    step(t2.ok ? t2.ops : [], 3100);
+    r('types: unticking a type for an every-type item narrows it for that type only (the phone agrees)',
+      t2.ok && !phoneShows(d.tree, 'hvac_cooling_age', 'Evaporative Cooler') && phoneShows(d.tree, 'hvac_cooling_age', 'Split System')
+      && layout('cooling').typed.some(n => n.id === 'hvac_cooling_age'));
+    // ticking back every type Ledrix allows removes the company clause
+    const t3 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], ['Split System', 'Package Unit', 'Ductless Mini-Split', 'Heat Pump AC']);
+    step(t3.ok ? t3.ops : [], 3200);
+    r('types: ticking back every type Ledrix allows removes the type rule again (no company rule left)',
+      t3.ok && t3.ops.length > 0 && E.locate(d.tree, 'hvac_condenser').node.appliesWhen === undefined && phoneShows(d.tree, 'hvac_condenser', 'Package Unit'));
+    // widening past Ledrix's own rule is refused
+    const t4 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_evaporator_coil'], ['Split System', 'Package Unit', 'Heat Pump AC', 'Ductless Mini-Split']);
+    const t5 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], []);
+    r("types: a type Ledrix's rule excludes cannot be ticked, and no item can be left with no type (refused, nothing written)",
+      !t4.ok && /only for/.test(t4.reason) && !t5.ok);
+    // + Add item for a type
+    const add = TL.addForTypeOps(d.tree, sys('cooling'), layout('cooling'), 'Window / Wall AC', 'Window Seal');
+    const na = d.log.length; const aa = step(add, 4000);
+    const newId = add[0]?.node?.id;
+    r('types: "+ Add item for <type>" adds ONE item that shows only for that type, hidden until the type is answered',
+      aa.ok && d.log.length === na + 1 && !!newId
+      && layout('cooling').question.values.every(v => phoneShows(d.tree, newId, v) === (v === 'Window / Wall AC'))
+      && !PM.itemApplies(PM.rulesFor(d.tree), newId, () => undefined)
+      && TL.itemsForType(layout('cooling'), 'Window / Wall AC').some(n => n.id === newId));
+    // the preview follows the chosen type
+    const ans = TL.previewAnswer(layout('cooling'), 'Ductless Mini-Split');
+    const idx = PM.buildIndex(d.tree);
+    const sv = PM.previewSpecValue(idx, { [ans.key]: [ans.value] }, {});
+    const defs = PM.rulesFor(d.tree);
+    const shown = PM.leavesOf(PM.tilesOf(sys('cooling'))[0], id => PM.itemApplies(defs, id, sv)).map(n => n.id);
+    r("types: the preview, answered with the chosen type, shows that type's items and none of another type's",
+      ans.key === KEY && ['hvac_condenser', 'hvac_ms_heads'].every(id => shown.includes(id))
+      && ['hvac_evaporator_coil', 'hvac_win_operation', 'hvac_evap_pads'].every(id => !shown.includes(id)));
+  } catch (e) {
+    r(`types scenario completed (${e?.message})`, false);
+  }
+  return results;
+}
+
 console.log('executed');
 const real = await runExecuted(sourceFiles());
 for (const [k, v] of Object.entries(real)) ok(k, v);
 const desk = await runDesktop(sourceFiles());
 for (const [k, v] of Object.entries(desk)) ok(k, v);
+const typesRes = await runTypes(sourceFiles());
+for (const [k, v] of Object.entries(typesRes)) ok(k, v);
 
 // ── 3. Static ─────────────────────────────────────────────────────────────────────────────────────────────
 const BUILDER_DIRS = ['lib/templateBuilder', 'lib/templates', 'components/templates', 'app/app/templates', 'app/api/template-assistant'];
@@ -783,6 +897,17 @@ const RULES = {
     const r = strip(all['components/templates/RuleEditor.tsx'] ?? '');
     return /const next = writeRule\(conds\);/.test(r) && /onSave\(next\)/.test(r) && !/appliesWhen/.test(r) ? [] : ['components/templates/RuleEditor.tsx'];
   },
+  'types: a typed system shows the by-type layout in its panel and its tree, and the preview answers with the chosen type': all => {
+    const page = strip(all[EDIT] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tree = strip(all['components/templates/Tree.tsx'] ?? ''), pv = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    return (/typeLayoutOf\(tree, s, defs\)/.test(page) && /const defs = rulesFor\(tree\)/.test(page) && /<PhonePreview tree=\{tree\} selection=\{sel\} onSelect=\{s => select\(s\)\} answer=\{answer\}/.test(page)
+      && /typeView=\{selView\}/.test(page) && /typeViewFor=\{typeViewFor\}/.test(page)
+      && /<TypeBuilder tree=\{tree\} system=\{system\} layout=\{typeView\.layout\}/.test(parts) && /typedRows\(s, tv\)/.test(tree)
+      && /if \(answer\) next\[answer\.key\] = \[answer\.value\];/.test(pv)) ? [] : [EDIT, 'components/templates/EditorParts.tsx', 'components/templates/Tree.tsx', 'components/templates/PhonePreview.tsx'];
+  },
+  'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': all => {
+    const s = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return (/typeRuleOps\(tree, layout,/.test(s) && !/field:\s*'(appliesWhen|requires|dependsOnSpec)'/.test(s) && !/op:\s*'setNodeField'/.test(s)) ? [] : ['components/templates/TypeBuilder.tsx'];
+  },
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': all => {
     const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), edit = strip(all[EDIT] ?? '');
     const gate = hook.indexOf("validateStructureTypes(m0.core.tree).find(i => i.severity === 'error')"), rpc = hook.indexOf('return publishDraft(');
@@ -836,6 +961,8 @@ const MUT = {
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
+  'types: a typed system shows the by-type layout in its panel and its tree, and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
+  'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': add('components/templates/TypeBuilder.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requires', value: [] };"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
@@ -883,6 +1010,16 @@ const EXEC_MUT = [
   { name: 'switching an item off deletes it instead', file: 'editorModel.ts', from: ": [{ op: 'trimNode', nodeId: id }];", to: ": [{ op: 'unaddNode', nodeId: id } as any];", check: 'switch: an item switched off is kept (off, offered on site) and switching it on brings it back', run: runDesktop },
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
+  { name: 'the type layout ignores the rules', file: 'typeLayout.ts', from: "  return collapseToActive(resolveApplicability(node as never, { specValue: () => value }).state);", to: "  return true;", check: 'types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', run: runTypes },
+  { name: 'a material list is laid out by type', file: 'typeLayout.ts', from: "if (c > best && several(k))", to: "if (c > best)", check: 'types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list', run: runTypes },
+  { name: 'count copies are not collapsed', file: 'typeLayout.ts', from: "    if (g.items.length < 2) { typed.push(...g.items); continue; }", to: "    { typed.push(...g.items); continue; }", check: 'types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only', run: runTypes },
+  { name: 'the copies row edits only the first copy', file: 'typeLayout.ts', from: "  return group.items.flatMap(edit);", to: "  return group.items.slice(0, 1).flatMap(edit);", check: 'types: editing the copies row changes every copy at once, as ONE change set (one undo)', run: runTypes },
+  { name: "the grid widens past Ledrix's rule", file: 'typeLayout.ts', from: "    if (outside.length) return { ok: false,", to: "    if (false) return { ok: false,", check: "types: a type Ledrix's rule excludes cannot be ticked, and no item can be left with no type (refused, nothing written)", run: runTypes },
+  { name: 'the grid keeps a type rule when every allowed type is ticked', file: 'typeLayout.ts', from: "const narrow = values.length < allow.length ?", to: "const narrow = true ?", check: 'types: ticking back every type Ledrix allows removes the type rule again (no company rule left)', run: runTypes },
+  { name: "the grid drops the item's other rule clauses", file: 'typeLayout.ts', from: "const clauses = [...keep, ...narrow];", to: "const clauses = [...narrow];", check: "types: a grid untick keeps the item's other rule (Heat Pump still follows the heating answer)", run: runTypes },
+  { name: 'the grid writes the full set instead of the ticked one', file: 'typeLayout.ts', from: "[{ field: layout.question.field, anyOf: values }]", to: "[{ field: layout.question.field, anyOf: allow }]", check: "types: after the untick the phone's resolver and the grid agree for EVERY type", run: runTypes },
+  { name: 'add-for-type shows before the type is answered', file: 'typeLayout.ts', from: ", whenUnknown: 'hide' } as TemplateNode", to: " } as TemplateNode", check: 'types: "+ Add item for <type>" adds ONE item that shows only for that type, hidden until the type is answered', run: runTypes },
+  { name: 'the preview answer uses another key', file: 'typeLayout.ts', from: "? { key: layout.question.field, value }", to: "? { key: layout.question.nodeId + '::x', value }", check: "types: the preview, answered with the chosen type, shows that type's items and none of another type's", run: runTypes },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 for (const m of EXEC_MUT) {

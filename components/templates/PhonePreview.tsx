@@ -86,11 +86,14 @@ const toneOf = (p: { met: number; total: number; finding: boolean; limited: bool
   p.finding ? '#ff5a5a' : p.limited ? '#f0a020' : p.total && p.met >= p.total ? '#7dc9a0' : p.met ? '#217BE8' : '#8fa0ad';
 const HL_MS = 1400;
 
-export function PhonePreview({ tree, selection, onSelect, address = 'Sample inspection' }: {
+export function PhonePreview({ tree, selection, onSelect, address = 'Sample inspection', answer = null }: {
   tree: InspectionTemplate;
   selection: PreviewSelection;
   onSelect: (s: PreviewSelection) => void;
   address?: string;
+  /** BUILT BY TYPE (owner 2026-11-05): the type the builder is looking at, as the preview's answer to that system's type
+   *  question — the preview then shows exactly what an inspector sees for that type. Null: no type is being looked at. */
+  answer?: { key: string; value: string } | null;
 }): JSX.Element {
   const index = useMemo(() => buildIndex(tree), [tree]);
   const systems = useMemo(() => shownSystems(tree), [tree]);
@@ -99,6 +102,19 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
+  // The builder's chosen type is the answer to its type question here; looking at the grid or the full list again
+  // clears only the answer it set (a pick tapped in the preview itself is left alone).
+  const lastAnswer = useRef<{ key: string; value: string } | null>(null);
+  useEffect(() => {
+    const prev = lastAnswer.current;
+    lastAnswer.current = answer;
+    setPicks(p => {
+      const next = { ...p };
+      if (prev && (!answer || prev.key !== answer.key) && (next[prev.key] ?? []).join('|') === prev.value) delete next[prev.key];
+      if (answer) next[answer.key] = [answer.value];
+      return next;
+    });
+  }, [answer?.key, answer?.value]);   // eslint-disable-line react-hooks/exhaustive-deps
   // THE RULES A NEW INSPECTION WOULD CAPTURE from this draft, evaluated against the answers tapped here — the same
   // compiler and resolver the phone runs (phonePreviewModel.rulesFor / itemApplies), so a rule-gated item appears
   // and disappears here exactly when it would on the phone.

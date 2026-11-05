@@ -12,6 +12,8 @@ import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from 
 import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
+import { FULL_LIST, TypeBuilder, TypeChips } from './TypeBuilder';
+import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -112,8 +114,13 @@ export function AddToTemplate({ tree, systemId, onOps, disabled, onAdded }: {
 
 // ── a system: details and its items ─────────────────────────────────────────────────────────────────────────
 
-export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disabled }: {
+/** A typed system's layout and the type the builder is looking at (owner 2026-11-05, "build a system one type at a
+ *  time"). Absent for a system whose items don't change with one type answer — it keeps the plain list. */
+export type TypeView = { layout: TypeLayout; pick: string; onPick: (v: string) => void };
+
+export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disabled, typeView }: {
   tree: InspectionTemplate; system: TemplateNode; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean;
+  typeView?: TypeView | null;
 }) {
   const rows = flatItems(system);
   const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
@@ -135,7 +142,23 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
       </div>
 
 
-      <div>
+      {typeView && <TypeChips layout={typeView.layout} pick={typeView.pick} onPick={typeView.onPick} systemLabel={system.label} />}
+      {typeView && typeView.pick !== FULL_LIST && (
+        <TypeBuilder tree={tree} system={system} layout={typeView.layout} pick={typeView.pick} onOps={onOps} selected={sel.nodeId} disabled={disabled}
+          onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
+      )}
+      {typeView && typeView.pick !== FULL_LIST && offRows.length > 0 && (
+        <ul aria-label="Switched off" className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+          {offRows.map(({ t, under }) => (
+            <li key={t.id}><button className="flex w-full items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
+              <span className="min-w-0 flex-1"><span className={`block truncate text-muted ${t.kind !== 'component' ? 'text-xs font-semibold uppercase tracking-wide' : 'text-sm font-medium'}`}>{t.label}</span>
+                <span className="block truncate text-xs text-muted">Not included · in {under}</span></span>
+              <span className="text-[10px] font-semibold uppercase text-muted">off</span></button></li>
+          ))}
+        </ul>
+      )}
+
+      <div className={typeView && typeView.pick !== FULL_LIST ? 'hidden' : ''}>
         <div className="mb-2 flex items-center justify-between">
           <p className={label + ' mb-0'}>Items</p><span className="rounded-full bg-ground px-2 py-0.5 font-mono text-xs text-body">{rows.filter(r => r.node.kind === 'component').length}</span>
         </div>

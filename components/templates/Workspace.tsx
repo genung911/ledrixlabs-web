@@ -9,7 +9,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import { assessesCondition, includeOps, isCovered, itemSummary, locate, locateOff, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
-import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors } from './EditorParts';
+import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
 import { Pill, Toggle, btn, label } from './ui';
@@ -20,9 +20,11 @@ export type ComponentTab = 'overview' | 'condition' | 'details' | 'requirements'
 
 const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Overview', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
 
-export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTab, onOpenBuildingTypes }: {
+export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTab, onOpenBuildingTypes, typeView }: {
   tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; disabled: boolean;
   tab: ComponentTab; setTab: (t: ComponentTab) => void; onOpenBuildingTypes: () => void;
+  /** The selected system's by-type layout (owner 2026-11-05), when it has one. */
+  typeView?: TypeView | null;
 }) {
   // A switch turned ON with nothing behind it yet opens its empty tab for this item (it is "on" once something is added).
   const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
@@ -49,7 +51,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       <Shell kind="System" title={system.label}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
-        <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} />
+        <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
       </Shell>
     );
   }
