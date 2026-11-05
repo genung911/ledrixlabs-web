@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
+import { NewInspectionButton } from '@/components/office/NewInspectionButton';
 import { Card, Empty, ErrorBox, Loading, Page, PageHeader, PhasePill, SyncLine, formatWhen, titleCase } from '@/components/workspace/ui';
 import { latestUpdate } from '@/lib/workspace/model';
 import { loadFindingCounts, loadInspections, loadMembers } from '@/lib/workspace/data';
@@ -60,7 +61,7 @@ export default function InspectionsPage() {
 
   return (
     <Page>
-      <PageHeader title="Inspections" subtitle={access.managesCompany ? 'Your company’s inspections' : 'Inspections you created or are assigned to'} />
+      <PageHeader title="Inspections" subtitle={access.managesCompany ? 'Your company’s inspections' : 'Inspections you created or are assigned to'} actions={<NewInspectionButton />} />
       <SyncLine lastSync={state.kind === 'ready' ? latestUpdate(state.data.rows) : undefined} />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

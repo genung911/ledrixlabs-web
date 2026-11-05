@@ -11,6 +11,7 @@ import { loadCompanyName, loadProfile } from '@/lib/workspace/data';
 import { decideAccess, type Access } from '@/lib/workspace/model';
 import { THEME_PREFS, applyTheme, effectiveTheme, readThemePref, systemPrefersDark, writeThemePref, type ThemePref } from '@/lib/workspace/theme';
 import { loadMyCapabilities } from '@/lib/team/permissions';
+import { mayEditServices, mayManagePayments } from '@/lib/office/access';
 
 type Ctx = { access: Extract<Access, { ok: true }>; companyName: string | null; signOut: () => Promise<void> };
 const WorkspaceCtx = createContext<Ctx | null>(null);
@@ -109,13 +110,15 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const [canInvoice, setCanInvoice] = useState(false);
   // Contacts likewise follow the server's `crm` permission (#78; or an account with no company — its own CRM).
   const [canCrm, setCanCrm] = useState(false);
+  const [canServices, setCanServices] = useState(false);
   useEffect(() => {
     if (gate.kind !== 'ready') return;
     const companyId = gate.access.companyId;
     loadMyCapabilities().then(c => {
       setCanInvoice(!companyId || c?.invoices === true);
       setCanCrm(!companyId || c?.crm === true);
-    }).catch(() => { setCanInvoice(false); setCanCrm(false); });
+      setCanServices(mayEditServices({ companyId, role: gate.access.role }, c as any));
+    }).catch(() => { setCanInvoice(false); setCanCrm(false); setCanServices(false); });
   }, [gate]);
 
   const signOut = useCallback(async () => {
@@ -155,8 +158,14 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
     { href: '/app/team', label: 'Team', show: !!access.companyId },
     { href: '/app/company', label: 'Company', show: !!access.companyId },
+    // The office pages (owner 2026-11-05, "use all recommendations"; lib/office/access.ts): the company's price list and
+    // booking page for the owner, admins and anyone given "company settings"; Payments for the owner alone.
+    { href: '/app/company/services', label: 'Services & prices', show: canServices },
+    { href: '/app/company/payments', label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role }) },
   ].filter(n => n.show);
-  const isActive = (href: string) => href === '/app' ? pathname === '/app' : pathname.startsWith(href);
+  // The longest matching item is the active one, so Company is not also lit on its Services & prices / Payments pages.
+  const isActive = (href: string) => href === '/app' ? pathname === '/app'
+    : (pathname === href || pathname.startsWith(href + '/')) && !nav.some(n => n.href.length > href.length && n.href.startsWith(href + '/') && (pathname === n.href || pathname.startsWith(n.href + '/')));
 
   return (
     <WorkspaceCtx.Provider value={{ access, companyName, signOut }}>

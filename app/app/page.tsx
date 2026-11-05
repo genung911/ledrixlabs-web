@@ -4,6 +4,7 @@
 // estimated, sampled or invented; a section with no rows says so.
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
+import { NewInspectionButton } from '@/components/office/NewInspectionButton';
 import { Card, Empty, ErrorBox, Loading, Page, PageHeader, PhasePill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
 import { loadFindingCounts, loadInspections, loadOrders, loadReports } from '@/lib/workspace/data';
 import { addDays, buildDashboard, inspectionPhase, latestUpdate, localDate, type Dashboard, type OrderRow } from '@/lib/workspace/model';
@@ -101,7 +102,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <p className="mt-8 text-xs text-muted">New inspections are started in the Ledrix app, where the template snapshot and capture tools live.</p>
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <NewInspectionButton />
+        <p className="text-xs text-muted">Start a job here or in the Ledrix app — both make the same inspection, and it reaches the inspector’s phone at the next sync.</p>
+      </div>
     </Page>
   );
 }

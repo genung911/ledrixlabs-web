@@ -24,6 +24,8 @@ type Profile = {
   company_name: string | null;
   phone: string | null;
   booking_slug: string;
+  /** #115: the page's company (absent before #115 is applied, or for a one-person page). */
+  company_id?: string | null;
   booking_active: boolean;
   agreement_template: string | null;
   website: string | null;
@@ -78,8 +80,12 @@ export default function BookingPage() {
         const p = profData[0];
         setProfile(p);
 
+        // THE COMPANY'S PRICES (#115, owner 2026-11-05: one price list and one booking page per company). The page names its
+        // company once #115 is applied; before it (no company_id on the view) — and for a one-person page — the page
+        // owner's own prices, as before. create_public_booking accepts exactly the same set.
+        const scope = p.company_id ? `company_id=eq.${encodeURIComponent(p.company_id)}` : `inspector_id=eq.${encodeURIComponent(p.id)}`;
         const pRes = await fetch(
-          `${SUPA_URL}/rest/v1/crm_packages?inspector_id=eq.${p.id}&active=eq.true&order=created_at`,
+          `${SUPA_URL}/rest/v1/crm_packages?${scope}&active=eq.true&order=created_at`,
           { headers: API_HEADERS },
         );
         const pkgData: Package[] = await pRes.json();
