@@ -9,6 +9,9 @@
     "dev": "next dev",
     "build": "next build",
     "e2e:template-builder": "node scripts/e2e-template-builder.mjs",
+    "prepare": "node scripts/install-git-hooks.mjs",
+    "verify:app-parity": "node --no-warnings scripts/verify-app-parity.mjs",
+    "verify:pre-push": "sh scripts/git-hooks/pre-push",
     "start": "next start"
   },
   "dependencies": {

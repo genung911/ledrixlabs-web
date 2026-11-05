@@ -69,7 +69,7 @@ ok('repair status still renders (resolved / total)', /'Repair Status', `\$\{proj
 ok('maintenance schedule still renders', /'Maintenance', dueReminders\.length/.test(home));
 ok('severity priorities still computed per finding', /const prioCount = anomalies\.reduce/.test(home));
 ok('the PDF report cover counts are untouched by this site (no score in report routes)',
-  !/score/i.test(read('app/api/reports/route.ts')) && !/score/i.test(read('app/api/reports/seal/[hash]/route.ts')));
+  !/score/i.test(read('app/api/reports/seal/[hash]/route.ts')));   // the live /api/reports route is retired (2026-11-04)
 
 console.log(`\n${checks} checks · ${checks - failures.length} passed, ${failures.length} failed`);
 if (failures.length) { console.error('\nFAILED:\n  ' + failures.join('\n  ')); process.exit(1); }

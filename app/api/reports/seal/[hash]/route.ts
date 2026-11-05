@@ -6,13 +6,13 @@ import { sealPayloadKind, digestSealFacts } from '../../../../../lib/sealPayload
 // ─── /api/reports/seal/[hash] ────────────────────────────────────────────────
 // Renders a FROZEN inspection report from a sealed entry in `report_seals`.
 //
-// Unlike /api/reports?inspectionId=… (which reads the live `inspections` /
-// `anomalies` tables and reflects the latest sync), this route reads only the
-// immutable payload stored at seal time. Even if the inspector later edits or
-// re-syncs, this URL always renders what was sealed.
+// This route reads only the immutable payload stored at seal time. Even if the
+// inspector later edits or re-syncs, this URL always renders what was sealed.
+// (The live /api/reports route, which composed the website's own report from the
+// latest rows, was retired 2026-11-04: the website's report is the phone's.)
 //
 // Photo paths inside the payload are signed against the private Storage bucket
-// the same way the live route signs them (short-lived URLs).
+// (short-lived URLs).
 
 const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
   .replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');

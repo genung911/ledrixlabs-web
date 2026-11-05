@@ -1,0 +1,29 @@
+#!/bin/sh
+# ledrixlabs-web pre-push — keep the copies of the phone's logic honest (ledrix-app DECISIONS 2026-11-04, Batch 4).
+#
+# Runs every scripts/verify-*.mjs (all read-only by default; ~15 s), including:
+#   verify-app-parity     every copy and every restated phone rule, against the ledrix-app checkout beside this one
+#   verify-report-render  the report bundle was built from the app's current report sources
+# The app checkout is ../ledrix-app (LEDRIX_APP=<dir> for another); without one the app comparisons are skipped and
+# the push says so. Not run on Vercel: the app checkout is not there, and a deploy must not fail for that.
+# Bypass for an emergency only: git push --no-verify. Installed by scripts/install-git-hooks.mjs (this repo only).
+cd "$(git rev-parse --show-toplevel)" || exit 1
+APP="${LEDRIX_APP:-../ledrix-app}"
+LOG="${TMPDIR:-/tmp}/ledrixweb-pre-push.$$"
+failed=""
+echo "pre-push · ledrixlabs-web"
+if [ ! -f "$APP/scripts/web-preview-sync.json" ]; then
+  echo "  · no ledrix-app at $APP — app comparisons skipped"
+  export ALLOW_NO_APP=1
+fi
+for f in scripts/verify-*.mjs; do
+  n=$(basename "$f" .mjs)
+  if env LEDRIX_APP="$APP" node --no-warnings "$f" >"$LOG" 2>&1; then echo "  ✓ $n"
+  else echo "  ✗ $n"; tail -15 "$LOG" | sed 's/^/      /'; failed="$failed $n"; fi
+done
+rm -f "$LOG"
+if [ -n "$failed" ]; then
+  echo "pre-push stopped:$failed"
+  echo "  copies behind → in ledrix-app: node scripts/sync-web-preview.mjs · bundle behind → node scripts/export-report-bundle.mjs"
+  exit 1
+fi

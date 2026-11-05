@@ -120,7 +120,8 @@ ok('projects from a finding no longer copy prosToCall into contractor_type', /co
 ok('no CONTRACTOR line on project cards', !/CONTRACTOR: \{p\.contractor_type\}/.test(share));
 
 console.log('Part 3 · rendered reports (live and sealed)');
-for (const r of ['app/api/reports/route.ts', 'app/api/reports/seal/[hash]/route.ts']) {
+ok('the live /api/reports route is retired (2026-11-04: one report, the phone\'s)', !existsSync(join(root, 'app/api/reports/route.ts')));
+for (const r of ['app/api/reports/seal/[hash]/route.ts']) {
   const s = read(r);
   const code = s.replace(/^\s*\/\/.*$/gm, '');   // the explanatory comment names the removed line
   ok(`${r}: no "Recommended:" line`, !/Recommended:/.test(code) && !/esc\(f\.pros_to_call/.test(code));

@@ -72,7 +72,7 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = (url, init = {}) => { const { cache, ...rest } = init; return realFetch(url, rest); };
 
 // ── Load the real route handlers ─────────────────────────────────────────────────────
-const FILES = ['app/api/photo/route.ts', 'app/api/report-asset/route.ts', 'app/api/reports/route.ts', 'lib/portalAssets.ts', 'lib/homeownerRecommendation.ts'];
+const FILES = ['app/api/photo/route.ts', 'app/api/report-asset/route.ts', 'lib/portalAssets.ts', 'lib/homeownerRecommendation.ts'];
 function build(tag, env) {
   const out = join(repo, 'node_modules/.cache/verify-share-assets', tag);
   rmSync(out, { recursive: true, force: true });
@@ -171,31 +171,12 @@ const live = build('live', { NEXT_PUBLIC_SUPABASE_URL: SUPA, SUPABASE_SERVICE_RO
   }
 }
 
-// ── 3. /api/reports ──────────────────────────────────────────────────────────────────
+// ── 3. /api/reports — RETIRED 2026-11-04 (ledrix-app Batch 4, "keep copies honest") ──────────────────────────
+// It rendered its own report from live rows with the service role; nothing linked to it, and the website now has one
+// report, the phone's (lib/report/render.mjs). Gone is stronger than guarded: the route must not exist.
 {
-  const m = live.reports;
-  const deny = async (label, params) => {
-    const r = await call(m, q(params));
-    ok(`R3 reports DENY · ${label}`,
-      r.status === 404 && !/BRAVO|ALPHA|Bravo|Alpha/.test(r.body) && r.signed.length === 0,
-      `status ${r.status}, signed ${JSON.stringify(r.signed)}`);
-  };
-  await deny('the original exploit: another company\'s inspection by id, no token', { inspectionId: B });
-  await deny('own inspection by id, no token', { inspectionId: A });
-  await deny('unknown token', { token: 'c'.repeat(32) });
-  await deny('token A, inspectionId B', { token: TA, inspectionId: B });
-  {
-    const r = await call(m, q({ token: TA }));
-    ok('R3 reports ALLOW · token A renders A\'s confirmed findings', r.status === 200 && r.body.includes('ALPHA-FINDING') && r.body.includes('1 Alpha St'),
-      `status ${r.status}`);
-    ok('R3 reports ALLOW · and none of B\'s', !r.body.includes('BRAVO-SECRET') && !r.body.includes('2 Bravo Ave'));
-    ok('R3 reports · A\'s own photo is signed', r.signed.some(([b, p]) => b === 'inspection-evidence' && p === `${A}/kitchen/a1.jpg`),
-      JSON.stringify(r.signed));
-    ok('R3 reports DENY · a finding\'s planted image_uri naming B is NOT signed', !r.signed.some(([, p]) => p.startsWith(`${B}/`)),
-      JSON.stringify(r.signed));
-    const r2 = await call(m, q({ token: TA, inspectionId: A }));
-    ok('R3 reports ALLOW · token A with matching inspectionId', r2.status === 200 && r2.body.includes('ALPHA-FINDING'), `status ${r2.status}`);
-  }
+  ok('R3 /api/reports is retired: app/api/reports/route.ts does not exist', !existsSync(join(src, 'app/api/reports/route.ts')));
+  ok('R3 /api/reports is retired: nothing loaded it', live.reports === null);
 }
 
 // ── 4. No service role → nothing is signed, nothing is read ─────────────────────────
@@ -205,8 +186,6 @@ const live = build('live', { NEXT_PUBLIC_SUPABASE_URL: SUPA, SUPABASE_SERVICE_RO
   ok('R4 report-asset without service role fails closed', !(a.status >= 300 && a.status < 400) && a.signed.length === 0, `status ${a.status}`);
   const p = await call(anonOnly.photo, q({ path: `${A}/kitchen/a1.jpg`, t: TA }));
   ok('R4 photo without service role fails closed', !(p.status >= 300 && p.status < 400), `status ${p.status}`);
-  const r = await call(anonOnly.reports, q({ token: TA }));
-  ok('R4 reports without service role fails closed', r.status !== 200, `status ${r.status}`);
 }
 
 // ── 5. The portal hands its token to every signed asset ──────────────────────────────

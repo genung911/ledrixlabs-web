@@ -11,11 +11,11 @@
 // from the system the finding sits in — a cracked truss is framing, so it became "Structural
 // Engineer". Nothing recorded says whether the inspector chose that, so it cannot be shown to a
 // homeowner as a recommendation. The stored value is NOT rewritten: the inspector still sees and can
-// correct it in the app. This only decides what a homeowner reads on the share page and in reports.
+// correct it on their own screens. This only decides what a homeowner reads.
 //
-// TWIN of ledrix-app src/core/services/homeownerRecommendation.ts (the app's homeowner finding
-// panel). The two repos share no code, so each keeps a copy and its own guard
-// (scripts/verify-recommendation-language.mjs here). Change both together.
+// The website runs a BYTE-IDENTICAL copy of this file (ledrixlabs-web lib/homeownerRecommendation.ts, listed in
+// scripts/web-preview-sync.json; 2026-11-04, Batch 4). Change it here, then: node scripts/sync-web-preview.mjs.
+// Guards: verify:recommendation-language (here), verify:web-preview, and the website's verify-app-parity.
 //
 // NO IMPORTS, so the guard can load it directly.
 
