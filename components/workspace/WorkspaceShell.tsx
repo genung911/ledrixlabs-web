@@ -13,7 +13,9 @@ import { THEME_PREFS, applyTheme, effectiveTheme, readThemePref, systemPrefersDa
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import { mayEditServices, mayManagePayments } from '@/lib/office/access';
 
-type Ctx = { access: Extract<Access, { ok: true }>; companyName: string | null; signOut: () => Promise<void> };
+// canServices rides the context so the Company tabs (components/workspace/CompanyTabs) gate Services & prices exactly as
+// the menu used to — one answer, computed once here.
+type Ctx = { access: Extract<Access, { ok: true }>; companyName: string | null; signOut: () => Promise<void>; canServices: boolean };
 const WorkspaceCtx = createContext<Ctx | null>(null);
 
 export function useWorkspace(): Ctx {
@@ -147,8 +149,12 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   );
 
   const { access, companyName } = gate;
+  const canPayments = mayManagePayments({ companyId: access.companyId, role: access.role });
   // ONE VOCABULARY WITH THE PHONE (2026-10-21, approved parity mockup): Today · Inspections · Reports · Templates · Team
   // · Company, with Account in the footer. "Dashboard" became Today (the phone's home is the same question).
+  // SEVEN ITEMS (owner 2026-11-05, "Use recommendations"): Team, Services & prices and Payments are tabs of Company now
+  // (components/workspace/CompanyTabs — the same gates, the same routes), so the menu is Today · Inspections · CRM ·
+  // Reports · Invoices · Templates · Company. Company shows when any of its tabs would.
   const nav = [
     { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
@@ -157,21 +163,17 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
     { href: '/app/reports', label: 'Reports', show: true },
     { href: '/app/invoices', label: 'Invoices', show: canInvoice },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
-    { href: '/app/team', label: 'Team', show: !!access.companyId },
-    { href: '/app/company', label: 'Company', show: !!access.companyId },
-    // The office pages (owner 2026-11-05, "use all recommendations"; lib/office/access.ts): the company's price list and
-    // booking page for the owner, admins and anyone given "company settings"; Payments for the owner alone.
-    { href: '/app/company/services', label: 'Services & prices', show: canServices },
-    { href: '/app/company/payments', label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role }) },
+    { href: '/app/company', label: 'Company', show: !!access.companyId || canServices || canPayments },
   ].filter(n => n.show);
-  // The longest matching item is the active one, so Company is not also lit on its Services & prices / Payments pages.
+  // Company is lit on every one of its tabs, Team's page included.
   const isActive = (href: string) => href === '/app' ? pathname === '/app'
-    : (pathname === href || pathname.startsWith(href + '/')) && !nav.some(n => n.href.length > href.length && n.href.startsWith(href + '/') && (pathname === n.href || pathname.startsWith(n.href + '/')));
+    : href === '/app/company' ? COMPANY_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+    : pathname === href || pathname.startsWith(href + '/');
 
   return (
-    <WorkspaceCtx.Provider value={{ access, companyName, signOut }}>
+    <WorkspaceCtx.Provider value={{ access, companyName, signOut, canServices }}>
       <div className="min-h-screen bg-ground lg:flex">
-        {/* Top bar below lg; the sidebar is persistent at lg and above. */}
+        {/* Top bar below lg (phones and tablets keep it); the icon rail at lg and above. */}
         <div className="flex h-14 items-center justify-between border-b border-hairline bg-surface px-4 lg:hidden">
           <a href="/app" className="flex items-center gap-2"><LedrixDelta size={18} /><span className="text-sm font-bold text-ink">Ledrix Inspect</span></a>
           <button aria-label={navOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={navOpen} onClick={() => setNavOpen(o => !o)}
@@ -182,33 +184,120 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <aside className={`${navOpen ? 'block' : 'hidden'} border-b border-hairline bg-surface lg:sticky lg:top-0 lg:block lg:h-screen lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r`}>
-          <div className="flex h-full flex-col">
-            <a href="/app" className="hidden h-16 items-center gap-2.5 px-5 lg:flex">
-              <LedrixDelta size={20} />
-              <span className="text-sm font-bold tracking-tight text-ink">Ledrix Inspect</span>
-            </a>
-            <nav aria-label="Workspace" className="flex flex-col gap-0.5 px-3 py-3 lg:py-1">
-              {nav.map(n => (
-                <a key={n.href} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                    isActive(n.href) ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
-                  {n.label}
-                </a>
-              ))}
-            </nav>
-            <div className="mt-auto border-t border-hairline px-5 py-4">
-              <p className="truncate text-sm font-semibold text-ink">{access.name ?? 'Signed in'}</p>
-              <p className="truncate text-xs text-muted">{[companyName, roleLabel(access.role)].filter(Boolean).join(' · ')}</p>
-              <AppearanceSwitch />
-              <button onClick={signOut} className="mt-3 block text-xs font-semibold text-body hover:text-ink focus:outline-none focus-visible:underline">Sign out</button>
-            </div>
+        {/* Below lg: today's full menu, opened from the top bar. */}
+        <aside className={`${navOpen ? 'block' : 'hidden'} border-b border-hairline bg-surface lg:hidden`}>
+          <nav aria-label="Workspace" className="flex flex-col gap-0.5 px-3 py-3">
+            {nav.map(n => (
+              <a key={n.href} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  isActive(n.href) ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
+                {n.label}
+              </a>
+            ))}
+          </nav>
+          <div className="border-t border-hairline px-5 py-4">
+            <UserBlock name={access.name} detail={[companyName, roleLabel(access.role)].filter(Boolean).join(' · ')} signOut={signOut} />
           </div>
         </aside>
+
+        <Rail nav={nav} isActive={isActive} name={access.name} detail={[companyName, roleLabel(access.role)].filter(Boolean).join(' · ')} signOut={signOut} />
 
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </WorkspaceCtx.Provider>
+  );
+}
+
+/** Company's tabs live on these routes (CompanyTabs); the menu's Company item is lit on all of them. */
+const COMPANY_PATHS = ['/app/company', '/app/team'];
+
+// One line icon per menu item, in the Template Builder's style (24-grid, 1.8 stroke, round caps).
+const NAV_ICON: Record<string, string> = {
+  '/app': 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10',
+  '/app/inspections': 'M9 4h6l1 2h3v15H5V6h3zM9 4v3h6V4M8 12h8M8 16h5',
+  '/app/crm': 'M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.3a3.5 3.5 0 010 6.4M18 14.4c2.1.7 3.5 2.8 3.5 5.6',
+  '/app/reports': 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7',
+  '/app/invoices': 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6M9 16h3',
+  '/app/templates': 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
+  '/app/company': 'M4 21V5l8-2v18M12 7l8 2v12M7 8h2M7 12h2M7 16h2M15 12h2M15 16h2M2 21h20',
+};
+const NavIcon = ({ d }: { d: string }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0"><path d={d} /></svg>
+);
+
+function initialsOf(name: string | null | undefined): string {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '·';
+}
+
+function UserBlock({ name, detail, signOut }: { name: string | null | undefined; detail: string; signOut: () => Promise<void> }) {
+  return (<>
+    <p className="truncate text-sm font-semibold text-ink">{name ?? 'Signed in'}</p>
+    <p className="truncate text-xs text-muted">{detail}</p>
+    <AppearanceSwitch />
+    <button onClick={signOut} className="mt-3 block text-xs font-semibold text-body hover:text-ink focus:outline-none focus-visible:underline">Sign out</button>
+  </>);
+}
+
+/**
+ * THE ICON RAIL (owner 2026-11-05, "Use recommendations for main menu"): ~56px at rest on desktop; hovering it — or
+ * tabbing into it — slides the full menu out OVER the page (absolute, so the page never shifts), and it tucks back on
+ * mouse-leave, when focus leaves it, or on Escape. No pin. Every icon link keeps its name (aria-label + a visually
+ * hidden label), the active item is marked in both states, and motion is off for prefers-reduced-motion. The name,
+ * Appearance and Sign out sit behind a round initials button at the bottom.
+ */
+function Rail({ nav, isActive, name, detail, signOut }: {
+  nav: Array<{ href: string; label: string }>; isActive: (href: string) => boolean;
+  name: string | null | undefined; detail: string; signOut: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const close = useCallback(() => { setOpen(false); setMenu(false); }, []);
+  return (
+    <div className="relative hidden w-14 shrink-0 lg:sticky lg:top-0 lg:block lg:h-screen" data-rail>
+      <aside aria-label="Main menu" data-open={open ? 'true' : 'false'}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => { if (!menu) setOpen(false); }}
+        onFocusCapture={() => setOpen(true)}
+        onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) close(); }}
+        onKeyDown={e => { if (e.key === 'Escape') { close(); (document.activeElement as HTMLElement | null)?.blur(); } }}
+        className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-hairline bg-surface transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none ${
+          open ? 'w-60 shadow-xl' : 'w-14'}`}>
+        <a href="/app" aria-label="Ledrix Inspect — Today" className="flex h-16 shrink-0 items-center gap-2.5 px-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+          <LedrixDelta size={20} />
+          <span className={`whitespace-nowrap text-sm font-bold tracking-tight text-ink ${open ? '' : 'sr-only'}`}>Ledrix Inspect</span>
+        </a>
+        <nav aria-label="Workspace" className="flex flex-col gap-0.5 px-2 py-1">
+          {nav.map(n => {
+            const on = isActive(n.href);
+            return (
+              <a key={n.href} href={n.href} aria-label={n.label} title={open ? undefined : n.label} aria-current={on ? 'page' : undefined}
+                className={`flex h-10 items-center gap-3 rounded-lg px-[10px] text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  on ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
+                <NavIcon d={NAV_ICON[n.href] ?? NAV_ICON['/app']} />
+                <span className={`whitespace-nowrap ${open ? '' : 'sr-only'}`}>{n.label}</span>
+              </a>
+            );
+          })}
+        </nav>
+        <div className="mt-auto border-t border-hairline px-2 py-3">
+          <button type="button" aria-haspopup="dialog" aria-expanded={menu} aria-label={`Account: ${name ?? 'Signed in'}`}
+            onClick={() => { setMenu(m => !m); setOpen(true); }}
+            className="flex w-full items-center gap-3 rounded-lg px-1.5 py-1.5 text-left hover:bg-ink/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-surface">{initialsOf(name)}</span>
+            <span className={`min-w-0 ${open ? '' : 'sr-only'}`}>
+              <span className="block truncate text-sm font-semibold text-ink">{name ?? 'Signed in'}</span>
+              <span className="block truncate text-xs text-muted">{detail}</span>
+            </span>
+          </button>
+          {menu && (
+            <div role="dialog" aria-label="Account" className="mx-1 mt-2 rounded-lg border border-hairline bg-ground px-3 py-3">
+              <UserBlock name={name} detail={detail} signOut={signOut} />
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }
 

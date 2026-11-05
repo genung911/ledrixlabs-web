@@ -28,7 +28,7 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/
 const SRC = {
   access: read('lib/office/access.ts'), api: read('lib/office/api.ts'), create: read('lib/newJob/create.ts'), intake: read('lib/newJob/intake.ts'),
   route: read('app/api/inspections/new/route.ts'), newPage: read('app/app/inspections/new/page.tsx'), services: read('app/app/company/services/page.tsx'),
-  payments: read('app/app/company/payments/page.tsx'), shell: read('components/workspace/WorkspaceShell.tsx'), button: read('components/office/NewInspectionButton.tsx'),
+  payments: read('app/app/company/payments/page.tsx'), shell: read('components/workspace/WorkspaceShell.tsx'), tabs: read('components/workspace/CompanyTabs.tsx'), button: read('components/office/NewInspectionButton.tsx'),
   book: read('app/book/[slug]/page.tsx'),
 };
 const dir = mkdtempSync(join(tmpdir(), 'officeweb-'));
@@ -83,10 +83,13 @@ async function suite(S) {
   ok('§1 starting a job follows add_inspections (or no company)', A.mayStartJobs(off, { add_inspections: true }) && !A.mayStartJobs(own, { add_inspections: false }) && A.mayStartJobs(solo, null) && !A.mayStartJobs(ins, null));
   ok('§1 Services & prices: owner, admin, or “company settings”', A.mayEditServices(own, {}) && A.mayEditServices(adm, {}) && !A.mayEditServices(off, { crm: true }) && A.mayEditServices(off, { company_settings: true }) && !A.mayEditServices(ins, {}) && A.mayEditServices(solo, null));
   ok('§1 Payments: the owner only', A.mayManagePayments(own) && !A.mayManagePayments(adm) && !A.mayManagePayments(off) && A.mayManagePayments(solo));
-  const shell = strip(S.shell);
-  ok('§1 the sidebar shows Services & prices and Payments by these rules',
-    /\{ href: '\/app\/company\/services', label: 'Services & prices', show: canServices \}/.test(shell) && /setCanServices\(mayEditServices\(\{ companyId, role: gate\.access\.role \}, c as any\)\)/.test(shell)
-    && /\{ href: '\/app\/company\/payments', label: 'Payments', show: mayManagePayments\(\{ companyId: access\.companyId, role: access\.role \}\) \}/.test(shell));
+  // 2026-11-05 (owner, "Use recommendations"): Services & prices and Payments are Company TABS now
+  // (components/workspace/CompanyTabs), gated exactly as their menu items were; the shell computes canServices once.
+  const shell = strip(S.shell), tabs = strip(S.tabs);
+  ok('§1 the Company tabs show Services & prices and Payments by these rules',
+    /\{ href: '\/app\/company\/services', label: 'Services & prices', show: canServices \}/.test(tabs) && /setCanServices\(mayEditServices\(\{ companyId, role: gate\.access\.role \}, c as any\)\)/.test(shell)
+    && /value=\{\{ access, companyName, signOut, canServices \}\}/.test(shell) && /const \{ access, companyName, canServices \} = useWorkspace\(\);/.test(tabs)
+    && /\{ href: '\/app\/company\/payments', label: 'Payments', show: mayManagePayments\(\{ companyId: access\.companyId, role: access\.role \}\) \}/.test(tabs));
   ok('§1 the button and the pages check the same rules', /mayStartJobs\(\{ companyId: access\.companyId, role: access\.role \}, c as any\)/.test(S.button)
     && /const ok = !access\.companyId \|\| caps\?\.add_inspections === true;/.test(S.newPage)
     && /const owner = mayManagePayments\(\{ companyId: access\.companyId, role: access\.role \}\);/.test(S.payments) && /if \(!owner\) return/.test(S.payments)
@@ -182,7 +185,8 @@ const MUTANTS = [
   MUT('access', "!a.companyId || caps?.add_inspections === true", "true", /^§1 starting a job/, 'anyone may start a job'),
   MUT('access', "a.role === 'owner' || a.role === 'admin' ||", "a.role === 'owner' || a.role === 'admin' || a.role === 'office' ||", /^§1 Services & prices/, 'office edits prices'),
   MUT('access', "!a.companyId || a.role === 'owner' || a.role === 'ledrix_admin'", "!a.companyId || a.role === 'owner' || a.role === 'admin' || a.role === 'ledrix_admin'", /^§1 Payments/, 'an admin manages payments'),
-  MUT('shell', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true", /^§1 the sidebar/, 'everyone sees Payments'),
+  MUT('tabs', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true", /^§1 the Company tabs/, 'everyone sees Payments'),
+  MUT('tabs', "label: 'Services & prices', show: canServices }", "label: 'Services & prices', show: true }", /^§1 the Company tabs/, 'everyone sees Services & prices'),
   MUT('api', "const r = await workspace.rpc('stripe_key_status');", "const r = await workspace.from('payment_secrets').select('stripe_secret_key').maybeSingle();", /^§2 nothing reads the key/, 'the key is read back'),
   MUT('payments', "finally { setKey(''); setBusy(false); }", "finally { setBusy(false); }", /^§2 the page clears/, 'the key stays in the page'),
   MUT('api', "  if (s.error) fail(s.error, 'The draft invoice’s lines were not saved.');", "  if (s.error) fail(s.error, 'The draft invoice’s lines were not saved.');\n  await workspace.rpc('mark_invoice_sent', { p_invoice: id, p_version: 2, p_via: 'link' });", /^§3 the draft invoice/, 'the invoice is marked sent'),

@@ -221,7 +221,8 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
   // 2026-11-05: Contacts added (approved Contacts mockup; the phone's word — ContactsScreen).
   // 2026-11-05: the office pages (approved office mockup, "use all recommendations"): Services & prices, Payments.
   // 2026-11-05: Contacts became the CRM (CRM home mockup approved: "when clicked from menu, it should open a CRM page").
-  ok('sidebar: Today · Inspections · CRM · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · ') === 'Today · Inspections · CRM · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · '));
+  // 2026-11-05 (owner, "Use recommendations"): seven items — Team, Services & prices and Payments are Company's tabs.
+  ok('sidebar: Today · Inspections · CRM · Reports · Invoices · Templates · Company', labels.join(' · ') === 'Today · Inspections · CRM · Reports · Invoices · Templates · Company', labels.join(' · '));
   ok('every sidebar page exists', [...shell.matchAll(/\{ href: '\/app([^']*)'/g)].every(m => existsSync(join(ROOT, `app/app${m[1]}/page.tsx`))));
   const pages = ['app/app/page.tsx', 'app/app/inspections/page.tsx', 'app/app/inspections/[id]/page.tsx', 'app/app/reports/page.tsx'];
   ok('no page shows the permanent "View only" banner; each shows the sync line', pages.every(p => !/<ReadOnlyNotice/.test(read(p)) && /<SyncLine /.test(read(p))));
@@ -248,6 +249,114 @@ for (const [name, mutate] of Object.entries(MUT)) {
   ok(`mutation caught: ${name}`, RULES[name](mutated).length > 0);
 }
 ok('every rule has a mutation', Object.keys(RULES).every(r => r in MUT));
+
+// ── 4. Navigation (owner 2026-11-05: icon rail, Template Builder tabs, Company tabs) ───────────────────────────
+// Static rules over the real sources, each proven by an in-memory mutation below (nothing is written to disk).
+console.log('navigation');
+const NAV_SRC = {
+  shell: read('components/workspace/WorkspaceShell.tsx'), tabs: read('components/workspace/CompanyTabs.tsx'),
+  tpl: read('app/app/templates/[id]/page.tsx'),
+  company: read('app/app/company/page.tsx'), team: read('app/app/team/page.tsx'),
+  services: read('app/app/company/services/page.tsx'), payments: read('app/app/company/payments/page.tsx'),
+};
+const NAV_RULES = {
+  'rail: ~56px at rest, slides out OVER the page on hover and focus, tucks back on leave/blur/Escape': s => {
+    const t = s.shell, bad = [];
+    if (!/function Rail\(/.test(t) || !/<Rail nav=\{nav\}/.test(t)) bad.push('no rail');
+    if (!/className="relative hidden w-14 shrink-0 lg:sticky lg:top-0 lg:block lg:h-screen"/.test(t)) bad.push('rail slot is not 56px / desktop-only');
+    if (!/absolute inset-y-0 left-0 z-40/.test(t) || !/open \? 'w-60 shadow-xl' : 'w-14'/.test(t)) bad.push('menu does not overlay / expand');
+    if (!/onMouseEnter=\{\(\) => setOpen\(true\)\}/.test(t) || !/onFocusCapture=\{\(\) => setOpen\(true\)\}/.test(t)) bad.push('no hover/focus open');
+    if (!/onMouseLeave=/.test(t) || !/onBlurCapture=/.test(t) || !/e\.key === 'Escape'/.test(t)) bad.push('does not tuck back');
+    if (!/motion-reduce:transition-none/.test(t)) bad.push('ignores reduced motion');
+    return bad;
+  },
+  'rail: every icon link has a name and the active item is marked': s => {
+    const t = s.shell, bad = [];
+    if (!/aria-label=\{n\.label\}/.test(t)) bad.push('icon link without aria-label');
+    if (!/<span className=\{`whitespace-nowrap \$\{open \? '' : 'sr-only'\}`\}>\{n\.label\}<\/span>/.test(t)) bad.push('label not kept for screen readers');
+    if (!/aria-current=\{on \? 'page' : undefined\}/.test(t)) bad.push('active not marked');
+    const icons = [...t.matchAll(/^  '(\/app[^']*)': 'M/gm)].map(m => m[1]);
+    const hrefs = [...t.matchAll(/\{ href: '(\/app[^']*)', label:/g)].map(m => m[1]);
+    for (const h of hrefs) if (!icons.includes(h)) bad.push(`no icon for ${h}`);
+    return bad;
+  },
+  'rail: the account (name, Appearance, Sign out) sits behind an initials button': s => {
+    const t = s.shell, bad = [];
+    if (!/aria-label=\{`Account: \$\{name \?\? 'Signed in'\}`\}/.test(t) || !/\{initialsOf\(name\)\}/.test(t)) bad.push('no initials button');
+    if (!/function UserBlock[\s\S]{0,600}<AppearanceSwitch \/>[\s\S]{0,300}onClick=\{signOut\}/.test(t)) bad.push('account menu lacks Appearance / Sign out');
+    if (!/\{menu && \(\s*<div role="dialog" aria-label="Account"/.test(t)) bad.push('account menu not behind the button');
+    return bad;
+  },
+  'phones and tablets keep the top bar': s => {
+    const t = s.shell, bad = [];
+    if (!/flex h-14 items-center justify-between border-b border-hairline bg-surface px-4 lg:hidden/.test(t)) bad.push('top bar gone');
+    if (!/<aside className=\{`\$\{navOpen \? 'block' : 'hidden'\} border-b border-hairline bg-surface lg:hidden`\}>/.test(t)) bad.push('mobile menu gone');
+    return bad;
+  },
+  'menu: seven items in order, each gated as before': s => {
+    const t = s.shell, bad = [];
+    const want = [["'/app'", "'Today'", 'true'], ["'/app/inspections'", "'Inspections'", 'true'], ["'/app/crm'", "'CRM'", 'canCrm'], ["'/app/reports'", "'Reports'", 'true'],
+      ["'/app/invoices'", "'Invoices'", 'canInvoice'], ["'/app/templates'", "'Templates'", '!!access.companyId'], ["'/app/company'", "'Company'", '!!access.companyId || canServices || canPayments']];
+    const got = [...t.matchAll(/\{ href: ('[^']+'), label: ('[^']+'), show: ([^}]+?) \}/g)].map(m => [m[1], m[2], m[3]]);
+    if (JSON.stringify(got) !== JSON.stringify(want)) bad.push(JSON.stringify(got));
+    if (!/COMPANY_PATHS = \['\/app\/company', '\/app\/team'\]/.test(t)) bad.push('Company not lit on Team');
+    return bad;
+  },
+  'company: Profile · Team · Services & prices · Payments, gated as their menu items were': s => {
+    const t = s.tabs, bad = [];
+    const got = [...t.matchAll(/\{ href: '([^']+)', label: '([^']+)', show: (.*) \},?$/gm)].map(m => `${m[2]}=${m[1]}:${m[3]}`);
+    const want = ['Profile=/app/company:true', 'Team=/app/team:!!access.companyId', 'Services & prices=/app/company/services:canServices',
+      'Payments=/app/company/payments:mayManagePayments({ companyId: access.companyId, role: access.role })'];
+    if (JSON.stringify(got) !== JSON.stringify(want)) bad.push(JSON.stringify(got));
+    if (!/\.filter\(t => t\.show\)/.test(t)) bad.push('hidden tabs are shown');
+    for (const [k, f] of [['company', 'app/app/company/page.tsx'], ['team', 'app/app/team/page.tsx'], ['services', 'app/app/company/services/page.tsx'], ['payments', 'app/app/company/payments/page.tsx']])
+      if (!/<CompanyTabs \/>/.test(s[k])) bad.push(`${f} has no Company tabs`);
+    return bad;
+  },
+  'old URLs: each company page keeps its route, and refuses as before': s => {
+    const bad = [];
+    for (const f of ['app/app/company/page.tsx', 'app/app/team/page.tsx', 'app/app/company/services/page.tsx', 'app/app/company/payments/page.tsx'])
+      if (!existsSync(join(ROOT, f))) bad.push(`${f} missing`);
+    if (!/if \(!owner\) return <Page><CompanyTabs \/><ErrorBox message="Only the company owner connects payments\." \/><\/Page>;/.test(s.payments)) bad.push('Payments no longer refuses a non-owner');
+    if (!/setEditable\(mayEditServices\(/.test(s.services)) bad.push('Services no longer checks who may edit');
+    return bad;
+  },
+  'template: eight tabs in order, publish controls in the header, version box on Overview': s => {
+    const t = s.tpl, bad = [];
+    const labels = [...t.matchAll(/\{ id: '[a-z]+', label: '([^']+)', icon:/g)].map(m => m[1]);
+    if (labels.join(' · ') !== 'Overview · Systems · Building Types · Gates · How Many? · Requirements · Report Content · Review & Publish') bad.push(labels.join(' · '));
+    if (!/<nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">/.test(t)) bad.push('sections are not a scrolling tab row');
+    const header = t.slice(t.indexOf('{/* top bar */}'), t.indexOf('<nav aria-label="Template sections"'));
+    if (!/>Publish<\/button>/.test(header) || !/>Save draft<\/button>/.test(header) || !/>Discard draft<\/button>/.test(header)) bad.push('publish controls left the header');
+    if (/xl:w-\[220px\]/.test(t)) bad.push('the second column is still there');
+    const overview = t.slice(t.indexOf("{section === 'overview' && ("), t.indexOf("{section === 'buildings' && ("));
+    if (!/aria-label="Template version"/.test(overview) || !/Each inspection keeps the copy of the template it started with\./.test(overview)) bad.push('version box not on Overview');
+    return bad;
+  },
+};
+for (const [name, rule] of Object.entries(NAV_RULES)) { const bad = rule(NAV_SRC); ok(name, bad.length === 0, bad.join('; ')); }
+const NAV_MUT = [
+  ['rail: ~56px at rest, slides out OVER the page on hover and focus, tucks back on leave/blur/Escape', 'shell', "open ? 'w-60 shadow-xl' : 'w-14'", "'w-60'"],
+  ['rail: ~56px at rest, slides out OVER the page on hover and focus, tucks back on leave/blur/Escape', 'shell', "absolute inset-y-0 left-0 z-40", "relative"],
+  ['rail: ~56px at rest, slides out OVER the page on hover and focus, tucks back on leave/blur/Escape', 'shell', "if (e.key === 'Escape')", "if (false)"],
+  ['rail: every icon link has a name and the active item is marked', 'shell', "aria-label={n.label} ", ""],
+  ['rail: every icon link has a name and the active item is marked', 'shell', "  '/app/invoices': 'M", "  '/app/billing': 'M"],
+  ['rail: the account (name, Appearance, Sign out) sits behind an initials button', 'shell', "{menu && (", "{true && ("],
+  ['phones and tablets keep the top bar', 'shell', "border-b border-hairline bg-surface lg:hidden`}>", "border-b border-hairline bg-surface hidden`}>"],
+  ['menu: seven items in order, each gated as before', 'shell', "{ href: '/app/invoices', label: 'Invoices', show: canInvoice }", "{ href: '/app/invoices', label: 'Invoices', show: true }"],
+  ['menu: seven items in order, each gated as before', 'shell', "{ href: '/app/company', label: 'Company', show: !!access.companyId || canServices || canPayments },", "{ href: '/app/company', label: 'Company', show: !!access.companyId || canServices || canPayments },\n    { href: '/app/team', label: 'Team', show: !!access.companyId },"],
+  ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'tabs', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true"],
+  ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'team', "<CompanyTabs />", "<div />"],
+  ['old URLs: each company page keeps its route, and refuses as before', 'payments', "if (!owner) return <Page><CompanyTabs /><ErrorBox", "if (false) return <Page><CompanyTabs /><ErrorBox"],
+  ['template: eight tabs in order, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'Systems',", "{ id: 'systems', label: 'Systems & Components',"],
+  ['template: eight tabs in order, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
+];
+for (const [rule, f, from, to] of NAV_MUT) {
+  const applies = NAV_SRC[f].split(from).length === 2;
+  ok(`nav mutation applies: ${rule.slice(0, 40)}… (${to.slice(0, 30)})`, applies);
+  if (applies) ok(`nav mutation caught: ${rule.slice(0, 40)}… (${to.slice(0, 30)})`, NAV_RULES[rule]({ ...NAV_SRC, [f]: NAV_SRC[f].replace(from, to) }).length > 0);
+}
+ok('every navigation rule has a mutation', Object.keys(NAV_RULES).every(r => NAV_MUT.some(m => m[0] === r)));
 
 console.log(`\n${fail ? '✗' : '✓'} verify-workspace: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

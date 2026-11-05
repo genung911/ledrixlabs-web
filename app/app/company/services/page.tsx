@@ -5,8 +5,9 @@
 // phone's Services and Settings screens read and change (lib/office/api.ts). Until #115 is applied the booking page is
 // the owner's own row — the page says so, and only the owner can change it.
 import { useCallback, useEffect, useState } from 'react';
+import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
+import { Card, ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import { mayEditServices } from '@/lib/office/access';
 import {
@@ -53,14 +54,17 @@ export default function ServicesPage() {
     finally { setBusy(false); }
   };
 
-  if (err && !services) return <Page><PageHeader title="Services & prices" /><ErrorBox message={err} onRetry={load} /></Page>;
-  if (!services || !page || editable === null) return <Page><Loading /></Page>;
+  if (err && !services) return <Page><CompanyTabs /><ErrorBox message={err} onRetry={load} /></Page>;
+  if (!services || !page || editable === null) return <Page><CompanyTabs /><Loading /></Page>;
   const canBook = editable && page.editable;
 
   return (
     <Page>
-      <PageHeader title="Services & prices" subtitle={access.companyId ? 'One price list and one booking page for your company.' : 'Your price list and booking page.'}
-        actions={editable ? <button className={BTN} onClick={() => setEdit({ id: null, v: EMPTY, priceText: '' })}>+ New service</button> : undefined} />
+      <CompanyTabs />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-body">{access.companyId ? 'One price list and one booking page for your company.' : 'Your price list and booking page.'}</p>
+        {editable && <button className={BTN} onClick={() => setEdit({ id: null, v: EMPTY, priceText: '' })}>+ New service</button>}
+      </div>
       {!editable && <p className="mb-3 text-sm text-muted">Only the owner and admins change services. You can see them.</p>}
       {msg && <p role="status" className="mb-3 text-sm font-semibold text-[#1f8a4c]">{msg}</p>}
       {err && <p role="alert" className="mb-3 text-sm text-[#b42318]">{err}</p>}

@@ -340,7 +340,7 @@ try {
   await page.getByRole('button', { name: 'Customize building types' }).click();
   await sleep(1500); await saved();
   ok('8 · customizing building types saves them into the draft', Array.isArray(draftRow().template.structureTypes) && draftRow().template.structureTypes.length >= 4);
-  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Systems & Components' }).click();
+  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Systems', exact: true }).click();
 
   // ── 8b · the workspace: sections, search, applicability, requirements ──
   step = '8b'; console.log('\n8b · workspace sections, search, applicability, requirements\n');
@@ -359,7 +359,7 @@ try {
   await page.getByRole('group', { name: 'Property types' }).getByRole('button', { name: /Multi-unit — one building/ }).click();
   await sleep(1500); await saved();
   ok('8b · a property type picked on the Overview is saved on the draft', JSON.stringify(draftRow().template.propertyTypes) === JSON.stringify(['multi_unit_one']), JSON.stringify(draftRow().template.propertyTypes));
-  await nav.getByRole('button', { name: 'Systems & Components' }).click();
+  await nav.getByRole('button', { name: 'Systems', exact: true }).click();
   const tree8 = page.getByRole('region', { name: 'Systems and components' });
   await tree8.getByLabel('Search systems and components').fill('draft hood');
   ok('8b · search narrows the tree to matches (and opens their path)', await waitFor(async () => (await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).count()) === 1
@@ -408,7 +408,7 @@ try {
     await page.screenshot({ path: join(dirname(OUT), 'dark-review.png') }).catch(() => {});
     await nav.getByRole('button', { name: 'Overview' }).click(); await sleep(300);
     await page.screenshot({ path: join(dirname(OUT), 'dark-overview.png') }).catch(() => {});
-    await nav.getByRole('button', { name: 'Systems & Components' }).click();
+    await nav.getByRole('button', { name: 'Systems', exact: true }).click();
     await page.getByRole('tab', { name: /^Requirements/ }).click();
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'light'));
   }

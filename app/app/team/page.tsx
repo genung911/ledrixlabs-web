@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { roleLabel, useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { loadMembers, type MemberRow } from '@/lib/workspace/data';
 import { createInvitation, loadPendingInvitations, revokeInvitation, setMemberRole, type InvitationRow } from '@/lib/team/api';
 import { ROLE_SUMMARY, assignableRoles, canManageTeam, cleanInviteEmail, expiresLabel, roleLockReason } from '@/lib/team/model';
@@ -110,7 +111,7 @@ export default function TeamPage() {
 
   return (
     <Page>
-      <PageHeader title="Team" subtitle={companyName ?? 'Your company'} />
+      <CompanyTabs />
       <div className="flex flex-col gap-6">
         {manages && (
           <Card title="Invite someone">

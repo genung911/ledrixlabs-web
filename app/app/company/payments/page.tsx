@@ -5,8 +5,9 @@
 // live/test (stripe_key_status). The server refuses anyone else once #115 is applied; before it, this page is still
 // shown only to the owner.
 import { useCallback, useEffect, useState } from 'react';
+import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
+import { Card, ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { mayManagePayments } from '@/lib/office/access';
 import { loadStripeStatus, saveStripeKey, type StripeStatus } from '@/lib/office/api';
 
@@ -29,9 +30,9 @@ export default function PaymentsPage() {
   }, []);
   useEffect(() => { if (owner) void load(); }, [owner, load]);
 
-  if (!owner) return <Page><PageHeader title="Payments" /><ErrorBox message="Only the company owner connects payments." /></Page>;
-  if (err && !status) return <Page><PageHeader title="Payments" /><ErrorBox message={err} onRetry={load} /></Page>;
-  if (!status) return <Page><Loading /></Page>;
+  if (!owner) return <Page><CompanyTabs /><ErrorBox message="Only the company owner connects payments." /></Page>;
+  if (err && !status) return <Page><CompanyTabs /><ErrorBox message={err} onRetry={load} /></Page>;
+  if (!status) return <Page><CompanyTabs /><Loading /></Page>;
 
   const save = async () => {
     setBusy(true); setErr(null); setMsg(null);
@@ -42,7 +43,8 @@ export default function PaymentsPage() {
 
   return (
     <Page>
-      <PageHeader title="Payments" subtitle="Owner only" />
+      <CompanyTabs />
+      <p className="mb-4 text-sm text-body">Owner only.</p>
       <Card>
         {status.connected
           ? <p className="text-sm"><b className="text-[#1f8a4c]">● Connected to Stripe</b> <span className="text-muted">· key ending <span className="tabular-nums">…{status.last4 ?? '????'}</span>{status.mode ? ` · ${status.mode}` : ''}{status.restricted ? ' · restricted key' : ''}</span></p>

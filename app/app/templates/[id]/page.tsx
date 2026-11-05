@@ -1,7 +1,9 @@
 'use client';
 
-// The template editor — a workspace with six sections (left): Overview, Building Types, Systems & Components,
-// Requirements, Report Content, Review & Publish. Systems & Components is the tree (searchable, expandable), the
+// The template editor — a workspace with eight sections as TABS under the header (owner 2026-11-05, "Use
+// recommendations": the same feel as the CRM's tabs, so the second menu column is gone): Overview · Systems · Building
+// Types · Gates · How Many? · Requirements · Report Content · Review & Publish. Publish / Save draft / Discard stay in the
+// header on every tab; the template-version box lives on Overview. Systems & Components is the tree (searchable, expandable), the
 // selected system or component's workspace (Details · Requirements · Fields · Applicability · Report) or Ask Ledrix,
 // and the inspector preview (right).
 //
@@ -46,17 +48,14 @@ type Section = 'overview' | 'buildings' | 'systems' | 'gates' | 'counts' | 'requ
 
 const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'overview', label: 'Overview', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
+  { id: 'systems', label: 'Systems', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
   { id: 'buildings', label: 'Building Types', icon: 'M3 10.5L12 4l9 6.5V20h-6v-6H9v6H3z' },
-  { id: 'systems', label: 'Systems & Components', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
   { id: 'gates', label: 'Gates', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
   { id: 'counts', label: 'How Many?', icon: 'M5 12h14M12 5v14M4 4h16v16H4z' },
   { id: 'requirements', label: 'Requirements', icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' },
   { id: 'report', label: 'Report Content', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7' },
   { id: 'review', label: 'Review & Publish', icon: 'M4 12l16-8-6 16-3-7-7-1z' },
 ];
-const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
-);
 
 export default function TemplateEditorPage() {
   const { access } = useWorkspace();
@@ -212,6 +211,20 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             ? <> <button className="font-semibold text-accent-ink hover:underline" onClick={() => go('review')}>{blocking} to fix before publishing →</button></>
             : publishBlock && <> {publishBlock}</>}
         </p>
+        <nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">
+          {SECTIONS.map(s => {
+            const on = section === s.id;
+            const badge = s.id === 'buildings' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
+              : s.id === 'requirements' && reqTotal ? <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqTotal}</span>
+              : s.id === 'review' && (counts.errors || reqs.length) ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" /> : null;
+            return (
+              <button key={s.id} type="button" onClick={() => setSection(s.id)} aria-current={on ? 'page' : undefined}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm ${on ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
+                {s.label}{badge}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       <div className="space-y-2 px-4 pt-3 empty:hidden lg:px-6">
@@ -224,37 +237,20 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         {problem && <Banner tone="warn" title={problem} actions={<button className={btn.ghost} onClick={() => setProblem(null)}>Dismiss</button>} />}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
-        {/* section rail */}
-        <nav aria-label="Template sections" className="shrink-0 border-b border-hairline xl:flex xl:w-[220px] xl:flex-col xl:border-b-0 xl:border-r">
-          <p className="hidden px-4 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted xl:block">Template</p>
-          <ul className="flex gap-1 overflow-x-auto px-3 py-2 xl:flex-col xl:overflow-visible xl:px-2">
-            {SECTIONS.map(s => {
-              const on = section === s.id;
-              const badge = s.id === 'buildings' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
-                : s.id === 'requirements' && reqTotal ? <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqTotal}</span>
-                : s.id === 'review' && (counts.errors || reqs.length) ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" /> : null;
-              return (
-                <li key={s.id} className="shrink-0">
-                  <button onClick={() => setSection(s.id)} aria-current={on ? 'page' : undefined}
-                    className={`flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-[13px] ${on ? 'bg-accent/15 font-semibold text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
-                    <Icon d={s.icon} /><span className="flex-1">{s.label}</span>{badge}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="mt-auto hidden border-t border-hairline px-4 py-3 text-xs xl:block">
-            <p className="font-semibold uppercase tracking-wide text-muted">Template version</p>
-            <p className="mt-1 font-semibold text-ink">{isNew ? 'Not published yet' : `Live v${m.live!.rowVersion}`}</p>
-            {!isNew && stage === 'Draft' && <p className="text-muted">Draft from v{m.server?.basedOnVersion ?? m.live!.rowVersion}{!isNew ? ` · publishes as v${nextVersion}` : ''}</p>}
-            <p className="mt-2 text-muted">Requirement defaults: {pinnedDefaultSet(tree) === 'ledrix-r0' ? 'Ledrix r0' : pinnedDefaultSet(tree)}</p>
-            <p className="mt-2 text-[11px] leading-snug text-muted">Each inspection keeps the copy of the template it started with.</p>
-          </div>
-        </nav>
-
+      <div className="flex min-h-0 flex-1 flex-col">
         <main aria-label="Template section" className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {section === 'overview' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><OverviewSection tree={tree} status={status} issues={issues} onGo={go} onOps={onOps} disabled={!!readOnly} /></div>}
+          {section === 'overview' && (
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
+              <section aria-label="Template version" className="mb-4 rounded-xl border border-hairline bg-surface px-4 py-3 text-xs">
+                <p className="font-semibold uppercase tracking-wide text-muted">Template version</p>
+                <p className="mt-1 font-semibold text-ink">{isNew ? 'Not published yet' : `Live v${m.live!.rowVersion}`}</p>
+                {!isNew && stage === 'Draft' && <p className="text-muted">Draft from v{m.server?.basedOnVersion ?? m.live!.rowVersion} · publishes as v{nextVersion}</p>}
+                <p className="mt-2 text-muted">Requirement defaults: {pinnedDefaultSet(tree) === 'ledrix-r0' ? 'Ledrix r0' : pinnedDefaultSet(tree)}</p>
+                <p className="mt-2 text-[11px] leading-snug text-muted">Each inspection keeps the copy of the template it started with.</p>
+              </section>
+              <OverviewSection tree={tree} status={status} issues={issues} onGo={go} onOps={onOps} disabled={!!readOnly} />
+            </div>
+          )}
           {section === 'buildings' && (
             <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6">
               <BuildingTypesPanel tree={tree} live={m.live?.tree ?? null} onOps={onOps} disabled={!!readOnly}

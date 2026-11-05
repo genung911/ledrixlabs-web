@@ -4,8 +4,9 @@
 // and booking settings are owner-only and edited in the Ledrix app today; this page says so rather than offering
 // fields it cannot save.
 import { useCallback, useEffect, useState } from 'react';
+import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { roleLabel, useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
+import { Card, ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { loadMembers, loadTemplates } from '@/lib/workspace/data';
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; members: number; templates: number };
@@ -35,7 +36,7 @@ export default function CompanyPage() {
 
   return (
     <Page>
-      <PageHeader title="Company" subtitle={companyName ?? 'Your company'} />
+      <CompanyTabs />
       {state.kind === 'loading' && <Card><Loading /></Card>}
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {state.kind === 'ready' && (
