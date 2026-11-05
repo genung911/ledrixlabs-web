@@ -3,7 +3,8 @@
 // Templates › New template is a guided page (app/app/templates/create): the company confirms what it is (where it
 // works, what it inspects, which associations it belongs to, which standards it follows, how licensing applies),
 // then picks where a new template starts — one of its own templates, a Ledrix template, or blank — then names a
-// private draft and lands in the Template Builder. PURE: no store, no network, no clock.
+// private draft and lands in the Template Builder. PURE: no store, no network, no clock. Since 2026-11-05 a Ledrix
+// starting point also asks what kind of home the template is for (kindPlan / buildStarterTree, at the bottom).
 //
 // HONESTY RULES (owner, 2026-10-27; DECISIONS 2026-08-12 and 2026-10-26 (second) #4):
 //   · a recommendation states only facts Ledrix has: which inspection type the company already uses a template for,
@@ -16,6 +17,9 @@
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { CompanyContext, InspectionType, LiveTemplate } from './api';
 import { isCovered } from './editorModel';
+import { ASSOCIATION_SYSTEMS, starterCheckpoints, starterKinds, starterOps, type SpecialKind } from '@/lib/templateBuilder/core/specialHomes';
+import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
+import { validateOps } from '@/lib/templateBuilder/core/templateValidate';
 
 export type Option = { id: string; label: string };
 
@@ -56,9 +60,11 @@ export const labelOf = (list: Option[], id: string) => list.find(o => o.id === i
  *  against a template revision). Today nothing is evaluated, so every starting point reports 'not_evaluated'. */
 export type CoverageState = 'not_evaluated' | 'not_mapped' | 'needs_review' | 'partially_covered' | 'covered' | 'not_applicable';
 
-export type StartKind = 'company' | 'ledrix_default' | 'ledrix_fourpoint' | 'blank';
+export type StartKind = 'company' | 'ledrix_default' | 'ledrix_new_construction' | 'ledrix_fourpoint' | 'blank';
+/** Starting points that ask what kind of home the template is for and add that kind's checkpoints (2026-11-05). */
+export const asksKindOfHome = (k: StartKind): boolean => k === 'ledrix_default' || k === 'ledrix_new_construction';
 export type StartingPoint = {
-  key: string;                       // 'company:<id>' | 'ledrix_default' | 'ledrix_fourpoint' | 'blank'
+  key: string;                       // 'company:<id>' | 'ledrix_default' | 'ledrix_new_construction' | 'ledrix_fourpoint' | 'blank'
   kind: StartKind;
   title: string;
   subtitle: string;
@@ -126,6 +132,15 @@ export function startingPoints(args: {
     subtitle: 'Ledrix’s residential starting point — a starting point, not a certified standard.', tree: args.ledrixDefault, base: 'internachi', sourceId: null,
     systems: coveredSystems(args.ledrixDefault), componentCount: countComponents(args.ledrixDefault),
     reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [], recommended: false, coverage, review });
+  // 2026-11-05 (owner ruling 4): new construction is its own Ledrix starting point — the base plus the ten
+  // new-construction checkpoints (specialHomes.ts), added when the draft is created.
+  if (args.ledrixDefault) {
+    const nc = starterCheckpoints(['new_construction']).length;
+    out.push({ key: 'ledrix_new_construction', kind: 'ledrix_new_construction', title: 'Ledrix New Construction',
+      subtitle: `Final walkthrough and 11-month warranty check: the Ledrix Default plus ${nc} new-construction checkpoints.`, tree: args.ledrixDefault, base: 'internachi', sourceId: null,
+      systems: coveredSystems(args.ledrixDefault), componentCount: countComponents(args.ledrixDefault) + nc,
+      reasons: svc.has('new_construction') ? ['Built for new construction, a service you selected.'] : [], recommended: false, coverage, review });
+  }
   if (args.ledrixFourPoint) out.push({ key: 'ledrix_fourpoint', kind: 'ledrix_fourpoint', title: 'Ledrix 4-Point',
     subtitle: 'The systems a 4-Point insurance inspection covers, on by default; every other system stays available.', tree: args.ledrixFourPoint, base: 'fourpoint', sourceId: null,
     systems: coveredSystems(args.ledrixFourPoint), componentCount: countComponents(args.ledrixFourPoint),
@@ -136,7 +151,47 @@ export function startingPoints(args: {
 
   // ONE recommendation at most: a company template already used for a selected service beats a Ledrix template for it.
   const pick = out.find(p => p.kind === 'company' && p.reasons.some(r => r.startsWith('Matches the')))
-    ?? out.find(p => (p.kind === 'ledrix_default' || p.kind === 'ledrix_fourpoint') && p.reasons.length);
+    ?? out.find(p => (p.kind === 'ledrix_default' || p.kind === 'ledrix_new_construction' || p.kind === 'ledrix_fourpoint') && p.reasons.length);
   if (pick) pick.recommended = true;
   return out;
+}
+
+// ── the kind of home (owner rulings 2026-11-05, mockup ED2sZJDGCViLHGs1wXjiDg) ──────────────────────────────────────
+// Under a Ledrix starting point the company says what kind of home the template is for. Every checkpoint of each kind
+// starts ticked (ruling 1); "Older home" and "Log home" are "Also" picks apart from property type (ruling 2) and Older
+// asks the company's cutoff year; Condo / Townhome adds nothing and offers the association pre-mark, unticked (ruling
+// 3); the New Construction card brings its ten (ruling 4). The draft is the starting point's tree plus exactly the
+// ticked checkpoints and the two fields, as ONE validated change set (starterOps + the field ops → validateOps).
+
+export type KindChoice = {
+  propertyTypes: readonly string[];
+  also: readonly string[];               // ALSO_KINDS picked: 'older' | 'log'
+  unticked: readonly string[];           // checkpoint ids the company unticked
+  olderCutoffYear: number | null;        // asked when 'older' is picked
+  associationPremark: boolean;           // asked when Condo / Townhome is a property type
+};
+export const EMPTY_KIND_CHOICE: KindChoice = { propertyTypes: [], also: [], unticked: [], olderCutoffYear: 1950, associationPremark: false };
+
+/** The kinds this choice adds, and the checkpoints that will land (ticked). */
+export function kindPlan(kind: StartKind, c: KindChoice): { kinds: SpecialKind[]; ticked: string[]; condo: boolean } {
+  const kinds = asksKindOfHome(kind) ? starterKinds({ propertyTypes: c.propertyTypes, also: c.also, newConstruction: kind === 'ledrix_new_construction' }) : [];
+  const off = new Set(c.unticked);
+  return { kinds, ticked: starterCheckpoints(kinds).map(e => e.id).filter(id => !off.has(id)), condo: c.propertyTypes.includes('condo_townhome') };
+}
+
+/** The draft's tree: `tree` (already forked) plus the plan, through the shared change-set check. Never changes `tree`. */
+export function buildStarterTree(kind: StartKind, tree: InspectionTemplate, source: InspectionTemplate, c: KindChoice):
+  { ok: true; tree: InspectionTemplate } | { ok: false; error: string } {
+  if (!asksKindOfHome(kind)) return { ok: true, tree };
+  const plan = kindPlan(kind, c);
+  const r = starterOps(tree, plan.ticked, source);
+  if (!r.ok) return { ok: false, error: r.error };
+  const fields: TemplateOp[] = [];
+  if (c.also.includes('older') && c.olderCutoffYear !== null) fields.push({ op: 'setTemplateField', field: 'olderCutoffYear', value: c.olderCutoffYear });
+  if (plan.condo && c.associationPremark) fields.push({ op: 'setTemplateField', field: 'associationNotInspected', value: [...ASSOCIATION_SYSTEMS] });
+  const all = [...r.ops, ...fields];
+  if (!all.length) return { ok: true, tree };
+  const rep = validateOps(tree, all);
+  if (!rep.ok) return { ok: false, error: rep.ops.flatMap(o => o.errors.map(e => e.message)).join('; ') || 'The starting checkpoints could not be added.' };
+  return { ok: true, tree: rep.result };
 }

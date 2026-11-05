@@ -150,7 +150,22 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   // 2026-11-03 ("Yes finish the leftovers"): this template's changes to Ledrix's "How many …?" rules (taxonomy/countRules.ts),
   // by id — Reset to Ledrix removes the entry. Captured into each new inspection, which is shaped by them then.
   counts: { check: checkCounts, class: 'policy', why: 'which systems ask how many, and what each unit asks' },
+  // 2026-11-05 (owner, starting points by kind of home): the year before which the company calls a home "older". Stored
+  // only — a later scheduling hint will suggest the template from a job's year built; nothing reads it yet.
+  olderCutoffYear: { check: (v) => (Number.isInteger(v) && (v as number) >= 1800 && (v as number) <= 2100 ? null : 'must be a year from 1800 to 2100'),
+    class: 'content', pending: true, why: 'the year before which a home is "older"' },
+  // 2026-11-05 (owner: "make the premark association, not inspected an option for the company to check or not. Some
+  // may still inspect"): the systems every NEW job from this template starts with marked Not inspected — association
+  // responsibility (specialHomes.associationPremarks; seeded once at inspection creation, cleared by the inspector).
+  associationNotInspected: { check: checkSystemIdList, class: 'policy', why: 'which systems start each job marked Not inspected — association responsibility' },
 };
+
+function checkSystemIdList(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  if (v.length > 20) return 'lists more than 20 systems';
+  if (v.some(x => typeof x !== 'string' || !/^[a-z][a-z0-9_~]{0,79}$/.test(x))) return 'each must be a system id';
+  return new Set(v).size === v.length ? null : 'lists a system twice';
+}
 
 /** A template's changes to Ledrix's count rules: `{ id, ...the fields a company may change }`. Identity (kind, node,
  *  rows) is Ledrix's and is never carried here. */
@@ -692,6 +707,7 @@ export function runtimePendingFields(op: TemplateOp): string[] {
   if (op.op === 'setNodeField' && NODE_FIELDS[op.field]?.pending && op.value !== null) out.add(op.field);
   if (op.op === 'setAttributeField' && ATTR_FIELDS[op.field]?.pending && op.value !== null) out.add(op.field);
   if (op.op === 'addAttribute') for (const [k, f] of Object.entries(ATTR_FIELDS)) if (f.pending && op.attribute[k] !== undefined) out.add(k);
+  if (op.op === 'setTemplateField' && TEMPLATE_FIELDS[op.field]?.pending && op.value !== null) out.add(op.field);
   return [...out];
 }
 

@@ -96,6 +96,10 @@ export type InspectionTemplate = {
   requirementDefaults?: string;
   /** What kind of property this template is for (propertyTypes.ts, 2026-10-27). A label and a filter (app). */
   propertyTypes?: import('./propertyTypes').PropertyTypeId[];
+  /** The year before which the company calls a home "older" (app, 2026-11-05). Stored only. */
+  olderCutoffYear?: number;
+  /** Systems every NEW job starts with marked Not inspected — association responsibility (app, 2026-11-05). */
+  associationNotInspected?: string[];
   /** Company overrides of the pinned set's requirements (app Phase A). */
   requirementOverrides?: Record<string, import('./requirementsContract').RequirementOverride>;
   /** GATES (app 2026-11-03, taxonomy/gates.ts — the copy in lib/scope/core). On a company template: its changes to

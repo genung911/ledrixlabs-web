@@ -621,6 +621,12 @@
               "label": "Shared HVAC Plant",
               "kind": "component",
               "keywords": []
+            },
+            {
+              "id": "hvac_nc_registers",
+              "label": "Supply Registers and Airflow",
+              "kind": "component",
+              "keywords": []
             }
           ]
         }
@@ -3038,6 +3044,18 @@
               "label": "Shared Electrical (House Panel)",
               "kind": "component",
               "keywords": []
+            },
+            {
+              "id": "electrical_nc_panel_labeling",
+              "label": "Panel Labeling",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "electrical_nc_gfci_afci",
+              "label": "GFCI / AFCI Where Required",
+              "kind": "component",
+              "keywords": []
             }
           ]
         }
@@ -3618,6 +3636,12 @@
               "label": "Shared Roof Drainage",
               "kind": "component",
               "keywords": []
+            },
+            {
+              "id": "roofing_nc_flashing",
+              "label": "Roof Flashing Completed",
+              "kind": "component",
+              "keywords": []
             }
           ]
         }
@@ -4153,6 +4177,18 @@
             {
               "id": "foundation_multi_unit_shared_foundation",
               "label": "Shared Foundation",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_log_sill",
+              "label": "Sill Log and Bottom Courses",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "foundation_log_connection",
+              "label": "Log-to-Foundation Connection",
               "kind": "component",
               "keywords": []
             }
@@ -4904,6 +4940,54 @@
               "label": "Fire Separation Between Units",
               "kind": "component",
               "keywords": []
+            },
+            {
+              "id": "exterior_log_walls",
+              "label": "Log Walls (Checks and Cracks)",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_log_ends",
+              "label": "Log Ends and Rot",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_log_chinking",
+              "label": "Chinking and Caulked Joints",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_log_finish",
+              "label": "Log Finish / Sealant",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_log_upper_courses",
+              "label": "Upper Courses and Roof Overhangs",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_log_insects",
+              "label": "Wood-Boring Insect Signs (Observed)",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_nc_grading",
+              "label": "Grading and Drainage Away From Foundation",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "exterior_nc_penetrations",
+              "label": "Exterior Penetrations Sealed",
+              "kind": "component",
+              "keywords": []
             }
           ]
         }
@@ -5244,6 +5328,12 @@
             {
               "id": "attic_multi_unit_shared_attic",
               "label": "Shared Attic Space",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "attic_nc_insulation",
+              "label": "Attic Insulation Depth and Baffles",
               "kind": "component",
               "keywords": []
             }
@@ -5670,6 +5760,45 @@
       "walkZone": "interior",
       "walkZones": [
         "interior"
+      ],
+      "trimmed": [
+        {
+          "id": "interior__special",
+          "label": "Special Homes",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "interior_log_settling_gaps",
+              "label": "Settling Gaps at Doors and Windows",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_log_settling_jacks",
+              "label": "Settling Jacks and Slip Joints",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_nc_windows_doors",
+              "label": "Window and Door Operation",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_nc_appliances",
+              "label": "Appliance Operation",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "interior_nc_punch",
+              "label": "Builder Punch Items (Finish Work)",
+              "kind": "component",
+              "keywords": []
+            }
+          ]
+        }
       ]
     },
     {

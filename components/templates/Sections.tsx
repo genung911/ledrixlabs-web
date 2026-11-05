@@ -10,6 +10,7 @@ import type { Issue } from '@/lib/templateBuilder/core/templateValidate';
 import { assessesCondition, flatItems, isCovered, ops } from '@/lib/templates/editorModel';
 import { propertyTypesOf } from '@/lib/templateBuilder/core/propertyTypes';
 import { PropertyTypePicker } from './PropertyTypes';
+import { ASSOCIATION_SYSTEMS } from '@/lib/templateBuilder/core/specialHomes';
 import {
   LEVEL_LABEL, LEVEL_MEANING, PURPOSE_LABEL, REQUIREMENT_LEVELS, unpublishableRequirements, itemsWithRequirements, levelCounts, overrideCount, pinnedDefaultSet,
 } from '@/lib/templates/requirementModel';
@@ -63,6 +64,21 @@ export function OverviewSection({ tree, status, issues, onGo, onOps, disabled }:
       <Card title="Property types">
         <PropertyTypePicker value={propertyTypesOf(tree)} disabled={disabled} onChange={v => onOps(ops.propertyTypes(v))} />
         <p className="mt-2 text-xs text-muted">What this template is for. Shown on the Templates page; inspections run the same.</p>
+        {/* 2026-11-05 (owner): the condo pre-mark is the company's choice; the older-home cutoff is stored for a later hint. */}
+        {(propertyTypesOf(tree).includes('condo_townhome') || !!tree.associationNotInspected?.length) && (
+          <label className="mt-3 flex items-start gap-2 text-sm text-body">
+            <input type="checkbox" className="mt-0.5 h-4 w-4" disabled={disabled} checked={!!tree.associationNotInspected?.length}
+              onChange={e => onOps(ops.associationNotInspected(e.target.checked ? ASSOCIATION_SYSTEMS : []))} />
+            <span>Pre-mark Roofing, Foundation and Exterior as <strong>Not inspected — association responsibility</strong> on every new job. The inspector can clear it and inspect anyway. Jobs already started are not changed.</span>
+          </label>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <label htmlFor="ov-older-cutoff" className="text-body">“Older home” means built before</label>
+          <input id="ov-older-cutoff" type="number" min={1800} max={2100} disabled={disabled} defaultValue={tree.olderCutoffYear ?? ''} key={tree.olderCutoffYear ?? 'none'}
+            className="w-24 rounded-lg border border-hairline bg-surface px-2 py-1 text-sm text-ink"
+            onBlur={e => { const n = parseInt(e.target.value, 10); const v = Number.isFinite(n) ? n : null; if (v !== (tree.olderCutoffYear ?? null)) onOps(ops.olderCutoffYear(v)); }} />
+          <span className="text-xs text-muted">Saved for a later scheduling hint; nothing reads it yet.</span>
+        </div>
       </Card>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat n={`${f.covered} / ${f.systems}`} label="Systems covered when an inspection starts" />

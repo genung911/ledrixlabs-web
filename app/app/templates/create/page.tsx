@@ -2,6 +2,9 @@
 
 // Templates › New template — a guided page instead of the old dialog (2026-10-27).
 //   Start → Company requirements → Starting point → Create draft → (Configure: the existing Template Builder)
+// 2026-11-05 (owner rulings, mockup ED2sZJDGCViLHGs1wXjiDg): a Ledrix starting point also asks what kind of home the
+// template is for (KindOfHome below) — each kind's checkpoints start ticked, Older / Log are "Also" picks, Condo offers
+// the association pre-mark, and the New Construction card brings its ten; the draft is built by buildStarterTree.
 // Owners and admins only (the same rule as the old "New template" button). Creating makes a PRIVATE DRAFT through
 // lib/templates/api.startNewTemplateDraft — the same call the dialog made — and opens it in the Template Builder; it is
 // never published here. The company's answers are its own declaration (lib/templates/startingPoints honesty rules):
@@ -21,8 +24,10 @@ import {
   type CompanyContext, type InspectionType, type LiveTemplate,
 } from '@/lib/templates/api';
 import {
-  AFFILIATIONS, LICENSING, SERVICES, STANDARDS, US_STATES, forkTree, labelOf, startingPoints, type Option, type StartingPoint,
+  AFFILIATIONS, EMPTY_KIND_CHOICE, LICENSING, SERVICES, STANDARDS, US_STATES, asksKindOfHome, buildStarterTree, forkTree, kindPlan, labelOf, startingPoints,
+  type KindChoice, type Option, type StartingPoint,
 } from '@/lib/templates/startingPoints';
+import { ALSO_KINDS, ASSOCIATION_SYSTEMS, SPECIAL_KINDS, starterCheckpoints } from '@/lib/templateBuilder/core/specialHomes';
 
 type Loaded = {
   templates: LiveTemplate[]; types: InspectionType[];
@@ -41,6 +46,7 @@ export default function CreateTemplatePage() {
   const [picked, setPicked] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [props, setProps] = useState<PropertyTypeId[] | null>(null);   // null = not touched: the starting point's own
+  const [kindChoice, setKindChoice] = useState<Omit<KindChoice, 'propertyTypes'>>(EMPTY_KIND_CHOICE);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -95,9 +101,13 @@ export default function CreateTemplatePage() {
     if (!chosen?.tree || !name.trim()) return;
     setBusy(true); setProblem(null);
     try {
-      const tree = forkTree(chosen.tree, name.trim());
+      const forked = forkTree(chosen.tree, name.trim());
       const picked = props ?? propertyTypesOf(chosen.tree);
-      if (picked.length) tree.propertyTypes = picked; else delete tree.propertyTypes;
+      if (picked.length) forked.propertyTypes = picked; else delete forked.propertyTypes;
+      // The kind of home: base + exactly the ticked checkpoints and the two fields, as one validated change set.
+      const built = d.ledrixDefault ? buildStarterTree(chosen.kind, forked, d.ledrixDefault, { ...kindChoice, propertyTypes: picked }) : { ok: true as const, tree: forked };
+      if (!built.ok) { setProblem(built.error); setBusy(false); return; }
+      const tree = built.tree;
       const draft = await startNewTemplateDraft(access.companyId!, { name: name.trim(), base: chosen.base, tree });
       router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`);
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
@@ -175,6 +185,10 @@ export default function CreateTemplatePage() {
         <section className="mt-6 space-y-3">
           {!points.some(p => p.recommended) && <p className="text-sm text-muted">No recommendation yet — choose the services you offer on the previous step, or pick any starting point below.</p>}
           {points.map(p => <PointCard key={p.key} p={p} on={picked === p.key} onPick={() => setPicked(p.key)} />)}
+          {chosen && asksKindOfHome(chosen.kind) && d.ledrixDefault && (
+            <KindOfHome point={chosen} source={d.ledrixDefault} props={props ?? propertyTypesOf(chosen.tree)} setProps={setProps}
+              choice={kindChoice} setChoice={setKindChoice} />
+          )}
           <div className="flex items-center gap-4 rounded-xl border border-dashed border-hairline px-4 py-3 opacity-70">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-ink">Import a template <Pill>Coming later</Pill></p>
@@ -225,6 +239,100 @@ export default function CreateTemplatePage() {
         </section>
       )}
     </Page>
+  );
+}
+
+// ── the kind of home (2026-11-05) ──────────────────────────────────────────────────────────────────────────────────
+function KindOfHome({ point, source, props, setProps, choice, setChoice }: {
+  point: StartingPoint; source: InspectionTemplate; props: PropertyTypeId[]; setProps: (v: PropertyTypeId[]) => void;
+  choice: Omit<KindChoice, 'propertyTypes'>; setChoice: (c: Omit<KindChoice, 'propertyTypes'>) => void;
+}) {
+  const plan = kindPlan(point.kind, { ...choice, propertyTypes: props });
+  const labelOfId = useMemo(() => {
+    const m = new Map<string, string>();
+    const walk = (n: { id: string; label: string; children?: unknown[]; trimmed?: unknown[] }) => {
+      m.set(n.id, n.label); for (const c of [...(n.children ?? []), ...(n.trimmed ?? [])]) walk(c as typeof n);
+    };
+    source.systems.forEach(s => walk(s as never));
+    return m;
+  }, [source]);
+  const off = new Set(choice.unticked);
+  const toggleAlso = (k: string) => setChoice({ ...choice, also: choice.also.includes(k) ? choice.also.filter(x => x !== k) : [...choice.also, k] });
+  const toggleItem = (id: string) => setChoice({ ...choice, unticked: off.has(id) ? choice.unticked.filter(x => x !== id) : [...choice.unticked, id] });
+  const kindLabel = (k: string) => SPECIAL_KINDS.find(x => x.id === k)?.label ?? k;
+  const sysLabel = (id: string) => (labelOfId.get(id) ?? id).replace(/\b\w+/g, w => w[0] + w.slice(1).toLowerCase());
+  return (
+    <div className="space-y-4 rounded-2xl border-2 border-accent/40 bg-surface p-5" aria-label="What kind of home is this template for?">
+      <div>
+        <p className="text-sm font-semibold text-ink">What kind of home is this template for?</p>
+        <p className="text-xs text-muted">Ledrix adds the checkpoints each kind needs. Untick any you don’t want — you can change everything later in the Template Builder.</p>
+      </div>
+      <div>
+        <p className={label}>Property type</p>
+        <PropertyTypePicker value={props} onChange={setProps} />
+      </div>
+      <div className="space-y-2">
+        <p className={label}>Also</p>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Also">
+          {ALSO_KINDS.map(k => {
+            const on = choice.also.includes(k);
+            return (
+              <button key={k} type="button" aria-pressed={on} onClick={() => toggleAlso(k)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${on ? 'border-accent bg-accent/10 text-accent-ink' : 'border-hairline text-body hover:text-ink'}`}>
+                {on ? '✓ ' : ''}{k === 'older' ? 'Older home' : kindLabel(k)}
+              </button>
+            );
+          })}
+        </div>
+        {choice.also.includes('older') && (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label htmlFor="older-cutoff" className="text-body">Your company calls a home “older” when it was built before</label>
+            <input id="older-cutoff" type="number" min={1800} max={2100} className={field + ' w-24 py-1'} value={choice.olderCutoffYear ?? ''}
+              onChange={e => { const n = parseInt(e.target.value, 10); setChoice({ ...choice, olderCutoffYear: Number.isFinite(n) ? n : null }); }} />
+            <span className="text-xs text-muted">Saved with the template, for a later scheduling hint. It never changes a job by itself.</span>
+          </div>
+        )}
+      </div>
+
+      {plan.kinds.map(k => {
+        const rows = starterCheckpoints([k]);
+        const n = rows.filter(r => !off.has(r.id)).length;
+        return (
+          <details key={k} open={plan.kinds.length <= 2} className="rounded-xl border border-hairline bg-ground">
+            <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm font-semibold text-ink">
+              <span className="flex-1">{kindLabel(k)}</span><span className="text-xs font-normal text-muted">adds {n} of {rows.length}</span>
+            </summary>
+            <ul className="space-y-0.5 px-3 pb-3">
+              {rows.map(r => {
+                const id = `kind-${k}-${r.id}`;
+                return (
+                  <li key={r.id} className="flex items-baseline gap-2 text-sm">
+                    <input id={id} type="checkbox" className="h-4 w-4 accent-[var(--accent,#217BE8)]" checked={!off.has(r.id)} onChange={() => toggleItem(r.id)} />
+                    <label htmlFor={id} className="flex-1 text-body">{labelOfId.get(r.id) ?? r.id}<span className="ml-2 text-xs text-muted">{r.why}</span></label>
+                    <span className="text-xs text-muted">{sysLabel(r.system)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        );
+      })}
+
+      {plan.condo && (
+        <div className="space-y-2 rounded-xl bg-warn/10 px-3 py-2 text-sm text-body">
+          <p>Condo / Townhome adds no checkpoints. The roof, foundation and shared exterior usually belong to the association.</p>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-0.5 h-4 w-4" checked={choice.associationPremark} onChange={() => setChoice({ ...choice, associationPremark: !choice.associationPremark })} />
+            <span>Pre-mark {ASSOCIATION_SYSTEMS.map(sysLabel).join(', ').replace(/, ([^,]*)$/, ' and $1')} as <strong>Not inspected — association responsibility</strong> on every new job. The inspector can clear it and inspect anyway.</span>
+          </label>
+        </div>
+      )}
+
+      <p className="border-t border-hairline pt-3 text-sm text-body">
+        {!plan.kinds.length && !plan.condo ? <>The {point.title} as it is — nothing added.</>
+          : <><strong className="text-ink">{point.title}</strong> + <strong className="text-ink">{plan.ticked.length}</strong> checkpoint{plan.ticked.length === 1 ? '' : 's'}{plan.kinds.length ? ` (${plan.kinds.map(kindLabel).join(', ')})` : ''}{plan.condo && choice.associationPremark ? ' · association pre-mark on' : ''}</>}
+      </p>
+    </div>
   );
 }
 

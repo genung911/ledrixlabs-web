@@ -206,6 +206,11 @@ export const ops = {
   setRequirements: (nodeId: string, defs: readonly unknown[]): TemplateOp[] => [setField(nodeId, 'requirements', defs.length ? [...defs] : null)],
   /** What kind of property the template is for (a label and a filter). An empty pick removes the field. */
   propertyTypes: (ids: readonly string[]): TemplateOp[] => [{ op: 'setTemplateField', field: 'propertyTypes', value: ids.length ? [...ids] : null }],
+  /** The year before which the company calls a home "older" (2026-11-05). null removes it. */
+  olderCutoffYear: (year: number | null): TemplateOp[] => [{ op: 'setTemplateField', field: 'olderCutoffYear', value: year }],
+  /** Condo / townhome: every NEW job starts with these systems Not inspected — association responsibility (2026-11-05). */
+  associationNotInspected: (systemIds: readonly string[]): TemplateOp[] =>
+    [{ op: 'setTemplateField', field: 'associationNotInspected', value: systemIds.length ? [...systemIds] : null }],
   /** Show an item in another system (at the end of that system's list). */
   showIn: (tree: InspectionTemplate, node: TemplateNode, systemId: string): TemplateOp[] =>
     [{ op: 'addLink', pointerId: newNodeId(tree, systemId, `link ${node.id}`), homeId: node.id, parentId: systemId }],

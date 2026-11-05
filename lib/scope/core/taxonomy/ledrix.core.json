@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.05.1",
-  "revision": 270,
+  "packVersion": "2026.11.05.2",
+  "revision": 271,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -858,6 +858,20 @@
             "older"
           ],
           "condition": true
+        },
+        {
+          "id": "hvac_nc_registers",
+          "label": "Supply Registers and Airflow",
+          "keywords": [
+            "register airflow",
+            "no airflow register"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -920,7 +934,8 @@
             "hvac_older_oil_furnace",
             "hvac_older_steam_boiler",
             "attic_older_asbestos_ductwrap",
-            "hvac_multi_unit_shared_plant"
+            "hvac_multi_unit_shared_plant",
+            "hvac_nc_registers"
           ]
         }
       ],
@@ -4285,6 +4300,35 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "electrical_nc_panel_labeling",
+          "label": "Panel Labeling",
+          "keywords": [
+            "panel label",
+            "breaker label",
+            "panel directory"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
+        },
+        {
+          "id": "electrical_nc_gfci_afci",
+          "label": "GFCI / AFCI Where Required",
+          "keywords": [
+            "required gfci",
+            "required afci"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -4346,7 +4390,9 @@
             "electrical_manufactured_skirt_electrical",
             "electrical_older_fuse_panel",
             "electrical_multi_unit_metering",
-            "electrical_multi_unit_shared_systems"
+            "electrical_multi_unit_shared_systems",
+            "electrical_nc_panel_labeling",
+            "electrical_nc_gfci_afci"
           ]
         }
       ],
@@ -5041,6 +5087,20 @@
             "multi_unit"
           ],
           "condition": true
+        },
+        {
+          "id": "roofing_nc_flashing",
+          "label": "Roof Flashing Completed",
+          "keywords": [
+            "missing flashing",
+            "kickout"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -5098,7 +5158,8 @@
             "roofing_manufactured_roof_tie_downs",
             "roofing_manufactured_roof_skirts",
             "roofing_older_roof_built_up_layers",
-            "roofing_multi_unit_roof_drainage"
+            "roofing_multi_unit_roof_drainage",
+            "roofing_nc_flashing"
           ]
         }
       ],
@@ -5658,6 +5719,35 @@
           "walkZones": [
             "basement"
           ]
+        },
+        {
+          "id": "foundation_log_sill",
+          "label": "Sill Log and Bottom Courses",
+          "keywords": [
+            "sill log",
+            "bottom course",
+            "splash back"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "foundation_log_connection",
+          "label": "Log-to-Foundation Connection",
+          "keywords": [
+            "log anchor",
+            "log to foundation"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -5715,7 +5805,9 @@
             "foundation_manufactured_skirting",
             "foundation_manufactured_belly_wrap",
             "foundation_manufactured_marriage_line",
-            "foundation_multi_unit_shared_foundation"
+            "foundation_multi_unit_shared_foundation",
+            "foundation_log_sill",
+            "foundation_log_connection"
           ]
         }
       ],
@@ -6617,6 +6709,125 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "exterior_log_walls",
+          "label": "Log Walls (Checks and Cracks)",
+          "keywords": [
+            "log wall",
+            "log check",
+            "log crack",
+            "checking"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_log_ends",
+          "label": "Log Ends and Rot",
+          "keywords": [
+            "log end",
+            "log rot",
+            "end grain"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_log_chinking",
+          "label": "Chinking and Caulked Joints",
+          "keywords": [
+            "chinking",
+            "log caulk",
+            "log joint"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_log_finish",
+          "label": "Log Finish / Sealant",
+          "keywords": [
+            "log stain",
+            "log sealant",
+            "log finish"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_log_upper_courses",
+          "label": "Upper Courses and Roof Overhangs",
+          "keywords": [
+            "upper course",
+            "log overhang"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_log_insects",
+          "label": "Wood-Boring Insect Signs (Observed)",
+          "keywords": [
+            "carpenter bee",
+            "powderpost",
+            "frass",
+            "boring insect"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_nc_grading",
+          "label": "Grading and Drainage Away From Foundation",
+          "keywords": [
+            "final grade",
+            "negative grade new"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
+        },
+        {
+          "id": "exterior_nc_penetrations",
+          "label": "Exterior Penetrations Sealed",
+          "keywords": [
+            "unsealed penetration",
+            "penetration sealed"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -6686,7 +6897,15 @@
           "id": "exterior__exterior",
           "name": "Special Homes",
           "nodeIds": [
-            "exterior_multi_unit_fire_separation"
+            "exterior_multi_unit_fire_separation",
+            "exterior_log_walls",
+            "exterior_log_ends",
+            "exterior_log_chinking",
+            "exterior_log_finish",
+            "exterior_log_upper_courses",
+            "exterior_log_insects",
+            "exterior_nc_grading",
+            "exterior_nc_penetrations"
           ]
         }
       ],
@@ -6998,6 +7217,21 @@
             "multi_unit"
           ],
           "condition": true
+        },
+        {
+          "id": "attic_nc_insulation",
+          "label": "Attic Insulation Depth and Baffles",
+          "keywords": [
+            "insulation depth",
+            "baffle",
+            "insulation ruler"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -7041,7 +7275,8 @@
           "id": "attic__attic",
           "name": "Special Homes",
           "nodeIds": [
-            "attic_multi_unit_shared_attic"
+            "attic_multi_unit_shared_attic",
+            "attic_nc_insulation"
           ]
         }
       ],
@@ -7389,6 +7624,79 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "interior_log_settling_gaps",
+          "label": "Settling Gaps at Doors and Windows",
+          "keywords": [
+            "settling gap",
+            "settling space",
+            "header gap"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "interior_log_settling_jacks",
+          "label": "Settling Jacks and Slip Joints",
+          "keywords": [
+            "settling jack",
+            "slip joint",
+            "screw jack"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "log"
+          ],
+          "condition": true
+        },
+        {
+          "id": "interior_nc_windows_doors",
+          "label": "Window and Door Operation",
+          "keywords": [
+            "window latch",
+            "door latch new"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
+        },
+        {
+          "id": "interior_nc_appliances",
+          "label": "Appliance Operation",
+          "keywords": [
+            "appliance operation",
+            "appliance runs"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
+        },
+        {
+          "id": "interior_nc_punch",
+          "label": "Builder Punch Items (Finish Work)",
+          "keywords": [
+            "punch list",
+            "touch up",
+            "finish work"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -7428,6 +7736,17 @@
           "name": "Ventilation",
           "nodeIds": [
             "primary_bathroom_exhaust_fan"
+          ]
+        },
+        {
+          "id": "interior__special",
+          "name": "Special Homes",
+          "nodeIds": [
+            "interior_log_settling_gaps",
+            "interior_log_settling_jacks",
+            "interior_nc_windows_doors",
+            "interior_nc_appliances",
+            "interior_nc_punch"
           ]
         }
       ],

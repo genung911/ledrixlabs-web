@@ -1,4 +1,4 @@
-// ─── specialHomes — checkpoints for manufactured, older and multi-unit homes (owner rulings 2026-11-05) ─────────────
+// ─── specialHomes — checkpoints for manufactured, older, multi-unit and log homes and new construction (2026-11-05) ─
 //
 // Ledrix's pack carries 32 checkpoints that only some homes have (gravity furnace, steam boiler, tie-downs, a shared
 // water heater …), tagged `appliesTo` in ledrix.core.json. The shipped default template keeps them SET ASIDE, in one
@@ -10,6 +10,16 @@
 //   3. An added checkpoint shows on EVERY job using the template; no home-type rule. A company that inspects
 //      manufactured homes makes a manufactured template ("we should be making a base template for manufactured homes").
 //      The inspector marks it Not present where a house does not have it.
+// Starting points by kind of home, the same day (mockup ED2sZJDGCViLHGs1wXjiDg; owner: "use all recommendations, but on
+// 3, make the premark association, not inspected an option for the company to check or not"):
+//   1. Picking a kind on Templates › New template ticks all its checkpoints; the company unticks (starterOps).
+//   2. "Older home" and "Log home" sit under "Also", apart from property type (ALSO_KINDS). Older asks the company's
+//      cutoff year — stored on the template (olderCutoffYear), read later only as a scheduling hint.
+//   3. Condo / Townhome adds no checkpoints. The company MAY tick "pre-mark roof, foundation and exterior as Not
+//      inspected — association responsibility" (associationNotInspected); every NEW job from that template then starts
+//      with those systems limited (associationPremarks), which the inspector clears to inspect anyway.
+//   4. "Ledrix New Construction" is its own starting point: the base plus the ten new-construction checkpoints.
+//   5. The Log home (10) and New construction (10) lists are the owner-approved drafts.
 //
 // THE LIST below is the company-facing copy (the one-line "why"); the checkpoint itself — id, label, kind — is the
 // pack's and the shipped template's. verify:reachable §3b holds the two together: this list is exactly the pack's
@@ -31,13 +41,15 @@
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import type { TemplateOp } from './templateOps';
 
-export type SpecialKind = 'manufactured' | 'older' | 'multi_unit';
+export type SpecialKind = 'manufactured' | 'older' | 'multi_unit' | 'log' | 'new_construction';
 
-/** The three kinds, with the template property types (propertyTypes.ts) that say a template is for that kind. */
+/** The kinds, with the template property types (propertyTypes.ts) that say a template is for that kind. */
 export const SPECIAL_KINDS: ReadonlyArray<{ id: SpecialKind; label: string; propertyTypes: readonly string[] }> = [
   { id: 'manufactured', label: 'Manufactured', propertyTypes: ['manufactured'] },
   { id: 'older',        label: 'Older homes',  propertyTypes: [] },
   { id: 'multi_unit',   label: 'Multi-unit',   propertyTypes: ['multi_unit_one', 'multi_unit_many'] },
+  { id: 'log',          label: 'Log home',     propertyTypes: [] },
+  { id: 'new_construction', label: 'New construction', propertyTypes: [] },
 ];
 
 export type SpecialCheckpoint = { id: string; system: string; kind: SpecialKind; why: string };
@@ -82,6 +94,30 @@ export const SPECIAL_HOMES: readonly SpecialCheckpoint[] = [
   { id: 'fireplace_manufactured_fireplace_venting', system: 'fireplace',  kind: 'manufactured', why: 'Listed unit, outside air, chimney' },
   { id: 'fireplace_older_fireplace_chimney',        system: 'fireplace',  kind: 'older',        why: 'Unlined or deteriorated flue' },
   { id: 'fireplace_multi_unit_shared_chimney',      system: 'fireplace',  kind: 'multi_unit',   why: 'One chimney serving several units' },
+
+  // ── Log home (owner-approved draft, 2026-11-05) ──
+  { id: 'exterior_log_walls',            system: 'exterior',   kind: 'log', why: 'Checks, cracks and gaps that let water in' },
+  { id: 'exterior_log_ends',             system: 'exterior',   kind: 'log', why: 'Exposed log ends, where rot starts' },
+  { id: 'exterior_log_chinking',         system: 'exterior',   kind: 'log', why: 'Gaps, cracks and loose chinking between logs' },
+  { id: 'exterior_log_finish',           system: 'exterior',   kind: 'log', why: 'Worn finish and bare wood' },
+  { id: 'exterior_log_upper_courses',    system: 'exterior',   kind: 'log', why: 'Weathering where the overhangs are short' },
+  { id: 'exterior_log_insects',          system: 'exterior',   kind: 'log', why: 'Holes and frass; observed only, never identified' },
+  { id: 'foundation_log_sill',           system: 'foundation', kind: 'log', why: 'Splash-back rot at the lowest logs' },
+  { id: 'foundation_log_connection',     system: 'foundation', kind: 'log', why: 'How the logs are anchored and sealed to the foundation' },
+  { id: 'interior_log_settling_gaps',    system: 'interior',   kind: 'log', why: 'Gaps above frames as the logs settle' },
+  { id: 'interior_log_settling_jacks',   system: 'interior',   kind: 'log', why: 'Adjustable posts and framed walls that let the logs settle' },
+
+  // ── New construction: final walkthrough and 11-month warranty check (owner-approved draft, 2026-11-05) ──
+  { id: 'exterior_nc_grading',           system: 'exterior',   kind: 'new_construction', why: 'Final grade slopes away; downspouts discharge clear' },
+  { id: 'exterior_nc_penetrations',      system: 'exterior',   kind: 'new_construction', why: 'Pipes, vents and wires sealed where they pass through' },
+  { id: 'roofing_nc_flashing',           system: 'roofing',    kind: 'new_construction', why: 'Every flashing installed and finished' },
+  { id: 'attic_nc_insulation',           system: 'attic',      kind: 'new_construction', why: 'Depth as specified; baffles at the eaves' },
+  { id: 'electrical_nc_panel_labeling',  system: 'electrical', kind: 'new_construction', why: 'Every breaker labeled' },
+  { id: 'electrical_nc_gfci_afci',       system: 'electrical', kind: 'new_construction', why: 'Protection in each location that requires it' },
+  { id: 'hvac_nc_registers',             system: 'heating',    kind: 'new_construction', why: 'Every register delivers air' },
+  { id: 'interior_nc_windows_doors',     system: 'interior',   kind: 'new_construction', why: 'Each one opens, closes and latches' },
+  { id: 'interior_nc_appliances',        system: 'interior',   kind: 'new_construction', why: 'Each installed appliance runs' },
+  { id: 'interior_nc_punch',             system: 'interior',   kind: 'new_construction', why: 'Paint, trim, drywall and finish items for the builder' },
 ];
 
 export const SPECIAL_GROUP_LABEL = 'Special Homes';
@@ -180,6 +216,12 @@ export function specialHomeOps(tpl: InspectionTemplate, systemId: string, pickId
     relabel(g.node);
     home = g.node.id;
   }
+  if (!home) {
+    // A group of special checkpoints the template already shows under another id (the 4-Point's auto-built
+    // "heating__special_homes"): new picks join it rather than a second "Special Homes" group.
+    const own = (system.children ?? []).find(c => c.kind === 'subsystem' && (c.children ?? []).some(k => SPECIAL_IDS.has(k.id)));
+    if (own) { relabel(own); home = own.id; }
+  }
 
   const absent: TemplateNode[] = [];
   for (const id of picks) {
@@ -212,4 +254,59 @@ export function specialHomeOps(tpl: InspectionTemplate, systemId: string, pickId
     }
   }
   return { ok: true, ops };
+}
+
+// ── starting points: a kind of home picked on Templates › New template (2026-11-05) ──────────────────────────────
+
+/** The kinds offered under "Also" (how the home was built), apart from property type (ruling 2). */
+export const ALSO_KINDS: readonly SpecialKind[] = ['older', 'log'];
+
+/** The kinds a new template starts with: the property types' kinds, then the "Also" picks, then new construction when
+ *  the New Construction starting point was chosen. Each kind once, in SPECIAL_KINDS order. */
+export function starterKinds(args: { propertyTypes: readonly string[]; also: readonly string[]; newConstruction?: boolean }): SpecialKind[] {
+  const on = new Set<SpecialKind>();
+  for (const k of SPECIAL_KINDS) if (k.propertyTypes.some(p => args.propertyTypes.includes(p))) on.add(k.id);
+  for (const a of args.also) if ((ALSO_KINDS as readonly string[]).includes(a)) on.add(a as SpecialKind);
+  if (args.newConstruction) on.add('new_construction');
+  return SPECIAL_KINDS.map(k => k.id).filter(id => on.has(id));
+}
+
+/** Every checkpoint of these kinds, in list order (all ticked to start — ruling 1). */
+export const starterCheckpoints = (kinds: readonly SpecialKind[]): SpecialCheckpoint[] =>
+  SPECIAL_HOMES.filter(s => kinds.includes(s.kind));
+
+/** The template operations that make `pickIds` active in `tpl`, system by system, as ONE change set. Each system's ops
+ *  are specialHomeOps' (they touch only that system, so they compose); a system the template does not hold is
+ *  refused by name. */
+export function starterOps(tpl: InspectionTemplate, pickIds: readonly string[], source: InspectionTemplate): SpecialOpsResult {
+  const known = new Map(SPECIAL_HOMES.map(s => [s.id, s]));
+  const bySystem = new Map<string, string[]>();
+  for (const id of pickIds) {
+    const s = known.get(id);
+    if (!s) return { ok: false, error: `"${id}" is not one of Ledrix's special checkpoints` };
+    if (!bySystem.has(s.system)) bySystem.set(s.system, []);
+    bySystem.get(s.system)!.push(id);
+  }
+  const ops: TemplateOp[] = [];
+  for (const [system, ids] of bySystem) {
+    const r = specialHomeOps(tpl, system, ids, source);
+    if (!r.ok) return r;
+    ops.push(...r.ops);
+  }
+  return { ok: true, ops };
+}
+
+// ── condo / townhome: association responsibility (ruling 3) ───────────────────────────────────────────────────────
+
+/** What "pre-mark" sets when the company ticks it: the roof, the foundation and the shared exterior. */
+export const ASSOCIATION_SYSTEMS: readonly string[] = ['roofing', 'foundation', 'exterior'];
+/** The cause every pre-marked system carries; the inspector clears it to inspect the system anyway. */
+export const ASSOCIATION_CAUSE = 'Association responsibility';
+
+/** The systems a NEW job from `tpl` starts with marked Not inspected: the template's choice, limited to systems the
+ *  template actually holds. Empty unless the company ticked the pre-mark. */
+export function associationPremarks(tpl: Pick<InspectionTemplate, 'systems' | 'associationNotInspected'>): string[] {
+  const want = Array.isArray(tpl.associationNotInspected) ? tpl.associationNotInspected : [];
+  const held = new Set((tpl.systems ?? []).map(s => s.id));
+  return want.filter((id, i) => want.indexOf(id) === i && held.has(id));
 }

@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog', 'propertyTypes'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog', 'propertyTypes', 'specialHomes'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -481,6 +481,34 @@ async function runDesktop(files) {
       fk.systems[0].label = 'Changed';
       r('create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)',
         JSON.stringify(src) === before && fk.id === 'custom' && fk.name === 'Acme Home');
+      // ── the kind of home (owner rulings 2026-11-05) — over the REAL Ledrix Default the page loads ──
+      const SH = await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href);
+      const DEF = JSON.parse(readFileSync(join(ROOT, 'lib/templates/baselines/ledrixDefault.json'), 'utf8'));
+      const defBytes = JSON.stringify(DEF);
+      const realPts = (c) => S.startingPoints({ context: c, templates: [], types: [], ledrixDefault: DEF, ledrixFourPoint: null });
+      const ncCard = realPts(ctx({ services: ['new_construction'] })).find(p => p.key === 'ledrix_new_construction');
+      const defCard = realPts(ctx()).find(p => p.key === 'ledrix_default');
+      r('kind of home: "Ledrix New Construction" is its own card — the base plus 10 — recommended when the company offers new construction',
+        !!ncCard && ncCard.recommended && ncCard.componentCount === defCard.componentCount + 10 && !realPts(ctx({ services: ['home'] })).find(p => p.key === 'ledrix_new_construction').recommended && !realPts(ctx()).find(p => p.key === 'ledrix_new_construction').recommended);
+      const activeSpecial = (t) => SH.SPECIAL_HOMES.filter(e => SH.specialRows(t, { id: e.system }, DEF).find(x => x.id === e.id)?.inTemplate).map(e => e.id).sort();
+      const choice = (o = {}) => ({ ...S.EMPTY_KIND_CHOICE, ...o });
+      const p1 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['manufactured'], also: ['older'], unticked: ['hvac_older_steam_boiler', 'foundation_manufactured_marriage_line'] }));
+      const b1 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Manufactured'), DEF, choice({ propertyTypes: ['manufactured'], also: ['older'], unticked: ['hvac_older_steam_boiler', 'foundation_manufactured_marriage_line'] }));
+      r('kind of home: Manufactured + Older with two unticked → the draft is the base plus exactly the other 20, and the cutoff year is stored',
+        p1.kinds.join() === 'manufactured,older' && p1.ticked.length === 20 && b1.ok && JSON.stringify(activeSpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort())
+        && b1.tree.olderCutoffYear === 1950 && !b1.tree.associationNotInspected && JSON.stringify(DEF) === defBytes);
+      const b2 = S.buildStarterTree('ledrix_new_construction', S.forkTree(DEF, 'NC'), DEF, choice());
+      r('kind of home: the New Construction card → the base plus exactly its 10', b2.ok && JSON.stringify(activeSpecial(b2.tree)) === JSON.stringify(SH.starterCheckpoints(['new_construction']).map(e => e.id).sort()));
+      const b3 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Condo'), DEF, choice({ propertyTypes: ['condo_townhome'], associationPremark: true }));
+      const b4 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Condo'), DEF, choice({ propertyTypes: ['condo_townhome'] }));
+      const b5 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'House'), DEF, choice({ propertyTypes: ['single_family'], associationPremark: true }));
+      r('kind of home: Condo adds no checkpoints; the association pre-mark is stored only when the company ticks it, and only for a condo template',
+        b3.ok && activeSpecial(b3.tree).length === 0 && JSON.stringify(b3.tree.associationNotInspected) === JSON.stringify(['roofing', 'foundation', 'exterior'])
+        && b4.ok && !b4.tree.associationNotInspected && b5.ok && !b5.tree.associationNotInspected);
+      const b6 = S.buildStarterTree('company', S.forkTree(DEF, 'Mine'), DEF, choice({ propertyTypes: ['manufactured'], also: ['older', 'log'] }));
+      r('kind of home: a copy of the company’s own template is not asked (nothing added)', b6.ok && activeSpecial(b6.tree).length === 0 && !b6.tree.olderCutoffYear);
+      const p7 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['multi_unit_one'], also: ['log'] }));
+      r('kind of home: multi-unit + log → those two kinds, every checkpoint ticked to start', p7.kinds.join() === 'multi_unit,log' && p7.ticked.length === 20);
       r('create: the blank start has no systems; every card reports real counts from its tree',
         pts(ctx()).find(p => p.kind === 'blank').tree.systems.length === 0 && f.find(p => p.key === 'ledrix_fourpoint').systems.join() === 'Roofing' && f.find(p => p.key === 'ledrix_default').componentCount === 1);
     }
@@ -634,7 +662,17 @@ const RULES = {
   'property types: picked on the Overview and when creating; shown and filtered on the Templates page': all => {
     const ov = strip(all['components/templates/Sections.tsx'] ?? ''), cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ls = strip(all['app/app/templates/page.tsx'] ?? '');
     return /<PropertyTypePicker value=\{propertyTypesOf\(tree\)\}[^>]*onChange=\{v => onOps\(ops\.propertyTypes\(v\)\)\}/.test(ov)
-      && /tree\.propertyTypes = picked/.test(cr) && /propertyTypesOf\(t\.tree\)\.includes\(ptFilter\)/.test(ls) ? [] : ['components/templates/Sections.tsx'];
+      && /forked\.propertyTypes = picked/.test(cr) && /propertyTypesOf\(t\.tree\)\.includes\(ptFilter\)/.test(ls) ? [] : ['components/templates/Sections.tsx'];
+  },
+  // 2026-11-05 (owner rulings): the kind of home is asked under a Ledrix starting point and the draft is built by
+  // buildStarterTree (one validated change set); the Overview edits the pre-mark and the cutoff year only through ops.
+  'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': all => {
+    const cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ov = strip(all['components/templates/Sections.tsx'] ?? '');
+    const out = [];
+    if (!/chosen && asksKindOfHome\(chosen\.kind\) && d\.ledrixDefault && \(\s*<KindOfHome /.test(cr)) out.push('KindOfHome is not mounted under a Ledrix starting point');
+    if (!/buildStarterTree\(chosen\.kind, forked, d\.ledrixDefault, \{ \.\.\.kindChoice, propertyTypes: picked \}\)/.test(cr) || !/const tree = built\.tree;/.test(cr)) out.push('the draft is not built by buildStarterTree');
+    if (!/onOps\(ops\.associationNotInspected\(/.test(ov) || !/onOps\(ops\.olderCutoffYear\(/.test(ov)) out.push('the Overview does not edit the pre-mark / cutoff year through ops');
+    return out;
   },
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
     const list = strip(all[LIST] ?? ''), page = strip(all['app/app/templates/create/page.tsx'] ?? '');
@@ -762,6 +800,7 @@ const MUT = {
   'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': rep('components/templates/Workspace.tsx', "...(detailsOn ? ['details' as const] : [])", "'details' as const"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
+  'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
@@ -784,6 +823,10 @@ const EXEC_MUT = [
   { name: 'show in links into the item\'s own system', file: 'editorModel.ts', from: "homeId: node.id, parentId: systemId }]", to: "homeId: node.id, parentId: tree.systems[0].id }]", check: 'show in: the item appears in the other system as a link — one record, no copy of its answers', run: runDesktop },
   { name: 'a rule problem opens the wrong tab', file: 'publishFixes.ts', from: "rule_unsupported: 'applicability', rule_missing_item: 'applicability',", to: "rule_unsupported: 'applicability', rule_missing_item: 'overview',", check: 'publish fixes: a broken rule opens its item on the Applicability tab, and blocks', run: runDesktop },
   { name: 'property types accept any value', file: 'core/propertyTypes.ts', from: "if (v.some(x => typeof x !== 'string' || !IDS.has(x)))", to: "if (v.some(x => typeof x !== 'string'))", check: 'property types: an unknown property type is refused', run: runDesktop },
+  { name: 'unticked checkpoints still land', file: 'startingPoints.ts', from: "const off = new Set(c.unticked);", to: "const off = new Set<string>();", check: 'kind of home: Manufactured + Older with two unticked → the draft is the base plus exactly the other 20, and the cutoff year is stored', run: runDesktop },
+  { name: 'the association pre-mark without a condo', file: 'startingPoints.ts', from: "if (plan.condo && c.associationPremark)", to: "if (c.associationPremark)", check: 'kind of home: Condo adds no checkpoints; the association pre-mark is stored only when the company ticks it, and only for a condo template', run: runDesktop },
+  { name: 'New Construction recommended for everyone', file: 'startingPoints.ts', from: "reasons: svc.has('new_construction') ? ['Built for new construction, a service you selected.'] : []", to: "reasons: ['Built for new construction, a service you selected.']", check: 'kind of home: "Ledrix New Construction" is its own card — the base plus 10 — recommended when the company offers new construction', run: runDesktop },
+  { name: 'a company copy gets kinds added', file: 'startingPoints.ts', from: "export const asksKindOfHome = (k: StartKind): boolean => k === 'ledrix_default' || k === 'ledrix_new_construction';", to: "export const asksKindOfHome = (k: StartKind): boolean => k !== 'blank';", check: 'kind of home: a copy of the company’s own template is not asked (nothing added)', run: runDesktop },
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
