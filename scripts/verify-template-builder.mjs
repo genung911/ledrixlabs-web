@@ -271,6 +271,25 @@ async function runDesktop(files) {
     const lastManual = d.log[d.log.length - 1].id;
     const un = T.undoInDraft(d, lastManual, { id: 'undo_1', author: OWNER, now: 5200 });
     r('hand edit: every edit is undoable', un.ok && !E.locate(un.draft.tree, 'roofing__flashing_2'));
+    // ONE SWITCH (owner 2026-11-05): a group or item switched OFF goes to the off pocket (offered on site by the app);
+    // ON brings it back where it was; a system's switch stays coverByDefault; a set-aside SYSTEM switched on comes back
+    // covered. Executed through the real ops on the draft.
+    step(E.includeOps(d.tree, 'roofing__flashing_2', false), 5010);
+    const itemOff = !E.locate(d.tree, 'roofing__flashing_2') && !!E.locateOff(d.tree, 'roofing__flashing_2') && E.isIncluded(d.tree, 'roofing__flashing_2') === false;
+    step(E.includeOps(d.tree, 'roofing__flashing_2', true), 5020);
+    r('switch: an item switched off is kept (off, offered on site) and switching it on brings it back',
+      itemOff && !!E.locate(d.tree, 'roofing__flashing_2') && !E.locateOff(d.tree, 'roofing__flashing_2') && E.isIncluded(d.tree, 'roofing__flashing_2'));
+    const sysOffOps = E.includeOps(d.tree, 'hvac', false);
+    r('switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside',
+      sysOffOps.length > 0 && sysOffOps.every(o => o.op === 'setNodeField' && o.field === 'defaultActive') && sysOffOps.some(o => o.nodeId === 'hvac' && o.value === false));
+    step(sysOffOps, 5025);
+    step([{ op: 'trimNode', nodeId: 'hvac' }], 5030);
+    const parked = !!E.locateOff(d.tree, 'hvac')?.offSystem && E.locateOff(d.tree, 'hvac').node.defaultActive === false;
+    step(E.includeOps(d.tree, 'hvac', true), 5040);
+    r('switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)',
+      parked && !!E.locate(d.tree, 'hvac') && d.tree.systems.find(x => x.id === 'hvac').defaultActive === true && E.isIncluded(d.tree, 'hvac'));
+    r('switch: switching an off item off again, or a live item on again, writes nothing',
+      E.includeOps(d.tree, 'roofing__flashing_2', true).length === 0 && E.includeOps(d.tree, 'nope', false).length === 0);
 
     // Ask Ledrix
     const tree = d.tree;
@@ -649,9 +668,23 @@ const RULES = {
     /Inspections already started or finished keep the copy they started with/.test(all[EDIT] ?? '') && /dialog === 'publish'/.test(all[EDIT] ?? '') ? [] : [EDIT],
   // 2026-10-24 — building types: edited ONLY as one template op (draft, undo, validation), and never published with an error.
   'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': all => {
-    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
-    return /action=\{<IncludedSwitch on=\{isCovered\(tree, system\)\} label=\{system\.label\} disabled=\{disabled\} onChange=\{v => onOps\(ops\.coverByDefault\(tree, system\.id, v\)\)\} \/>\}/.test(ws)
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), em = strip(all['lib/templates/editorModel.ts'] ?? '');
+    // 2026-11-05: the system switch goes through includeOps, which for a live system IS coverByDefault (checked here and
+    // executed in "switch: …" above).
+    return /action=\{<IncludedSwitch on=\{isCovered\(tree, system\)\} label=\{system\.label\} disabled=\{disabled\} onChange=\{v => onOps\(includeOps\(tree, system\.id, v\)\)\} \/>\}/.test(ws)
+      && /return loc\.depth === 0 \? ops\.coverByDefault\(tree, id, false\)/.test(em)
       && !/coverByDefault/.test(parts) ? [] : ['components/templates/Workspace.tsx'];
+  },
+  'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': all => {
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tree = strip(all['components/templates/Tree.tsx'] ?? '');
+    const bad = [];
+    const sw = [...ws.matchAll(/action=\{<IncludedSwitch [^>]*onChange=\{[^}]*includeOps\(tree, (system|node|off\.node)\.id, (v|true|false)\)/g)].map(m => m[1]);
+    if (!(sw.includes('system') && sw.filter(x => x === 'node').length === 2 && sw.includes('off.node'))) bad.push(`Workspace switches: ${JSON.stringify(sw)}`);
+    const ui = Object.entries(all).filter(([f]) => /^components\/templates\/[^/]+\.tsx$/.test(f)).map(([f, t]) => [f, strip(t)]);
+    for (const [f, t] of ui) if (/Set this (system|group|item) aside|label: 'Set aside'|ops\.setAside\(|ops\.restore\(|>Restore</.test(t)) bad.push(f);
+    if (!/offKids\(n\)\.map\(t => offRow\(/.test(tree) || !/offSystems\.map\(/.test(tree)) bad.push('Tree: off groups/items/systems not shown');
+    if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
+    return bad;
   },
   'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': all => {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
@@ -796,7 +829,8 @@ const MUT = {
   'workspace: every section in the rail renders its view': rep(EDIT, "section === 'report' && ", "section === 'nothing' && "),
   'workspace: the inspector preview renders the draft tree': rep(EDIT, '<PhonePreview tree={tree} selection={sel}', '<PhonePreview tree={m.live?.tree ?? tree} selection={sel}'),
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
-  'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
+  'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(includeOps(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
+  'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
   'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': rep('components/templates/Workspace.tsx', "...(detailsOn ? ['details' as const] : [])", "'details' as const"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
@@ -846,6 +880,9 @@ const EXEC_MUT = [
   { name: 'switching on only clears the off flag', file: 'editorModel.ts', from: "const want = s.id === systemId ? on : isCovered(tree, s);", to: "const want = s.id === systemId ? (on ? (undefined as any) : false) : isCovered(tree, s);", check: 'coverage: switching a system on makes it covered (defaultActive true, not merely "not false")', run: runDesktop },
   { name: 'assessment OFF writes null again', file: 'editorModel.ts', from: "assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on)],", to: "assessed: (nodeId: string, on: boolean): TemplateOp[] => [setField(nodeId, 'condition', on ? true : null)],", check: 'condition: switching assessment OFF stores an explicit false (never a deleted field)', run: runDesktop },
   { name: 'the editor reads the raw field instead of the app rule', file: 'editorModel.ts', from: "if (n.attributes || n.condition !== undefined || n.limitations || x.method) return n.condition ?? true;", to: "if (n.attributes || n.condition !== undefined || n.limitations || x.method) return n.condition === true;", check: 'condition: a legacy item that never stored the field reads exactly as the app reads it (missing = on; spec facet = off)', run: runDesktop },
+  { name: 'switching an item off deletes it instead', file: 'editorModel.ts', from: ": [{ op: 'trimNode', nodeId: id }];", to: ": [{ op: 'unaddNode', nodeId: id } as any];", check: 'switch: an item switched off is kept (off, offered on site) and switching it on brings it back', run: runDesktop },
+  { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
+  { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 for (const m of EXEC_MUT) {

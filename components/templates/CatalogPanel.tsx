@@ -98,7 +98,7 @@ export function CatalogPanel({ tree, system, onOps, disabled }: {
         <button type="button" className={btn.primary} disabled={disabled || !addable.length} onClick={add}>
           {addable.length ? `Add ${addable.length} component${addable.length === 1 ? '' : 's'}` : 'Add components'}
         </button>
-        <p className={label + ' mb-0 normal-case tracking-normal font-normal'}>They join this template like any item — edit, move or set them aside afterwards.</p>
+        <p className={label + ' mb-0 normal-case tracking-normal font-normal'}>They join this template like any item — edit, move or switch them off afterwards.</p>
       </div>
     </div>
   );

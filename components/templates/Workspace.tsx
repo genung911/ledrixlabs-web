@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
-import { assessesCondition, isCovered, locate, ops, recordsNothingHere } from '@/lib/templates/editorModel';
+import { assessesCondition, includeOps, isCovered, itemSummary, locate, locateOff, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
 import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
@@ -28,14 +28,27 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
   const system = sel.systemId ? tree.systems.find(s => s.id === sel.systemId) ?? null : null;
   const loc = sel.nodeId ? locate(tree, sel.nodeId) : null;
+  // SWITCHED OFF (owner 2026-11-05): a set-aside system, group or item opens with its switch Off and what it holds; the
+  // switch turns it back on where it was. Editing waits until it is on.
+  const off = !loc ? locateOff(tree, sel.nodeId ?? (system ? null : sel.systemId)) : null;
+  if (off) {
+    const kind = off.offSystem ? 'System' : off.node.kind === 'component' ? 'Component' : 'Group';
+    const where = off.offSystem ? '' : `${off.parent && off.parent.id !== off.system.id ? pathOf(tree, off.parent.id) + ' › ' + off.parent.label : off.system.label} · `;
+    return (
+      <Shell kind={kind} title={off.node.label} sub={`${where}${OFF_SUB}`} onClose={off.offSystem ? undefined : () => onSelect({ systemId: off.system.id, nodeId: null })}
+        action={<IncludedSwitch on={false} label={off.node.label} disabled={disabled} onChange={v => { if (v) onOps(includeOps(tree, off.node.id, true)); }} />}>
+        <OffContents node={off.node} />
+      </Shell>
+    );
+  }
   if (!system) return <p className="px-4 py-6 text-sm text-muted">{tree.systems.length ? 'Pick a system or component in the tree.' : 'Add a system to start.'}</p>;
   const open = (id: string) => onSelect({ systemId: system.id, nodeId: id });
 
   if (!loc || loc.depth === 0) {
     return (
       <Shell kind="System" title={system.label}
-        sub={isCovered(tree, system) ? 'Included in new inspections' : 'Not included — inspectors can still add it during an inspection'}
-        action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(ops.coverByDefault(tree, system.id, v))} />}>
+        sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
+        action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
     );
@@ -45,7 +58,8 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const close = () => onSelect({ systemId: system.id, nodeId: null });
   if (node.kind !== 'component') {
     return (
-      <Shell kind="Group" title={node.label} sub={path} onClose={close}>
+      <Shell kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+        action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
     );
@@ -74,7 +88,8 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const visible: ComponentTab[] = ['overview', ...(assessesCondition(node) ? ['condition' as const] : []), ...(detailsOn ? ['details' as const] : []), ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
-    <Shell kind="Component" title={node.label} sub={path} onClose={close} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
+    <Shell kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+      action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
           className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${cur === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>
@@ -96,8 +111,28 @@ function pathOf(tree: InspectionTemplate, id: string): string {
   return parts.join(' › ');
 }
 
-/** Whether new inspections include a system — the system's one on/off, on its title line (owner, 2026-10-27). The app's
- *  rule is `defaultActive` through ops.coverByDefault; Off still lets inspectors add the system during an inspection. */
+const ON_SUB = 'Included in new inspections';
+const OFF_SUB = 'Not included — inspectors can still add it during an inspection';
+
+/** What a switched-off system or group holds — read-only until it is switched back on. */
+function OffContents({ node }: { node: TemplateNode }) {
+  const kids = node.children ?? [];
+  return (
+    <div className="space-y-3 px-4 py-4">
+      <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Off: new inspections leave it out, and inspectors can add it on site. Switch it on to edit it.</p>
+      {node.kind === 'component'
+        ? <p className="text-sm text-body">{itemSummary(node)}</p>
+        : <ul className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+            {kids.map(c => <li key={c.id} className="px-3 py-2"><span className="block truncate text-sm font-medium text-muted">{c.label}</span>
+              {c.kind === 'component' && <span className="block truncate text-xs text-muted">{itemSummary(c)}</span>}</li>)}
+            {!kids.length && <li className="px-3 py-3 text-xs text-muted">Nothing inside.</li>}
+          </ul>}
+    </div>
+  );
+}
+
+/** Whether new inspections include a system, group or item — ONE switch on the title line (owner 2026-10-27 for systems;
+ *  2026-11-05 for groups and items). Off still lets inspectors add it during an inspection (editorModel.includeOps). */
 function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; label: string; disabled: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex shrink-0 items-center gap-2 pt-1">

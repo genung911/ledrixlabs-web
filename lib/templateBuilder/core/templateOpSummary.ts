@@ -64,8 +64,8 @@ export function summarizeOp(op: TemplateOp, tpl: InspectionTemplate): OpSummary 
       if (n.children?.length) bits.push(`${n.children.length} item${n.children.length === 1 ? '' : 's'} inside`);
       return { title: `Add ${q(n.label)}`, detail: bits.join(' · '), before: `Not in ${labelOf(tpl, op.parentId)}`, after: `In ${labelOf(tpl, op.parentId)}`, section: sectionOf(tpl, op.parentId) };
     }
-    case 'trimNode': return { title: `Set aside ${q(labelOf(tpl, op.nodeId))}`, detail: 'Removed from what you inspect · stays restorable', section: sectionOf(tpl, op.nodeId) };
-    case 'restoreNode': return { title: `Restore ${q(labelOf(tpl, op.nodeId))}`, detail: 'Back in what you inspect', section: sectionOf(tpl, op.nodeId) };
+    case 'trimNode': return { title: `Switch off ${q(labelOf(tpl, op.nodeId))}`, detail: 'Not in new inspections · inspectors can still add it on site', section: sectionOf(tpl, op.nodeId) };
+    case 'restoreNode': return { title: `Switch on ${q(labelOf(tpl, op.nodeId))}`, detail: 'Included in new inspections', section: sectionOf(tpl, op.nodeId) };
     case 'moveNode': {
       const h = find(tpl, op.nodeId);
       const from = h?.path[h.path.length - 1]?.id ?? null;

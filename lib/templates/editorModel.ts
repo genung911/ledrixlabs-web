@@ -9,6 +9,7 @@ import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/tem
 import { createChangeSet, setStatus, type ChangeSet } from '@/lib/templateBuilder/core/templateChangeSets';
 import { applyToDraft, type TemplateDraft } from '@/lib/templateBuilder/core/templateDraft';
 import { allIds } from '@/lib/templateBuilder/core/templateValidate';
+import { applyOps } from '@/lib/templateBuilder/core/templateOps';
 
 export type Author = ChangeSet['author'];
 export type ManualResult = { ok: true; draft: TemplateDraft } | { ok: false; error: string };
@@ -46,6 +47,56 @@ export function locate(tree: InspectionTemplate, id: string | null | undefined):
     const hit = walk(system, 1); if (hit) return hit;
   }
   return null;
+}
+
+// ── OFF, BUT OFFERED ON SITE (owner 2026-11-05, "Can these be the same with the toggle in the title section like
+// systems" → "Option 1, do it properly"). Systems, groups and items have ONE switch, on their title line, and it means one
+// thing: Off = not in new inspections, and the inspector can still add it on site. A system's Off is `defaultActive`
+// (coverByDefault); a group's or item's Off is the set-aside pocket (`trimmed` / `trimmedSystems`) — which the app now
+// OFFERS on site (ledrix-app src/core/services/offeredOnSite.ts) — so every item a company set aside before this is
+// simply Off, and its switch turns it back on.
+
+export type OffLocated = { node: TemplateNode; system: TemplateNode; parent: TemplateNode | null; offSystem: boolean };
+
+/** A switched-off system, or a switched-off group/item directly inside a live system or group. */
+export function locateOff(tree: InspectionTemplate, id: string | null | undefined): OffLocated | null {
+  if (!id) return null;
+  for (const s of tree.trimmedSystems ?? []) if (s.id === id) return { node: s, system: s, parent: null, offSystem: true };
+  for (const system of tree.systems) {
+    const walk = (n: TemplateNode): OffLocated | null => {
+      for (const t of n.trimmed ?? []) if (t.id === id) return { node: t, system, parent: n, offSystem: false };
+      for (const c of n.children ?? []) { const h = walk(c); if (h) return h; }
+      return null;
+    };
+    const hit = walk(system); if (hit) return hit;
+  }
+  return null;
+}
+
+/** Is this system, group or item in new inspections? */
+export function isIncluded(tree: InspectionTemplate, id: string): boolean {
+  if (locateOff(tree, id)) return false;
+  const loc = locate(tree, id);
+  if (!loc) return false;
+  return loc.depth === 0 ? isCovered(tree, loc.node) : true;
+}
+
+/** The one switch. ON: an off group/item is switched back on where it was (restoreNode); an off SYSTEM that was set
+ *  aside comes back and is covered. OFF: a system is not covered (coverByDefault — it stays in the template, offered on
+ *  site); a group or item moves to the off pocket (trimNode — offered on site). Nothing is ever deleted. */
+export function includeOps(tree: InspectionTemplate, id: string, on: boolean): TemplateOp[] {
+  const off = locateOff(tree, id);
+  if (on) {
+    if (!off) { const loc = locate(tree, id); return loc && loc.depth === 0 && !isCovered(tree, loc.node) ? ops.coverByDefault(tree, id, true) : []; }
+    const back: TemplateOp[] = [{ op: 'restoreNode', nodeId: id }];
+    if (!off.offSystem) return back;
+    const r = applyOps(tree, back);
+    return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;
+  }
+  if (off) return [];
+  const loc = locate(tree, id);
+  if (!loc) return [];
+  return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];
 }
 
 // ── "Also show in…" (2026-10-27): an item shown in other systems through LINKS — one record, at its home; a link has no

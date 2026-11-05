@@ -103,7 +103,7 @@ export function OverviewSection({ tree, status, issues, onGo, onOps, disabled }:
             <ul className="space-y-1">
               <li>{errors.length ? <span className="text-safety">{errors.length} problem{errors.length === 1 ? '' : 's'} to fix</span> : 'No problems found.'}{warnings.length ? ` ${warnings.length} note${warnings.length === 1 ? '' : 's'}.` : ''}</li>
               <li>{f.unseen ? <span>{f.unseen} item{f.unseen === 1 ? ' is' : 's are'} not shown to inspectors.</span> : 'Every item is shown to inspectors.'}</li>
-              {f.setAside > 0 && <li>{f.setAside} set aside (restorable).</li>}
+              {f.setAside > 0 && <li>{f.setAside} switched off (inspectors can still add {f.setAside === 1 ? 'it' : 'them'} on site).</li>}
             </ul>
           </Card>
           <Card title="Building types" action={<button className={btn.ghost} onClick={() => onGo('buildings')}>Open</button>}>

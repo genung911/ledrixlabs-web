@@ -60,7 +60,7 @@ export function notShownToInspectors(system: TemplateNode, node: TemplateNode, p
 }
 
 export const UnseenPill = () => (
-  <span title="This system has groups, and inspectors only see items inside a group. Set this item aside and add it inside a group."><Pill tone="warn">Not shown to inspectors</Pill></span>
+  <span title="This system has groups, and inspectors only see items inside a group. Switch this item off and add it inside a group."><Pill tone="warn">Not shown to inspectors</Pill></span>
 );
 
 /** Add a system, or a group or item inside a system — the one structured way to add to the template. */
@@ -122,7 +122,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   const [parent, setParent] = useState(homes[0]?.id ?? system.id);
   const [name, setName] = useState('');
   useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const setAside = rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))).concat((system.trimmed ?? []).map(t => ({ t, under: system.label })));
+  const offRows = (system.trimmed ?? []).map(t => ({ t, under: system.label })).concat(rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))));
 
   return (
     <div className="space-y-5 px-4 py-4">
@@ -159,14 +159,23 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
                 </button>
                 {!group && <button aria-label={`Edit ${node.label}`} className={btn.icon} onClick={() => { onSelect({ systemId: system.id, nodeId: node.id }); onOpen(node.id); }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg></button>}
-                <Menu label={`More for ${node.label}`} items={[
-                  ...(group ? [{ label: 'Rename', disabled: disabled && 'The draft can’t change right now.', onSelect: () => { const v = window.prompt('Group name', node.label); if (v) onOps(ops.rename(node.id, v)); } }] : []),
-                  { label: 'Set aside', disabled: disabled && 'The draft can’t change right now.', onSelect: () => onOps(ops.setAside(node.id)) },
-                ]} />
+                {group && <Menu label={`More for ${node.label}`} items={[
+                  { label: 'Rename', disabled: disabled && 'The draft can’t change right now.', onSelect: () => { const v = window.prompt('Group name', node.label); if (v) onOps(ops.rename(node.id, v)); } },
+                ]} />}
               </li>
             );
           })}
-          {!rows.length && <li className="px-4 py-4 text-xs text-muted">No items yet.</li>}
+          {/* OFF (owner 2026-11-05): switched-off groups and items stay in the list, greyed — open one to switch it on. */}
+          {offRows.map(({ t, under }) => (
+            <li key={t.id} className={`flex items-center gap-2 py-2 pl-3 pr-2 ${sel.nodeId === t.id ? 'bg-accent/10' : ''}`}>
+              <button className="min-w-0 flex-1 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
+                <p className={`truncate text-muted ${t.kind !== 'component' ? 'text-xs font-semibold uppercase tracking-wide' : 'text-sm font-medium'}`}>{t.label}</p>
+                <p className="truncate text-xs text-muted">Not included · in {under}</p>
+              </button>
+              <span className="text-[10px] font-semibold uppercase text-muted">off</span>
+            </li>
+          ))}
+          {!rows.length && !offRows.length && <li className="px-4 py-4 text-xs text-muted">No items yet.</li>}
         </ul>
         <form className="mt-2 flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); if (name.trim() && onOps(ops.addItem(tree, system.id, parent, name, kind))) setName(''); }}>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'component' ? 'Add item, e.g. Kick-out flashing' : 'Add group'} aria-label="New item name" disabled={disabled} className={`${field} min-w-[10rem] flex-1 py-1.5`} />
@@ -183,19 +192,6 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
       <CatalogPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
       <SpecialHomesPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
 
-      {!!setAside.length && (
-        <details className="text-xs">
-          <summary className="cursor-pointer text-muted">Set aside in {system.label} ({setAside.length})</summary>
-          <ul className="mt-1 space-y-1">{setAside.map(({ t, under }) => (
-            <li key={t.id} className="flex items-center justify-between gap-2"><span className="truncate text-body">{t.label} <span className="text-muted">· {under}</span></span>
-              <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => onOps(ops.restore(t.id))}>Restore</button></li>))}</ul>
-        </details>
-      )}
-
-      <div className="border-t border-hairline pt-4">
-        <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(system.id))}>Set this system aside</button>
-        <p className="mt-1 text-[11px] text-muted">Set-aside systems leave the template but can be restored from the tree.</p>
-      </div>
     </div>
   );
 }
@@ -224,7 +220,6 @@ export function GroupDetails({ node, onOps, onOpen, disabled }: { node: Template
           {!node.children?.length && <li className="px-3 py-3 text-xs text-muted">No items yet. Add one from the tree.</li>}
         </ul>
       </div>
-      <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>
     </div>
   );
 }
@@ -269,9 +264,6 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
         {nothing && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
       </div>
       {!node.pointsTo && <AlsoShowIn tree={tree} systemId={systemId} node={node} onOps={onOps} disabled={disabled} />}
-      <div className="border-t border-hairline pt-4">
-        <button className={btn.secondary} disabled={disabled} onClick={() => onOps(ops.setAside(node.id))}>Set this item aside</button>
-      </div>
     </div>
   );
 }

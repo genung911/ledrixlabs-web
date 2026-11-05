@@ -60,7 +60,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
     return (
       <li key={n.id}>
         <div className={`flex items-center gap-1 rounded-lg pr-1.5 ${on ? 'bg-accent/15' : 'hover:bg-ink/5'}`} style={{ paddingLeft: 6 + depth * 14 }}>
-          {group && kids.length ? (
+          {group && (kids.length || offKids(n).length) ? (
             <button aria-label={`${isOpen(n.id) ? 'Collapse' : 'Expand'} ${n.label}`} aria-expanded={isOpen(n.id)} onClick={() => toggle(n.id)} className="flex h-6 w-5 items-center justify-center text-muted hover:text-ink"><Chevron open={isOpen(n.id)} /></button>
           ) : <span className="w-5" />}
           <button onClick={() => onSelect({ systemId: system.id, nodeId: n.id })} aria-current={on ? 'true' : undefined}
@@ -71,10 +71,30 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
           {reqs > 0 && <span title={`${reqs} requirement${reqs === 1 ? '' : 's'}`} className="rounded-full bg-accent/15 px-1.5 text-[10px] font-semibold text-accent-ink">{reqs}</span>}
           {notShownToInspectors(system, n, parentId) && <span title="Not shown to inspectors: this system has groups, and inspectors only see items inside a group." className="rounded-full bg-warn/25 px-1.5 text-[10px] font-semibold text-ink">hidden</span>}
         </div>
-        {group && kids.length > 0 && isOpen(n.id) && <ul>{kids.map(c => row(system, c, n.id, depth + 1))}</ul>}
+        {group && (kids.length > 0 || offKids(n).length > 0) && isOpen(n.id) && <ul>{kids.map(c => row(system, c, n.id, depth + 1))}{offKids(n).map(t => offRow(system, t, depth + 1))}</ul>}
       </li>
     );
   };
+
+  // OFF (owner 2026-11-05): a switched-off group or item stays in the tree, greyed with OFF, like a system that is off.
+  const offKids = (n: TemplateNode) => (n.trimmed ?? []).filter(t => !query || matches(t, query));
+  const offRow = (system: TemplateNode, t: TemplateNode, depth: number): React.ReactNode => {
+    const on = sel.nodeId === t.id;
+    return (
+      <li key={`off-${t.id}`}>
+        <div className={`flex items-center gap-1 rounded-lg pr-1.5 ${on ? 'bg-accent/15' : 'hover:bg-ink/5'}`} style={{ paddingLeft: 6 + depth * 14 }}>
+          <span className="w-5" />
+          <button onClick={() => onSelect({ systemId: system.id, nodeId: t.id })} aria-current={on ? 'true' : undefined}
+            className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left text-[13px] text-muted">
+            <span className="shrink-0 opacity-60"><Dot kind={t.kind === 'component' ? 'component' : 'subsystem'} /></span>
+            <span className="truncate">{t.label}</span>
+          </button>
+          <span title="Not included in new inspections — inspectors can still add it on site" className="text-[10px] font-semibold uppercase text-muted">off</span>
+        </div>
+      </li>
+    );
+  };
+  const offSystems = (tree.trimmedSystems ?? []).filter(s => !query || matches(s, query));
 
   return (
     <section aria-label="Systems and components" className="flex min-h-0 flex-col rounded-xl border border-hairline bg-surface">
@@ -103,20 +123,27 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
                   <button aria-label={`Move ${s.label} down`} disabled={disabled || i === shown.length - 1} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i + 1))}><Arrow dir="down" /></button>
                 </div>}
               </div>
-              {isOpen(s.id) && <ul>{(s.children ?? []).map(c => row(s, c, s.id, 1))}</ul>}
+              {isOpen(s.id) && <ul>{(s.children ?? []).map(c => row(s, c, s.id, 1))}{offKids(s).map(t => offRow(s, t, 1))}</ul>}
             </li>
           );
         })}
-        {!shown.length && <li className="px-3 py-4 text-xs text-muted">{query ? `Nothing matches “${q.trim()}”.` : 'No systems yet. Add the first one below.'}</li>}
+        {offSystems.map(s => {
+          const on = sel.systemId === s.id && !sel.nodeId;
+          return (
+            <li key={`off-${s.id}`}>
+              <div className={`flex items-center gap-1 rounded-lg pr-1 ${on ? 'bg-accent/15' : 'hover:bg-ink/5'}`}>
+                <span className="w-6" />
+                <button onClick={() => onSelect({ systemId: s.id, nodeId: null })} aria-current={on ? 'true' : undefined}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left text-sm text-muted">
+                  <span className="shrink-0 opacity-60"><Dot kind="system" /></span><span className="truncate">{s.label}</span>
+                </button>
+                <span title="Not included in new inspections — inspectors can still add it on site" className="text-[10px] font-semibold uppercase text-muted">off</span>
+              </div>
+            </li>
+          );
+        })}
+        {!shown.length && !offSystems.length && <li className="px-3 py-4 text-xs text-muted">{query ? `Nothing matches “${q.trim()}”.` : 'No systems yet. Add the first one below.'}</li>}
       </ul>
-      {!!tree.trimmedSystems?.length && (
-        <details className="border-t border-hairline px-3 py-2 text-xs">
-          <summary className="cursor-pointer text-muted">Set-aside systems ({tree.trimmedSystems.length})</summary>
-          <ul className="mt-1 space-y-1">{tree.trimmedSystems.map(s => (
-            <li key={s.id} className="flex items-center justify-between gap-2"><span className="truncate text-body">{s.label}</span>
-              <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => onOps(ops.restore(s.id))}>Restore</button></li>))}</ul>
-        </details>
-      )}
       <div className="border-t border-hairline p-2">
         {adding
           ? <><AddToTemplate tree={tree} systemId={sel.systemId} onOps={onOps} disabled={disabled} onAdded={s => onSelect(s)} />

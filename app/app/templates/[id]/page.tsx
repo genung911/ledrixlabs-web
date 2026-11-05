@@ -33,7 +33,7 @@ import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { validateTemplate } from '@/lib/templateBuilder/core/templateValidate';
-import { applyManual, locate } from '@/lib/templates/editorModel';
+import { applyManual, locate, locateOff } from '@/lib/templates/editorModel';
 import { LEVEL_MEANING, REQUIREMENT_LEVELS, levelCounts, pinnedDefaultSet, requirementsOf, unpublishableRequirements } from '@/lib/templates/requirementModel';
 import { useDraft } from '@/lib/templates/useDraft';
 import { TemplateApiError } from '@/lib/templates/api';
@@ -98,8 +98,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   // A selection whose item was removed falls back to its system, then to the first system.
   useEffect(() => {
     if (!tree) return;
-    if (sel.nodeId && !locate(tree, sel.nodeId)) setSel(s => ({ ...s, nodeId: null }));
-    if (sel.systemId && !tree.systems.some(s => s.id === sel.systemId)) setSel({ systemId: tree.systems[0]?.id ?? null, nodeId: null });
+    // A switched-OFF system, group or item is still there (owner 2026-11-05): it stays selected with its switch Off.
+    if (sel.nodeId && !locate(tree, sel.nodeId) && !locateOff(tree, sel.nodeId)) setSel(s => ({ ...s, nodeId: null }));
+    if (sel.systemId && !tree.systems.some(s => s.id === sel.systemId) && !locateOff(tree, sel.systemId)) setSel({ systemId: tree.systems[0]?.id ?? null, nodeId: null });
   }, [tree, sel]);
 
   const readOnly = d.conflict === 'draft' ? 'This draft was saved somewhere else. Reload it to keep editing.'
