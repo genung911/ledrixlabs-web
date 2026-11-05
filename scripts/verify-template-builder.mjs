@@ -969,6 +969,13 @@ const RULES = {
       && /<TitleName title=\{title\} kind=\{kind\} onRename=\{onRename\}/.test(w) && /aria-label=\{`Rename \$\{name\}`\}/.test(w)
       && !/ariaLabel="(System|Group|Item) name"/.test(e)) ? [] : ['components/templates/Workspace.tsx', 'components/templates/EditorParts.tsx'];
   },
+  // owner 2026-11-05: "called tips … Yes to all 3" — the box is Tips, and the preview shows the ⓘ the phone shows.
+  'tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name': all => {
+    const e = strip(all['components/templates/EditorParts.tsx'] ?? ''), pv = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    return (!/>Guidance</.test(e) && (e.match(/<label className=\{label\}>Tips<\/label>/g) ?? []).length === 3
+      && /blue ⓘ beside the item on the phone/.test(e)
+      && /className="pv-tips"/.test(pv) && !/<span className="pv-guide">\{n\.description\}<\/span>/.test(pv)) ? [] : ['components/templates/EditorParts.tsx', 'components/templates/PhonePreview.tsx'];
+  },
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': all => {
     const b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
     const m = b.match(/<div className="([^"]*)" role="group" aria-label=\{`\$\{systemLabel\} types`\}>/);
@@ -1048,8 +1055,10 @@ const MUT3 = [
   ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'onReveal?.(anchor);', ''), 'a section row does not reveal its section'],
   ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', '    return [\n', '    return [\n      sectionRow(\'every\', `Every ${s.label.toLowerCase()} system`, L.every.length + 1, \'tb-sec-every\'),\n'), 'the "Every" section is back in the tree'],
   ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, <Pill>All types</Pill>))}\n', ''), 'a type\'s list leaves out the items every type shows'],
-  ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '<label className={label}>Guidance</label>', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} /><label className={label}>Guidance</label>'), 'the system Name box is back'],
+  ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '<label className={label}>Tips</label>', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} /><label className={label}>Tips</label>'), 'the system Name box is back'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/Workspace.tsx', ' onRename={v => onOps(ops.rename(system.id, v))}', ''), 'a system title has no pencil'],
+  ['tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name', rep('components/templates/PhonePreview.tsx', '<span className="pv-tips"', '<span className="pv-guide">{n.description}</span><span className="pv-x"'), 'the preview prints Tips under the name again'],
+  ['tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name', rep('components/templates/EditorParts.tsx', '<label className={label}>Tips</label>', '<label className={label}>Guidance</label>'), 'a box is still called Guidance'],
   ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', add('components/templates/Tree.tsx', "\ndocument.getElementById('x')?.scrollIntoView();"), 'something scrolls the page with scrollIntoView'],
   ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', rep('components/templates/Workspace.tsx', '<Shell scrollKey={sk} reveal={reveal} kind="Component"', '<Shell kind="Component"'), 'one panel kind keeps the last scroll position'],
 ];

@@ -134,8 +134,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   return (
     <div className="space-y-5 px-4 py-4">
       <div className="space-y-2">
-        <label className={label}>Guidance</label>
-        <CommitInput value={system.description ?? ''} multiline ariaLabel="System guidance" placeholder="Guidance inspectors see for this system (optional)" disabled={disabled}
+        <label className={label}>Tips</label>
+        <CommitInput value={system.description ?? ''} multiline ariaLabel="System tips" placeholder="Tips or training for inspectors on this system (optional)" disabled={disabled}
           onCommit={v => onOps(ops.describe(system.id, v))} />
       </div>
 
@@ -223,8 +223,8 @@ export function GroupDetails({ node, onOps, onOpen, disabled }: { node: Template
   return (
     <div className="space-y-5 px-4 py-4">
       <div>
-        <label className={label}>Guidance</label>
-        <CommitInput value={node.description ?? ''} multiline ariaLabel="Group guidance" placeholder="Shown to inspectors on this group (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+        <label className={label}>Tips</label>
+        <CommitInput value={node.description ?? ''} multiline ariaLabel="Group tips" placeholder="Tips or training for inspectors on this group (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
       </div>
       <div>
         <p className={label}>Items in this group</p>
@@ -258,8 +258,9 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
     <div className="space-y-5 px-4 py-4">
       {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Recorded in another section. Edit it there.</p>}
       <div>
-        <label className={label}>Guidance</label>
-        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+        <label className={label}>Tips</label>
+        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item tips" placeholder="What to look at, how your company wants it done (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
+        <p className="mt-1 text-[11px] text-muted">Inspectors see these when they tap the blue ⓘ beside the item on the phone. Never in the report.</p>
       </div>
       <div>
         <p className={label}>Inspectors record</p>

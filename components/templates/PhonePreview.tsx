@@ -427,8 +427,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (
       <div key={n.id} data-pv-id={n.id} className={`pv-leaf${sel ? ' sel pv-hit' : ''}`}>
         <button type="button" className="pv-leafhead" onClick={() => { emit({ systemId: sysId, nodeId: n.id }); flash(n.id); }} aria-label={`Select ${n.label} in the editor`}>
-          <span className="pv-ct">{n.label}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}</span>
-          {n.description ? <span className="pv-guide">{n.description}</span> : null}
+          {/* Company Tips open from the blue ⓘ on the phone, never as a line under the name (owner 2026-11-05). */}
+          <span className="pv-ct">{n.label}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}</span>
         </button>
         {ax.condition ? <div className="pv-sec"><div className="pv-cap">CONDITION</div>{conditionRow(n)}</div> : null}
         {ax.attributes.map((a, i) => (
@@ -669,6 +669,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-ct{color:#eef3f5;font-size:14px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;width:100%;min-width:0}
 .ldx-pv .pv-hv{margin-left:auto;color:#8fa0ad;font-size:11.5px;font-weight:400;max-width:55%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ldx-pv .pv-hv.empty{color:#f0a020}
+.ldx-pv .pv-tips{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin-left:5px;border-radius:50%;background:#217BE8;color:#fff;font:italic 800 8.5px Georgia,serif;vertical-align:1px}
 .ldx-pv .pv-guide{display:block;color:#6d7d87;font-size:10.5px;line-height:1.4;margin-top:2px}
 .ldx-pv .pv-linkbtn{margin-top:8px;color:#6aa8f0;font-size:11px;font-weight:800;letter-spacing:.4px}
 .ldx-pv .pv-sec{margin-top:12px}

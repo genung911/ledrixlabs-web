@@ -182,8 +182,8 @@ function CopiesRow({ g, open, onToggle, onOps, onOpen, disabled }: { g: CopyGrou
         <div className="mt-2 space-y-3 rounded-lg bg-ground px-3 py-3" aria-label={`Edit all ${g.items.length} copies`}>
           <p className="text-xs text-body">Edits here change all {g.items.length} copies at once.</p>
           <div>
-            <label className={label}>Guidance</label>
-            <textarea defaultValue={first.description ?? ''} disabled={disabled} rows={2} aria-label="Guidance for every copy" className={`${field} resize-y`}
+            <label className={label}>Tips</label>
+            <textarea defaultValue={first.description ?? ''} disabled={disabled} rows={2} aria-label="Tips for every copy" className={`${field} resize-y`}
               onBlur={e => { const v = e.target.value; if (v !== (first.description ?? '')) onOps(copiesOps(g, n => ops.describe(n.id, v))); }} />
           </div>
           <div className="flex items-center justify-between gap-2">
