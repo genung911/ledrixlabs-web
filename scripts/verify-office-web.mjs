@@ -108,7 +108,8 @@ async function suite(S) {
   ok('§3 the lines are the services picked, at their prices (the base editable for this job)',
     /description: base\.name, quantity: 1, unit_cents: cents\(priceNum\)/.test(page) && /addonList\.map\(s => \(\{ description: s\.name, quantity: 1, unit_cents: cents\(s\.price\) \}\)\)/.test(page)
     && /const priceNum = price\.trim\(\) === '' \? \(base\?\.price \?\? 0\) : Number\(price\);/.test(page));
-  ok('§3 the job’s order carries no fee', /from\('crm_orders'\)\.insert\(\{ inspection_id: j\.inspectionId, contact_id: j\.contactId, address: j\.address\.trim\(\),\s*order_date: j\.date, status: 'scheduled', package_id: j\.packageId \}\)/.test(api) && !/\bfee\b/.test(api));
+  // 2026-11-05 (#114): the order also carries where the job came from — crmHome.sourceFields' fields, never a fee.
+  ok('§3 the job’s order carries no fee', /from\('crm_orders'\)\.insert\(\{ inspection_id: j\.inspectionId, contact_id: j\.contactId, address: j\.address\.trim\(\),\s*order_date: j\.date, status: 'scheduled', package_id: j\.packageId, \.\.\.\(j\.source \?\? \{\}\) \}\)/.test(api) && !/\bfee\b/.test(api));
   ok('§3 services are scoped to the company (or the person), never every company’s active prices',
     /q = scope\.companyId \? q\.eq\('company_id', scope\.companyId\) : q\.eq\('inspector_id', scope\.userId\);/.test(api));
   ok('§3 no CRM table is upserted', !/\.upsert\(/.test(api));
@@ -185,7 +186,7 @@ const MUTANTS = [
   MUT('api', "const r = await workspace.rpc('stripe_key_status');", "const r = await workspace.from('payment_secrets').select('stripe_secret_key').maybeSingle();", /^§2 nothing reads the key/, 'the key is read back'),
   MUT('payments', "finally { setKey(''); setBusy(false); }", "finally { setBusy(false); }", /^§2 the page clears/, 'the key stays in the page'),
   MUT('api', "  if (s.error) fail(s.error, 'The draft invoice’s lines were not saved.');", "  if (s.error) fail(s.error, 'The draft invoice’s lines were not saved.');\n  await workspace.rpc('mark_invoice_sent', { p_invoice: id, p_version: 2, p_via: 'link' });", /^§3 the draft invoice/, 'the invoice is marked sent'),
-  MUT('api', "order_date: j.date, status: 'scheduled', package_id: j.packageId })", "order_date: j.date, status: 'scheduled', package_id: j.packageId, fee: 450 })", /^§3 the job’s order carries no fee/, 'the order carries a fee'),
+  MUT('api', "order_date: j.date, status: 'scheduled', package_id: j.packageId, ...(j.source ?? {}) })", "order_date: j.date, status: 'scheduled', package_id: j.packageId, ...(j.source ?? {}), fee: 450 })", /^§3 the job’s order carries no fee/, 'the order carries a fee'),
   MUT('api', "q = scope.companyId ? q.eq('company_id', scope.companyId) : q.eq('inspector_id', scope.userId);", "", /^§3 services are scoped/, 'every company’s active prices are listed'),
   MUT('create', "if (companyId && caps.data?.add_inspections !== true) {", "if (false) {", /^§4 without/, 'the permission is not asked'),
   MUT('create', "company_templates?id=eq.${templateId}&company_id=eq.${companyId}", "company_templates?id=eq.${templateId}", /^§4 (a template that is not|the composer gets)/, 'any company’s template is used'),

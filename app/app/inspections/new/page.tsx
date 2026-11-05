@@ -19,7 +19,9 @@ import { workspace } from '@/lib/workspace/client';
 import { loadMembers, type MemberRow } from '@/lib/workspace/data';
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import { listInspectionTypes, listTemplates, detectBackend, type InspectionType, type LiveTemplate } from '@/lib/templates/api';
-import { addContact, loadContacts, loadContactTypes, type Contact } from '@/lib/crm/api';
+import { addContact, loadContacts, loadContactTypes, loadOrderSources, type Contact } from '@/lib/crm/api';
+import { NO_SOURCE, sourceFields, type OrderSource, type SourceChoice } from '@/lib/crm/crmHome';
+import { SourcePicker } from '@/components/crm/CrmApp';
 import { loadServices, orderForJob, draftInvoiceFor, type Service } from '@/lib/office/api';
 import { webDevice } from '@/lib/findings/edit';
 import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, HOME_TYPES, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents } from '@/lib/newJob/intake';
@@ -46,6 +48,9 @@ export default function NewInspectionPage() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [contacts, setContacts] = useState<Contact[] | null>(null);   // null = no access to Contacts
   const [vendorsOk, setVendorsOk] = useState(false);
+  // Where the job came from (#114): the sources the server takes, or null (then the field is hidden, nothing is sent).
+  const [sources, setSources] = useState<OrderSource[] | null>(null);
+  const [came, setCame] = useState<SourceChoice>(NO_SOURCE);
   const [services, setServices] = useState<Service[]>([]);
 
   // the form — the phone's keys
@@ -79,6 +84,7 @@ export default function NewInspectionPage() {
         if (!access.companyId || caps?.crm === true) {
           setContacts(await loadContacts().catch(() => []));
           setVendorsOk(((await loadContactTypes().catch(() => [])) as string[]).includes('vendor'));
+          setSources(await loadOrderSources().catch(() => null));
         }
       } catch (e) { setLoadErr((e as Error).message || 'This page could not be loaded.'); }
     })();
@@ -134,8 +140,12 @@ export default function NewInspectionPage() {
       if (contacts) {
         try {
           const clientId = client.mode === 'pick' && client.id ? client.id : c.name ? await addContact({ type: 'client', name: c.name, email: c.email, phone: c.phone }) : null;
-          if (agent.mode === 'new' && a.name) await addContact({ type: 'agent', name: a.name, email: a.email, phone: a.phone });
-          orderId = await orderForJob({ inspectionId: out.id, contactId: clientId, address: f.address, date: f.date, packageId: base?.id ?? null });
+          const agentId = agent.mode === 'pick' && agent.id ? agent.id
+            : agent.mode === 'new' && a.name ? await addContact({ type: 'agent', name: a.name, email: a.email, phone: a.phone }) : null;
+          // The job's source — the phone's own rule (crmHome.sourceFields): a job with an agent came from that agent
+          // unless something else was picked.
+          orderId = await orderForJob({ inspectionId: out.id, contactId: clientId, address: f.address, date: f.date, packageId: base?.id ?? null,
+            source: sourceFields(came, sources, agentId) });
         } catch (e) { warnings.push(`Contacts and the job’s order were not saved: ${(e as Error).message}`); }
       } else warnings.push('Contacts and the job’s order were not saved — your account has no access to Contacts.');
       if (orderId && (base || addonList.length)) {
@@ -250,6 +260,10 @@ export default function NewInspectionPage() {
               {personPicker(client, setClient, 'client', 'Client', true)}
               {personPicker(agent, setAgent, 'agent', 'Buyer’s agent', false)}
               {!contacts && <p className="text-xs text-muted">Your account has no access to Contacts, so people are typed in and not added to Contacts.</p>}
+              {contacts && sources && (
+                <SourcePicker idPrefix="ni" value={came} onChange={setCame} contacts={contacts} sources={sources}
+                  agentId={agent.mode === 'pick' && agent.id ? agent.id : null} />
+              )}
             </div>
           </Card>
 

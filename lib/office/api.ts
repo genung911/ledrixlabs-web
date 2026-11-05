@@ -121,9 +121,11 @@ export async function saveStripeKey(key: string): Promise<StripeStatus> {
 // ─── A new job's order and draft invoice ─────────────────────────────────────────────────────────────────────────────
 /** The job's CRM order — like the phone's create (one order per job, pointing at its inspection). No fee: money is the
  *  invoice's. The service, when picked, rides as package_id. */
-export async function orderForJob(j: { inspectionId: string; contactId: string | null; address: string; date: string; packageId: string | null }): Promise<string> {
+export async function orderForJob(j: { inspectionId: string; contactId: string | null; address: string; date: string; packageId: string | null;
+  source?: Record<string, string | null> }): Promise<string> {
+  // `source`: where the job came from (#114), shaped by lib/crm/crmHome.ts sourceFields ({} when the server takes none).
   const res = await workspace.from('crm_orders').insert({ inspection_id: j.inspectionId, contact_id: j.contactId, address: j.address.trim(),
-    order_date: j.date, status: 'scheduled', package_id: j.packageId }).select('id').single();
+    order_date: j.date, status: 'scheduled', package_id: j.packageId, ...(j.source ?? {}) }).select('id').single();
   if (res.error) fail(res.error, 'The job’s order was not saved.');
   return (res.data as { id: string }).id;
 }

@@ -25,20 +25,23 @@ const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 const SRC = {
   api: read('lib/crm/api.ts'), model: read('lib/crm/model.ts'), core: read('lib/crm/contactsCore.ts'),
-  page: read('app/app/contacts/page.tsx'), shell: read('components/workspace/WorkspaceShell.tsx'),
+  // 2026-11-05: the Contacts page became the CRM (components/crm/CrmApp.tsx, one component for every /app/crm route).
+  page: read('components/crm/CrmApp.tsx'), shell: read('components/workspace/WorkspaceShell.tsx'), home: read('lib/crm/crmHome.ts'),
 };
 const dir = mkdtempSync(join(tmpdir(), 'contactsweb-'));
 let run = 0;
 
 async function load(src) {
   const k = ++run;
-  const core = join(dir, `core${k}.mjs`), model = join(dir, `model${k}.mjs`), api = join(dir, `api${k}.mjs`);
+  const core = join(dir, `core${k}.mjs`), model = join(dir, `model${k}.mjs`), api = join(dir, `api${k}.mjs`), home = join(dir, `home${k}.mjs`);
   writeFileSync(core, stripTypeScriptTypes(src.core));
   writeFileSync(model, stripTypeScriptTypes(src.model));
+  writeFileSync(home, stripTypeScriptTypes(src.home));
   writeFileSync(api, stripTypeScriptTypes(src.api
     .replace("import { workspace } from '@/lib/workspace/client';", 'const workspace = new Proxy({}, { get: (_, k) => globalThis.__ws[k] });')
     .replace("from '@/lib/crm/contactsCore';", `from ${JSON.stringify(pathToFileURL(core).href)};`)
-    .replace("from '@/lib/crm/model';", `from ${JSON.stringify(pathToFileURL(model).href)};`)));
+    .replace("from '@/lib/crm/model';", `from ${JSON.stringify(pathToFileURL(model).href)};`)
+    .replace("from '@/lib/crm/crmHome';", `from ${JSON.stringify(pathToFileURL(home).href)};`)));
   return {
     core: await import(pathToFileURL(core).href), model: await import(pathToFileURL(model).href), api: await import(pathToFileURL(api).href),
   };
@@ -83,7 +86,7 @@ async function suite(src) {
   ok('§1 inserts and updates send no server-owned field', /const SERVER_OWNED = \['id', 'company_id', 'created_at', 'updated_at', 'updated_by', 'row_version'\];/.test(api)
     && /\.insert\(clientFields\(row\)\)/.test(api) && /\.update\(\{ \.\.\.clientFields\(patch\), row_version: version \+ 1 \}\)/.test(api));
   const rpcs = [...new Set([...api.matchAll(/workspace\.rpc\('([a-z_]+)'/g)].map(m => m[1]))].sort();
-  ok('§1 the only server functions: confirm_booking and crm_contact_types', JSON.stringify(rpcs) === '["confirm_booking","crm_contact_types"]', JSON.stringify(rpcs));
+  ok('§1 the only server functions: confirm_booking, crm_contact_types and crm_order_sources', JSON.stringify(rpcs) === '["confirm_booking","crm_contact_types","crm_order_sources"]', JSON.stringify(rpcs));
   const written = new Set();
   for (const m of api.matchAll(/crm(?:Insert|Update)\('([a-z_]+)'/g)) written.add(m[1]);
   for (const m of api.matchAll(/from\('([a-z_]+)'\)\.delete\(/g)) written.add(m[1]);
@@ -98,8 +101,8 @@ async function suite(src) {
   ok('§2 contact types offered = the server’s answer (no hard-coded vendor choice)',
     /const choices = initial && !types\.includes\(initial\.type\) \? \[\.\.\.types, initial\.type\] : types;/.test(page)
     && /const t = new Set<ContactType>\(data\.types\);/.test(page) && !/type: 'vendor'|setType\('vendor'\)/.test(page));
-  ok('§2 the Contacts menu item follows the server’s permission',
-    /\{ href: '\/app\/contacts', label: 'Contacts', show: canCrm \}/.test(shell) && /setCanCrm\(!companyId \|\| c\?\.crm === true\)/.test(shell));
+  ok('§2 the CRM menu item follows the server’s permission',
+    /\{ href: '\/app\/crm', label: 'CRM', show: canCrm \}/.test(shell) && /setCanCrm\(!companyId \|\| c\?\.crm === true\)/.test(shell));
 
   let M;
   try { M = await load(src); } catch (e) { ok('§3 the modules run', false, String(e)); return out; }
@@ -189,12 +192,12 @@ console.log('verify-contacts-web');
 report(await suite(SRC));
 console.log('\n§6 mutations');
 const MUTANTS = [
-  { f: 'shell', from: "{ href: '/app/contacts', label: 'Contacts', show: canCrm }", to: "{ href: '/app/contacts', label: 'Contacts', show: true }", why: 'the menu ignores the permission', expect: /^§2 the Contacts menu/ },
+  { f: 'shell', from: "{ href: '/app/crm', label: 'CRM', show: canCrm }", to: "{ href: '/app/crm', label: 'CRM', show: true }", why: 'the menu ignores the permission', expect: /^§2 the CRM menu/ },
   { f: 'page', from: "if (access.companyId && caps?.crm !== true) { setState({ kind: 'denied' }); return; }", to: '', why: 'the page ignores the permission', expect: /^§2 the page follows/ },
   { f: 'page', from: 'if (e instanceof CRMError && e.conflict) await load();', to: '', why: 'a conflict does not reload', expect: /^§2 a stale write/ },
   { f: 'api', from: ".eq('id', id).eq('row_version', version)", to: ".eq('id', id)", why: 'an update without the version check', expect: /^§1 every update/ },
   { f: 'api', from: 'if (!res.data) fail({ code: \'P0409\' }, \'\');', to: '', why: 'a lost update looks like success', expect: /^§5 a newer save|^§1 an update that changed nothing/ },
-  { f: 'api', from: "status: 'scheduled', notes: clean(j.notes) });", to: "status: 'scheduled', fee: 0, notes: clean(j.notes) });", why: 'scheduling sends a fee', expect: /^§1 an order’s fee|^§5 inserts carry/ },
+  { f: 'api', from: "status: 'scheduled', notes: clean(j.notes), ...(j.source ?? {}) });", to: "status: 'scheduled', fee: 0, notes: clean(j.notes), ...(j.source ?? {}) });", why: 'scheduling sends a fee', expect: /^§1 an order’s fee|^§5 inserts carry/ },
   { f: 'api', from: "const SERVER_OWNED = ['id', 'company_id', 'created_at', 'updated_at', 'updated_by', 'row_version'];", to: "const SERVER_OWNED = ['id'];", why: 'server-owned fields sent', expect: /^§1 inserts and updates/ },
   { f: 'api', from: "  const { rows, refused } = importable(all, accepted);", to: "  const rows = all, refused = [];", why: 'import sends vendors before the server takes them', expect: /^§5 an import/ },
   { f: 'api', from: "return acceptedContactTypes(res.error ? null : res.data);", to: "return ['agent', 'client', 'homeowner', 'vendor'];", why: 'vendor offered without asking the server', expect: /^§5 before #113/ },

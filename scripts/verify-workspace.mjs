@@ -220,7 +220,8 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
   // 2026-10-30: Invoices added (ledrix-app PLAN_2026-10-29 Part E4, approved mockup; the phone's name for it too).
   // 2026-11-05: Contacts added (approved Contacts mockup; the phone's word — ContactsScreen).
   // 2026-11-05: the office pages (approved office mockup, "use all recommendations"): Services & prices, Payments.
-  ok('sidebar: Today · Inspections · Contacts · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · ') === 'Today · Inspections · Contacts · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · '));
+  // 2026-11-05: Contacts became the CRM (CRM home mockup approved: "when clicked from menu, it should open a CRM page").
+  ok('sidebar: Today · Inspections · CRM · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · ') === 'Today · Inspections · CRM · Reports · Invoices · Templates · Team · Company · Services & prices · Payments', labels.join(' · '));
   ok('every sidebar page exists', [...shell.matchAll(/\{ href: '\/app([^']*)'/g)].every(m => existsSync(join(ROOT, `app/app${m[1]}/page.tsx`))));
   const pages = ['app/app/page.tsx', 'app/app/inspections/page.tsx', 'app/app/inspections/[id]/page.tsx', 'app/app/reports/page.tsx'];
   ok('no page shows the permanent "View only" banner; each shows the sync line', pages.every(p => !/<ReadOnlyNotice/.test(read(p)) && /<SyncLine /.test(read(p))));

@@ -14,6 +14,7 @@ import {
   acceptedContactTypes, importable, normalizeDate, type ContactType, type ImportRow,
 } from '@/lib/crm/contactsCore';
 import type { FollowupType, InvoiceFacts } from '@/lib/crm/model';
+import { acceptedOrderSources, type HomeInvoice, type OrderSource } from '@/lib/crm/crmHome';
 
 export type Contact = {
   id: string; type: ContactType; name: string; email: string | null; phone: string | null; brokerage: string | null;
@@ -23,7 +24,11 @@ export type OrderStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled
 export type Order = {
   id: string; contact_id: string | null; inspection_id: string | null; address: string; order_date: string;
   status: OrderStatus; notes: string | null; inspector_id: string | null; row_version: number;
+  // Where the job came from (#114) — read only when the server takes it (loadOrderSources); see lib/crm/crmHome.ts.
+  source?: string | null; source_contact_id?: string | null; source_detail?: string | null;
 };
+/** The order fields for a job's source, as lib/crm/crmHome.ts sourceFields makes them ({} = none). */
+export type SourcePatch = Record<string, string | null>;
 export type Followup = {
   id: string; contact_id: string; order_id: string | null; due_date: string; type: FollowupType; note: string | null;
   completed: boolean; completed_at: string | null; row_version: number; contact_name?: string | null;
@@ -42,6 +47,7 @@ export class CRMError extends Error {
 const KNOWN: [RegExp, string][] = [
   [/row-level security|not_allowed|permission denied/i, 'You don’t have access to contacts. Ask your company owner for “CRM — clients, agents, bookings”.'],
   [/crm_contacts_type_check/, 'This account can’t save that contact type yet.'],
+  [/referring contact must be/i, 'The person who sent the job must be one of your company’s contacts.'],
   [/no address|address/i, 'This booking has no address. Add one before confirming it.'],
 ];
 function fail(error: { code?: string; message?: string } | null, fallback: string): never {
@@ -59,9 +65,17 @@ export async function loadContactTypes(): Promise<ContactType[]> {
   return acceptedContactTypes(res.error ? null : res.data);
 }
 
+// ─── Where a job came from (#114) ────────────────────────────────────────────────────────────────────────────────────
+/** crm_order_sources() once #114 is applied; before it (or on any failure) null — the field is hidden, nothing is sent. */
+export async function loadOrderSources(): Promise<OrderSource[] | null> {
+  const res = await workspace.rpc('crm_order_sources');
+  return acceptedOrderSources(res.error ? null : res.data);
+}
+
 // ─── Reads ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 const CONTACT_COLS = 'id, type, name, email, phone, brokerage, tags, notes, source, created_at, inspector_id, row_version';
 const ORDER_COLS = 'id, contact_id, inspection_id, address, order_date, status, notes, inspector_id, row_version';
+const SOURCE_COLS = ', source, source_contact_id, source_detail';
 const FOLLOWUP_COLS = 'id, contact_id, order_id, due_date, type, note, completed, completed_at, row_version';
 
 export async function loadContacts(): Promise<Contact[]> {
@@ -70,8 +84,9 @@ export async function loadContacts(): Promise<Contact[]> {
   return ((res.data ?? []) as unknown as Contact[]).map(c => ({ ...c, row_version: n(c.row_version) }));
 }
 
-export async function loadOrders(): Promise<Order[]> {
-  const res = await workspace.from('crm_orders').select(ORDER_COLS).order('order_date', { ascending: false }).limit(5000);
+/** `withSource`: the server takes a job's source (#114) — its columns are read too. */
+export async function loadOrders(withSource = false): Promise<Order[]> {
+  const res = await workspace.from('crm_orders').select(ORDER_COLS + (withSource ? SOURCE_COLS : '')).order('order_date', { ascending: false }).limit(5000);
   if (res.error) fail(res.error, 'Jobs could not be loaded.');
   return ((res.data ?? []) as unknown as Order[]).map(o => ({ ...o, row_version: n(o.row_version) }));
 }
@@ -98,6 +113,19 @@ export async function loadInvoicesFor(orderIds: string[]): Promise<InvoiceFacts[
 }
 
 /** Each job's running notes (the inspection's 'order_notes' document) — read-only here; written on the job. */
+/** The company's invoices for the CRM home (this month's totals, overdue ones), or null when this person may not read
+ *  invoices. Read-only: invoices are written on the Invoices page. */
+export type HomeInvoiceRow = HomeInvoice & { number: number; bill_to_name: string | null; property_address: string | null };
+export async function loadHomeInvoices(): Promise<HomeInvoiceRow[] | null> {
+  const res = await workspace.from('invoice_list')
+    .select('id, number, order_id, status, shown_status, issued_on, due_on, total_cents, paid_cents, balance_cents, bill_to_name, property_address')
+    .order('number', { ascending: false }).limit(2000);
+  if (res.error) return null;
+  return ((res.data ?? []) as unknown as HomeInvoiceRow[]).map(i => ({
+    ...i, number: n(i.number), total_cents: n(i.total_cents), paid_cents: n(i.paid_cents), balance_cents: n(i.balance_cents),
+  }));
+}
+
 export async function loadOrderNotes(inspectionIds: string[]): Promise<Record<string, OrderNote[]>> {
   if (!inspectionIds.length) return {};
   const res = await workspace.from('inspection_documents').select('inspection_id, payload')
@@ -161,12 +189,12 @@ export async function removeContact(c: Contact): Promise<void> {
 
 /** "+ Schedule a job": a CRM order (not an inspection yet — the inspection is started from it later). No fee is sent;
  *  money is the invoice's. */
-export async function scheduleJob(j: { contactId: string | null; address: string; date: string; notes?: string }): Promise<string> {
+export async function scheduleJob(j: { contactId: string | null; address: string; date: string; notes?: string; source?: SourcePatch }): Promise<string> {
   if (!j.address.trim()) throw new CRMError('Add the property address.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(j.date)) throw new CRMError('Pick a date.');
-  return crmInsert('crm_orders', { contact_id: j.contactId, address: j.address.trim(), order_date: j.date, status: 'scheduled', notes: clean(j.notes) });
+  return crmInsert('crm_orders', { contact_id: j.contactId, address: j.address.trim(), order_date: j.date, status: 'scheduled', notes: clean(j.notes), ...(j.source ?? {}) });
 }
-export async function changeJob(o: Order, patch: { order_date?: string; status?: OrderStatus }): Promise<void> {
+export async function changeJob(o: Order, patch: { order_date?: string; status?: OrderStatus } | SourcePatch): Promise<void> {
   await crmUpdate('crm_orders', o.id, patch, o.row_version);
 }
 

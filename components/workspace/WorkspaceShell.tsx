@@ -152,7 +152,8 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const nav = [
     { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
-    { href: '/app/contacts', label: 'Contacts', show: canCrm },
+    // The CRM (owner 2026-11-05, CRM home mockup): its own home with Contacts, Accounts, Schedule and the planned tabs.
+    { href: '/app/crm', label: 'CRM', show: canCrm },
     { href: '/app/reports', label: 'Reports', show: true },
     { href: '/app/invoices', label: 'Invoices', show: canInvoice },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
