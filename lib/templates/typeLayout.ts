@@ -190,6 +190,12 @@ export function copyGroupOf(layout: TypeLayout, itemId: string): CopyGroup | nul
   return layout.copies.find(g => g.items.some(i => i.id === itemId)) ?? null;
 }
 
+/** The rows one type's section shows (owner 2026-11-05: no separate "Every" section — "probably should show in each one
+ *  its in"): the type question, then the items every type shows, then that type's own items. */
+export function rowsForType(layout: TypeLayout, value: string): TemplateNode[] {
+  return [layout.questionNode, ...layout.every, ...itemsForType(layout, value)];
+}
+
 /** The items shown for one type, in list order (a copy group as its first item). */
 export function itemsForType(layout: TypeLayout, value: string): TemplateNode[] {
   return layout.typed.filter(n => (layout.shows[n.id] ?? []).includes(value));

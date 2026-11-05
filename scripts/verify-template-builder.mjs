@@ -952,12 +952,22 @@ const RULES = {
     const start = t.indexOf('const typedRows = ('), end = t.indexOf('return (', t.indexOf('return [', start) + 1);
     const block = start > 0 ? t.slice(start, t.indexOf('};', t.indexOf('return [', start)) + 2) : '';
     return (block && !/nodeId: n\.id|leaf\(|offRow\(|\.map\(n => /.test(block)
-      && /sectionRow\('every', `Every \$\{s\.label\.toLowerCase\(\)\} system`, L\.every\.length \+ 1, SECTION_ID\.every\)/.test(block)
-      && /section\(SECTION_ID\.every, `Every \$\{system\.label\.toLowerCase\(\)\} system`, layout\.every\.length \+ 1,/.test(b)
-      && /sectionRow\(`type:\$\{v\}`, v, itemsForType\(L, v\)\.length, SECTION_ID\.type, \{ type: v \}\)/.test(block)
-      && /itemsForType\(layout, v\)\.length/.test(b)
+      // owner 2026-11-05 (third pass): no "Every <system>" section — the shared items show in each type's own list
+      && !/Every \$\{(s|system)\.label/.test(t + b) && !/SECTION_ID\.every|tb-sec-every/.test(t + b)
+      && /sectionRow\(`type:\$\{v\}`, v, rowsForType\(L, v\)\.length, SECTION_ID\.type, \{ type: v \}\)/.test(block)
+      && /rowsForType\(layout, v\)\.length/.test(b)
+      && /section\(SECTION_ID\.type, pick, rowsForType\(layout, pick\)\.length, <>\s*\{row\(layout\.questionNode, <Pill tone="accent">The type question<\/Pill>\)\}\s*\{layout\.every\.map\(n => row\(n, <Pill>All types<\/Pill>\)\)\}\s*\{own\.map\(n => row\(n, shared\(n, pick\)\)\)\}/.test(b)
       && /if \(type\) tv\.onPick\(type\);/.test(block) && /onReveal\?\.\(anchor\);/.test(block)
       && /onSelect\(\{ systemId: s\.id, nodeId: null \}\);/.test(block)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
+  },
+  // owner 2026-11-05: "merge those two by putting a pencil next to the system name to edit it" — systems, groups and items.
+  'names: a system, group or item is renamed by the pencil beside its title, with no separate Name box': all => {
+    const w = strip(all['components/templates/Workspace.tsx'] ?? ''), e = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return (/kind="System" title=\{system\.label\} onRename=\{v => onOps\(ops\.rename\(system\.id, v\)\)\}/.test(w)
+      && /kind="Group" title=\{node\.label\}[^>]*onRename=\{v => onOps\(ops\.rename\(node\.id, v\)\)\}/.test(w)
+      && /kind="Component" title=\{node\.label\}[^>]*onRename=\{node\.pointsTo \? undefined : v => onOps\(ops\.rename\(node\.id, v\)\)\}/.test(w)
+      && /<TitleName title=\{title\} kind=\{kind\} onRename=\{onRename\}/.test(w) && /aria-label=\{`Rename \$\{name\}`\}/.test(w)
+      && !/ariaLabel="(System|Group|Item) name"/.test(e)) ? [] : ['components/templates/Workspace.tsx', 'components/templates/EditorParts.tsx'];
   },
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': all => {
     const b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
@@ -1034,8 +1044,12 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'sectionRow(`type:${v}`, v, itemsForType(L, v).length, SECTION_ID.type, { type: v })', 'sectionRow(`type:${v}`, v, L.typed.length, SECTION_ID.type, { type: v })'), 'a type row counts something other than its chip'],
+  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'sectionRow(`type:${v}`, v, rowsForType(L, v).length, SECTION_ID.type, { type: v })', 'sectionRow(`type:${v}`, v, L.typed.length, SECTION_ID.type, { type: v })'), 'a type row counts something other than its chip'],
   ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'onReveal?.(anchor);', ''), 'a section row does not reveal its section'],
+  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', '    return [\n', '    return [\n      sectionRow(\'every\', `Every ${s.label.toLowerCase()} system`, L.every.length + 1, \'tb-sec-every\'),\n'), 'the "Every" section is back in the tree'],
+  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, <Pill>All types</Pill>))}\n', ''), 'a type\'s list leaves out the items every type shows'],
+  ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '<label className={label}>Guidance</label>', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} /><label className={label}>Guidance</label>'), 'the system Name box is back'],
+  ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/Workspace.tsx', ' onRename={v => onOps(ops.rename(system.id, v))}', ''), 'a system title has no pencil'],
   ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', add('components/templates/Tree.tsx', "\ndocument.getElementById('x')?.scrollIntoView();"), 'something scrolls the page with scrollIntoView'],
   ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', rep('components/templates/Workspace.tsx', '<Shell scrollKey={sk} reveal={reveal} kind="Component"', '<Shell kind="Component"'), 'one panel kind keeps the last scroll position'],
 ];

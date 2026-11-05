@@ -56,7 +56,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
 
   if (!loc || loc.depth === 0) {
     return (
-      <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label}
+      <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label} onRename={v => onOps(ops.rename(system.id, v))} renameDisabled={disabled}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
@@ -68,7 +68,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const close = () => onSelect({ systemId: system.id, nodeId: null });
   if (node.kind !== 'component') {
     return (
-      <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+      <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
@@ -98,7 +98,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const visible: ComponentTab[] = ['overview', ...(assessesCondition(node) ? ['condition' as const] : []), ...(detailsOn ? ['details' as const] : []), ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
-    <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+    <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
@@ -152,9 +152,11 @@ function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; 
   );
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal }: {
+function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal, onRename, renameDisabled }: {
   kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
   scrollKey: string; reveal?: Reveal | null;
+  /** The name is edited in the title itself, behind a pencil — no separate Name box (owner 2026-11-05). */
+  onRename?: (v: string) => void; renameDisabled?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   // A new selection opens at the top of its panel.
@@ -172,7 +174,7 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrol
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{kind === 'Component' ? <rect x="5" y="5" width="14" height="14" rx="3" /> : <path d="M3 10.5L12 4l9 6.5V20H3z" />}</svg>
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lg font-bold tracking-tight text-ink">{title}</h2>
+          <TitleName title={title} kind={kind} onRename={onRename} disabled={renameDisabled} resetKey={scrollKey} />
           <p className="truncate text-xs text-muted">{kind}{sub ? ` · ${sub}` : ''}</p>
           {badge && <div className="mt-1">{badge}</div>}
         </div>
@@ -183,6 +185,30 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrol
       {tabs && <div role="tablist" aria-label="Component" className="mt-2 flex overflow-x-auto border-b border-hairline px-2">{tabs}</div>}
       {!tabs && <div className="mt-3 border-b border-hairline" />}
       <div ref={box} data-editor-scroll className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
+}
+
+/** The panel title; with `onRename`, a pencil beside it turns the title into a box (Enter or leaving it saves, Esc cancels). */
+function TitleName({ title, kind, onRename, disabled, resetKey }: { title: string; kind: string; onRename?: (v: string) => void; disabled?: boolean; resetKey: string }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(title);
+  const cancelled = useRef(false);
+  useEffect(() => { setEditing(false); }, [resetKey]);
+  const name = kind === 'Component' ? 'item' : kind.toLowerCase();
+  if (editing && onRename) {
+    const done = () => { setEditing(false); if (cancelled.current) { cancelled.current = false; return; } const t = v.trim(); if (t && t !== title) onRename(t); };
+    return <input autoFocus value={v} aria-label={`${kind === 'Component' ? 'Item' : kind} name`} onChange={e => setV(e.target.value)} onBlur={done}
+      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { cancelled.current = true; (e.target as HTMLInputElement).blur(); } }}
+      className="w-full rounded-md border border-accent bg-surface px-1.5 py-0 text-lg font-bold tracking-tight text-ink outline-none" />;
+  }
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <h2 className="truncate text-lg font-bold tracking-tight text-ink">{title}</h2>
+      {onRename && <button type="button" aria-label={`Rename ${name}`} title={`Rename ${name}`} disabled={disabled} className={`${btn.icon} shrink-0 disabled:opacity-40`}
+        onClick={() => { setV(title); cancelled.current = false; setEditing(true); }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+      </button>}
     </div>
   );
 }

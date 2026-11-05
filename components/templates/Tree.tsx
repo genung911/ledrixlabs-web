@@ -10,7 +10,7 @@ import { isCovered, ops } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
 import { AddToTemplate, Arrow, notShownToInspectors, type TypeView } from './EditorParts';
 import { FULL_LIST, GRID, SECTION_ID } from './TypeBuilder';
-import { itemsForType } from '@/lib/templates/typeLayout';
+import { rowsForType } from '@/lib/templates/typeLayout';
 import { btn, field } from './ui';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -132,8 +132,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled, typeViewFor, 
       );
     };
     return [
-      sectionRow('every', `Every ${s.label.toLowerCase()} system`, L.every.length + 1, SECTION_ID.every),
-      ...L.question.values.map(v => sectionRow(`type:${v}`, v, itemsForType(L, v).length, SECTION_ID.type, { type: v })),
+      ...L.question.values.map(v => sectionRow(`type:${v}`, v, rowsForType(L, v).length, SECTION_ID.type, { type: v })),
       ...L.gated.map((g, i) => sectionRow(`gated:${g.key}`, `Shown by ${g.question.label}`, g.nodes.length, SECTION_ID.gated(i))),
       ...(L.special.length ? [sectionRow('special', 'Special homes', L.special.length, SECTION_ID.special)] : []),
       ...(L.other.length ? [sectionRow('other', `When the ${L.other[0].question.systemLabel.toLowerCase()} answer says so`, L.other.length, SECTION_ID.other)] : []),

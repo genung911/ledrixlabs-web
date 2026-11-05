@@ -2,7 +2,8 @@
 
 // A TYPED system, one equipment type at a time (owner 2026-11-05, approved mockup
 // https://claude.ai/artifact/RUWz7xuKn2qPkq22eFEMS9). Cooling covers six kinds of AC but an inspector only ever sees one
-// kind's items; this shows the builder the same thing: type chips, "Every <system>", the chosen type's items (shared
+// kind's items; this shows the builder the same thing: type chips, the chosen type's items — the ones every type shares
+// listed in each type, no separate "Every" section (owner 2026-11-05) — (shared
 // ones say where else they show), a grid of items × types whose ticks write the item's rule, count copies as one row,
 // and items that follow another system's answer in their own section. The layout itself is lib/templates/typeLayout
 // (pure); every edit is template ops through `onOps`, one change set each.
@@ -10,7 +11,7 @@ import { useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel';
-import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
+import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { ChipList, Pill, Toggle, btn, field, label } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -18,7 +19,7 @@ export const GRID = '__grid';
 export const FULL_LIST = '__list';
 /** The panel's section anchors — the tree's section rows reveal these (owner 2026-11-05: the tree shows only sections). */
 export const SECTION_ID = {
-  every: 'tb-sec-every', type: 'tb-sec-type', special: 'tb-sec-special', other: 'tb-sec-other', off: 'tb-sec-off',
+  type: 'tb-sec-type', special: 'tb-sec-special', other: 'tb-sec-other', off: 'tb-sec-off',
   gated: (i: number) => `tb-sec-gated-${i}`,
 } as const;
 
@@ -32,7 +33,7 @@ export function TypeChips({ layout, pick, onPick, systemLabel }: { layout: TypeL
     <div className="space-y-2 rounded-xl border border-hairline bg-ground px-3 py-3" aria-label="Built by type">
       <p className={label + ' mb-0'}>Built by type · the inspector picks “{layout.question.label}” on site</p>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${systemLabel} types`}>
-        {layout.question.values.map(v => chip(v, <>{v} <span className="font-normal opacity-70">{itemsForType(layout, v).length}</span></>))}
+        {layout.question.values.map(v => chip(v, <>{v} <span className="font-normal opacity-70">{rowsForType(layout, v).length}</span></>))}
         {chip(GRID, <>All types <span className="font-normal opacity-70">· grid</span></>)}
         {chip(FULL_LIST, 'Full list')}
       </div>
@@ -80,14 +81,10 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
     return others.length ? <span className="max-w-[45%] truncate text-[11px] text-muted" title={others.join(', ')}>Also: {others.join(', ')}</span> : <Pill>Only {v}</Pill>;
   };
 
-  const everySection = section(SECTION_ID.every, `Every ${system.label.toLowerCase()} system`, layout.every.length + 1, <>
-      {row(layout.questionNode, <Pill tone="accent">The type question</Pill>)}
-      {layout.every.map(n => row(n, <Pill>All types</Pill>))}
-    </>);
   const otherSection = layout.other.length > 0 && section(SECTION_ID.other, `When the ${layout.other[0].question.systemLabel.toLowerCase()} answer says so`, layout.other.length, <>
       {layout.other.map(({ node, question }) => row(node, <span className="text-[11px] text-muted">Follows {question.systemLabel} › {question.label}</span>))}
     </>);
-  // Items another question in this system decides, and special-home checkpoints: their own sections, never "Every".
+  // Items another question in this system decides, and special-home checkpoints: their own sections.
   const gatedSections = layout.gated.map((g, i) => section(SECTION_ID.gated(i), `Shown by ${g.question.label}`, g.nodes.length, <>
       {g.nodes.map(n => row(n, <span className="text-[11px] text-muted">Follows {g.question.label}</span>))}
     </>));
@@ -147,13 +144,14 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
     );
   }
 
-  const rows = itemsForType(layout, pick);
+  const own = itemsForType(layout, pick);
   return (
     <div className="space-y-3">
-      {everySection}
-      {section(SECTION_ID.type, pick, rows.length, <>
-        {rows.map(n => row(n, shared(n, pick)))}
-        {!rows.length && <li className="px-3 py-3 text-xs text-muted">No items only for {pick} yet.</li>}
+      {section(SECTION_ID.type, pick, rowsForType(layout, pick).length, <>
+        {row(layout.questionNode, <Pill tone="accent">The type question</Pill>)}
+        {layout.every.map(n => row(n, <Pill>All types</Pill>))}
+        {own.map(n => row(n, shared(n, pick)))}
+        {!own.length && <li className="px-3 py-3 text-xs text-muted">No items only for {pick} yet.</li>}
         <li className="px-3 py-2">
           <form className="flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); const o = addForTypeOps(tree, system, layout, pick, newName); if (o.length && apply(o)) setNewName(''); }}>
             <input value={newName} onChange={e => setNewName(e.target.value)} disabled={disabled} aria-label={`New item for ${pick}`} placeholder={`+ Add item for ${pick}`} className={`${field} min-w-[10rem] flex-1 py-1.5`} />

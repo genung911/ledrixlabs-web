@@ -134,9 +134,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   return (
     <div className="space-y-5 px-4 py-4">
       <div className="space-y-2">
-        <label className={label}>Name</label>
-        <CommitInput value={system.label} ariaLabel="System name" disabled={disabled} onCommit={v => onOps(ops.rename(system.id, v))} className="text-base font-semibold" />
-        <label className={label + ' pt-2'}>Guidance</label>
+        <label className={label}>Guidance</label>
         <CommitInput value={system.description ?? ''} multiline ariaLabel="System guidance" placeholder="Guidance inspectors see for this system (optional)" disabled={disabled}
           onCommit={v => onOps(ops.describe(system.id, v))} />
       </div>
@@ -225,10 +223,6 @@ export function GroupDetails({ node, onOps, onOpen, disabled }: { node: Template
   return (
     <div className="space-y-5 px-4 py-4">
       <div>
-        <label className={label}>Group name</label>
-        <CommitInput value={node.label} ariaLabel="Group name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
-      </div>
-      <div>
         <label className={label}>Guidance</label>
         <CommitInput value={node.description ?? ''} multiline ariaLabel="Group guidance" placeholder="Shown to inspectors on this group (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
       </div>
@@ -263,10 +257,6 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
   return (
     <div className="space-y-5 px-4 py-4">
       {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Recorded in another section. Edit it there.</p>}
-      <div>
-        <label className={label}>Name</label>
-        <CommitInput value={node.label} ariaLabel="Item name" disabled={disabled} onCommit={v => onOps(ops.rename(node.id, v))} />
-      </div>
       <div>
         <label className={label}>Guidance</label>
         <CommitInput value={node.description ?? ''} multiline ariaLabel="Item guidance" placeholder="What the inspector should look at" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
