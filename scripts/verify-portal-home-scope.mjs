@@ -50,7 +50,7 @@ const BASE = 'https://fake.supabase.test';
 
 const T0 = '00000000-0000-4000-8000-0000000000a0', T1 = '00000000-0000-4000-8000-0000000000a1';
 const T2 = '00000000-0000-4000-8000-0000000000a2', T3 = '00000000-0000-4000-8000-0000000000a3';
-let DB, RPC;
+let DB, RPC, STORAGE_DELETES = [], HIST_FAIL = false;
 function seed() {
   DB = {
     home_records: [{ share_id: 'S1', share_token: 'tok_S1_abcdef' }, { share_id: 'S2', share_token: 'tok_S2_abcdef' },
@@ -90,6 +90,7 @@ globalThis.fetch = async (input, init = {}) => {
     return Response.json(RPC[JSON.parse(init.body).p_share] ?? []);
   }
   if (u.pathname.startsWith('/storage/')) {
+    if (method === 'DELETE') { STORAGE_DELETES.push(u.pathname); return new Response('{}'); }
     if (u.pathname.includes('/object/list/')) return Response.json([{ name: JSON.parse(init.body).search, metadata: { size: 10, mimetype: 'application/pdf' } }]);
     if (u.pathname.includes('/object/move')) return new Response('{}');
     if (u.pathname.includes('/object/sign/')) return Response.json({ signedURL: '/object/sign/x?token=t' });
@@ -97,6 +98,7 @@ globalThis.fetch = async (input, init = {}) => {
     return new Response('{}');
   }
   const table = u.pathname.replace('/rest/v1/', '');
+  if (table === 'home_history_documents' && HIST_FAIL) return new Response('{}', { status: 500 });
   const rows = DB[table] ?? (DB[table] = []);
   const terms = termsOf(u.search.slice(1));
   const hit = rows.filter(r => terms.every(t => match(r, t)));
@@ -175,6 +177,28 @@ async function checks() {
   ok('/api/docs: a sold link can neither upload nor delete', up3.status === 404 && del.status === 404 && DB.home_documents.length === 1, `${up3.status} ${del.status} ${DB.home_documents.length}`);
   const src = readFileSync(new URL('../app/api/docs/route.ts', import.meta.url), 'utf8');
   ok('/api/docs checks a file path against the row\'s own share', (src.match(/docPathInShare\(doc\.path, doc\.share\)/g) ?? []).length === 2);
+
+  // #110: a receipt names its system; a receipt already passed to the house's history keeps its file
+  seed();
+  await docs.POST(req({ token: 'tok_S1_abcdef', action: 'complete', name: 'r.pdf', path: 'S1/_incoming/1730000000000_aaaaaaaaaaaa_r.pdf', kind: 'receipt', system: 'HVAC' }));
+  await docs.POST(req({ token: 'tok_S1_abcdef', action: 'complete', name: 'o.pdf', path: 'S1/_incoming/1730000000001_aaaaaaaaaaaa_o.pdf', kind: 'other', system: 'HVAC' }));
+  const rec = DB.home_documents.find(x => x.name === 'r.pdf'), oth = DB.home_documents.find(x => x.name === 'o.pdf');
+  ok('/api/docs: a receipt is filed with the system it is for; another kind never carries one', rec?.system === 'HVAC' && oth && oth.system === undefined, JSON.stringify([rec, oth]));
+  const DOC_A = '11111111-2222-4333-8444-00000000000a', DOC_B = '11111111-2222-4333-8444-00000000000b';
+  seed(); STORAGE_DELETES = [];
+  DB.home_documents.push({ id: DOC_A, share_id: 'S1', tenure_id: T1, path: 'S1/passed.pdf', name: 'passed.pdf' },
+                         { id: DOC_B, share_id: 'S1', tenure_id: T1, path: 'S1/mine.pdf', name: 'mine.pdf' });
+  DB.home_history_documents = [{ id: 'h1', path: 'S1/passed.pdf' }];
+  const dA = await docs.DELETE(req({ token: 'tok_S1_abcdef', id: DOC_A }));
+  ok('/api/docs: deleting a receipt already in the house history removes the row and KEEPS the file', dA.status === 204
+    && !DB.home_documents.some(x => x.id === DOC_A) && !STORAGE_DELETES.some(p => p.includes('passed.pdf')), `${dA.status} ${JSON.stringify(STORAGE_DELETES)}`);
+  const dB = await docs.DELETE(req({ token: 'tok_S1_abcdef', id: DOC_B }));
+  ok('/api/docs: any other document\'s file is deleted with it', dB.status === 204 && STORAGE_DELETES.some(p => p.includes('mine.pdf')), `${dB.status} ${JSON.stringify(STORAGE_DELETES)}`);
+  seed(); STORAGE_DELETES = []; HIST_FAIL = true;
+  DB.home_documents.push({ id: DOC_A, share_id: 'S1', tenure_id: T1, path: 'S1/passed.pdf', name: 'passed.pdf' });
+  const dC = await docs.DELETE(req({ token: 'tok_S1_abcdef', id: DOC_A }));
+  HIST_FAIL = false;
+  ok('/api/docs: when the history cannot be checked, nothing is deleted', dC.status === 502 && DB.home_documents.some(x => x.id === DOC_A) && STORAGE_DELETES.length === 0, `${dC.status}`);
   return out;
 }
 
@@ -185,7 +209,11 @@ const MUTS = [
   ['an ended tenure stays writable', 'lib/portalPolicy.ts', "return UPKEEP_TABLES.has(table) && op !== 'select' && !!tenure?.ended;", 'return false;'],
   ['the route never asks for the tenure', 'app/api/portal/route.ts', "const tenure = UPKEEP_TABLES.has(table) ? await tenureForShare(shareId) : null;", 'const tenure = null as TenureRef;'],
   ['a missing function is treated as a tenure', 'lib/shareAccess.ts', "    if (!r.ok) return null;\n    const rows = await r.json().catch(() => null);", "    const rows = r.ok ? await r.json().catch(() => null) : [{ home_id: 'H1', tenure_id: '00000000-0000-4000-8000-0000000000a0', ended: false }];"],
-  ['docs file without the tenure', 'app/api/docs/route.ts', "path, kind, size: obj.size }, shareId, tenure)]),", "path, kind, size: obj.size }, shareId, null)]),"],
+  ['docs file without the tenure', 'app/api/docs/route.ts', "...(system ? { system } : {}) }, shareId, tenure)]),", "...(system ? { system } : {}) }, shareId, null)]),"],
+  ['a receipt\'s system is dropped', 'app/api/docs/route.ts', "size: obj.size, ...(system ? { system } : {}) }", "size: obj.size }"],
+  ['any kind carries a system', 'app/api/docs/route.ts', "const system = kind === 'receipt' && typeof body.system", "const system = typeof body.system"],
+  ['a passed receipt\'s file is deleted', 'app/api/docs/route.ts', "const passed = doc.path ? await passedToHistory(doc.path) : false;", "const passed = false;"],
+  ['an unchecked history deletes anyway', 'app/api/docs/route.ts', "    if (passed === null) return NextResponse.json({ error: 'Delete failed.' }, { status: 502 });\n", ""],
   ['docs upload after the sale', 'app/api/docs/route.ts', "  if (endedRefuses('home_documents', 'insert', tenure)) return notFound();", ''],
   ['docs delete after the sale', 'app/api/docs/route.ts', "  if (endedRefuses('home_documents', 'delete', await tenureForShare(shareId))) return notFound();", ''],
 ];

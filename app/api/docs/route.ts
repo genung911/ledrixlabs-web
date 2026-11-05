@@ -116,7 +116,7 @@ async function sweepStaging(shareId: string): Promise<void> {
 export async function POST(req: NextRequest) {
   if (!shareAccessConfigured()) return NextResponse.json({ error: 'Storage not configured.' }, { status: 500 });
 
-  let body: { action?: string; token?: unknown; name?: unknown; size?: unknown; kind?: unknown; path?: unknown };
+  let body: { action?: string; token?: unknown; name?: unknown; size?: unknown; kind?: unknown; path?: unknown; system?: unknown };
   try { body = await req.json(); } catch { return bad('Bad request.'); }
   const shareId = await editShareIdForToken(body.token);
   if (!shareId) return notFound();
@@ -125,6 +125,9 @@ export async function POST(req: NextRequest) {
   const name = String(body.name ?? '').slice(0, 200);
   const contentType = docContentType(name);
   const kind = DOC_KINDS.has(String(body.kind)) ? String(body.kind) : 'other';
+  // A receipt may name the system it is for (#110): receipts for a system pass to the next owner when this one sells.
+  const system = kind === 'receipt' && typeof body.system === 'string' && body.system.trim() && body.system.length <= 80
+    ? body.system.trim() : null;
 
   try {
     if (body.action === 'upload-url') {
@@ -176,7 +179,7 @@ export async function POST(req: NextRequest) {
         headers: { ...svc, 'Content-Type': 'application/json', Prefer: 'return=representation' },
         // `url` is NOT NULL in the schema; a stored file is never reachable by it, so it records the
         // object reference rather than a public link.
-        body: JSON.stringify([stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }, shareId, tenure)]),
+        body: JSON.stringify([stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size, ...(system ? { system } : {}) }, shareId, tenure)]),
       });
       if (!ins.ok) { await removeObject(path); return NextResponse.json({ error: 'Upload failed.' }, { status: 502 }); }
       const [row] = await ins.json();
@@ -214,6 +217,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/** Is this file a receipt the house's history holds (#110)? null = could not tell (the delete waits). Before #110 the
+ *  table does not exist (404) and nothing has passed. */
+async function passedToHistory(path: string): Promise<boolean | null> {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/home_history_documents?select=id&limit=1&path=eq.${encodeURIComponent(path)}`, { headers: svc });
+    if (r.status === 404) return false;
+    if (!r.ok) return null;
+    const rows = await r.json().catch(() => null);
+    return Array.isArray(rows) ? rows.length > 0 : null;
+  } catch { return null; }
+}
+
 export async function DELETE(req: NextRequest) {
   if (!shareAccessConfigured()) return notFound();
   let body: { token?: unknown; id?: string };
@@ -228,7 +243,10 @@ export async function DELETE(req: NextRequest) {
     // The file goes first: a row left behind can be deleted again, a file left behind is orphaned.
     // A row whose path is NOT under this share (one the old client filed) loses only its row —
     // the object it names belongs to someone else and is never touched.
-    if (doc.path && docPathInShare(doc.path, doc.share)) {
+    // A receipt already passed to the house's history (#110) keeps its file: the next owner reads it. Only the row goes.
+    const passed = doc.path ? await passedToHistory(doc.path) : false;
+    if (passed === null) return NextResponse.json({ error: 'Delete failed.' }, { status: 502 });
+    if (doc.path && !passed && docPathInShare(doc.path, doc.share)) {
       const del = await fetch(objectUrl(doc.path), { method: 'DELETE', headers: svc });
       // Supabase Storage reports a missing object as 404, or as 400 whose body says not found.
       // Only those count as "already gone"; any other failure keeps the row so the delete can be retried.
