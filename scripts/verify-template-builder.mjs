@@ -703,6 +703,30 @@ async function runTypes(files) {
     r("types: the preview, answered with the chosen type, shows that type's items and none of another type's",
       ans.key === KEY && ['hvac_condenser', 'hvac_ms_heads'].every(id => shown.includes(id))
       && ['hvac_evaporator_coil', 'hvac_win_operation', 'hvac_evap_pads'].every(id => !shown.includes(id)));
+
+    // ── SECOND PASS (owner 2026-11-05, photo of Heating): "Every" means every; the tree shows sections only ──────────
+    const fresh = clone(DEFAULT_TREE);
+    const fdefs = PM.rulesFor(fresh);
+    const ruleFree = id => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return !x || (!(x.requires ?? []).length && !x.dependsOnSpec); };
+    const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);
+    r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
+      typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.length > 0 && L.every.every(n => ruleFree(n.id)))
+      && typedSystems.find(([s]) => s.id === 'heating')[1].every.map(n => n.id).join('|') === 'hvac_heating_age|hvac_dataplate|hvac_cabinet|hvac_furnace|hvac_distribution|hvac_thermostat');
+    const EL = typedSystems.find(([s]) => s.id === 'electrical')?.[1];
+    const elGated = EL ? Object.fromEntries(EL.gated.map(g => [g.question.label, g.nodes.map(n => n.id).sort().join('|')])) : {};
+    r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)',
+      !!EL && !EL.every.some(n => n.id === 'elec_fuses' || n.id.startsWith('elec_wir_'))
+      && elGated['Panel › Overcurrent Protection'] === 'elec_fuses'
+      && elGated['Wiring › Type'] === 'elec_wir_al|elec_wir_cloth|elec_wir_conduit|elec_wir_kt|elec_wir_mc|elec_wir_nm|elec_wir_other');
+    // a special-home checkpoint added to Heating lands in "Special homes", not "Every"
+    let d2 = T.createDraft({ companyId: 'co_1', templateId: 'tpl_2', live: clone(DEFAULT_TREE), now: 5000 });
+    const SH = await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href);
+    const sp = SH.specialHomeOps(d2.tree, 'heating', ['hvac_manufactured_furnace'], clone(DEFAULT_TREE));
+    const sx = sp.ok ? E.applyManual(d2, sp.ops, OWNER, 5100) : { ok: false };
+    if (sx.ok) d2 = sx.draft;
+    const HL = sx.ok ? TL.typeLayoutOf(d2.tree, d2.tree.systems.find(s => s.id === 'heating'), PM.rulesFor(d2.tree)) : null;
+    r('types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"',
+      !!HL && HL.special.map(n => n.id).join('|') === 'hvac_manufactured_furnace' && !HL.every.some(n => n.id === 'hvac_manufactured_furnace'));
   } catch (e) {
     r(`types scenario completed (${e?.message})`, false);
   }
@@ -908,6 +932,32 @@ const RULES = {
     const s = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
     return (/typeRuleOps\(tree, layout,/.test(s) && !/field:\s*'(appliesWhen|requires|dependsOnSpec)'/.test(s) && !/op:\s*'setNodeField'/.test(s)) ? [] : ['components/templates/TypeBuilder.tsx'];
   },
+  // SECOND PASS (owner 2026-11-05: "I don't think we need the breakdown on the left menu … Having it in both is confusing
+  // and the screen jumps around").
+  'types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section': all => {
+    const t = strip(all['components/templates/Tree.tsx'] ?? ''), b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    const start = t.indexOf('const typedRows = ('), end = t.indexOf('return (', t.indexOf('return [', start) + 1);
+    const block = start > 0 ? t.slice(start, t.indexOf('};', t.indexOf('return [', start)) + 2) : '';
+    return (block && !/nodeId: n\.id|leaf\(|offRow\(|\.map\(n => /.test(block)
+      && /sectionRow\('every', `Every \$\{s\.label\.toLowerCase\(\)\} system`, L\.every\.length \+ 1, SECTION_ID\.every\)/.test(block)
+      && /section\(SECTION_ID\.every, `Every \$\{system\.label\.toLowerCase\(\)\} system`, layout\.every\.length \+ 1,/.test(b)
+      && /sectionRow\(`type:\$\{v\}`, v, itemsForType\(L, v\)\.length, SECTION_ID\.type, \{ type: v \}\)/.test(block)
+      && /itemsForType\(layout, v\)\.length/.test(b)
+      && /if \(type\) tv\.onPick\(type\);/.test(block) && /onReveal\?\.\(anchor\);/.test(block)
+      && /onSelect\(\{ systemId: s\.id, nodeId: null \}\);/.test(block)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
+  },
+  'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': all => {
+    const b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    const m = b.match(/<div className="([^"]*)" role="group" aria-label=\{`\$\{systemLabel\} types`\}>/);
+    return m && /\bflex-wrap\b/.test(m[1]) && !/overflow-x/.test(m[1]) ? [] : ['components/templates/TypeBuilder.tsx'];
+  },
+  'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': all => {
+    const w = strip(all['components/templates/Workspace.tsx'] ?? ''), t = strip(all['components/templates/Tree.tsx'] ?? ''), b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return (/useLayoutEffect\(\(\) => \{ if \(box\.current\) box\.current\.scrollTop = 0; \}, \[scrollKey\]\);/.test(w)
+      && /b\.scrollTop = Math\.max\(0, el\.getBoundingClientRect\(\)\.top - b\.getBoundingClientRect\(\)\.top \+ b\.scrollTop - 8\);/.test(w)
+      && (w.match(/<Shell scrollKey=\{sk\} reveal=\{reveal\} kind=/g) ?? []).length === 5 && !/<Shell kind=/.test(w)
+      && ![w, t, b].some(x => /scrollIntoView/.test(x))) ? [] : ['components/templates/Workspace.tsx', 'components/templates/Tree.tsx'];
+  },
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': all => {
     const hook = strip(all['lib/templates/useDraft.ts'] ?? ''), edit = strip(all[EDIT] ?? '');
     const gate = hook.indexOf("validateStructureTypes(m0.core.tree).find(i => i.severity === 'error')"), rpc = hook.indexOf('return publishDraft(');
@@ -963,9 +1013,20 @@ const MUT = {
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
   'types: a typed system shows the by-type layout in its panel and its tree, and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
   'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': add('components/templates/TypeBuilder.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requires', value: [] };"),
+  'types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section':
+    rep('components/templates/Tree.tsx', "...(L.special.length ? [sectionRow('special'", "...L.every.map(n => <li key={n.id}><button onClick={() => onSelect({ systemId: s.id, nodeId: n.id })}>{n.label}</button></li>),\n      ...(L.special.length ? [sectionRow('special'"),
+  'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': rep('components/templates/TypeBuilder.tsx', '<div className="flex flex-wrap gap-1.5" role="group"', '<div className="flex gap-1.5 overflow-x-auto" role="group"'),
+  'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': rep('components/templates/Workspace.tsx', 'useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);', ''),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
+const MUT3 = [
+  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'sectionRow(`type:${v}`, v, itemsForType(L, v).length, SECTION_ID.type, { type: v })', 'sectionRow(`type:${v}`, v, L.typed.length, SECTION_ID.type, { type: v })'), 'a type row counts something other than its chip'],
+  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'onReveal?.(anchor);', ''), 'a section row does not reveal its section'],
+  ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', add('components/templates/Tree.tsx', "\ndocument.getElementById('x')?.scrollIntoView();"), 'something scrolls the page with scrollIntoView'],
+  ['types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView', rep('components/templates/Workspace.tsx', '<Shell scrollKey={sk} reveal={reveal} kind="Component"', '<Shell kind="Component"'), 'one panel kind keeps the last scroll position'],
+];
+for (const [name, mutate, what] of MUT3) ok(`mutation caught: ${name} (${what})`, RULES[name](mutate(all)).length > 0);
 const MUT2 = {
   'requirements: only editorModel.setRequirements writes them; nothing writes the default-set pin or overrides': add('lib/templates/requirementModel.ts', "\nexport const pin = [{ op: 'setTemplateField', field: 'requirementDefaults', value: 'ledrix-r1' }];"),
 };
@@ -1010,6 +1071,9 @@ const EXEC_MUT = [
   { name: 'switching an item off deletes it instead', file: 'editorModel.ts', from: ": [{ op: 'trimNode', nodeId: id }];", to: ": [{ op: 'unaddNode', nodeId: id } as any];", check: 'switch: an item switched off is kept (off, offered on site) and switching it on brings it back', run: runDesktop },
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
+  { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)', run: runTypes },
+  { name: 'a ruled item is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)', run: runTypes },
+  { name: 'a special-home checkpoint is called Every', file: 'typeLayout.ts', from: "    if (specialIds.has(baseOf(n.id))) { special.push(n); continue; }", to: "", check: 'types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"', run: runTypes },
   { name: 'the type layout ignores the rules', file: 'typeLayout.ts', from: "  return collapseToActive(resolveApplicability(node as never, { specValue: () => value }).state);", to: "  return true;", check: 'types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', run: runTypes },
   { name: 'a material list is laid out by type', file: 'typeLayout.ts', from: "if (c > best && several(k))", to: "if (c > best)", check: 'types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list', run: runTypes },
   { name: 'count copies are not collapsed', file: 'typeLayout.ts', from: "    if (g.items.length < 2) { typed.push(...g.items); continue; }", to: "    { typed.push(...g.items); continue; }", check: 'types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only', run: runTypes },

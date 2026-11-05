@@ -3,7 +3,7 @@
 // The workspace for whatever is selected in the tree: a system, a group, or a component (Details · Requirements ·
 // Fields · Applicability · Report). Everything edits the one draft through `onOps`; nothing here reads or writes
 // anything else.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
@@ -20,12 +20,20 @@ export type ComponentTab = 'overview' | 'condition' | 'details' | 'requirements'
 
 const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Overview', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
 
-export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTab, onOpenBuildingTypes, typeView }: {
+/** A request to bring one panel section into view (the tree's section rows, owner 2026-11-05). `n` changes per click. */
+export type Reveal = { id: string; n: number };
+
+export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTab, onOpenBuildingTypes, typeView, reveal }: {
   tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; disabled: boolean;
   tab: ComponentTab; setTab: (t: ComponentTab) => void; onOpenBuildingTypes: () => void;
   /** The selected system's by-type layout (owner 2026-11-05), when it has one. */
   typeView?: TypeView | null;
+  reveal?: Reveal | null;
 }) {
+  // NO JUMPING (owner 2026-11-05): every panel below shares ONE scroll box, so a new selection used to open scrolled to
+  // wherever the last one was (the type chips half hidden). Each selection opens at its top; a section row in the tree
+  // scrolls this box — and only this box — to that section.
+  const sk = `${sel.systemId ?? ''}|${sel.nodeId ?? ''}`;
   // A switch turned ON with nothing behind it yet opens its empty tab for this item (it is "on" once something is added).
   const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
   const system = sel.systemId ? tree.systems.find(s => s.id === sel.systemId) ?? null : null;
@@ -37,7 +45,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
     const kind = off.offSystem ? 'System' : off.node.kind === 'component' ? 'Component' : 'Group';
     const where = off.offSystem ? '' : `${off.parent && off.parent.id !== off.system.id ? pathOf(tree, off.parent.id) + ' › ' + off.parent.label : off.system.label} · `;
     return (
-      <Shell kind={kind} title={off.node.label} sub={`${where}${OFF_SUB}`} onClose={off.offSystem ? undefined : () => onSelect({ systemId: off.system.id, nodeId: null })}
+      <Shell scrollKey={sk} reveal={reveal} kind={kind} title={off.node.label} sub={`${where}${OFF_SUB}`} onClose={off.offSystem ? undefined : () => onSelect({ systemId: off.system.id, nodeId: null })}
         action={<IncludedSwitch on={false} label={off.node.label} disabled={disabled} onChange={v => { if (v) onOps(includeOps(tree, off.node.id, true)); }} />}>
         <OffContents node={off.node} />
       </Shell>
@@ -48,7 +56,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
 
   if (!loc || loc.depth === 0) {
     return (
-      <Shell kind="System" title={system.label}
+      <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
@@ -60,7 +68,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const close = () => onSelect({ systemId: system.id, nodeId: null });
   if (node.kind !== 'component') {
     return (
-      <Shell kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+      <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
@@ -69,7 +77,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (node.pointsTo) {
     const lt: ComponentTab = tab === 'applicability' ? 'applicability' : 'overview';
     return (
-      <Shell kind="Link" title={node.label} sub={path} onClose={close}
+      <Shell scrollKey={sk} reveal={reveal} kind="Link" title={node.label} sub={path} onClose={close}
         tabs={(['overview', 'applicability'] as const).map(t => (
           <button key={t} role="tab" aria-selected={lt === t} onClick={() => setTab(t)}
             className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${lt === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>{TAB_LABEL[t]}</button>
@@ -90,7 +98,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const visible: ComponentTab[] = ['overview', ...(assessesCondition(node) ? ['condition' as const] : []), ...(detailsOn ? ['details' as const] : []), ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
-    <Shell kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
+    <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close}
       action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
@@ -144,9 +152,19 @@ function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; 
   );
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, action, children }: {
+function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal }: {
   kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
+  scrollKey: string; reveal?: Reveal | null;
 }) {
+  const box = useRef<HTMLDivElement>(null);
+  // A new selection opens at the top of its panel.
+  useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);
+  // A section row in the tree: scroll THIS box to the section (never the page or the tree), after the reset above.
+  useLayoutEffect(() => {
+    const b = box.current; if (!b || !reveal) return;
+    const el = b.querySelector<HTMLElement>(`#${reveal.id}`);
+    if (el) b.scrollTop = Math.max(0, el.getBoundingClientRect().top - b.getBoundingClientRect().top + b.scrollTop - 8);
+  }, [reveal?.n]);   // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-start gap-3 px-4 pt-3">
@@ -164,7 +182,7 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children }: {
       </header>
       {tabs && <div role="tablist" aria-label="Component" className="mt-2 flex overflow-x-auto border-b border-hairline px-2">{tabs}</div>}
       {!tabs && <div className="mt-3 border-b border-hairline" />}
-      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      <div ref={box} data-editor-scroll className="min-h-0 flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 }

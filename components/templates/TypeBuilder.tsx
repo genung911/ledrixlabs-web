@@ -16,6 +16,11 @@ import { ChipList, Pill, Toggle, btn, field, label } from './ui';
 type OnOps = (o: TemplateOp[]) => boolean;
 export const GRID = '__grid';
 export const FULL_LIST = '__list';
+/** The panel's section anchors — the tree's section rows reveal these (owner 2026-11-05: the tree shows only sections). */
+export const SECTION_ID = {
+  every: 'tb-sec-every', type: 'tb-sec-type', special: 'tb-sec-special', other: 'tb-sec-other', off: 'tb-sec-off',
+  gated: (i: number) => `tb-sec-gated-${i}`,
+} as const;
 
 /** The chip row: one chip per type (with how many items it shows), the grid, and the plain list. */
 export function TypeChips({ layout, pick, onPick, systemLabel }: { layout: TypeLayout; pick: string; onPick: (v: string) => void; systemLabel: string }) {
@@ -60,8 +65,8 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
       </li>
     );
   };
-  const section = (title: string, count: number, children: React.ReactNode, action?: React.ReactNode): React.ReactNode => (
-    <div className="overflow-hidden rounded-xl border border-hairline">
+  const section = (id: string, title: string, count: number, children: React.ReactNode, action?: React.ReactNode): React.ReactNode => (
+    <div id={id} key={id} className="scroll-mt-2 overflow-hidden rounded-xl border border-hairline">
       <div className="flex items-center gap-2 border-b border-hairline bg-ground px-3 py-1.5">
         <p className="flex-1 text-xs font-semibold uppercase tracking-wide text-muted">{title} · {count}</p>{action}
       </div>
@@ -75,16 +80,23 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
     return others.length ? <span className="max-w-[45%] truncate text-[11px] text-muted" title={others.join(', ')}>Also: {others.join(', ')}</span> : <Pill>Only {v}</Pill>;
   };
 
-  const everySection = section(`Every ${system.label.toLowerCase()} system`, layout.every.length + 1, <>
+  const everySection = section(SECTION_ID.every, `Every ${system.label.toLowerCase()} system`, layout.every.length + 1, <>
       {row(layout.questionNode, <Pill tone="accent">The type question</Pill>)}
       {layout.every.map(n => row(n, <Pill>All types</Pill>))}
     </>);
-  const otherSection = layout.other.length > 0 && section(`When the ${layout.other[0].question.systemLabel.toLowerCase()} answer says so`, layout.other.length, <>
+  const otherSection = layout.other.length > 0 && section(SECTION_ID.other, `When the ${layout.other[0].question.systemLabel.toLowerCase()} answer says so`, layout.other.length, <>
       {layout.other.map(({ node, question }) => row(node, <span className="text-[11px] text-muted">Follows {question.systemLabel} › {question.label}</span>))}
+    </>);
+  // Items another question in this system decides, and special-home checkpoints: their own sections, never "Every".
+  const gatedSections = layout.gated.map((g, i) => section(SECTION_ID.gated(i), `Shown by ${g.question.label}`, g.nodes.length, <>
+      {g.nodes.map(n => row(n, <span className="text-[11px] text-muted">Follows {g.question.label}</span>))}
+    </>));
+  const specialSection = layout.special.length > 0 && section(SECTION_ID.special, 'Special homes', layout.special.length, <>
+      {layout.special.map(n => row(n, <Pill>Special home</Pill>))}
     </>);
 
   if (pick === GRID) {
-    const rows = [...layout.every, ...layout.typed];
+    const rows = [...layout.every, ...layout.special, ...layout.gated.flatMap(g => g.nodes), ...layout.typed];
     const toggle = (n: TemplateNode, v: string) => {
       const g = copyGroupOf(layout, n.id);
       const cur = layout.shows[n.id] ?? [];
@@ -139,7 +151,7 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   return (
     <div className="space-y-3">
       {everySection}
-      {section(pick, rows.length, <>
+      {section(SECTION_ID.type, pick, rows.length, <>
         {rows.map(n => row(n, shared(n, pick)))}
         {!rows.length && <li className="px-3 py-3 text-xs text-muted">No items only for {pick} yet.</li>}
         <li className="px-3 py-2">
@@ -150,6 +162,8 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
           <p className="mt-1 text-[11px] text-muted">Shows only when {layout.question.label} is “{pick}”.</p>
         </li>
       </>)}
+      {gatedSections}
+      {specialSection}
       {otherSection}
     </div>
   );

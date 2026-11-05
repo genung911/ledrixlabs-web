@@ -12,7 +12,7 @@ import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from 
 import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
-import { FULL_LIST, TypeBuilder, TypeChips } from './TypeBuilder';
+import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
 
@@ -148,7 +148,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
           onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
       )}
       {typeView && typeView.pick !== FULL_LIST && offRows.length > 0 && (
-        <ul aria-label="Switched off" className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+        <ul id={SECTION_ID.off} aria-label="Switched off" className="scroll-mt-2 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
           {offRows.map(({ t, under }) => (
             <li key={t.id}><button className="flex w-full items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
               <span className="min-w-0 flex-1"><span className={`block truncate text-muted ${t.kind !== 'component' ? 'text-xs font-semibold uppercase tracking-wide' : 'text-sm font-medium'}`}>{t.label}</span>

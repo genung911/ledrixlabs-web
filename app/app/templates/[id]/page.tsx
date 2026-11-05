@@ -22,7 +22,7 @@ import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ErrorBox, Loading } from '@/components/workspace/ui';
 import { Banner, Modal, Pill, btn, timeAgo } from '@/components/templates/ui';
 import { SystemTree } from '@/components/templates/Tree';
-import { NodeWorkspace, type ComponentTab } from '@/components/templates/Workspace';
+import { NodeWorkspace, type ComponentTab, type Reveal } from '@/components/templates/Workspace';
 import { OverviewSection, RequirementsSection, ReportSection, ReviewSection, issueCounts } from '@/components/templates/Sections';
 import { publishFixes } from '@/lib/templates/publishFixes';
 import { LevelPill } from '@/components/templates/RequirementsEditor';
@@ -123,6 +123,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
     return { layout: L, pick, onPick: v => setTypePick(p => ({ ...p, [systemId]: v })) };
   }, [layouts, typePick]);
   const selView = typeViewFor(sel.systemId);
+  // The tree's section rows (a typed system shows only its sections — owner 2026-11-05) scroll the editor to a section.
+  const [reveal, setReveal] = useState<Reveal | null>(null);
+  const onReveal = useCallback((id: string) => setReveal(r => ({ id, n: (r?.n ?? 0) + 1 })), []);
   const answer = selView ? previewAnswer(selView.layout, selView.pick) : null;
 
   const readOnly = d.conflict === 'draft' ? 'This draft was saved somewhere else. Reload it to keep editing.'
@@ -279,7 +282,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             </div>
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
-                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} typeViewFor={typeViewFor} />
+                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} typeViewFor={typeViewFor} onReveal={onReveal} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
                 <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">
@@ -288,7 +291,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                     {t === 'edit' ? 'Editor' : <>Ask Ledrix <Pill tone="accent">AI</Pill></>}</button>)}
                 </div>
                 <div className={`${mode === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
-                  <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab} typeView={selView}
+                  <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab} typeView={selView} reveal={reveal}
                     onOpenBuildingTypes={() => setSection('buildings')} />
                 </div>
                 <div className={`min-h-0 flex-1 ${mode === 'ledrix' ? 'flex flex-col' : 'hidden'}`}>

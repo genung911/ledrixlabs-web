@@ -26,6 +26,7 @@ import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/cor
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import type { RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
 import { collapseToActive, resolveApplicability } from '@/lib/templateBuilder/core/applicability';
+import { SPECIAL_HOMES } from '@/lib/templateBuilder/core/specialHomes';
 import { flatItems, newNodeId, ops } from './editorModel';
 
 export type TypeQuestion = { nodeId: string; attrId: string; field: string; label: string; values: string[] };
@@ -38,13 +39,20 @@ export type OtherQuestion = { nodeId: string; label: string; systemLabel: string
 export type TypeLayout = {
   question: TypeQuestion;
   questionNode: TemplateNode;
-  /** Items with no rule on the type question (shown for every type), in list order. Copies and other-system items excluded. */
+  /** Items with no rule at all that decides where they show (shown for every type), in list order. Copies, items gated
+   *  by another question, special-home items and other-system items are NOT here (owner 2026-11-05: "Every" must mean
+   *  every). */
   every: TemplateNode[];
   /** Items (or a copy group's first item) with a rule on the type question, in list order. */
   typed: TemplateNode[];
   copies: CopyGroup[];
   /** Items whose rule reads ANOTHER system's answer (Cooling's Heat Pump on the heating type). */
   other: Array<{ node: TemplateNode; question: OtherQuestion }>;
+  /** Items with no type rule that another question INSIDE this system decides (Electrical's fuses on the panel's
+   *  protection, wiring cards on the wiring type), one section per question, in list order. */
+  gated: Array<{ key: string; question: OtherQuestion; nodes: TemplateNode[] }>;
+  /** Special-home checkpoints (specialHomes.ts) with no type rule — added from the special-homes card. */
+  special: TemplateNode[];
   /** Item id → the type values it shows for (the effective rule, as the phone resolves it). */
   shows: Record<string, string[]>;
   /** Item id → the type values Ledrix's own rule allows (the company may narrow inside these, never widen). */
@@ -126,7 +134,9 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
   const question: TypeQuestion = { nodeId: qf.n.id, attrId: qf.a!.id, field, label: qf.a!.label || qf.n.label, values: [...qf.a!.values] };
 
   const shows: Record<string, string[]> = {}, allowed: Record<string, string[]> = {};
-  const every: TemplateNode[] = [], typed: TemplateNode[] = [], other: TypeLayout['other'] = [];
+  const every: TemplateNode[] = [], typed: TemplateNode[] = [], other: TypeLayout['other'] = [], special: TemplateNode[] = [];
+  const gatedBy = new Map<string, TypeLayout['gated'][number]>();
+  const specialIds = new Set(SPECIAL_HOMES.map(x => x.id));
   const copyOf = new Map<string, CopyGroup>();
   for (const n of items) {
     if (n.id === question.nodeId) continue;
@@ -146,7 +156,16 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
       other.push({ node: n, question: { nodeId: f.n.id, label: f.a?.label || f.n.label, systemLabel: systemOf.get(f.n.id)?.label ?? '' } });
       continue;
     }
-    if (ps.some(x => x.key === field)) typed.push(n); else every.push(n);
+    if (ps.some(x => x.key === field)) { typed.push(n); continue; }
+    const inner = ps.find(x => x.key !== field && inSystem(x.key) && !isCount(x.key) && fieldNode(x.key)?.n.id !== n.id && fieldNode(x.key));
+    if (inner) {
+      const f = fieldNode(inner.key)!;
+      const g = gatedBy.get(inner.key) ?? { key: inner.key, question: { nodeId: f.n.id, label: f.a?.label && f.a.label !== f.n.label ? `${f.n.label} › ${f.a.label}` : f.n.label, systemLabel: system.label }, nodes: [] };
+      g.nodes.push(n); gatedBy.set(inner.key, g);
+      continue;
+    }
+    if (specialIds.has(baseOf(n.id))) { special.push(n); continue; }
+    every.push(n);
   }
   const copies: CopyGroup[] = [];
   for (const g of copyOf.values()) {
@@ -157,7 +176,7 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
   }
   const order = new Map(items.map((n, i) => [n.id, i]));
   typed.sort((a, b) => (order.get(a.id)! - order.get(b.id)!));
-  return { question, questionNode: qf.n, every, typed, copies, other, shows, allowed };
+  return { question, questionNode: qf.n, every, typed, copies, other, gated: [...gatedBy.values()], special, shows, allowed };
 }
 
 const commonStem = (labels: string[]) => {
