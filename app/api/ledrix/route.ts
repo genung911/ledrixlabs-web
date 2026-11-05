@@ -11,7 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { bumpUsage, DAILY_CAP } from '../../../lib/usage';
-import { shareIdForToken } from '../../../lib/shareAccess';
+import { shareIdForToken, homeIdForShare } from '../../../lib/shareAccess';
+import { scopeTerm } from '../../../lib/portalPolicy';
 import { isEntitled } from '../../../lib/entitlement';
 import { forHomeowner } from '../../../lib/homeownerRecommendation';
 import { publishedFindings, publishedSpecs } from '../../../lib/publishedRecord';
@@ -104,9 +105,12 @@ export async function POST(req: NextRequest) {
   if (shareId) {
     try {
       const hdr = { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` };
+      // The home first: awaiting it INSIDE the array below would leave the first fetch running unobserved, and a
+      // dropped connection there is an unhandled rejection.
+      const homeId = await homeIdForShare(shareId);
       const [r, lg] = await Promise.all([
         fetch(`${SUPA_URL}/rest/v1/home_records?share_id=eq.${encodeURIComponent(shareId)}&limit=1`, { headers: hdr }),
-        fetch(`${SUPA_URL}/rest/v1/home_maintenance_log?share_id=eq.${encodeURIComponent(shareId)}&order=done_date.desc&limit=20`, { headers: hdr }),
+        fetch(`${SUPA_URL}/rest/v1/home_maintenance_log?${scopeTerm('home_maintenance_log', shareId, homeId)}&order=done_date.desc&limit=20`, { headers: hdr }),
       ]);
       rec = (await r.json())?.[0] ?? null;
       const lj = await lg.json().catch(() => []);

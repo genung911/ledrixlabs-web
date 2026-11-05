@@ -214,15 +214,15 @@ const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'fu
 
 const STATUS_COLOR: Record<string,string> = {
   identified: DIM, quoted: WARN, scheduled: INFO,
-  in_progress: INFO, resolved: GREEN,
+  in_progress: INFO, resolved: GREEN, cancelled: DIM,
 };
 const STATUS_LABEL: Record<string,string> = {
   identified: 'IDENTIFIED', quoted: 'QUOTED', scheduled: 'SCHEDULED',
-  in_progress: 'IN PROGRESS', resolved: 'RESOLVED',
+  in_progress: 'IN PROGRESS', resolved: 'RESOLVED', cancelled: 'CANCELLED',
 };
 const STATUS_NEXT: Record<string,string> = {
   identified: 'quoted', quoted: 'scheduled', scheduled: 'in_progress',
-  in_progress: 'resolved', resolved: 'resolved',
+  in_progress: 'resolved', resolved: 'resolved', cancelled: 'cancelled',
 };
 // ── Unified priority taxonomy (matches the app). Safety is an overlay flag — a true
 // hazard shows red "SAFETY" regardless of its repair tier; otherwise the severity tier
@@ -1041,10 +1041,11 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
     setSaving(true);
     // Record the completion to the permanent service history (Carfax) before advancing the schedule.
     await supaPost('home_maintenance_log', [{ share_id: r.share_id, title: r.title, system: r.system ?? null, kind: 'service', source: 'task', reminder_id: r.id, done_date: today }]).catch(() => {});
-    let update: object = { completed: true };
+    // last_done: when it was done, which the Home app shows (one list since ruling A, 2026-11-04).
+    let update: object = { completed: true, last_done: today };
     if (r.recurrence) {
       const days = parseInt(r.recurrence);
-      update = { completed: false, due_date: addDays(days) };
+      update = { completed: false, due_date: addDays(days), last_done: today };
     }
     await supaPatch('home_reminders', `id=eq.${r.id}`, update);
     onUpdate(); setSaving(false);

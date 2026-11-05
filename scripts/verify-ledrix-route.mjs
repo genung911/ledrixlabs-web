@@ -98,7 +98,7 @@ globalThis.fetch = (url, init = {}) => { const { cache, ...rest } = init; return
 const out = join(repo, 'node_modules/.cache/verify-ledrix-route');
 rmSync(out, { recursive: true, force: true });
 // + lib/publishedRecord.ts since 2026-10-24: the route reads the record through the published allow-list.
-for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts', 'lib/homeownerRecommendation.ts', 'lib/shareAccess.ts', 'lib/publishedRecord.ts']) {
+for (const rel of ['app/api/ledrix/route.ts', 'lib/usage.ts', 'lib/entitlement.ts', 'lib/homeownerRecommendation.ts', 'lib/shareAccess.ts', 'lib/publishedRecord.ts', 'lib/portalPolicy.ts']) {
   const from = join(src, rel);
   if (!existsSync(from)) continue;
   const js = ts.transpileModule(readFileSync(from, 'utf8'), {

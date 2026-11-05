@@ -32,8 +32,8 @@
 // Once every client call goes through here, anon is revoked on all seven tables
 // (`supabase_portal_lockdown.sql`) and there is no path to them except a valid token.
 import { NextRequest, NextResponse } from 'next/server';
-import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, type Op } from '../../../lib/portalPolicy';
-import { resolvePortalToken } from '../../../lib/shareAccess';
+import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, scopeTerm, stampRow, UPKEEP_TABLES, type Op } from '../../../lib/portalPolicy';
+import { resolvePortalToken, homeIdForShare } from '../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
 
@@ -51,9 +51,10 @@ const svc = { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type
 const fail = (status: number, error: string) => NextResponse.json({ error }, { status });
 const notFound = () => fail(404, 'Not found.');
 
-/** The share scope is added by us and is NON-NEGOTIABLE; the client's terms are AND-ed after it. */
-function scoped(terms: string[], shareId: string): string {
-  return [`share_id=eq.${encodeURIComponent(shareId)}`, ...terms].join('&');
+/** The scope is added by us and is NON-NEGOTIABLE; the client's terms are AND-ed after it. For the upkeep tables it is
+ *  the share OR its home (ruling A, 2026-11-04: upkeep belongs to the home — lib/portalPolicy.ts scopeTerm). */
+function scoped(terms: string[], table: string, shareId: string, homeId: string | null): string {
+  return [scopeTerm(table, shareId, homeId), ...terms].join('&');
 }
 
 export async function POST(req: NextRequest) {
@@ -81,6 +82,8 @@ export async function POST(req: NextRequest) {
   if (!access || !scopeAllows(access.scope, table, op)) return notFound();
   const shareId = access.shareId;
   if (access.scope === 'repairs') terms.push(REPAIRS_SCOPE_TERM);
+  // The share's home, decided here from the share — never from the client (null: the share alone, as before).
+  const homeId = UPKEEP_TABLES.has(table) ? await homeIdForShare(shareId) : null;
 
   try {
     const base = `${SUPA_URL}/rest/v1/${table}`;
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
       const select = cleanSelect(payload.select);
       const order  = cleanOrder(payload.order);
       if (select === null || order === null) return fail(400, 'Bad request.');
-      const qp: string[] = [scoped(terms, shareId)];
+      const qp: string[] = [scoped(terms, table, shareId, homeId)];
       if (select) qp.push(`select=${encodeURIComponent(select)}`);
       if (order)  qp.push(`order=${encodeURIComponent(order)}`);
       if (payload.limit)  qp.push(`limit=${Math.min(500, Math.max(1, Number(payload.limit) || 200))}`);
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
       if (raw.length === 0 || raw.length > MAX_ROWS) return fail(400, 'Bad request.');
       const cleaned = raw.map(row => cleanRow(table, 'insert', row));
       if (cleaned.some(r => !r)) return fail(400, 'Bad request.');
-      const rows = cleaned.map(row => ({ ...row, share_id: shareId }));
+      const rows = cleaned.map(row => stampRow(table, row!, shareId, homeId));
       const r = await fetch(base, {
         method: 'POST', headers: { ...svc, Prefer: 'return=minimal' }, body: JSON.stringify(rows),
       });
@@ -113,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (op === 'update') {
-      const url = `${base}?${scoped(terms, shareId)}`;
+      const url = `${base}?${scoped(terms, table, shareId, homeId)}`;
       // Only allow-listed columns survive — share_id and id never do, so an update can neither move
       // a row to another share nor re-key it.
       const patch = cleanRow(table, 'update', payload.body);
@@ -126,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     // delete
     const guard = policy.deleteGuard ? [policy.deleteGuard] : [];
-    const url = `${base}?${scoped([...terms, ...guard], shareId)}`;
+    const url = `${base}?${scoped([...terms, ...guard], table, shareId, homeId)}`;
     const r = await fetch(url, { method: 'DELETE', headers: { ...svc, Prefer: 'return=minimal' } });
     return new NextResponse(null, { status: r.ok ? 204 : r.status });
   } catch {

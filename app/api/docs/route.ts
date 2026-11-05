@@ -32,7 +32,8 @@
 // (supabase_home_documents_private.sql). Signed URLs work whether or not it is private yet.
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { shareIdForToken, editShareIdForToken, shareAccessConfigured } from '../../../lib/shareAccess';
+import { shareIdForToken, editShareIdForToken, shareAccessConfigured, homeIdForShare } from '../../../lib/shareAccess';
+import { scopeTerm, stampRow } from '../../../lib/portalPolicy';
 import {
   DOC_BUCKET, DOC_MAX_BYTES, DOC_URL_TTL_SECONDS, DOC_KINDS,
   bytesMatchType, docContentType, docPathInShare, finalDocPath, isDocId, isNewDocPath, newDocPath,
@@ -50,16 +51,19 @@ const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
 const objectUrl = (path: string) =>
   `${SUPA_URL}/storage/v1/object/${DOC_BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
 
-/** The document row, only if it belongs to this share. */
-async function docInShare(id: string, shareId: string): Promise<{ id: string; path: string | null } | null> {
+/** The document row, only if it belongs to this share or its home (ruling A, 2026-11-04). `share` is the share the
+ *  row was filed under: a stored file's path is checked against THAT share, never the caller's. */
+async function docInShare(id: string, shareId: string): Promise<{ id: string; path: string | null; share: string } | null> {
+  const homeId = await homeIdForShare(shareId);
   const r = await fetch(
     `${SUPA_URL}/rest/v1/home_documents?id=eq.${encodeURIComponent(id)}`
-      + `&share_id=eq.${encodeURIComponent(shareId)}&select=id,path&limit=1`,
+      + `&${scopeTerm('home_documents', shareId, homeId)}&select=id,path,share_id&limit=1`,
     { headers: svc, cache: 'no-store' },
   );
   if (!r.ok) return null;
   const rows = await r.json().catch(() => []);
-  return Array.isArray(rows) && rows.length ? { id: String(rows[0].id), path: rows[0].path ?? null } : null;
+  return Array.isArray(rows) && rows.length
+    ? { id: String(rows[0].id), path: rows[0].path ?? null, share: String(rows[0].share_id ?? '') } : null;
 }
 
 /** The stored object's size and type, read back from storage — never taken from the client. */
@@ -170,7 +174,7 @@ export async function POST(req: NextRequest) {
         headers: { ...svc, 'Content-Type': 'application/json', Prefer: 'return=representation' },
         // `url` is NOT NULL in the schema; a stored file is never reachable by it, so it records the
         // object reference rather than a public link.
-        body: JSON.stringify([{ share_id: shareId, name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }]),
+        body: JSON.stringify([stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }, shareId, await homeIdForShare(shareId))]),
       });
       if (!ins.ok) { await removeObject(path); return NextResponse.json({ error: 'Upload failed.' }, { status: 502 }); }
       const [row] = await ins.json();
@@ -191,7 +195,7 @@ export async function GET(req: NextRequest) {
   if (!shareId) return notFound();
   try {
     const doc = await docInShare(id, shareId);
-    if (!doc || !docPathInShare(doc.path, shareId)) return notFound();
+    if (!doc || !docPathInShare(doc.path, doc.share)) return notFound();
     const r = await fetch(`${SUPA_URL}/storage/v1/object/sign/${DOC_BUCKET}/${doc.path!.split('/').map(encodeURIComponent).join('/')}`, {
       method: 'POST',
       headers: { ...svc, 'Content-Type': 'application/json' },
@@ -221,7 +225,7 @@ export async function DELETE(req: NextRequest) {
     // The file goes first: a row left behind can be deleted again, a file left behind is orphaned.
     // A row whose path is NOT under this share (one the old client filed) loses only its row —
     // the object it names belongs to someone else and is never touched.
-    if (doc.path && docPathInShare(doc.path, shareId)) {
+    if (doc.path && docPathInShare(doc.path, doc.share)) {
       const del = await fetch(objectUrl(doc.path), { method: 'DELETE', headers: svc });
       // Supabase Storage reports a missing object as 404, or as 400 whose body says not found.
       // Only those count as "already gone"; any other failure keeps the row so the delete can be retried.
@@ -230,7 +234,7 @@ export async function DELETE(req: NextRequest) {
       if (!gone) return NextResponse.json({ error: 'Delete failed.' }, { status: 502 });
     }
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/home_documents?id=eq.${encodeURIComponent(doc.id)}&share_id=eq.${encodeURIComponent(shareId)}`,
+      `${SUPA_URL}/rest/v1/home_documents?id=eq.${encodeURIComponent(doc.id)}`,
       { method: 'DELETE', headers: { ...svc, Prefer: 'return=minimal' } },
     );
     return new NextResponse(null, { status: r.ok ? 204 : 502 });

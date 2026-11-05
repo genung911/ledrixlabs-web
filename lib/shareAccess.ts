@@ -121,3 +121,25 @@ export function pathInShare(path: string | null | undefined, shareId: string): b
   if (/[\u0000-\u001f?#%]/.test(p)) return false;   // no control chars, query, fragment or re-encoding
   return p.startsWith(`${shareId}/`) || p.startsWith(`report/${shareId}/`);
 }
+
+// ── THE SHARE'S HOME (ruling A, owner 2026-11-04; #109) ──────────────────────────────────────────────
+// The inspection's home on the server, made when missing (inspection_home, service role only). Remembered for five
+// minutes per server instance. null when the function is not there yet (#109 unapplied), the inspection has no
+// property, or the call fails — the caller then scopes to the share alone, as before.
+const homeCache = new Map<string, { id: string | null; at: number }>();
+export async function homeIdForShare(shareId: string): Promise<string | null> {
+  if (!shareAccessConfigured() || !plainId(shareId)) return null;
+  const hit = homeCache.get(shareId);
+  if (hit && Date.now() - hit.at < 300_000) return hit.id;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/inspection_home`, {
+      method: 'POST', headers: { ...svcHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_inspection: shareId }), cache: 'no-store',
+    });
+    if (!r.ok) return null;
+    const v = await r.json().catch(() => null);
+    const id = typeof v === 'string' ? plainId(v) : null;
+    homeCache.set(shareId, { id, at: Date.now() });
+    return id;
+  } catch { return null; }
+}
