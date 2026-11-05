@@ -107,10 +107,15 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   // Invoices are shown only to people the server lets read them (#79: the `invoices` permission, or an account with
   // no company, which invoices for itself). The server decides either way; this only hides a page that would be empty.
   const [canInvoice, setCanInvoice] = useState(false);
+  // Contacts likewise follow the server's `crm` permission (#78; or an account with no company — its own CRM).
+  const [canCrm, setCanCrm] = useState(false);
   useEffect(() => {
     if (gate.kind !== 'ready') return;
     const companyId = gate.access.companyId;
-    loadMyCapabilities().then(c => setCanInvoice(!companyId || c?.invoices === true)).catch(() => setCanInvoice(false));
+    loadMyCapabilities().then(c => {
+      setCanInvoice(!companyId || c?.invoices === true);
+      setCanCrm(!companyId || c?.crm === true);
+    }).catch(() => { setCanInvoice(false); setCanCrm(false); });
   }, [gate]);
 
   const signOut = useCallback(async () => {
@@ -144,6 +149,7 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const nav = [
     { href: '/app', label: 'Today', show: true },
     { href: '/app/inspections', label: 'Inspections', show: true },
+    { href: '/app/contacts', label: 'Contacts', show: canCrm },
     { href: '/app/reports', label: 'Reports', show: true },
     { href: '/app/invoices', label: 'Invoices', show: canInvoice },
     { href: '/app/templates', label: 'Templates', show: !!access.companyId },
