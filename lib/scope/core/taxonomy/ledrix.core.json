@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.04.1",
-  "revision": 269,
+  "packVersion": "2026.11.05.1",
+  "revision": 270,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -492,19 +492,8 @@
           "condition": true
         },
         {
-          "id": "hvac_manufactured_belly_wrap",
-          "label": "Belly Wrap",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
           "id": "hvac_manufactured_furnace",
-          "label": "Manufactured Home Listed Furnace",
+          "label": "Manufactured-Home Listed Furnace",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -847,6 +836,28 @@
             }
           ],
           "layout": "row"
+        },
+        {
+          "id": "attic_manufactured_bellywood_ductwork",
+          "label": "Belly Ductwork",
+          "keywords": [],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "manufactured"
+          ],
+          "condition": true
+        },
+        {
+          "id": "attic_older_asbestos_ductwrap",
+          "label": "Suspected Asbestos Duct Wrap",
+          "keywords": [],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "older"
+          ],
+          "condition": true
         }
       ],
       "subsystems": [
@@ -900,14 +911,15 @@
         },
         {
           "id": "heating__special",
-          "name": "Special Systems",
+          "name": "Special Homes",
           "nodeIds": [
-            "hvac_manufactured_crossover_duct",
-            "hvac_manufactured_belly_wrap",
             "hvac_manufactured_furnace",
+            "hvac_manufactured_crossover_duct",
+            "attic_manufactured_bellywood_ductwork",
             "hvac_older_gravity_furnace",
             "hvac_older_oil_furnace",
             "hvac_older_steam_boiler",
+            "attic_older_asbestos_ductwrap",
             "hvac_multi_unit_shared_plant"
           ]
         }
@@ -2617,7 +2629,7 @@
         },
         {
           "id": "plumbing_manufactured_water_heater_vent",
-          "label": "Manufactured Home Water Heater Vent",
+          "label": "Water Heater Vent (Manufactured Home)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2628,7 +2640,7 @@
         },
         {
           "id": "plumbing_manufactured_plumbing_tie_downs",
-          "label": "Manufactured Home Plumbing Tie-Downs",
+          "label": "Plumbing Supports",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2639,7 +2651,7 @@
         },
         {
           "id": "plumbing_older_galvanized_supply",
-          "label": "Older Home Galvanized Supply",
+          "label": "Galvanized Supply (Older Home)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2650,7 +2662,7 @@
         },
         {
           "id": "plumbing_older_oil_fired_water_heater",
-          "label": "Older Home Oil-Fired Water Heater",
+          "label": "Oil-Fired Water Heater",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2661,7 +2673,7 @@
         },
         {
           "id": "plumbing_multi_unit_shared_water_heater",
-          "label": "Multi-Unit Shared Water Heater",
+          "label": "Shared Water Heater",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2672,7 +2684,7 @@
         },
         {
           "id": "plumbing_multi_unit_per_unit_water_meter",
-          "label": "Multi-Unit Per-Unit Water Meter",
+          "label": "Per-Unit Water Meter",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -2932,7 +2944,7 @@
         },
         {
           "id": "plumbing__plumbing",
-          "name": "PLUMBING",
+          "name": "Special Homes",
           "nodeIds": [
             "plumbing_manufactured_water_heater_vent",
             "plumbing_manufactured_plumbing_tie_downs",
@@ -4121,17 +4133,6 @@
           ]
         },
         {
-          "id": "electrical_manufactured_tie_downs",
-          "label": "Exterior Tie-Downs",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
           "id": "electrical_manufactured_skirt_electrical",
           "label": "Skirting Electrical Openings",
           "keywords": [],
@@ -4155,7 +4156,7 @@
         },
         {
           "id": "electrical_multi_unit_metering",
-          "label": "Multi-Unit Metering",
+          "label": "Unit Metering",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -4166,7 +4167,7 @@
         },
         {
           "id": "electrical_multi_unit_shared_systems",
-          "label": "Shared Electrical Systems",
+          "label": "Shared Electrical (House Panel)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -4340,9 +4341,8 @@
         },
         {
           "id": "electrical__electrical",
-          "name": "ELECTRICAL",
+          "name": "Special Homes",
           "nodeIds": [
-            "electrical_manufactured_tie_downs",
             "electrical_manufactured_skirt_electrical",
             "electrical_older_fuse_panel",
             "electrical_multi_unit_metering",
@@ -5000,7 +5000,7 @@
         },
         {
           "id": "roofing_manufactured_roof_tie_downs",
-          "label": "Roof Tie-Downs",
+          "label": "Over-the-Roof Tie-Downs",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -5033,7 +5033,7 @@
         },
         {
           "id": "roofing_multi_unit_roof_drainage",
-          "label": "Roof Drainage",
+          "label": "Shared Roof Drainage",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -5093,7 +5093,7 @@
         },
         {
           "id": "roofing__roofing",
-          "name": "ROOFING",
+          "name": "Special Homes",
           "nodeIds": [
             "roofing_manufactured_roof_tie_downs",
             "roofing_manufactured_roof_skirts",
@@ -5246,7 +5246,7 @@
         },
         {
           "id": "foundation_manufactured_tie_downs",
-          "label": "Tie-Downs",
+          "label": "Tie-Downs and Anchors",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -5268,7 +5268,7 @@
         },
         {
           "id": "foundation_manufactured_belly_wrap",
-          "label": "Belly Wrap",
+          "label": "Belly Wrap (Bottom Board)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -5285,17 +5285,6 @@
           "origin": "core",
           "appliesTo": [
             "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "foundation_older_galvanized_supply",
-          "label": "Galvanized Water Supply",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "older"
           ],
           "condition": true
         },
@@ -5720,13 +5709,12 @@
         },
         {
           "id": "foundation__foundation",
-          "name": "FOUNDATION",
+          "name": "Special Homes",
           "nodeIds": [
             "foundation_manufactured_tie_downs",
             "foundation_manufactured_skirting",
             "foundation_manufactured_belly_wrap",
             "foundation_manufactured_marriage_line",
-            "foundation_older_galvanized_supply",
             "foundation_multi_unit_shared_foundation"
           ]
         }
@@ -6460,7 +6448,7 @@
         },
         {
           "id": "exterior_multi_unit_fire_separation",
-          "label": "Fire Separation",
+          "label": "Fire Separation Between Units",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -6696,7 +6684,7 @@
         },
         {
           "id": "exterior__exterior",
-          "name": "EXTERIOR",
+          "name": "Special Homes",
           "nodeIds": [
             "exterior_multi_unit_fire_separation"
           ]
@@ -7001,39 +6989,6 @@
           ]
         },
         {
-          "id": "attic_manufactured_bellywood_ductwork",
-          "label": "Belly Ductwork",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "attic_manufactured_crossover_duct",
-          "label": "Crossover Duct",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "attic_older_asbestos_ductwrap",
-          "label": "Asbestos Duct Wrap",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "older"
-          ],
-          "condition": true
-        },
-        {
           "id": "attic_multi_unit_shared_attic",
           "label": "Shared Attic Space",
           "keywords": [],
@@ -7084,11 +7039,8 @@
         },
         {
           "id": "attic__attic",
-          "name": "attic",
+          "name": "Special Homes",
           "nodeIds": [
-            "attic_manufactured_bellywood_ductwork",
-            "attic_manufactured_crossover_duct",
-            "attic_older_asbestos_ductwrap",
             "attic_multi_unit_shared_attic"
           ]
         }
@@ -7327,72 +7279,6 @@
           "condition": true
         },
         {
-          "id": "interior_manufactured_bellywood_ductwork",
-          "label": "Belly Wrap and Ductwork",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "interior_manufactured_marriage_line",
-          "label": "Marriage Line",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "interior_manufactured_tie_downs",
-          "label": "Tie-Downs",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "manufactured"
-          ],
-          "condition": true
-        },
-        {
-          "id": "interior_older_asbestos_ducting",
-          "label": "Asbestos-Wrapped Ducting",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "older"
-          ],
-          "condition": true
-        },
-        {
-          "id": "interior_older_gravity_furnace",
-          "label": "Gravity Furnace",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "older"
-          ],
-          "condition": true
-        },
-        {
-          "id": "interior_multi_unit_shared_systems",
-          "label": "Shared Systems",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "multi_unit"
-          ],
-          "condition": true
-        },
-        {
           "id": "kit_counter",
           "label": "Countertop Material",
           "keywords": [
@@ -7535,18 +7421,6 @@
             "int_stairs",
             "int_handrails",
             "int_headroom"
-          ]
-        },
-        {
-          "id": "interior__interior",
-          "name": "INTERIOR",
-          "nodeIds": [
-            "interior_manufactured_bellywood_ductwork",
-            "interior_manufactured_marriage_line",
-            "interior_manufactured_tie_downs",
-            "interior_older_asbestos_ducting",
-            "interior_older_gravity_furnace",
-            "interior_multi_unit_shared_systems"
           ]
         },
         {
@@ -7969,7 +7843,7 @@
         },
         {
           "id": "fireplace_manufactured_fireplace_venting",
-          "label": "Manufactured Home Fireplace Venting",
+          "label": "Fireplace Venting (Manufactured Home)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -7980,7 +7854,7 @@
         },
         {
           "id": "fireplace_older_fireplace_chimney",
-          "label": "Older Home Fireplace Chimney",
+          "label": "Chimney Liner (Older Home)",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -7991,7 +7865,7 @@
         },
         {
           "id": "fireplace_multi_unit_shared_chimney",
-          "label": "Multi-Unit Shared Chimney",
+          "label": "Shared Chimney",
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
@@ -8129,7 +8003,7 @@
         },
         {
           "id": "fireplace__fireplace",
-          "name": "FIREPLACE",
+          "name": "Special Homes",
           "nodeIds": [
             "fireplace_manufactured_fireplace_venting",
             "fireplace_older_fireplace_chimney",

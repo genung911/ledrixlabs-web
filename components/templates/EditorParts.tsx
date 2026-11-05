@@ -12,6 +12,7 @@ import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from 
 import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { CatalogPanel } from './CatalogPanel';
+import { SpecialHomesPanel } from './SpecialHomesPanel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -180,6 +181,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
       </div>
 
       <CatalogPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
+      <SpecialHomesPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
 
       {!!setAside.length && (
         <details className="text-xs">
