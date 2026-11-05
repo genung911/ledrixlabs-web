@@ -1,15 +1,18 @@
 #!/usr/bin/env node
-// ─── Guard: the portal reads and writes homeowner upkeep by the HOME (ruling A, owner 2026-11-04; #108 + #109) ─────
+// ─── Guard: the portal reads and writes homeowner upkeep by the share and ITS OWNER'S TENURE (#109, owner 2026-11-04) ──
 //
-// RUNS the real /api/portal and /api/docs handlers against an in-memory PostgREST stand-in that understands the one
-// `or=(share_id.eq."…",home_id.eq."…")` term the server adds. Two homes: H1 (share S1, plus a row the Home app wrote
-// with only a home_id) and H2. Proves:
-//   · a report link reads its share's rows AND its home's rows (what the phone wrote), never another home's;
-//   · every row the portal inserts is filed under the share AND the home, and a client-sent home_id is dropped;
-//   · a change or delete reaches a home row by id, never another home's;
-//   · without a home (inspection_home missing — #109 unapplied) everything is the share alone, as before;
-//   · home_reports is never widened to the home;
-//   · /api/docs files a stored document under the home too, and checks a file's path against the row's OWN share.
+// "For the homeowner, they should start fresh." RUNS the real /api/portal and /api/docs handlers against an in-memory
+// PostgREST stand-in that understands the one `or=(share_id.eq."…",tenure_id.eq.…)` term the server adds. One house
+// (H1) carries three owners' rows: the previous owner's (T0), this report's client (T1) and another buyer's (T2).
+// Proves:
+//   · a claimed report link reads its share's rows and its tenure's rows (what that owner's phone wrote) — never the
+//     previous owner's or another buyer's on the same house;
+//   · every row the portal inserts is filed under the share AND the tenure; a client-sent tenure_id/home_id is dropped;
+//   · a change or delete reaches only those rows;
+//   · unclaimed, or #109 unapplied: everything is the share alone, as before;
+//   · an ENDED tenure's link still reads, and changes nothing (portal and docs);
+//   · home_reports is never widened;
+//   · /api/docs files a stored document under the tenure too, and checks a file's path against the row's OWN share.
 // `--mutate` swaps source in memory (a load hook, nothing is written to disk) and proves each check can fail.
 import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -45,22 +48,27 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fake.supabase.test/rest/v1';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role';
 const BASE = 'https://fake.supabase.test';
 
-let DB, HOME_RPC;
+const T0 = '00000000-0000-4000-8000-0000000000a0', T1 = '00000000-0000-4000-8000-0000000000a1';
+const T2 = '00000000-0000-4000-8000-0000000000a2', T3 = '00000000-0000-4000-8000-0000000000a3';
+let DB, RPC;
 function seed() {
   DB = {
-    home_records: [{ share_id: 'S1', share_token: 'tok_S1_abcdef' }, { share_id: 'S2', share_token: 'tok_S2_abcdef' }],
+    home_records: [{ share_id: 'S1', share_token: 'tok_S1_abcdef' }, { share_id: 'S2', share_token: 'tok_S2_abcdef' },
+                   { share_id: 'S3', share_token: 'tok_S3_abcdef' }],
     portal_links: [],
     home_reminders: [
-      { id: 'r1', share_id: 'S1', home_id: 'H1', title: 'portal S1' },
-      { id: 'r0', share_id: 'S1', home_id: null, title: 'portal S1 unfiled' },
-      { id: 'r2', share_id: null, home_id: 'H1', title: 'phone H1' },
-      { id: 'r3', share_id: 'S2', home_id: 'H2', title: 'portal S2' },
-      { id: 'r4', share_id: null, home_id: 'H2', title: 'phone H2' },
+      { id: 'r1', share_id: 'S1', tenure_id: T1, home_id: 'H1', title: 'portal S1' },
+      { id: 'r0', share_id: 'S1', tenure_id: null, home_id: null, title: 'portal S1 unfiled' },
+      { id: 'r2', share_id: null, tenure_id: T1, home_id: 'H1', title: 'phone T1' },
+      { id: 'r4', share_id: null, tenure_id: T2, home_id: 'H1', title: 'other buyer T2' },
+      { id: 'r5', share_id: null, tenure_id: T0, home_id: 'H1', title: 'previous owner T0' },
+      { id: 'r6', share_id: 'S2', tenure_id: null, home_id: null, title: 'portal S2' },
+      { id: 'r7', share_id: 'S3', tenure_id: T3, home_id: 'H3', title: 'portal S3 sold' },
     ],
-    home_reports: [{ id: 'p1', share_id: 'S1', home_id: 'H1', title: 'S1 report' }, { id: 'p2', share_id: 'S9', home_id: 'H1', title: 'other report' }],
+    home_reports: [{ id: 'p1', share_id: 'S1', tenure_id: T1, title: 'S1 report' }, { id: 'p2', share_id: 'S9', tenure_id: T1, title: 'other report' }],
     home_documents: [],
   };
-  HOME_RPC = true;
+  RPC = { S1: [{ home_id: 'H1', tenure_id: T1, ended: false }], S2: [], S3: [{ home_id: 'H3', tenure_id: T3, ended: true }] };
 }
 const termsOf = (qs) => [...new URLSearchParams(qs)].filter(([k]) => !['select', 'order', 'limit', 'on_conflict'].includes(k));
 function match(row, [k, v]) {
@@ -77,10 +85,9 @@ function match(row, [k, v]) {
 globalThis.fetch = async (input, init = {}) => {
   const u = new URL(String(input)); const method = (init.method ?? 'GET').toUpperCase();
   if (!u.href.startsWith(BASE)) throw new Error('network');
-  if (u.pathname === '/rest/v1/rpc/inspection_home') {
-    if (!HOME_RPC) return new Response('{}', { status: 404 });
-    const { p_inspection } = JSON.parse(init.body);
-    return Response.json(p_inspection === 'S1' ? 'H1' : p_inspection === 'S2' ? 'H2' : null);
+  if (u.pathname === '/rest/v1/rpc/share_tenure') {
+    if (!RPC) return new Response('{}', { status: 404 });
+    return Response.json(RPC[JSON.parse(init.body).p_share] ?? []);
   }
   if (u.pathname.startsWith('/storage/')) {
     if (u.pathname.includes('/object/list/')) return Response.json([{ name: JSON.parse(init.body).search, metadata: { size: 10, mimetype: 'application/pdf' } }]);
@@ -112,51 +119,75 @@ async function checks() {
   RUN++;
   const { POST } = await import(ROUTE + '?run=' + RUN);
   const docs = await import(DOCS + '?run=' + RUN);
-  const call = async (b) => { const r = await POST(req({ token: 'tok_S1_abcdef', ...b })); return { status: r.status, data: r.status === 200 ? await r.json() : null }; };
+  const call = async (b, tok = 'tok_S1_abcdef') => { const r = await POST(req({ token: tok, ...b })); return { status: r.status, data: r.status === 200 ? await r.json() : null }; };
   const titles = (d) => (d ?? []).map(r => r.title).sort();
 
   seed();
   let r = await call({ table: 'home_reminders', op: 'select', filter: 'share_id=eq.S1' });
-  ok('a report link reads its share and its home (the phone\'s row)', JSON.stringify(titles(r.data)) === '["phone H1","portal S1","portal S1 unfiled"]', JSON.stringify(titles(r.data)));
-  await call({ table: 'home_reminders', op: 'insert', body: { title: 'new', home_id: 'H2' } });
+  ok('a claimed link reads its share and its owner\'s tenure (their phone\'s row)', JSON.stringify(titles(r.data)) === '["phone T1","portal S1","portal S1 unfiled"]', JSON.stringify(titles(r.data)));
+  ok('…never the previous owner\'s or another buyer\'s rows on the same house', !titles(r.data).some(t => /T0|T2/.test(t)));
+  r = await call({ table: 'home_reminders', op: 'select', filter: `tenure_id=eq.${T0}` });
+  ok('a client filter naming another tenure only narrows, never widens', Array.isArray(r.data) && r.data.length === 0, JSON.stringify(r));
+  await call({ table: 'home_reminders', op: 'insert', body: { title: 'new', tenure_id: T2, home_id: 'H9' } });
   const n = DB.home_reminders.find(x => x.title === 'new');
-  ok('an insert is filed under the share AND the home; a client home_id is dropped', n?.share_id === 'S1' && n?.home_id === 'H1', JSON.stringify(n));
+  ok('an insert is filed under the share AND the tenure; a client tenure_id/home_id is dropped', n?.share_id === 'S1' && n?.tenure_id === T1 && n?.home_id === undefined, JSON.stringify(n));
   await call({ table: 'home_reminders', op: 'update', filter: 'id=eq.r2', body: { completed: true } });
-  ok('a change reaches the home\'s phone row by id', DB.home_reminders.find(x => x.id === 'r2')?.completed === true);
-  await call({ table: 'home_reminders', op: 'update', filter: 'id=eq.r4', body: { completed: true } });
-  ok('…never another home\'s', DB.home_reminders.find(x => x.id === 'r4')?.completed !== true);
+  ok('a change reaches the owner\'s own phone row by id', DB.home_reminders.find(x => x.id === 'r2')?.completed === true);
+  await call({ table: 'home_reminders', op: 'update', filter: 'id=eq.r5', body: { completed: true } });
+  ok('…never the previous owner\'s', DB.home_reminders.find(x => x.id === 'r5')?.completed !== true);
   await call({ table: 'home_reminders', op: 'delete', filter: 'id=eq.r4' });
-  ok('a delete never reaches another home', DB.home_reminders.some(x => x.id === 'r4'));
+  ok('a delete never reaches another buyer\'s row', DB.home_reminders.some(x => x.id === 'r4'));
   await call({ table: 'home_reminders', op: 'delete', filter: 'id=eq.r2' });
-  ok('a delete reaches the home\'s own row', !DB.home_reminders.some(x => x.id === 'r2'));
+  ok('a delete reaches the owner\'s own row', !DB.home_reminders.some(x => x.id === 'r2'));
   r = await call({ table: 'home_reports', op: 'select' });
   ok('home_reports stays the share alone', JSON.stringify(titles(r.data)) === '["S1 report"]', JSON.stringify(titles(r.data)));
 
-  seed(); HOME_RPC = false;
+  seed();
+  r = await call({ table: 'home_reminders', op: 'select' }, 'tok_S2_abcdef');
+  ok('an unclaimed link: the share alone', JSON.stringify(titles(r.data)) === '["portal S2"]', JSON.stringify(titles(r.data)));
+  await call({ table: 'home_reminders', op: 'insert', body: { title: 'unclaimed new' } }, 'tok_S2_abcdef');
+  ok('…and its inserts carry no tenure', DB.home_reminders.find(x => x.title === 'unclaimed new')?.tenure_id === undefined);
+
+  seed(); RPC = null;
   RUN++;
   const fresh = await import(ROUTE + '?run=' + RUN);
   const r2 = await fresh.POST(req({ token: 'tok_S1_abcdef', table: 'home_reminders', op: 'select' }));
-  ok('without a home (#109 not applied): the share alone, as before', JSON.stringify(titles(await r2.json())) === '["portal S1","portal S1 unfiled"]');
-  await fresh.POST(req({ token: 'tok_S1_abcdef', table: 'home_reminders', op: 'insert', body: { title: 'nohome' } }));
-  ok('…and inserts carry no home', DB.home_reminders.find(x => x.title === 'nohome')?.home_id === undefined);
+  ok('#109 not applied (no function): the share alone, as before', JSON.stringify(titles(await r2.json())) === '["portal S1","portal S1 unfiled"]');
 
-  // /api/docs: a stored file is filed under the home; opening checks the row's own share
+  seed();
+  r = await call({ table: 'home_reminders', op: 'select' }, 'tok_S3_abcdef');
+  ok('a sold owner\'s link still reads its rows', JSON.stringify(titles(r.data)) === '["portal S3 sold"]', JSON.stringify(titles(r.data)));
+  const ins3 = await call({ table: 'home_reminders', op: 'insert', body: { title: 'after sale' } }, 'tok_S3_abcdef');
+  const upd3 = await call({ table: 'home_reminders', op: 'update', filter: 'id=eq.r7', body: { completed: true } }, 'tok_S3_abcdef');
+  const del3 = await call({ table: 'home_reminders', op: 'delete', filter: 'id=eq.r7' }, 'tok_S3_abcdef');
+  ok('…and changes nothing (add, change, delete refused)', ins3.status === 404 && upd3.status === 404 && del3.status === 404
+    && !DB.home_reminders.some(x => x.title === 'after sale') && DB.home_reminders.find(x => x.id === 'r7')?.completed !== true
+    && DB.home_reminders.some(x => x.id === 'r7'), `${ins3.status} ${upd3.status} ${del3.status}`);
+
+  // /api/docs: a stored file is filed under the tenure; a sold link can neither upload nor delete
   seed();
   const up = await docs.POST(req({ token: 'tok_S1_abcdef', action: 'complete', name: 'f.pdf', path: 'S1/_incoming/1730000000000_aaaaaaaaaaaa_f.pdf', kind: 'other' }));
   const d = DB.home_documents[0];
-  ok('/api/docs files a stored document under the share and the home', up.status === 200 && d?.share_id === 'S1' && d?.home_id === 'H1', `${up.status} ${JSON.stringify(d)}`);
+  ok('/api/docs files a stored document under the share and the tenure', up.status === 200 && d?.share_id === 'S1' && d?.tenure_id === T1, `${up.status} ${JSON.stringify(d)}`);
+  seed(); DB.home_documents.push({ id: '11111111-2222-4333-8444-555555555555', share_id: 'S3', tenure_id: T3, path: null, name: 'kept.pdf' });
+  const up3 = await docs.POST(req({ token: 'tok_S3_abcdef', action: 'complete', name: 'g.pdf', path: 'S3/_incoming/1730000000000_aaaaaaaaaaaa_g.pdf', kind: 'other' }));
+  const del = await docs.DELETE(req({ token: 'tok_S3_abcdef', id: '11111111-2222-4333-8444-555555555555' }));
+  ok('/api/docs: a sold link can neither upload nor delete', up3.status === 404 && del.status === 404 && DB.home_documents.length === 1, `${up3.status} ${del.status} ${DB.home_documents.length}`);
   const src = readFileSync(new URL('../app/api/docs/route.ts', import.meta.url), 'utf8');
   ok('/api/docs checks a file path against the row\'s own share', (src.match(/docPathInShare\(doc\.path, doc\.share\)/g) ?? []).length === 2);
   return out;
 }
 
 const MUTS = [
-  ['the portal scope ignores the home', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && homeId && PLAIN_ID.test(homeId) && PLAIN_ID.test(shareId)) {", 'if (false) {'],
-  ['inserts are not filed under the home', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && homeId && PLAIN_ID.test(homeId)) out.home_id = homeId;", ''],
-  ['the scope is the home alone', 'lib/portalPolicy.ts', '(share_id.eq."${shareId}",home_id.eq."${homeId}")', '(home_id.eq."${homeId}",home_id.eq."${homeId}")'],
-  ['the route never asks for the home', 'app/api/portal/route.ts', "const homeId = UPKEEP_TABLES.has(table) ? await homeIdForShare(shareId) : null;", 'const homeId = null as string | null;'],
-  ['a missing function is treated as a home', 'lib/shareAccess.ts', "    if (!r.ok) return null;\n    const v = await r.json().catch(() => null);", "    const v = r.ok ? await r.json().catch(() => null) : 'H1';"],
-  ['docs file without the home', 'app/api/docs/route.ts', "stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }, shareId, await homeIdForShare(shareId))", "{ share_id: shareId, name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }"],
+  ['the portal scope ignores the tenure', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId) && PLAIN_ID.test(shareId)) {", 'if (false) {'],
+  ['the scope is the whole home', 'lib/portalPolicy.ts', '(share_id.eq."${shareId}",tenure_id.eq.${tenure.tenureId})', '(share_id.eq."${shareId}",home_id.eq.H1)'],
+  ['inserts are not filed under the tenure', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId)) out.tenure_id = tenure.tenureId;", ''],
+  ['an ended tenure stays writable', 'lib/portalPolicy.ts', "return UPKEEP_TABLES.has(table) && op !== 'select' && !!tenure?.ended;", 'return false;'],
+  ['the route never asks for the tenure', 'app/api/portal/route.ts', "const tenure = UPKEEP_TABLES.has(table) ? await tenureForShare(shareId) : null;", 'const tenure = null as TenureRef;'],
+  ['a missing function is treated as a tenure', 'lib/shareAccess.ts', "    if (!r.ok) return null;\n    const rows = await r.json().catch(() => null);", "    const rows = r.ok ? await r.json().catch(() => null) : [{ home_id: 'H1', tenure_id: '00000000-0000-4000-8000-0000000000a0', ended: false }];"],
+  ['docs file without the tenure', 'app/api/docs/route.ts', "path, kind, size: obj.size }, shareId, tenure)]),", "path, kind, size: obj.size }, shareId, null)]),"],
+  ['docs upload after the sale', 'app/api/docs/route.ts', "  if (endedRefuses('home_documents', 'insert', tenure)) return notFound();", ''],
+  ['docs delete after the sale', 'app/api/docs/route.ts', "  if (endedRefuses('home_documents', 'delete', await tenureForShare(shareId))) return notFound();", ''],
 ];
 
 let fail = 0;

@@ -122,24 +122,30 @@ export function pathInShare(path: string | null | undefined, shareId: string): b
   return p.startsWith(`${shareId}/`) || p.startsWith(`report/${shareId}/`);
 }
 
-// ── THE SHARE'S HOME (ruling A, owner 2026-11-04; #109) ──────────────────────────────────────────────
-// The inspection's home on the server, made when missing (inspection_home, service role only). Remembered for five
-// minutes per server instance. null when the function is not there yet (#109 unapplied), the inspection has no
-// property, or the call fails — the caller then scopes to the share alone, as before.
-const homeCache = new Map<string, { id: string | null; at: number }>();
-export async function homeIdForShare(shareId: string): Promise<string | null> {
+// ── THE SHARE'S TENURE (#109, owner 2026-11-04: "they should start fresh") ─────────────────────────────────────
+// Homeowner upkeep belongs to ONE OWNER'S TIME with a home (a tenure), not to the house forever. A report link reaches
+// the rows of its own share, plus — once its client has claimed it — the rows of the tenure that claim made or joined
+// (what their Home app wrote). Never another tenure's: never the previous owner's, never another buyer's.
+// null: not claimed yet, #109 not applied (the function is missing), or the call failed — the share alone, as before.
+// ended: the owner let the home go — the link still reads its rows, and changes nothing.
+export type ShareTenure = { homeId: string; tenureId: string; ended: boolean };
+const tenureCache = new Map<string, { v: ShareTenure | null; at: number }>();
+export async function tenureForShare(shareId: string): Promise<ShareTenure | null> {
   if (!shareAccessConfigured() || !plainId(shareId)) return null;
-  const hit = homeCache.get(shareId);
-  if (hit && Date.now() - hit.at < 300_000) return hit.id;
+  const hit = tenureCache.get(shareId);
+  if (hit && Date.now() - hit.at < 60_000) return hit.v;
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/inspection_home`, {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/share_tenure`, {
       method: 'POST', headers: { ...svcHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_inspection: shareId }), cache: 'no-store',
+      body: JSON.stringify({ p_share: shareId }), cache: 'no-store',
     });
     if (!r.ok) return null;
-    const v = await r.json().catch(() => null);
-    const id = typeof v === 'string' ? plainId(v) : null;
-    homeCache.set(shareId, { id, at: Date.now() });
-    return id;
+    const rows = await r.json().catch(() => null);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    const homeId = plainId(row?.home_id);
+    const tenureId = typeof row?.tenure_id === 'string' && /^[0-9a-f-]{36}$/i.test(row.tenure_id) ? row.tenure_id.toLowerCase() : null;
+    const v = homeId && tenureId ? { homeId, tenureId, ended: row.ended === true } : null;
+    tenureCache.set(shareId, { v, at: Date.now() });
+    return v;
   } catch { return null; }
 }

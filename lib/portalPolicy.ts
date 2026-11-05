@@ -80,30 +80,38 @@ export function scopeAllows(scope: 'edit' | 'read' | 'repairs', table: string, o
 }
 export const REPAIRS_SCOPE_TERM = 'status=eq.included';
 
-// ── THE HOME, NOT ONLY THE REPORT LINK (ruling A, owner 2026-11-04; #108 + #109) ───────────────────────
-// Homeowner upkeep belongs to the HOME. A report link still resolves to exactly one share on the server; that share's
-// inspection names its home (inspection_home, service role). These five tables are then scoped to rows of THIS share
-// OR of its home — what the Home app wrote, and what an earlier report of the same house left — and every row the
-// portal writes is filed under both. Without a home (#109 not applied, or an inspection with no property) the scope
-// is the share alone, exactly as before.
+// ── THE SHARE, AND ITS OWNER'S TENURE (#109, owner 2026-11-04: a new owner "should start fresh") ───────────────────
+// A report link resolves to exactly one share on the server; once its client has claimed it, the share names ONE
+// tenure (lib/shareAccess.ts tenureForShare). These five tables are then scoped to rows of THIS share OR of THAT tenure —
+// what the same owner's Home app wrote — and every row the portal writes is filed under both. Never the home as a
+// whole: the previous owner's rows and another buyer's rows are on the same home and stay out of reach. Unclaimed (or
+// #109 not applied): the share alone, exactly as before. An ended tenure is read-only (endedRefuses).
 export const UPKEEP_TABLES: ReadonlySet<string> = new Set([
   'home_reminders', 'home_projects', 'home_repairs', 'home_maintenance_log', 'home_documents',
 ]);
 const PLAIN_ID = /^[A-Za-z0-9._-]{1,128}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export type TenureRef = { tenureId: string; ended?: boolean } | null;
 
-/** The server's own scope term for a table: the share, or the share OR its home for the upkeep tables. */
-export function scopeTerm(table: string, shareId: string, homeId: string | null): string {
-  if (UPKEEP_TABLES.has(table) && homeId && PLAIN_ID.test(homeId) && PLAIN_ID.test(shareId)) {
-    return `or=${encodeURIComponent(`(share_id.eq."${shareId}",home_id.eq."${homeId}")`)}`;
+/** The server's own scope term for a table: the share, or the share OR its tenure for the upkeep tables. */
+export function scopeTerm(table: string, shareId: string, tenure: TenureRef): string {
+  if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId) && PLAIN_ID.test(shareId)) {
+    return `or=${encodeURIComponent(`(share_id.eq."${shareId}",tenure_id.eq.${tenure.tenureId})`)}`;
   }
   return `share_id=eq.${encodeURIComponent(shareId)}`;
 }
 
-/** A row as the portal files it: always under the share, and under the home too for the upkeep tables. */
-export function stampRow(table: string, row: Record<string, unknown>, shareId: string, homeId: string | null): Record<string, unknown> {
+/** A row as the portal files it: always under the share, and under its tenure too once claimed (the server sets the
+ *  home from the tenure). A client-sent tenure_id or home_id never survives cleanRow. */
+export function stampRow(table: string, row: Record<string, unknown>, shareId: string, tenure: TenureRef): Record<string, unknown> {
   const out: Record<string, unknown> = { ...row, share_id: shareId };
-  if (UPKEEP_TABLES.has(table) && homeId && PLAIN_ID.test(homeId)) out.home_id = homeId;
+  if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId)) out.tenure_id = tenure.tenureId;
   return out;
+}
+
+/** True when the link's owner has let the home go: the upkeep is theirs to read, not to change. */
+export function endedRefuses(table: string, op: Op, tenure: TenureRef): boolean {
+  return UPKEEP_TABLES.has(table) && op !== 'select' && !!tenure?.ended;
 }
 
 export const MAX_ROWS = 100;          // per insert

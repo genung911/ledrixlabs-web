@@ -66,17 +66,17 @@ if (route) {
       && /const terms = cleanFilter\(payload\.filter, op\);/.test(routeCode),
     'accepting the client share_id is exactly the harvestable-token hole, reopened one layer up');
   ok('A3 the resolved share_id is forced onto the filter',
-    // Ruling A (2026-11-04): the scope term comes from portalPolicy.scopeTerm — the share, or the share OR its home for
-    // the upkeep tables. Both branches name the resolved share; the home is decided on the server from that share.
-    /return \[scopeTerm\(table, shareId, homeId\), \.\.\.terms\]\.join\('&'\)/.test(routeCode)
-      && (routeCode.match(/scoped\(terms, table, shareId, homeId\)/g) ?? []).length === 2
-      && /scoped\(\[\.\.\.terms, \.\.\.guard\], table, shareId, homeId\)/.test(routeCode)
-      && /const homeId = UPKEEP_TABLES\.has\(table\) \? await homeIdForShare\(shareId\) : null;/.test(routeCode)
-      && /\(share_id\.eq\."\$\{shareId\}",home_id\.eq\."\$\{homeId\}"\)/.test(policyCode ?? '')
+    // #109 (2026-11-04): the scope term comes from portalPolicy.scopeTerm — the share, or the share OR its owner's
+    // tenure for the upkeep tables. Both branches name the resolved share; the tenure is decided on the server from it.
+    /return \[scopeTerm\(table, shareId, tenure\), \.\.\.terms\]\.join\('&'\)/.test(routeCode)
+      && (routeCode.match(/scoped\(terms, table, shareId, tenure\)/g) ?? []).length === 2
+      && /scoped\(\[\.\.\.terms, \.\.\.guard\], table, shareId, tenure\)/.test(routeCode)
+      && /const tenure = UPKEEP_TABLES\.has\(table\) \? await tenureForShare\(shareId\) : null;/.test(routeCode)
+      && /\(share_id\.eq\."\$\{shareId\}",tenure_id\.eq\.\$\{tenure\.tenureId\}\)/.test(policyCode ?? '')
       && /return `share_id=eq\.\$\{encodeURIComponent\(shareId\)\}`;/.test(policyCode ?? ''),
     'a read or a delete with no scope is a read or delete of every share');
   ok('A3 an insert is forced under the resolved share',
-    /cleaned\.map\(row => stampRow\(table, row!, shareId, homeId\)\)/.test(routeCode)
+    /cleaned\.map\(row => stampRow\(table, row!, shareId, tenure\)\)/.test(routeCode)
       && /const out: Record<string, unknown> = \{ \.\.\.row, share_id: shareId \};/.test(policyCode ?? ''),
     'without this a homeowner could file a row under someone else\'s share');
   // Updates keep only allow-listed columns; no table's update list may name share_id or id.

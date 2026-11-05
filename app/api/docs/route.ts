@@ -32,8 +32,8 @@
 // (supabase_home_documents_private.sql). Signed URLs work whether or not it is private yet.
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { shareIdForToken, editShareIdForToken, shareAccessConfigured, homeIdForShare } from '../../../lib/shareAccess';
-import { scopeTerm, stampRow } from '../../../lib/portalPolicy';
+import { shareIdForToken, editShareIdForToken, shareAccessConfigured, tenureForShare } from '../../../lib/shareAccess';
+import { scopeTerm, stampRow, endedRefuses } from '../../../lib/portalPolicy';
 import {
   DOC_BUCKET, DOC_MAX_BYTES, DOC_URL_TTL_SECONDS, DOC_KINDS,
   bytesMatchType, docContentType, docPathInShare, finalDocPath, isDocId, isNewDocPath, newDocPath,
@@ -51,13 +51,13 @@ const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
 const objectUrl = (path: string) =>
   `${SUPA_URL}/storage/v1/object/${DOC_BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
 
-/** The document row, only if it belongs to this share or its home (ruling A, 2026-11-04). `share` is the share the
- *  row was filed under: a stored file's path is checked against THAT share, never the caller's. */
+/** The document row, only if it belongs to this share or its owner's tenure (#109). `share` is the share the row was
+ *  filed under: a stored file's path is checked against THAT share, never the caller's. */
 async function docInShare(id: string, shareId: string): Promise<{ id: string; path: string | null; share: string } | null> {
-  const homeId = await homeIdForShare(shareId);
+  const tenure = await tenureForShare(shareId);
   const r = await fetch(
     `${SUPA_URL}/rest/v1/home_documents?id=eq.${encodeURIComponent(id)}`
-      + `&${scopeTerm('home_documents', shareId, homeId)}&select=id,path,share_id&limit=1`,
+      + `&${scopeTerm('home_documents', shareId, tenure)}&select=id,path,share_id&limit=1`,
     { headers: svc, cache: 'no-store' },
   );
   if (!r.ok) return null;
@@ -120,6 +120,8 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return bad('Bad request.'); }
   const shareId = await editShareIdForToken(body.token);
   if (!shareId) return notFound();
+  const tenure = await tenureForShare(shareId);
+  if (endedRefuses('home_documents', 'insert', tenure)) return notFound();   // the owner let the home go: read-only
   const name = String(body.name ?? '').slice(0, 200);
   const contentType = docContentType(name);
   const kind = DOC_KINDS.has(String(body.kind)) ? String(body.kind) : 'other';
@@ -174,7 +176,7 @@ export async function POST(req: NextRequest) {
         headers: { ...svc, 'Content-Type': 'application/json', Prefer: 'return=representation' },
         // `url` is NOT NULL in the schema; a stored file is never reachable by it, so it records the
         // object reference rather than a public link.
-        body: JSON.stringify([stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }, shareId, await homeIdForShare(shareId))]),
+        body: JSON.stringify([stampRow('home_documents', { name, url: `storage://${DOC_BUCKET}/${path}`, path, kind, size: obj.size }, shareId, tenure)]),
       });
       if (!ins.ok) { await removeObject(path); return NextResponse.json({ error: 'Upload failed.' }, { status: 502 }); }
       const [row] = await ins.json();
@@ -219,6 +221,7 @@ export async function DELETE(req: NextRequest) {
   if (!isDocId(body.id)) return notFound();
   const shareId = await editShareIdForToken(body.token);
   if (!shareId) return notFound();
+  if (endedRefuses('home_documents', 'delete', await tenureForShare(shareId))) return notFound();
   try {
     const doc = await docInShare(body.id, shareId);
     if (!doc) return notFound();
