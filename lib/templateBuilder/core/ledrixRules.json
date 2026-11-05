@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.05.2",
+ "packVersion": "2026.11.05.3",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -84,6 +84,32 @@
     }
    ]
   },
+  "hvac_cabinet": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Gas Furnace",
+      "Electric Furnace",
+      "Heat Pump",
+      "Propane",
+      "Oil Furnace"
+     ],
+     "unlisted": [
+      "Gas Furnace",
+      "Electric Furnace",
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Heat Pump",
+      "Propane",
+      "Oil Furnace",
+      "Boiler",
+      "Radiant Heat"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "hvac_temp_rise": {
    "requires": [
     {
@@ -98,6 +124,32 @@
      "unlisted": [
       "Electric Baseboard",
       "Electric Wall Heater"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "hvac_furnace": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Gas Furnace",
+      "Electric Furnace",
+      "Heat Pump",
+      "Propane",
+      "Oil Furnace"
+     ],
+     "unlisted": [
+      "Gas Furnace",
+      "Electric Furnace",
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Heat Pump",
+      "Propane",
+      "Oil Furnace",
+      "Boiler",
+      "Radiant Heat"
      ],
      "exact": true
     }

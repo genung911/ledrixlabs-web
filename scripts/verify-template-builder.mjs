@@ -711,7 +711,20 @@ async function runTypes(files) {
     const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
       typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.length > 0 && L.every.every(n => ruleFree(n.id)))
-      && typedSystems.find(([s]) => s.id === 'heating')[1].every.map(n => n.id).join('|') === 'hvac_heating_age|hvac_dataplate|hvac_cabinet|hvac_furnace|hvac_distribution|hvac_thermostat');
+      && typedSystems.find(([s]) => s.id === 'heating')[1].every.map(n => n.id).join('|') === 'hvac_heating_age|hvac_dataplate|hvac_distribution|hvac_thermostat');
+    // Owner 2026-11-05 ("Make that change"): Furnace and Cabinet / Access are forced-air only — Ledrix's own rule, in the
+    // pack. The builder files them under the forced-air types, and the preview (the phone's resolver) agrees per type.
+    {
+      const HL = typedSystems.find(([s]) => s.id === 'heating')?.[1];
+      const FORCED = ['Gas Furnace', 'Electric Furnace', 'Heat Pump', 'Propane', 'Oil Furnace'];
+      const OTHERS = ['Electric Baseboard', 'Electric Wall Heater', 'Boiler', 'Radiant Heat'];
+      const heatShows = (id, v) => PM.itemApplies(fdefs, id, k => (k === 'hvac_heating::fuel_source' ? v : undefined));
+      r('types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other',
+        !!HL && ['hvac_furnace', 'hvac_cabinet'].every(id => (HL.shows[id] ?? []).slice().sort().join('|') === FORCED.slice().sort().join('|')
+          && HL.typed.some(n => String(n.id).replace(/~i\d+$/, '') === id))
+        && HL.question.field === 'hvac_heating::fuel_source'
+        && ['hvac_furnace', 'hvac_cabinet'].every(id => FORCED.every(v => heatShows(id, v)) && OTHERS.every(v => !heatShows(id, v))));
+    }
     const EL = typedSystems.find(([s]) => s.id === 'electrical')?.[1];
     const elGated = EL ? Object.fromEntries(EL.gated.map(g => [g.question.label, g.nodes.map(n => n.id).sort().join('|')])) : {};
     r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)',
@@ -1072,6 +1085,8 @@ const EXEC_MUT = [
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
   { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)', run: runTypes },
+  { name: 'the Furnace forced-air rule is dropped from the pack', file: 'core/ledrixRules.json', from: '  "hvac_furnace": {\n   "requires": [', to: '  "hvac_furnace": {\n   "x_requires": [', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
+  { name: 'Cabinet / Access shows for a boiler', file: 'core/ledrixRules.json', from: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [', to: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [\n      "Boiler",', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
   { name: 'a ruled item is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)', run: runTypes },
   { name: 'a special-home checkpoint is called Every', file: 'typeLayout.ts', from: "    if (specialIds.has(baseOf(n.id))) { special.push(n); continue; }", to: "", check: 'types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"', run: runTypes },
   { name: 'the type layout ignores the rules', file: 'typeLayout.ts', from: "  return collapseToActive(resolveApplicability(node as never, { specValue: () => value }).state);", to: "  return true;", check: 'types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', run: runTypes },
