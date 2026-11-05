@@ -1,30 +1,10 @@
 // ─── Generic (InterNACHI-style) SOP report template — v1 ─────────────────────
-// Versioned DATA, not hardcoded JSX, so per-state templates can be added later
-// without touching the renderer. An anomaly's `unit` maps to a system section;
-// anything unrecognized falls into GENERAL.
+// Versioned DATA, not hardcoded JSX. What remains: the template version a sealed page prints, and the priority words.
 
 export const SOP_TEMPLATE_VERSION = 'generic-v1';
 
-export type SopSystem = { key: string; label: string; match: string[] };
-
-// Report order = inspection walk order (roof-down, then mechanicals, then interior).
-export const SOP_SYSTEMS: SopSystem[] = [
-  { key: 'ROOFING',    label: 'Roofing',                  match: ['ROOF'] },
-  { key: 'EXTERIOR',   label: 'Exterior',                 match: ['EXTERIOR', 'SIDING', 'GRADING', 'DRAINAGE'] },
-  { key: 'STRUCTURE',  label: 'Structure & Foundation',   match: ['FOUNDATION', 'STRUCTUR', 'CRAWLSPACE', 'BASEMENT'] },
-  { key: 'ELECTRICAL', label: 'Electrical',               match: ['ELECTRIC'] },
-  { key: 'PLUMBING',   label: 'Plumbing',                 match: ['PLUMB'] },
-  { key: 'HVAC',       label: 'Heating & Cooling (HVAC)', match: ['HVAC', 'HEAT', 'COOL', 'FURNACE'] },
-  { key: 'INTERIOR',   label: 'Interior',                 match: ['INTERIOR'] },
-  { key: 'GARAGE',     label: 'Garage',                   match: ['GARAGE'] },
-  { key: 'GENERAL',    label: 'General / Other',          match: ['GENERAL'] },
-];
-
-export function systemForUnit(unit?: string | null): string {
-  const u = (unit ?? '').toUpperCase();
-  for (const s of SOP_SYSTEMS) if (s.match.some(m => u.includes(m))) return s.key;
-  return 'GENERAL';
-}
+// The section list that lived here (SOP_SYSTEMS, 9 sections, and its systemForUnit) was retired 2026-11-04: the sealed
+// page groups findings with the phone's own grouping (lib/report/findingSections.ts ← the report bundle), as the PDF does.
 
 // Unified priority taxonomy (mirrors the app's SeverityConfig + the Home App scale).
 // Safety is a separate flag (is_safety), not a tier — critical is Major Repair here.

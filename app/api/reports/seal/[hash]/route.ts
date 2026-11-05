@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SOP_SYSTEMS, systemForUnit, severityMeta, SOP_TEMPLATE_VERSION } from '../../../../../lib/sopTemplate';
+import { severityMeta, SOP_TEMPLATE_VERSION } from '../../../../../lib/sopTemplate';
+import { findingSections, sealSectionsHtml, type ReportGroup } from '../../../../../lib/report/findingSections';
 import { forHomeowner } from '../../../../../lib/homeownerRecommendation';
 import { sealPayloadKind, digestSealFacts } from '../../../../../lib/sealPayload';
 
@@ -74,24 +75,20 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
   const signed = await Promise.all(findings.map(f => signPhoto(f.image_uri ?? f.imageUri)));
   findings.forEach((f, i) => { f._photo = signed[i]; });
 
-  const bySystem = new Map<string, any[]>();
-  for (const f of findings) {
-    const k = systemForUnit(f.unit);
-    const arr = bySystem.get(k) ?? [];
-    arr.push(f);
-    bySystem.set(k, arr);
+  // Findings are grouped exactly as the phone's PDF groups them: the phone's system list, then component, worst first
+  // (ledrix-app src/core/report/findingGroups.ts, run here through the report bundle; owner 2026-11-04). The website
+  // keeps no section list of its own. Grouping is read-only: the sealed payload, and its hash, are never written.
+  let groups: ReportGroup[] | null = null;
+  if (findings.length) {
+    try { groups = (await import('../../../../../lib/report/render.mjs')).groupReportFindings(findings); }
+    catch { groups = null; }   // never drop a finding: findingSections files anything ungrouped under GENERAL
   }
   const counts = findings.reduce<Record<string, number>>((m, f) => {
     const s = (f.severity ?? 'deficiency').toLowerCase(); m[s] = (m[s] ?? 0) + 1; return m;
   }, {});
 
   let neutralised = false;   // set while rendering; drives the disclosure line below
-  const sectionsHtml = SOP_SYSTEMS
-    .filter(sys => bySystem.has(sys.key))
-    .map(sys => {
-      const rows = (bySystem.get(sys.key) ?? [])
-        .sort((a, b) => severityMeta(a.severity).rank - severityMeta(b.severity).rank)
-        .map(f => {
+  const findingHtml = (f: any) => {
           // No "Recommended: <pros_to_call>" line (owner decision 2026-10-13): the stored value is, for
           // historical findings, the model's guess from the system, not the inspector's.
           // The sealed payload and its hash are untouched; only this rendering drops the line.
@@ -114,9 +111,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
             ${hv.evaluation ? `<p class="desc"><strong>${esc(hv.evaluation.heading)}</strong> — ${esc(hv.evaluation.text)}</p>` : ''}
             ${f._photo ? `<img class="photo" src="${esc(f._photo)}" alt="evidence" loading="lazy"/>` : ''}
           </div>`;
-        }).join('');
-      return `<section><h2>${esc(sys.label)}</h2>${rows}</section>`;
-    }).join('');
+  };
+  const sectionsHtml = sealSectionsHtml(findingSections(findings, groups), findingHtml, esc);
 
   const summary = ['critical', 'deficiency', 'maintenance']
     .filter(s => counts[s])
@@ -144,7 +140,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ hash: stri
   .sealbar a{color:#00838f;text-decoration:none}
   .summary{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
   .sumchip{font-size:12px;font-weight:800;padding:5px 10px;border-radius:99px;color:var(--c);border:1px solid var(--c);background:color-mix(in srgb,var(--c) 10%,white)}
-  section{margin-top:22px} h2{font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#00838f;border-bottom:1px solid #dfe3e8;padding-bottom:6px}
+  section{margin-top:22px} h2 .count{font-size:11px;font-weight:600;letter-spacing:.5px;color:#9aa3ad;margin-left:6px}
+  h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#5b6470;margin:16px 0 0 2px}
+  h2{font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#00838f;border-bottom:1px solid #dfe3e8;padding-bottom:6px}
   .finding{background:#fff;border:1px solid #e6e9ee;border-radius:12px;padding:14px;margin-top:12px}
   .fhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .chip{font-size:11px;font-weight:800;color:var(--c);border:1px solid var(--c);border-radius:6px;padding:2px 7px}

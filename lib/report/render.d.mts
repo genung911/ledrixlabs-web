@@ -12,6 +12,9 @@ export type RecordPart = { coverage: 'server' | 'derived' | 'phone'; family?: st
 export declare const RECORD_PARTS: Readonly<Record<string, RecordPart>>;
 export declare const PHONE_ONLY_FAMILIES: string[];
 export declare function phoneOnlyParts(inputs: Record<string, unknown> | null | undefined): { key: string; label: string; family: string }[];
+/** The PDF's findings grouping (system, then component, worst first): each finding as its index into `findings`. */
+export type ReportGroup = { systemId: string; label: string; glyph: string; count: number; components: { component: string; findings: number[] }[] };
+export declare function groupReportFindings(findings: readonly Record<string, any>[], opts?: { systemOrderIds?: readonly string[] | null }): ReportGroup[];
 export declare function renderSealedReportHtml(a: {
   inspectionId: string; record: SealedRecord; revision: { version: number; digest: string } | null; shareToken?: string;
   photoUrl: (uri: string) => string | null | Promise<string | null>; pack?: Record<string, unknown>;

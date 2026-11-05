@@ -142,7 +142,8 @@ console.log('Part 3b · the REAL sealed route, run against a stored seal');
   const out = join(root, 'node_modules/.cache/verify-recommendation-language');
   rmSync(out, { recursive: true, force: true });
   // + lib/sealPayload.ts since 2026-10-24: the seal page asks what the payload holds before rendering it.
-  for (const rel of ['app/api/reports/seal/[hash]/route.ts', 'lib/sopTemplate.ts', 'lib/homeownerRecommendation.ts', 'lib/sealPayload.ts']) {
+  // + lib/report/findingSections.ts since 2026-11-04: the page lays findings out with the phone's PDF grouping.
+  for (const rel of ['app/api/reports/seal/[hash]/route.ts', 'lib/sopTemplate.ts', 'lib/homeownerRecommendation.ts', 'lib/sealPayload.ts', 'lib/report/findingSections.ts']) {
     const js = ts.transpileModule(read(rel), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } }).outputText;
     const to = join(out, rel.replace(/\.ts$/, '.js')); mkdirSync(dirname(to), { recursive: true }); writeFileSync(to, js);
   }

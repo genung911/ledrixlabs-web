@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import { findingSections, type ReportGroup } from '../../../lib/report/findingSections';
 import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import ValOrbVoice from '@/components/ValOrbVoice';
@@ -156,6 +157,8 @@ type HomeRecord = {
   garage?: string; inspector?: string; company?: string; license_number?: string;
   inspection_date?: string; inspection_type?: string; sop_mode?: string;
   anomalies: Anomaly[]; specs: Spec[]; created_at: string; pdf_url?: string; cover_url?: string; share_token?: string;
+  /** The phone's PDF grouping of `anomalies` (/api/share runs it through the report bundle); null when unavailable. */
+  reportGroups?: ReportGroup[] | null;
 };
 type Project = {
   id: string; share_id: string; title: string; system?: string; priority?: string;
@@ -248,46 +251,23 @@ const prioKeyOf = (s?: string): PrioKey => SEV_TO_PRIO[(s ?? 'deficiency').toLow
 const SEV_COLOR: Record<string,string> = { critical: PRIO.major.color, deficiency: PRIO.minor.color, anomaly: PRIO.minor.color, maintenance: PRIO.maint.color, cosmetic: PRIO.maint.color, characteristic: PRIO.wear.color, spec: PRIO.good.color };
 const SEV_LABEL: Record<string,string> = { critical: PRIO.major.label, deficiency: PRIO.minor.label, anomaly: PRIO.minor.label, maintenance: PRIO.maint.label, cosmetic: PRIO.maint.label, characteristic: PRIO.wear.label, spec: PRIO.good.label };
 
-// ── Report tab: derive a SYSTEM from a finding's unit/location/description ──────
-// The share payload has unit + severity but no canonical system/component, so the
-// system is keyword-derived here (mirrors the PDF report's section grouping).
-const REPORT_SYS: [RegExp, string][] = [
-  [/roof|shingle|flashing|gutter|chimney|soffit|fascia|downspout/i, 'Roofing'],
-  [/attic|insulation/i, 'Attic & Insulation'],
-  [/exterior|siding|grade|drainage|deck|porch|driveway|stucco|\bbrick\b|landscap/i, 'Exterior'],
-  [/foundation|crawl|basement|slab|structural|framing|footing/i, 'Foundation & Structure'],
-  [/hvac|furnace|heat|cool|air.?condition|\bac\b|thermostat|\bduct|condenser|evaporator/i, 'HVAC'],
-  [/fireplace|wood stove|\bflue\b/i, 'Fireplace'],
-  [/plumb|water heater|drain|supply line|sump|faucet|toilet|\btpr\b|gas line|sewer|septic|p-?trap/i, 'Plumbing'],
-  [/electric|panel|outlet|breaker|wiring|gfci|afci|receptacle|fixture|service drop|conductor/i, 'Electrical'],
-  [/kitchen|dishwasher|\brange\b|disposal|cooktop|\boven\b/i, 'Kitchen'],
-  [/bath|shower|\btub\b|vanity|lavatory/i, 'Bathrooms'],
-  [/interior|floor|ceiling|drywall|window|\bdoor\b|stair|\bwall\b|\bpaint\b/i, 'Interior'],
-  [/garage/i, 'Garage'],
-];
-const REPORT_SYS_ORDER = ['Roofing','Attic & Insulation','Exterior','Foundation & Structure','HVAC','Fireplace','Plumbing','Electrical','Kitchen','Bathrooms','Interior','Garage','General'];
-const REPORT_ICON: Record<string,string> = {
-  'Roofing': '🏠', 'Attic & Insulation': '🧱', 'Exterior': '🏡', 'Foundation & Structure': '🏗️',
-  'HVAC': '❄️', 'Fireplace': '🔥', 'Plumbing': '🚰', 'Electrical': '⚡', 'Kitchen': '🍽️',
-  'Bathrooms': '🚿', 'Interior': '🛋️', 'Garage': '🚗', 'General': '📋',
-};
-function reportSystem(a: Anomaly): string {
-  // Trust the app's classification (`unit`) FIRST. The description often mentions
-  // "insulation" about something else — refrigerant-line insulation on an AC unit,
-  // or conductor insulation in a panel — which otherwise false-matches the
-  // Attic & Insulation pattern (checked before HVAC/Electrical) and misfiles it.
-  const unit = (a.unit ?? '').trim();
-  if (unit) { for (const [re, name] of REPORT_SYS) if (re.test(unit)) return name; }
-  const t = `${a.location ?? ''} ${a.description ?? ''}`;
-  for (const [re, name] of REPORT_SYS) if (re.test(t)) return name;
-  return 'General';
+// ── Report tab: a finding's SYSTEM is the phone's ──────────────────────────────────────────────────────────────────
+// The 13-section keyword list that lived here (REPORT_SYS / REPORT_SYS_ORDER) was retired 2026-11-04 (owner: "Use
+// recommendation to switch to phones system list" / "Keep like PDF so website and PDF match"). /api/share returns the
+// phone's own grouping of these findings (record.reportGroups, from ledrix-app findingGroups.ts through the report
+// bundle); indexSystems records each finding's system from it, and everything on this page reads that.
+const SYSTEM_OF = new WeakMap<Anomaly, { id: string; label: string }>();
+function indexSystems(rec: HomeRecord): void {
+  for (const sec of findingSections(Array.isArray(rec.anomalies) ? rec.anomalies : [], rec.reportGroups))
+    for (const c of sec.components) for (const a of c.findings) SYSTEM_OF.set(a, { id: sec.systemId, label: sec.label });
 }
+function reportSystem(a: Anomaly): string { return SYSTEM_OF.get(a)?.label ?? 'GENERAL'; }
 // ── Floor plan: does a finding belong to this schematic room box? ───────────────
 // Primary signal: the finding's own logged `location` text against the room's label —
 // the same field this tab's "room" sort already groups by, and a more direct room-
 // identity signal than a trade category (a bedroom and a living room can both be
 // "Interior"). Only when a finding has NO location logged do we fall back to
-// `reportSystem()` — the SAME resolver the Findings list/PDF already group by, not a
+// the phone's system (SYSTEM_OF) — the SAME grouping the Report tab and the PDF use, not a
 // parallel counting mechanism — matched against the room's `systemId` (from the app's
 // systemForUnit) or, failing that, the room's plain label.
 function normKey(s?: string): string { return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
@@ -296,7 +276,7 @@ function anomalyInRoom(a: Anomaly, room: FPRoom): boolean {
   const loc = normKey(a.location);
   const label = normKey(room.label);
   if (loc) return !!label && textOverlap(loc, label);
-  const sys = normKey(reportSystem(a));
+  const sys = normKey(SYSTEM_OF.get(a)?.id ?? 'general');
   return textOverlap(sys, normKey(room.systemId)) || textOverlap(sys, label);
 }
 function floorLabel(floor?: number | string): string {
@@ -2016,15 +1996,10 @@ function FullReportFrame({ doc, frameRef, onSections, title = 'Inspection Report
 function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; record: HomeRecord; onTabChange: (t: Tab) => void }) {
   const [view, setView] = useState<'full' | 'summary'>('full');
   const C: RC = { ink: '#1f2937', sub: '#6b7280', line: '#e5e7eb', accent: '#0e7490' };
-  const groups = new Map<string, Anomaly[]>();
-  for (const a of anomalies) {
-    const s = reportSystem(a);
-    if (!groups.has(s)) groups.set(s, []);
-    groups.get(s)!.push(a);
-  }
-  const sections = REPORT_SYS_ORDER.filter(s => groups.has(s)).map(s => ({
-    system: s,
-    items: groups.get(s)!.slice().sort((x, y) => prioRank(x.severity) - prioRank(y.severity)),
+  // The phone's PDF grouping: its system list, then component (worst first), worst finding first.
+  const sections = findingSections(anomalies, record.reportGroups).map(sec => ({
+    system: sec.label, systemId: sec.systemId, components: sec.components,
+    items: sec.components.flatMap(c => c.findings),
   }));
   const slug = (s: string) => 'rpt-' + s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2146,7 +2121,7 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
           <span style={{ flex: 1 }}>Inspection Details</span>
         </button>
         {sections.map(sec => (
-          <button key={sec.system} onClick={() => jump(slug(sec.system))}
+          <button key={sec.systemId} onClick={() => jump(slug(sec.systemId))}
             style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', borderBottom: `1px solid ${C.line}`, padding: '13px 16px', color: C.ink, fontSize: 13.5, fontWeight: 500, fontFamily: SERIF, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}>
             <span style={{ flex: 1 }}>{sec.system}</span>
             <span style={{ fontFamily: MONO, color: C.sub, fontSize: 10, fontWeight: 500, flexShrink: 0 }}>{sec.items.length}</span>
@@ -2214,12 +2189,17 @@ function ReportTab({ anomalies, record, onTabChange }: { anomalies: Anomaly[]; r
               {sections.length === 0 ? (
                 <div style={{ color: C.sub, fontSize: 14, textAlign: 'center', padding: '48px 0' }}>No findings were recorded for this inspection.</div>
               ) : sections.map((sec, i) => (
-                <section key={sec.system} id={slug(sec.system)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
+                <section key={sec.systemId} id={slug(sec.systemId)} style={{ scrollMarginTop: 56, paddingTop: 28 }}>
                   <h2 style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, margin: '0 0 12px', borderBottom: `1px solid ${C.ink}`, paddingBottom: 8, display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     <span>{sec.system}</span>
                     <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: 10, color: C.sub, fontWeight: 500, letterSpacing: '0.08em' }}>{sec.items.length} FINDING{sec.items.length !== 1 ? 'S' : ''}</span>
                   </h2>
-                  {sec.items.map((a, j) => <ReportRow key={a.id ?? j} a={a} C={C} />)}
+                  {sec.components.map((c, k) => (
+                    <div key={k}>
+                      {c.component ? <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#475569', margin: '10px 0 8px 2px' }}>{c.component}{c.findings.length > 1 ? <span style={{ color: C.sub, fontWeight: 500, marginLeft: 7 }}>{c.findings.length}</span> : null}</div> : null}
+                      {c.findings.map((a, j) => <ReportRow key={a.id ?? j} a={a} C={C} />)}
+                    </div>
+                  ))}
                 </section>
               ))}
             </>
@@ -3126,6 +3106,7 @@ export default function SharePage() {
       if (!rec?.share_id) { setNotFound(true); return; }
       PORTAL_SCOPE = rec.access === 'read' ? 'read' : 'edit';
       const canonicalId = rec.share_id;
+      indexSystems(rec);
       setRecord(rec);
       setShareId(canonicalId);
       await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId), loadFloorPlan(canonicalId)]).catch(() => {});

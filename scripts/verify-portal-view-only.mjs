@@ -93,6 +93,8 @@ registerHooks({
       return { url: STUB, shortCircuit: true };
     }
     if (spec.startsWith('@/lib/')) return { url: pathToFileURL(join(repo, spec.slice(2) + '.ts')).href, shortCircuit: true };
+    // The page's own lib import (findings by system, 2026-11-04), resolved from the repo, not the cache dir.
+    if (spec.endsWith('/lib/report/findingSections')) return { url: pathToFileURL(join(repo, 'lib/report/findingSections.ts')).href, shortCircuit: true };
     return next(spec, ctx);
   },
 });

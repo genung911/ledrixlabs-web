@@ -91,7 +91,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       // The app used to publish each finding as a spread of the device row, so stored rows can still hold inspector
       // notes, the dictation transcript, the unprinted second concern and AI confidence. Whatever is stored, only the
       // homeowner-facing fields leave this server (lib/publishedRecord.ts — a byte-identical copy of the app's).
-      return NextResponse.json({ ...rec, anomalies: publishedFindings(rec.anomalies), specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
+      const anomalies = publishedFindings(rec.anomalies);
+      // ── FINDINGS BY SYSTEM, AS THE PDF GROUPS THEM (owner 2026-11-04: "Keep like PDF so website and PDF match") ──
+      // The Report tab's fallback (no published report HTML yet) and its summary lay findings out with the phone's own
+      // grouping — ledrix-app findingGroups.ts through the report bundle — never a section list of the website's.
+      // Computed from the published fields alone; a bundle that will not load sends none, and the page files every
+      // finding under General rather than drop one (lib/report/findingSections.ts).
+      let reportGroups: unknown = null;
+      try { reportGroups = (await import('../../../../lib/report/render.mjs')).groupReportFindings(anomalies as Record<string, any>[]); }
+      catch { reportGroups = null; }
+      return NextResponse.json({ ...rec, anomalies, reportGroups, specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
     }
 
     // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old
