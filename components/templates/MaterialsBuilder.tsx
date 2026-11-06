@@ -8,9 +8,9 @@ import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { itemSummary, ops } from '@/lib/templates/editorModel';
-import { addMaterialOps, materialLayoutOf, removeMaterialOps, type MaterialQuestion } from '@/lib/templates/materialLayout';
+import { addMaterialOps, materialLayoutOf, removeMaterialOps, switchMaterialOnOps, type MaterialQuestion } from '@/lib/templates/materialLayout';
 import { rulesFor } from './phonePreviewModel';
-import { btn, field } from './ui';
+import { Pill, Toggle, btn, field } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
 
@@ -68,37 +68,40 @@ function AddItem({ label, onAdd, disabled }: { label: string; onAdd: (name: stri
   );
 }
 
-/** One materials question: a row per answer → the card it brings; "+ Add material"; remove (asks first). */
+/** One materials question: a row per answer → the card it brings, each with an On/Off switch; the Off materials under the
+ *  list, still shown and marked Off (owner 2026-11-06, mockup LZNLt31XvGjAnMrhhmWL2t); "+ Add material". */
 export function MaterialQuestionRows({ q, tree, system, onOps, onOpen, selected, disabled }: {
   q: MaterialQuestion; tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
   const [name, setName] = useState('');
-  const [removing, setRemoving] = useState<string | null>(null);
-  const row = (value: string, card: TemplateNode | null, typed = false) => (
-    <li key={value} className={`flex items-center gap-2 px-3 py-1.5 ${card && selected === card.id ? 'bg-accent/10' : ''}`}>
-      <span className="w-36 flex-none truncate text-sm font-semibold text-ink" title={value}>{value}</span>
+  const row = (value: string, card: TemplateNode | null, sw: React.ReactNode, off = false) => (
+    <li key={`${off ? 'off:' : ''}${value}`} className={`flex items-center gap-2 px-3 py-1.5 ${card && selected === card.id ? 'bg-accent/10' : ''}`}>
+      <span className={`w-36 flex-none truncate text-sm font-semibold ${off ? 'text-muted' : 'text-ink'}`} title={value}>{value}</span>
       {card ? (
         <button className="min-w-0 flex-1 truncate text-left text-xs text-muted hover:text-ink" onClick={() => onOpen(card.id)}>
-          → <span className="text-sm text-ink">{card.label}</span> · {itemSummary(card)}</button>
+          → <span className={`text-sm ${off ? 'text-muted' : 'text-ink'}`}>{card.label}</span> · {off ? 'not offered to the inspector' : itemSummary(card)}</button>
       ) : <span className="min-w-0 flex-1 text-xs text-muted">No condition card</span>}
-      {!typed && removing !== value && <button type="button" aria-label={`Remove ${value}`} disabled={disabled} className="px-1 text-xs text-muted hover:text-ink" onClick={() => setRemoving(value)}>Remove</button>}
-      {!typed && removing === value && (
-        <span className="flex flex-none items-center gap-1.5 text-xs">
-          <span className="text-body">{card ? `Remove ${value} and switch its card off?` : `Remove ${value}?`}</span>
-          <button type="button" className={btn.secondary + ' px-2 py-0.5 text-xs'} disabled={disabled} onClick={() => { if (onOps(removeMaterialOps(q, value))) setRemoving(null); }}>Remove</button>
-          <button type="button" className={btn.ghost + ' px-2 py-0.5 text-xs'} onClick={() => setRemoving(null)}>Cancel</button>
-        </span>
-      )}
+      {off && <Pill tone="warn">Off</Pill>}
+      {sw ?? <span className="w-9 flex-none" aria-hidden />}
     </li>
   );
+  const label = q.attr.label || q.node.label;
   return (
     <div>
       <ul className="divide-y divide-hairline">
-        {q.rows.map(r => row(r.value, r.card))}
-        {q.typed && row('Other (typed)', q.typed, true)}
+        {q.rows.map(r => row(r.value, r.card,
+          <Toggle on label={`${r.value} in ${label}`} disabled={disabled} onChange={v => { if (!v) onOps(removeMaterialOps(q, r.value)); }} />))}
+        {q.typed && row('Other (typed)', q.typed, null)}
       </ul>
-      <form className="flex flex-wrap items-center gap-1.5 px-3 py-2" onSubmit={e => { e.preventDefault(); const o = addMaterialOps(tree, system, q, name); if (o.length && onOps(o)) setName(''); }}>
-        <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label={`New material for ${q.attr.label || q.node.label}`}
+      {q.off.length > 0 && (<>
+        <p className="border-t border-hairline px-3 pb-0.5 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Off · {q.off.length}</p>
+        <ul className="divide-y divide-hairline" aria-label={`${label} switched off`}>
+          {q.off.map(o => row(o.value, o.card,
+            <Toggle on={false} label={`${o.value} in ${label}`} disabled={disabled} onChange={v => { if (v) onOps(switchMaterialOnOps(q, o)); }} />, true))}
+        </ul>
+      </>)}
+      <form className="flex flex-wrap items-center gap-1.5 border-t border-hairline px-3 py-2" onSubmit={e => { e.preventDefault(); const o = addMaterialOps(tree, system, q, name); if (o.length && onOps(o)) setName(''); }}>
+        <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label={`New material for ${label}`}
           placeholder="+ Add material" className={`${field} min-w-[10rem] flex-1 py-1.5`} />
         <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !name.trim()}>Add</button>
         <button type="button" className={btn.ghost + ' px-2 py-1 text-xs'} onClick={() => onOpen(q.node.id)}>Edit the question</button>

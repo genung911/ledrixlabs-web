@@ -73,3 +73,21 @@ export function moveOps(tree: InspectionTemplate, id: string, parentId: string, 
   if (target.id === w.parent.id && at === now) return [];
   return ops.move(id, parentId, at);
 }
+
+/** "+ New group" (owner 2026-11-06, mockup LZNLt31XvGjAnMrhhmWL2t, "mock up approved"): a new group at the end of
+ *  `systemId`, and the item as its first — ONE change set, so one undo takes both back, and nothing exists until Move.
+ *  Empty for a group being moved (a group moves into a system), a copied system, a blank name, or a name the system
+ *  already has as a group (that group is chosen instead). */
+export function newGroupClash(tree: InspectionTemplate, systemId: string, name: string): TemplateNode | null {
+  const s = (tree.systems ?? []).find(x => x.id === systemId);
+  const n = name.trim().toLowerCase();
+  return s && n ? (s.children ?? []).find(c => c.kind === 'subsystem' && c.label.trim().toLowerCase() === n) ?? null : null;
+}
+export function moveIntoNewGroupOps(tree: InspectionTemplate, id: string, systemId: string, name: string): TemplateOp[] {
+  const w = whereIs(tree, id);
+  const s = (tree.systems ?? []).find(x => x.id === systemId);
+  if (!w || w.node.kind !== 'component' || !s || isCopy(s.id) || !name.trim() || newGroupClash(tree, systemId, name)) return [];
+  const add = ops.addItem(tree, systemId, systemId, name, 'subsystem');
+  const gid = (add[0] as { node: TemplateNode }).node.id;
+  return [...add, ...ops.move(id, gid, 0)];
+}

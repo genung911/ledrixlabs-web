@@ -791,6 +791,21 @@ async function runTypes(files) {
       r('materials: removing a material takes the answer out and switches its card off (restorable) — one change set',
         rm.ok && !!pvcCard && !mq().attr.values.includes('PVC') && !live.includes(pvcCard.id)
         && JSON.stringify(msys()).includes(`"id":"${pvcCard.id}"`));
+      // Owner 2026-11-06 (mockup LZNLt31XvGjAnMrhhmWL2t, "mock up approved"): an Off material stays listed, and comes back.
+      r('materials: a switched-off material stays listed as Off with its card (Ledrix\'s PVC), and nothing on is listed Off',
+        mq().off.length === 1 && mq().off[0].value === 'PVC' && mq().off[0].card.id === pvcCard?.id && !mq().rows.some(x => x.value === 'PVC'));
+      const nOn = dm.log.length;
+      const on = E.applyManual(dm, ML.switchMaterialOnOps(mq(), mq().off[0]), OWNER, 3300); if (on.ok) dm = on.draft;
+      const live2 = []; const w2 = (n) => { live2.push(n.id); (n.children ?? []).forEach(w2); }; msys().children.forEach(w2);
+      r('materials: switching it on puts the answer back (at the end) and its card back on — one change set — and it leaves the Off list',
+        on.ok && dm.log.length === nOn + 1 && mq().attr.values[mq().attr.values.length - 1] === 'PVC' && live2.includes(pvcCard?.id) && mq().off.length === 0
+        && mq().rows.find(x => x.value === 'PVC')?.card?.id === pvcCard?.id);
+      const bo = E.applyManual(dm, ML.removeMaterialOps(mq(), 'Brass'), OWNER, 3400); if (bo.ok) dm = bo.draft;
+      const brassOff = mq().off.find(x => x.value === 'Brass');
+      const again = ML.addMaterialOps(dm.tree, msys(), mq(), 'brass');
+      r('materials: a company material (Brass) switched off is listed Off too, and adding "brass" again switches that one on — no second card',
+        bo.ok && brassOff?.card.label === 'Brass Supply Piping' && JSON.stringify(again) === JSON.stringify(ML.switchMaterialOnOps(mq(), brassOff))
+        && !again.some(o => o.op === 'addNode'));
     // ── MOVE TO… (owner 2026-11-05, mockup XtoreixMRS7sZ4YyKMTUqp, "Yes on all 3. Approved") ──
     {
       const MV = await import(pathToFileURL(join(dir, 'moveModel.ts')).href);
@@ -825,6 +840,20 @@ async function runTypes(files) {
       r('move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay',
         !tg.some(x => x.system.id === 'plumbing~2') && tg.find(x => x.system.id === 'attic').homes.every(h => h.kind === 'subsystem')
         && /copied system/.test(MV.moveBlock(cp, 'plumb_copy_item~2', isUnit, () => false) ?? ''));
+      // "+ New group" (owner 2026-11-06, mockup LZNLt31XvGjAnMrhhmWL2t): Safety has only groups, so Gas Supply needs one.
+      const GAS = 'attic_moisture';
+      const ng = MV.moveIntoNewGroupOps(dv.tree, GAS, 'safety', 'Gas');
+      const nN = dv.log.length;
+      const nv = E.applyManual(dv, ng, OWNER, 4300); if (nv.ok) dv = nv.draft;
+      const safety = dv.tree.systems.find(x => x.id === 'safety'), last = safety?.children?.[safety.children.length - 1];
+      r('move: "+ New group" adds the group at the end of the system with the item as its first — ONE change set',
+        nv.ok && ng.length === 2 && dv.log.length === nN + 1 && last?.kind === 'subsystem' && last.label === 'Gas'
+        && last.children?.[0]?.id === GAS && MV.whereIs(dv.tree, GAS)?.parent.id === last.id);
+      const det = safety?.children?.find(c => c.kind === 'subsystem' && c.id !== last?.id);
+      r('move: a name the system already has as a group is that group (no duplicate); a group, a copied system or a blank name makes nothing',
+        !!det && MV.newGroupClash(dv.tree, 'safety', ` ${det.label.toUpperCase()} `)?.id === det.id && MV.moveIntoNewGroupOps(dv.tree, FAN, 'safety', det.label).length === 0
+        && MV.moveIntoNewGroupOps(dv.tree, 'interior__stairs_railings', 'safety', 'Stairs').length === 0
+        && MV.moveIntoNewGroupOps(cp, 'attic_moisture', 'plumbing~2', 'X').length === 0 && MV.moveIntoNewGroupOps(dv.tree, FAN, 'safety', '  ').length === 0);
     }
     }
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
@@ -1036,14 +1065,17 @@ const RULES = {
   },
   'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': all => {
     const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
-    return /onOps\(removeMaterialOps\(q, value\)\)/.test(mb) && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
-      && !/op: '/.test(mb) && /removing === value &&/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+    // Owner 2026-11-06 (mockup LZNLt31XvGjAnMrhhmWL2t): Remove is an On/Off switch, and an Off material stays listed.
+    return /if \(!v\) onOps\(removeMaterialOps\(q, r\.value\)\)/.test(mb) && /if \(v\) onOps\(switchMaterialOnOps\(q, o\)\)/.test(mb) && /\{q\.off\.length > 0 && \(<>/.test(mb)
+      && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
+      && !/op: '/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
       && /disabled: \(disabled && 'The draft can’t change right now\.'\) \|\| moveBlockFor\(tree, id\) \|\| false/.test(w)
-      && /const o = home \? moveOps\(tree, nodeId, home\.id, after\) : \[\];/.test(d) && /onClick=\{\(\) => \{ if \(onOps\(o\)\)/.test(d) && !/op: '/.test(d) ? [] : ['components/templates/Workspace.tsx'];
+      && /const o = fresh \? moveIntoNewGroupOps\(tree, nodeId, t!\.system\.id, newGroup!\) : home \? moveOps\(tree, nodeId, home\.id, after\) : \[\];/.test(d)
+      && /onSubmit=\{e => \{ e\.preventDefault\(\); addGroup\(\); \}\}/.test(d) && /onClick=\{\(\) => \{ if \(onOps\(o\)\)/.test(d) && !/op: '/.test(d) ? [] : ['components/templates/Workspace.tsx'];
   },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
@@ -1228,15 +1260,18 @@ const MUT = {
   'only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none': rep('components/templates/SpecialHomesPanel.tsx', 'specialRows(tree, system, source).filter(r => own.has(r.kind))', 'specialRows(tree, system, source)'),
   'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': rep('components/templates/HomeKinds.tsx', 'if (!added.length && !removedActive.length) { onOps(fields); setPending(null); return; }', 'onOps(fields); setPending(null); return;'),
   'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': rep('components/templates/EditorParts.tsx', 'const byMaterials = !typeView && !fullList;', 'const byMaterials = false;'),
-  'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': rep('components/templates/MaterialsBuilder.tsx', "onClick={() => { if (onOps(removeMaterialOps(q, value))) setRemoving(null); }}", "onClick={() => { onOps([{ op: 'removeAttribute', nodeId: q.node.id, attrId: q.attr.id }]); }}"),
+  'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': rep('components/templates/MaterialsBuilder.tsx', "if (!v) onOps(removeMaterialOps(q, r.value));", "if (!v) onOps([{ op: 'removeAttribute', nodeId: q.node.id, attrId: q.attr.id }]);"),
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': rep('components/templates/Workspace.tsx', "|| moveBlockFor(tree, id) || false", "|| false"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
+  ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) : home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
+  ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) :', "const o = fresh ? [{ op: 'addNode', parentId: t!.system.id, node: { id: 'g', label: newGroup!, kind: 'subsystem' } }] as TemplateOp[] :"), 'the dialog makes the new group with its own op'],
+  ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'onSubmit={e => { e.preventDefault(); addGroup(); }}', 'onSubmit={e => { e.preventDefault(); }}'), '"+ New group" does nothing'],
   ['materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows', rep('components/templates/TypeBuilder.tsx', 'if (mq) return section(', 'if (false) return section('), 'Electrical\'s wiring section goes back to a plain list'],
-  ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', '{!typed && removing === value && (', '{!typed && (removing === value || true) && ('), 'Remove no longer asks first'],
+  ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', '{q.off.length > 0 && (<>', '{false && (<>'), 'an Off material disappears again'],
+  ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', 'if (v) onOps(switchMaterialOnOps(q, o));', 'if (v) onOps(removeMaterialOps(q, o.value));'), 'switching a material on does nothing'],
   ['only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none', rep('components/templates/SpecialHomesPanel.tsx', '|| rows.every(r => r.inTemplate)) return null;', ') return null;'), 'the card stays when there is nothing left to add'],
   ['only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)', rep('components/templates/HomeKinds.tsx', "...(off ? switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp) : [])", "...switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp)"), '"Keep them" switches the checkpoints off anyway'],
   ['ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)', rep(EDIT, "{ASK_LEDRIX && <div role=\"tablist\" aria-label=\"Editor mode\"", "{true && <div role=\"tablist\" aria-label=\"Editor mode\""), 'the Editor / Ask Ledrix tabs show again'],
@@ -1331,6 +1366,11 @@ const EXEC_MUT = [
   { name: 'the grid writes the full set instead of the ticked one', file: 'typeLayout.ts', from: "[{ field: layout.question.field, anyOf: values }]", to: "[{ field: layout.question.field, anyOf: allow }]", check: "types: after the untick the phone's resolver and the grid agree for EVERY type", run: runTypes },
   { name: 'add-for-type shows before the type is answered', file: 'typeLayout.ts', from: ", whenUnknown: 'hide' } as TemplateNode", to: " } as TemplateNode", check: 'types: "+ Add item for <type>" adds ONE item that shows only for that type, hidden until the type is answered', run: runTypes },
   { name: 'the preview answer uses another key', file: 'typeLayout.ts', from: "? { key: layout.question.field, value }", to: "? { key: layout.question.nodeId + '::x', value }", check: "types: the preview, answered with the chosen type, shows that type's items and none of another type's", run: runTypes },
+  { name: 'an Off material is no longer listed', file: 'materialLayout.ts', from: "if (values.length === 1 && !q.attr.values.some(v => brings(v)) && !brings(TYPED_PROBE)) q.off.push", to: "if (false) q.off.push", check: "materials: a switched-off material stays listed as Off with its card (Ledrix's PVC), and nothing on is listed Off", run: runTypes },
+  { name: 'switching a material on leaves its card off', file: 'materialLayout.ts', from: "[...ops.fieldValues(q.node.id, q.attr, [...q.attr.values, off.value]), ...ops.restore(off.card.id)]", to: "[...ops.fieldValues(q.node.id, q.attr, [...q.attr.values, off.value])]", check: 'materials: switching it on puts the answer back (at the end) and its card back on — one change set — and it leaves the Off list', run: runTypes },
+  { name: 'adding an Off material makes a second card', file: 'materialLayout.ts', from: "if (was) return switchMaterialOnOps(q, was);", to: "", check: 'materials: a company material (Brass) switched off is listed Off too, and adding "brass" again switches that one on — no second card', run: runTypes },
+  { name: 'the new group is made but the item stays put', file: 'moveModel.ts', from: "return [...add, ...ops.move(id, gid, 0)];", to: "return add;", check: 'move: "+ New group" adds the group at the end of the system with the item as its first — ONE change set', run: runTypes },
+  { name: 'a duplicate group name makes a second group', file: 'moveModel.ts', from: "!name.trim() || newGroupClash(tree, systemId, name)) return [];", to: "!name.trim()) return [];", check: 'move: a name the system already has as a group is that group (no duplicate); a group, a copied system or a blank name makes nothing', run: runTypes },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 for (const m of EXEC_MUT) {

@@ -11,7 +11,8 @@
 //   2. CHECKED IN EVERY HOME — everything else in the group.
 // Which card each answer brings is the phone's own resolver over the effective rules (typeLayout.showsFor), never a
 // guess from names. "+ Add material" adds the answer and its card (shown only for that answer) as one change set;
-// removing a material switches its card off with it. PURE: no React, no store, no clock.
+// switching a material Off takes its answer out and switches its card off; it stays listed as Off, and switching it on
+// brings both back (owner 2026-11-06). PURE: no React, no store, no clock.
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import type { RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
@@ -20,7 +21,10 @@ import { indexTree, predsOf, showsFor } from './typeLayout';
 
 type Attr = NonNullable<TemplateNode['attributes']>[number];
 export type MaterialRow = { value: string; card: TemplateNode | null };
-export type MaterialQuestion = { node: TemplateNode; attr: Attr; field: string; rows: MaterialRow[]; typed: TemplateNode | null; cards: TemplateNode[] };
+/** A material switched OFF (owner 2026-11-06, mockup LZNLt31XvGjAnMrhhmWL2t): its answer is out of the question and its
+ *  card is in the Off list — found from that card, which still says which answer brings it. */
+export type OffMaterial = { value: string; card: TemplateNode };
+export type MaterialQuestion = { node: TemplateNode; attr: Attr; field: string; rows: MaterialRow[]; typed: TemplateNode | null; cards: TemplateNode[]; off: OffMaterial[] };
 export type MaterialGroup = { node: TemplateNode; questions: MaterialQuestion[]; materials: TemplateNode[]; every: TemplateNode[] };
 
 const TYPED_PROBE = '\u0000typed answer';
@@ -47,7 +51,28 @@ export function materialLayoutOf(tree: InspectionTemplate, system: TemplateNode,
     const typedCards = brings(TYPED_PROBE).filter(x => !per.some(r => r.cards.includes(x)));
     const cards = [...new Set([...per.flatMap(r => r.cards), ...typedCards])];
     if (cards.length < 2) continue;
-    questions.push({ node: n, attr: a, field, rows: per.map(r => ({ value: r.value, card: r.cards[0] ?? null })), typed: typedCards[0] ?? null, cards });
+    questions.push({ node: n, attr: a, field, rows: per.map(r => ({ value: r.value, card: r.cards[0] ?? null })), typed: typedCards[0] ?? null, cards, off: [] });
+  }
+
+  // Switched-off materials: a card in the system's Off list whose rule brings it for exactly one answer that is no longer
+  // in the question — and for none that is (so a card switched off on its own, with its answer still listed, is not one).
+  const offCards: TemplateNode[] = [];
+  const pockets = (n: TemplateNode) => { for (const t of n.trimmed ?? []) { const w = (x: TemplateNode) => { if (x.kind === 'component') offCards.push(x); (x.children ?? []).forEach(w); }; w(t); } (n.children ?? []).forEach(pockets); };
+  pockets(system);
+  for (const q of questions) {
+    const has = (v: string) => q.attr.values.some(x => x.toLowerCase() === v.toLowerCase());
+    for (const c of offCards) {
+      if (q.off.some(o => o.card.id === c.id)) continue;
+      const p = predsOf(defs, c.id, byId).filter(x => x.key === q.field);
+      const own = (c as TemplateNode & { appliesWhen?: { field?: string; anyOf?: unknown } }).appliesWhen;
+      const named = [
+        ...p.flatMap(x => { const i = (x.p as { includes?: unknown }).includes; return Array.isArray(i) ? i : typeof i === 'string' ? [i] : []; }),
+        ...(own?.field === q.field && Array.isArray(own.anyOf) ? own.anyOf : []),
+      ].map(String).filter(v => v.trim() && !has(v));
+      const brings = (v: string) => p.length ? showsFor(p, c.id, q.field, v) : (own?.field === q.field && Array.isArray(own.anyOf) && own.anyOf.map(String).includes(v));
+      const values = [...new Set(named)].filter(v => brings(v));
+      if (values.length === 1 && !q.attr.values.some(v => brings(v)) && !brings(TYPED_PROBE)) q.off.push({ value: values[0], card: c });
+    }
   }
 
   const groupIds = [system.id, ...rows.filter(r => r.node.kind === 'subsystem').map(r => r.node.id)];
@@ -85,6 +110,9 @@ export function cardStem(q: MaterialQuestion): string {
 export function addMaterialOps(tree: InspectionTemplate, system: TemplateNode, q: MaterialQuestion, value: string): TemplateOp[] {
   const v = value.trim();
   if (!v || q.attr.values.some(x => x.toLowerCase() === v.toLowerCase())) return [];
+  // A material that is Off comes back on — never a second card for the same material.
+  const was = q.off.find(o => o.value.toLowerCase() === v.toLowerCase());
+  if (was) return switchMaterialOnOps(q, was);
   const stem = cardStem(q);
   const label = stem ? `${v} ${stem}` : v;
   const parentId = flatItems(system).find(r => r.node.id === q.node.id)?.parentId ?? system.id;
@@ -102,7 +130,15 @@ export function addMaterialOps(tree: InspectionTemplate, system: TemplateNode, q
   ];
 }
 
-/** Removing a material: the answer leaves the question and the card it brings is switched off (restorable) — ONE change set. */
+/** Switching a material back ON: its answer returns to the end of the question and its card comes back where it was —
+ *  ONE change set. */
+export function switchMaterialOnOps(q: MaterialQuestion, off: OffMaterial): TemplateOp[] {
+  if (q.attr.values.some(x => x.toLowerCase() === off.value.toLowerCase())) return [];
+  return [...ops.fieldValues(q.node.id, q.attr, [...q.attr.values, off.value]), ...ops.restore(off.card.id)];
+}
+
+/** Switching a material OFF: the answer leaves the question and the card it brings is switched off (restorable) — ONE
+ *  change set. It then shows in the question's Off list (`off`), not gone. */
 export function removeMaterialOps(q: MaterialQuestion, value: string): TemplateOp[] {
   if (!q.attr.values.includes(value)) return [];
   const card = q.rows.find(r => r.value === value)?.card ?? null;
