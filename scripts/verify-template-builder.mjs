@@ -123,6 +123,7 @@ const sourceFiles = () => Object.fromEntries([
   // BUILT BY TYPE (2026-11-05): the layout, and the preview's own rule capture it reads (one source with the phone).
   ['typeLayout.ts', read('lib/templates/typeLayout.ts')],
   ['materialLayout.ts', read('lib/templates/materialLayout.ts')],
+  ['moveModel.ts', read('lib/templates/moveModel.ts')],
   ['phonePreviewModel.ts', read('components/templates/phonePreviewModel.ts')],
   ['core/ledrixRules.json', read('lib/templateBuilder/core/ledrixRules.json')],
 ]);
@@ -790,6 +791,41 @@ async function runTypes(files) {
       r('materials: removing a material takes the answer out and switches its card off (restorable) — one change set',
         rm.ok && !!pvcCard && !mq().attr.values.includes('PVC') && !live.includes(pvcCard.id)
         && JSON.stringify(msys()).includes(`"id":"${pvcCard.id}"`));
+    // ── MOVE TO… (owner 2026-11-05, mockup XtoreixMRS7sZ4YyKMTUqp, "Yes on all 3. Approved") ──
+    {
+      const MV = await import(pathToFileURL(join(dir, 'moveModel.ts')).href);
+      const PACKJ = JSON.parse(read('lib/scope/core/taxonomy/ledrix.core.json'));
+      const UNITS = new Set(PACKJ.systems.flatMap(x => x.nodes.filter(n => n.establishesAs).map(n => n.id)));
+      const isUnit = id => UNITS.has(String(id).replace(/~i\d+.*$/, ''));
+      let dv = T.createDraft({ companyId: 'co_1', templateId: 'tpl_mv', live: clone(DEFAULT_TREE), now: 4000 });
+      const copyItem = (t) => (id) => { const w = MV.whereIs(t, id); const L = w ? TL.typeLayoutOf(t, w.system, PM.rulesFor(t)) : null; return !!L && !!TL.copyGroupOf(L, id); };
+      const FAN = 'primary_bathroom_exhaust_fan';
+      const fanBefore = JSON.stringify(MV.whereIs(dv.tree, FAN)?.node);
+      const n0 = dv.log.length;
+      const mo = MV.moveOps(dv.tree, FAN, 'attic__ventilation', 'attic_fan_term');
+      const mv = E.applyManual(dv, mo, OWNER, 4100); if (mv.ok) dv = mv.draft;
+      const at = MV.whereIs(dv.tree, FAN), kids = (at?.parent.children ?? []).map(c => c.id);
+      r('move: the fan moves into Attic › Ventilation right after the fan termination, as ONE change, carrying everything it had',
+        mo.length === 1 && mv.ok && dv.log.length === n0 + 1 && at?.system.id === 'attic' && at.parent.id === 'attic__ventilation'
+        && kids[kids.indexOf('attic_fan_term') + 1] === FAN && JSON.stringify(at.node) === fanBefore);
+      const iv = MV.whereIs(dv.tree, 'interior__ventilation');
+      r('move: the group it left stays, empty, for the company to switch off, rename or fill', !!iv && (iv.node.children ?? []).length === 0);
+      const top = MV.moveOps(dv.tree, 'attic_powered', 'attic__ventilation', null);
+      r('move: "at the top" is the first place; moving to where it already is changes nothing',
+        top.length === 1 && top[0].index === 0 && MV.moveOps(dv.tree, FAN, 'attic__ventilation', 'attic_fan_term').length === 0);
+      const gm = MV.moveOps(dv.tree, 'interior__stairs_railings', 'attic', 'attic__ventilation');
+      const gv = E.applyManual(dv, gm, OWNER, 4200); if (gv.ok) dv = gv.draft;
+      r('move: a group moves into another system as one change', gv.ok && MV.whereIs(dv.tree, 'interior__stairs_railings')?.system.id === 'attic');
+      const blk = (id) => MV.moveBlock(dv.tree, id, isUnit, copyItem(dv.tree));
+      r('move: units, a group holding one, a link and a count copy cannot move — and say why; an ordinary item can',
+        /Units stay/.test(blk('hvac_furnace') ?? '') && /holds .* a unit/.test(blk('heating__heating_plant') ?? '') && /link/.test(blk('cooling__link_hvac_thermostat') ?? '')
+        && /count/.test(blk('hvac_ms_head_2') ?? '') && blk('attic_moisture') === null && blk(FAN) === null);
+      const cp = clone(dv.tree); const pl = clone(cp.systems.find(x => x.id === 'plumbing')); pl.id = 'plumbing~2'; pl.label = 'Plumbing 2'; pl.children[0].children[0].id = 'plumb_copy_item~2'; cp.systems.push(pl);
+      const tg = MV.moveTargets(cp, 'attic_moisture');
+      r('move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay',
+        !tg.some(x => x.system.id === 'plumbing~2') && tg.find(x => x.system.id === 'attic').homes.every(h => h.kind === 'subsystem')
+        && /copied system/.test(MV.moveBlock(cp, 'plumb_copy_item~2', isUnit, () => false) ?? ''));
+    }
     }
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
       typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.length > 0 && L.every.every(n => ruleFree(n.id)))
@@ -1003,6 +1039,12 @@ const RULES = {
     return /onOps\(removeMaterialOps\(q, value\)\)/.test(mb) && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
       && !/op: '/.test(mb) && /removing === value &&/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
+  'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
+    const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
+    return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
+      && /disabled: \(disabled && 'The draft can’t change right now\.'\) \|\| moveBlockFor\(tree, id\) \|\| false/.test(w)
+      && /const o = home \? moveOps\(tree, nodeId, home\.id, after\) : \[\];/.test(d) && /onClick=\{\(\) => \{ if \(onOps\(o\)\)/.test(d) && !/op: '/.test(d) ? [] : ['components/templates/Workspace.tsx'];
+  },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
     const opsUsed = [...s.matchAll(/op: '(\w+)'/g)].map(m => m[1]);
@@ -1187,10 +1229,12 @@ const MUT = {
   'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': rep('components/templates/HomeKinds.tsx', 'if (!added.length && !removedActive.length) { onOps(fields); setPending(null); return; }', 'onOps(fields); setPending(null); return;'),
   'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': rep('components/templates/EditorParts.tsx', 'const byMaterials = !typeView && !fullList;', 'const byMaterials = false;'),
   'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': rep('components/templates/MaterialsBuilder.tsx', "onClick={() => { if (onOps(removeMaterialOps(q, value))) setRemoving(null); }}", "onClick={() => { onOps([{ op: 'removeAttribute', nodeId: q.node.id, attrId: q.attr.id }]); }}"),
+  'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': rep('components/templates/Workspace.tsx', "|| moveBlockFor(tree, id) || false", "|| false"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
   ['materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows', rep('components/templates/TypeBuilder.tsx', 'if (mq) return section(', 'if (false) return section('), 'Electrical\'s wiring section goes back to a plain list'],
   ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', '{!typed && removing === value && (', '{!typed && (removing === value || true) && ('), 'Remove no longer asks first'],
   ['only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none', rep('components/templates/SpecialHomesPanel.tsx', '|| rows.every(r => r.inTemplate)) return null;', ') return null;'), 'the card stays when there is nothing left to add'],
@@ -1240,6 +1284,9 @@ const EXEC_MUT = [
   { name: 'adding a material leaves Other showing for it', file: 'materialLayout.ts', from: "const narrowed = !q.typed ||", to: "const narrowed = true ||", check: 'materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set', run: runTypes },
   { name: 'removing a material leaves its card on', file: 'materialLayout.ts', from: "...(card ? ops.setAside(card.id) : [])", to: "", check: 'materials: removing a material takes the answer out and switches its card off (restorable) — one change set', run: runTypes },
   { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)', run: runTypes },
+  { name: 'a unit can be moved', file: 'moveModel.ts', from: "if (unit) return unit.id === n.id", to: "if (false) return unit.id === n.id", check: 'move: units, a group holding one, a link and a count copy cannot move — and say why; an ordinary item can', run: runTypes },
+  { name: 'a copied system is offered as a destination', file: 'moveModel.ts', from: "return (tree.systems ?? []).filter(s => !isCopy(s.id)).map(s => {", to: "return (tree.systems ?? []).map(s => {", check: 'move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay', run: runTypes },
+  { name: '"after X" lands one place off', file: 'moveModel.ts', from: "const at = afterId ? list.findIndex(c => c.id === afterId) + 1 : 0;", to: "const at = afterId ? list.findIndex(c => c.id === afterId) : 0;", check: 'move: the fan moves into Attic › Ventilation right after the fan termination, as ONE change, carrying everything it had', run: runTypes },
   { name: 'a starting point keeps the unpicked kinds switched off', file: 'startingPoints.ts', from: "const base = withoutSetAsideSpecials(tree);", to: "const base = tree;", check: 'only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group', run: runDesktop },
   { name: 'Older / Log are forgotten after creation', file: 'startingPoints.ts', from: "if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });", to: "", check: 'only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older', run: runDesktop },
   { name: 'a legacy cutoff year no longer means Older', file: 'core/specialHomes.ts', from: "const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';", to: "const legacyOlder = false;", check: 'only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older', run: runDesktop },

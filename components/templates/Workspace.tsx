@@ -12,7 +12,8 @@ import { requirementsOf } from '@/lib/templates/requirementModel';
 import { CommitInput, ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
-import { Pill, Toggle, btn, label } from './ui';
+import { Menu, Pill, Toggle, btn, label } from './ui';
+import { MoveToDialog, moveBlockFor } from './MoveTo';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -36,6 +37,12 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const sk = `${sel.systemId ?? ''}|${sel.nodeId ?? ''}`;
   // A switch turned ON with nothing behind it yet opens its empty tab for this item (it is "on" once something is added).
   const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
+  // "Move to…" (owner 2026-11-05, mockup XtoreixMRS7sZ4YyKMTUqp): the ⋯ menu on a group's and an item's title.
+  const [moving, setMoving] = useState<string | null>(null);
+  const moveMenu = (id: string) => (
+    <Menu label="More for this" items={[{ label: 'Move to…', onSelect: () => setMoving(id), disabled: (disabled && 'The draft can’t change right now.') || moveBlockFor(tree, id) || false }]} />
+  );
+  const moveDialog = moving && <MoveToDialog tree={tree} nodeId={moving} onOps={onOps} onClose={() => setMoving(null)} onMoved={sysId => onSelect({ systemId: sysId, nodeId: moving })} />;
   const system = sel.systemId ? tree.systems.find(s => s.id === sel.systemId) ?? null : null;
   const loc = sel.nodeId ? locate(tree, sel.nodeId) : null;
   // SWITCHED OFF (owner 2026-11-05): a set-aside system, group or item opens with its switch Off and what it holds; the
@@ -71,8 +78,10 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
     return (
       <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
         tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
+        menu={moveMenu(node.id)}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
+        {moveDialog}
       </Shell>
     );
   }
@@ -102,6 +111,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   return (
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
+      menu={moveMenu(node.id)}
       action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
@@ -114,6 +124,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       {cur === 'details' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
+      {moveDialog}
     </Shell>
   );
 }
@@ -155,8 +166,10 @@ function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; 
   );
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal, onRename, renameDisabled, tips }: {
+function Shell({ kind, title, sub, onClose, badge, tabs, action, menu, children, scrollKey, reveal, onRename, renameDisabled, tips }: {
   kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
+  /** The ⋯ menu beside the switch ("Move to…"). */
+  menu?: React.ReactNode;
   scrollKey: string; reveal?: Reveal | null;
   /** The name is edited in the title itself, behind a pencil — no separate Name box (owner 2026-11-05). */
   onRename?: (v: string) => void; renameDisabled?: boolean;
@@ -189,6 +202,7 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrol
           {badge && <div className="mt-1">{badge}</div>}
         </div>
         {action}
+        {menu}
         {onClose && <button aria-label="Close item" className={btn.icon} onClick={onClose} title="Back to the system">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
       </header>
