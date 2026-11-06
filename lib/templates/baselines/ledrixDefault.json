@@ -5431,13 +5431,13 @@
       "defaultActive": true,
       "children": [
         {
-          "id": "interior__surfaces",
-          "label": "Surfaces",
+          "id": "interior__walls_ceilings_floors",
+          "label": "Walls, Ceilings & Floors",
           "kind": "subsystem",
           "children": [
             {
               "id": "int_flooring",
-              "label": "Flooring Material",
+              "label": "Floors",
               "kind": "component",
               "keywords": [
                 "hardwood",
@@ -5475,7 +5475,6 @@
                     "Ceramic / Porcelain Tile",
                     "Carpet",
                     "Concrete",
-                    "LVP / Vinyl",
                     "Natural Stone",
                     "Sheet Vinyl",
                     "Other"
@@ -5486,35 +5485,6 @@
               "limitations": [
                 "Not Inspected"
               ]
-            },
-            {
-              "id": "int_wall_material",
-              "label": "Wall Material",
-              "kind": "component",
-              "keywords": [
-                "drywall",
-                "plaster",
-                "paneling",
-                "wallboard",
-                "shiplap",
-                "shower surround",
-                "tub surround",
-                "tile wall bath",
-                "grout wall",
-                "moisture wall bath"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Wall Material",
-                  "values": [
-                    "Drywall",
-                    "Plaster"
-                  ]
-                }
-              ],
-              "condition": true
             },
             {
               "id": "int_walls",
@@ -5531,7 +5501,30 @@
                 "garage wall",
                 "garage ceiling",
                 "water stain garage",
-                "drywall damage garage"
+                "drywall damage garage",
+                "plaster",
+                "paneling",
+                "wallboard",
+                "shiplap",
+                "shower surround",
+                "tub surround",
+                "tile wall bath",
+                "grout wall",
+                "moisture wall bath"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Wall Material",
+                  "values": [
+                    "Drywall",
+                    "Plaster",
+                    "Paneling",
+                    "Wood",
+                    "Tile",
+                    "Other"
+                  ]
+                }
               ],
               "trimmed": [],
               "condition": true,
@@ -5552,10 +5545,18 @@
               ],
               "trimmed": [],
               "condition": true
-            },
+            }
+          ],
+          "trimmed": []
+        },
+        {
+          "id": "interior__countertops_cabinets",
+          "label": "Countertops & Cabinets",
+          "kind": "subsystem",
+          "children": [
             {
               "id": "kit_counter",
-              "label": "Countertop Material",
+              "label": "Countertops",
               "kind": "component",
               "keywords": [
                 "granite",
@@ -5582,7 +5583,8 @@
                     "Marble",
                     "Tile",
                     "Solid Surface",
-                    "Concrete"
+                    "Concrete",
+                    "Other"
                   ]
                 }
               ],
@@ -5618,8 +5620,7 @@
               "trimmed": [],
               "condition": true
             }
-          ],
-          "trimmed": []
+          ]
         },
         {
           "id": "interior__doors_windows",

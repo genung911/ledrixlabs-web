@@ -41,21 +41,25 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
     <div className="space-y-3" aria-label="Materials first">
       {groups.map(g => {
         // Up to three parts, numbered as shown (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc): what is recorded (or the
-        // materials), what an answer brings, what every home gets. A part with nothing in it is not shown.
+        // materials), what an answer brings, what every home gets. A part with nothing in it is not shown, and a group of
+        // one part is not numbered; with nothing under "every home" only the Add box stays (owner 2026-11-06, Interior,
+        // mockup SqNS9bXgLH8HwppCXtwBPY).
         let k = 0;
         const parts = (g.questions.length > 0 ? 1 : 0) + (!g.questions.length && g.materials.length > 0 ? 1 : 0) + g.brought.length;
+        const shown = parts + (g.every.length > 0 ? 1 : 0);
+        const num = () => (shown > 1 ? ++k : null);
+        const add = <AddItem label={g.node.id === system.id ? system.label : g.node.label} disabled={disabled}
+          onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />;
         return (
           <section key={g.node.id} aria-label={g.node.label} className="overflow-hidden rounded-xl border border-hairline">
             <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{g.node.id === system.id ? system.label : g.node.label}</p>
-            {g.questions.map(q => stage(++k, q.attr.label || q.node.label, ' · the inspector ticks every one seen',
+            {g.questions.map(q => stage(num(), q.attr.label || q.node.label, ' · the inspector ticks every one seen',
               <MaterialQuestionRows key={q.field} q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />))}
-            {!g.questions.length && g.materials.length > 0 && stage(++k, 'Recorded', ' · the inspector picks an answer', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
-            {g.brought.map(b => <div key={b.field}>{stage(++k, `Brought by ${b.label}`, ' · shown only for these answers', <BroughtRows b={b} onOpen={onOpen} selected={selected} />)}</div>)}
-            {stage(parts ? ++k : null, 'Checked in every home', '', <>
-              <ul className="divide-y divide-hairline">{g.every.map(item)}</ul>
-              <AddItem label={g.node.id === system.id ? system.label : g.node.label} disabled={disabled}
-                onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />
-            </>)}
+            {!g.questions.length && g.materials.length > 0 && stage(num(), 'Recorded', ' · the inspector picks an answer', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
+            {g.brought.map(b => <div key={b.field}>{stage(num(), `Brought by ${b.label}`, ' · shown only for these answers', <BroughtRows b={b} onOpen={onOpen} selected={selected} />)}</div>)}
+            {g.every.length > 0
+              ? stage(num(), 'Checked in every home', '', <><ul className="divide-y divide-hairline">{g.every.map(item)}</ul>{add}</>)
+              : <div className="border-t border-hairline first:border-t-0">{add}</div>}
           </section>
         );
       })}

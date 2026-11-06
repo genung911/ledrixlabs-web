@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.05.4",
-  "revision": 273,
+  "packVersion": "2026.11.06.1",
+  "revision": 274,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -7347,7 +7347,7 @@
       "nodes": [
         {
           "id": "int_flooring",
-          "label": "Flooring Material",
+          "label": "Floors",
           "keywords": [
             "hardwood",
             "laminate",
@@ -7389,7 +7389,6 @@
                 "Ceramic / Porcelain Tile",
                 "Carpet",
                 "Concrete",
-                "LVP / Vinyl",
                 "Natural Stone",
                 "Sheet Vinyl",
                 "Other"
@@ -7402,9 +7401,20 @@
           ]
         },
         {
-          "id": "int_wall_material",
-          "label": "Wall Material",
+          "id": "int_walls",
+          "label": "Walls / Ceilings",
           "keywords": [
+            "ceiling stain",
+            "cracked wall",
+            "wall damage",
+            "ceiling damage",
+            "laundry walls",
+            "laundry ceiling",
+            "laundry room walls",
+            "garage wall",
+            "garage ceiling",
+            "water stain garage",
+            "drywall damage garage",
             "drywall",
             "plaster",
             "paneling",
@@ -7424,30 +7434,14 @@
               "label": "Wall Material",
               "values": [
                 "Drywall",
-                "Plaster"
+                "Plaster",
+                "Paneling",
+                "Wood",
+                "Tile",
+                "Other"
               ]
             }
           ],
-          "condition": true
-        },
-        {
-          "id": "int_walls",
-          "label": "Walls / Ceilings",
-          "keywords": [
-            "ceiling stain",
-            "cracked wall",
-            "wall damage",
-            "ceiling damage",
-            "laundry walls",
-            "laundry ceiling",
-            "laundry room walls",
-            "garage wall",
-            "garage ceiling",
-            "water stain garage",
-            "drywall damage garage"
-          ],
-          "kind": "spec",
-          "origin": "core",
           "condition": true,
           "limitations": [
             "Not Inspected"
@@ -7462,6 +7456,67 @@
             "trim interior",
             "crown molding",
             "damaged trim"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true
+        },
+        {
+          "id": "kit_counter",
+          "label": "Countertops",
+          "keywords": [
+            "granite",
+            "quartz",
+            "laminate counter",
+            "butcher block",
+            "marble counter",
+            "tile counter",
+            "solid surface"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Countertop Material",
+              "values": [
+                "Granite",
+                "Quartz",
+                "Laminate",
+                "Butcher Block",
+                "Marble",
+                "Tile",
+                "Solid Surface",
+                "Concrete",
+                "Other"
+              ]
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "kit_backsplash",
+          "label": "Backsplash",
+          "keywords": [
+            "backsplash",
+            "tile backsplash",
+            "splash guard",
+            "caulk backsplash"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true
+        },
+        {
+          "id": "kit_cabinets",
+          "label": "Cabinets",
+          "keywords": [
+            "cabinet",
+            "cabinetry",
+            "cabinet door",
+            "drawer",
+            "loose cabinet",
+            "water damage cabinet"
           ],
           "kind": "spec",
           "origin": "core",
@@ -7560,66 +7615,6 @@
             "head clearance stair",
             "duct in path",
             "low beam"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true
-        },
-        {
-          "id": "kit_counter",
-          "label": "Countertop Material",
-          "keywords": [
-            "granite",
-            "quartz",
-            "laminate counter",
-            "butcher block",
-            "marble counter",
-            "tile counter",
-            "solid surface"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Countertop Material",
-              "values": [
-                "Granite",
-                "Quartz",
-                "Laminate",
-                "Butcher Block",
-                "Marble",
-                "Tile",
-                "Solid Surface",
-                "Concrete"
-              ]
-            }
-          ],
-          "condition": true
-        },
-        {
-          "id": "kit_backsplash",
-          "label": "Backsplash",
-          "keywords": [
-            "backsplash",
-            "tile backsplash",
-            "splash guard",
-            "caulk backsplash"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true
-        },
-        {
-          "id": "kit_cabinets",
-          "label": "Cabinets",
-          "keywords": [
-            "cabinet",
-            "cabinetry",
-            "cabinet door",
-            "drawer",
-            "loose cabinet",
-            "water damage cabinet"
           ],
           "kind": "spec",
           "origin": "core",
@@ -7753,13 +7748,18 @@
       ],
       "subsystems": [
         {
-          "id": "interior__surfaces",
-          "name": "Surfaces",
+          "id": "interior__walls_ceilings_floors",
+          "name": "Walls, Ceilings & Floors",
           "nodeIds": [
             "int_flooring",
-            "int_wall_material",
             "int_walls",
-            "int_trim",
+            "int_trim"
+          ]
+        },
+        {
+          "id": "interior__countertops_cabinets",
+          "name": "Countertops & Cabinets",
+          "nodeIds": [
             "kit_counter",
             "kit_backsplash",
             "kit_cabinets"

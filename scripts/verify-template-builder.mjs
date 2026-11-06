@@ -762,11 +762,24 @@ async function runTypes(files) {
         && q.rows.every(x => x.card && PM.itemApplies(fdefs, x.card.id, k => (k === q.field || k === q.node.id ? x.value : undefined)))
         && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff Location|Functional Flow|Water Pressure'
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
-      const I = mat('interior'), surf = grp(I, 'Surfaces');
+      const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
       r('materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)',
-        !!surf && surf.questions.length === 0 && surf.materials.map(n => n.label).join('|') === 'Flooring Material|Wall Material|Countertop Material'
+        !!surf && surf.questions.length === 0 && surf.materials.map(n => n.label).join('|') === 'Floors|Walls / Ceilings'
         && !surf.every.some(n => (n.attributes ?? []).length) && !!ins && ins.materials.some(n => n.label === 'Insulation'));
+      // Interior (owner 2026-11-06, mockup SqNS9bXgLH8HwppCXtwBPY, "approved with recommendations"): one card per surface
+      // (Wall Material merged into Walls / Ceilings), the kitchen pieces in their own group, the answer lists fixed.
+      {
+        const lab = l => (l ?? []).map(n => n.label).join('|');
+        const kc = grp(I, 'Countertops & Cabinets'), vent = grp(I, 'Ventilation');
+        let wm = false; const any = n => { if (n.id === 'int_wall_material') wm = true; (n.children ?? []).forEach(any); (n.trimmed ?? []).forEach(any); }; any(fsys('interior'));
+        globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: lab(surf?.every), kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
+        r('interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings, then Trim), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card',
+          I.map(g => g.node.label).join('|') === 'Walls, Ceilings & Floors|Countertops & Cabinets|Doors & Windows|Stairs & Railings|Ventilation'
+          && lab(surf?.every) === 'Trim / Doors Finish' && lab(kc?.materials) === 'Countertops' && lab(kc?.every) === 'Backsplash|Cabinets'
+          && !!vent && vent.every.length === 0 && !wm);
+        // The answer lists themselves are the app's verify:interior-surfaces (pack, Ledrix Default, 4-Point; byte copies here).
+      }
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
@@ -1090,6 +1103,13 @@ const RULES = {
       && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
       && !/op: '/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
+  'materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more': all => {
+    const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
+    // Owner 2026-11-06 (Interior, mockup SqNS9bXgLH8HwppCXtwBPY): Ventilation showed an empty "every home" heading.
+    return /const shown = parts \+ \(g\.every\.length > 0 \? 1 : 0\);/.test(mb) && /const num = \(\) => \(shown > 1 \? \+\+k : null\);/.test(mb)
+      && /\{g\.every\.length > 0\s*\? stage\(num\(\), 'Checked in every home'/.test(mb) && /: <div className="border-t border-hairline first:border-t-0">\{add\}<\/div>\}/.test(mb)
+      && !/\+\+k/.test(mb.replace('shown > 1 ? ++k : null', '')) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1286,6 +1306,9 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', '{g.every.length > 0\n              ? stage(', '{true\n              ? stage('), 'the empty "every home" heading comes back'],
+  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', 'const num = () => (shown > 1 ? ++k : null);', 'const num = () => ++k;'), 'a lone part is numbered 1 again'],
+  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', ': <div className="border-t border-hairline first:border-t-0">{add}</div>}', ': null}'), 'the Add box goes with the empty heading'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) : home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) :', "const o = fresh ? [{ op: 'addNode', parentId: t!.system.id, node: { id: 'g', label: newGroup!, kind: 'subsystem' } }] as TemplateOp[] :"), 'the dialog makes the new group with its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'onSubmit={e => { e.preventDefault(); addGroup(); }}', 'onSubmit={e => { e.preventDefault(); }}'), '"+ New group" does nothing'],
@@ -1339,6 +1362,7 @@ const EXEC_MUT = [
   { name: 'adding a material leaves Other showing for it', file: 'materialLayout.ts', from: "const narrowed = !q.typed ||", to: "const narrowed = true ||", check: 'materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set', run: runTypes },
   { name: 'removing a material leaves its card on', file: 'materialLayout.ts', from: "...(card ? ops.setAside(card.id) : [])", to: "", check: 'materials: removing a material takes the answer out and switches its card off (restorable) — one change set', run: runTypes },
   { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)', run: runTypes },
+  { name: 'Interior\'s every-home lists carry the surface cards too', file: 'materialLayout.ts', from: "const every = rest.filter(n => !materials.includes(n));", to: "const every = rest;", check: 'interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings, then Trim), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card', run: runTypes },
   { name: 'a unit can be moved', file: 'moveModel.ts', from: "if (unit) return unit.id === n.id", to: "if (false) return unit.id === n.id", check: 'move: units, a group holding one, a link and a count copy cannot move — and say why; an ordinary item can', run: runTypes },
   { name: 'a copied system is offered as a destination', file: 'moveModel.ts', from: "return (tree.systems ?? []).filter(s => !isCopy(s.id)).map(s => {", to: "return (tree.systems ?? []).map(s => {", check: 'move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay', run: runTypes },
   { name: '"after X" lands one place off', file: 'moveModel.ts', from: "const at = afterId ? list.findIndex(c => c.id === afterId) + 1 : 0;", to: "const at = afterId ? list.findIndex(c => c.id === afterId) : 0;", check: 'move: the fan moves into Attic › Ventilation right after the fan termination, as ONE change, carrying everything it had', run: runTypes },

@@ -4741,13 +4741,13 @@
    "locationAxis": "room",
    "children": [
     {
-     "id": "interior__surfaces",
-     "label": "Surfaces",
+     "id": "interior__walls_ceilings_floors",
+     "label": "Walls, Ceilings & Floors",
      "kind": "subsystem",
      "children": [
       {
        "id": "int_flooring",
-       "label": "Flooring Material",
+       "label": "Floors",
        "kind": "component",
        "keywords": [
         "hardwood",
@@ -4788,7 +4788,6 @@
           "Ceramic / Porcelain Tile",
           "Carpet",
           "Concrete",
-          "LVP / Vinyl",
           "Natural Stone",
           "Sheet Vinyl",
           "Other"
@@ -4801,10 +4800,21 @@
        ]
       },
       {
-       "id": "int_wall_material",
-       "label": "Wall Material",
+       "id": "int_walls",
+       "label": "Walls / Ceilings",
        "kind": "component",
        "keywords": [
+        "ceiling stain",
+        "cracked wall",
+        "wall damage",
+        "ceiling damage",
+        "laundry walls",
+        "laundry ceiling",
+        "laundry room walls",
+        "garage wall",
+        "garage ceiling",
+        "water stain garage",
+        "drywall damage garage",
         "drywall",
         "plaster",
         "paneling",
@@ -4822,28 +4832,13 @@
          "label": "Wall Material",
          "values": [
           "Drywall",
-          "Plaster"
+          "Plaster",
+          "Paneling",
+          "Wood",
+          "Tile",
+          "Other"
          ]
         }
-       ],
-       "condition": true
-      },
-      {
-       "id": "int_walls",
-       "label": "Walls / Ceilings",
-       "kind": "component",
-       "keywords": [
-        "ceiling stain",
-        "cracked wall",
-        "wall damage",
-        "ceiling damage",
-        "laundry walls",
-        "laundry ceiling",
-        "laundry room walls",
-        "garage wall",
-        "garage ceiling",
-        "water stain garage",
-        "drywall damage garage"
        ],
        "condition": true,
        "limitations": [
@@ -4862,10 +4857,17 @@
         "damaged trim"
        ],
        "condition": true
-      },
+      }
+     ]
+    },
+    {
+     "id": "interior__countertops_cabinets",
+     "label": "Countertops & Cabinets",
+     "kind": "subsystem",
+     "children": [
       {
        "id": "kit_counter",
-       "label": "Countertop Material",
+       "label": "Countertops",
        "kind": "component",
        "keywords": [
         "granite",
@@ -4891,7 +4893,8 @@
           "Marble",
           "Tile",
           "Solid Surface",
-          "Concrete"
+          "Concrete",
+          "Other"
          ]
         }
        ],
