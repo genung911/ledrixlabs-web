@@ -121,6 +121,22 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
       if (n.condition !== true && x.findingShortcuts.length) add('warning', 'shortcuts_without_condition', `"${n.label}" has finding shortcuts but is not assessed.`, n.id);
     }
 
+    // "we don't operate it" (2026-11-06): each Off answer names a field the template has, one it offers, a reason this
+    // item offers, and a sentence; the item must be assessed (the limitation is a condition value).
+    if (Array.isArray(x.startsLimited)) {
+      if (x.startsLimited.length && n.condition !== true) add('error', 'starts_limited_not_assessed', `"${n.label}" starts as a limitation but is not assessed.`, n.id);
+      const vals = new Set<string>();
+      for (const e of x.startsLimited as Array<{ field: string; value: string; reason: string; sentence: string }>) {
+        const { w, a } = attrOf(String(e.field));
+        if (!w || !a) { add('error', 'starts_limited_missing_field', `"${n.label}" starts limited on "${e.field}", which is not in the template.`, n.id); continue; }
+        if (!a.values.includes(e.value)) add('warning', 'starts_limited_unknown_value', `"${n.label}" starts limited for "${e.value}", which "${a.label}" does not offer.`, n.id);
+        if (vals.has(e.value)) add('error', 'starts_limited_duplicate', `"${n.label}" lists "${e.value}" twice.`, n.id);
+        vals.add(e.value);
+        if (!(n.limitations ?? []).some(r => r.trim().toLowerCase() === String(e.reason).trim().toLowerCase())) add('error', 'starts_limited_reason', `"${n.label}" starts as "${e.reason}", which is not one of its limitation reasons.`, n.id);
+        if (!String(e.sentence ?? '').trim()) add('error', 'starts_limited_sentence', `"${n.label}" needs a report sentence for "${e.value}".`, n.id);
+      }
+    }
+
     // title from an answer, grouping under a card
     if (x.titleFrom && !(n.attributes ?? []).some(a => a.id === x.titleFrom.attrId)) add('error', 'title_missing_field', `"${n.label}" takes its title from a field it does not have.`, n.id);
     if (x.groupUnder) {

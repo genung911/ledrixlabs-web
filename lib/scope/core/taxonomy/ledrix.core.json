@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.06.1",
-  "revision": 274,
+  "packVersion": "2026.11.06.2",
+  "revision": 275,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -7888,12 +7888,70 @@
                 "Wood Burning — Masonry",
                 "Wood Burning — Prefab",
                 "Gas Insert",
-                "Gas Log Set",
-                "Decorative Only"
+                "Gas Log Set"
               ],
               "exact": true
             }
           ]
+        },
+        {
+          "id": "fp_operation",
+          "label": "Operation",
+          "keywords": [
+            "fireplace operation",
+            "operate the fireplace",
+            "light the fireplace",
+            "fireplace draft",
+            "pellet hopper",
+            "auger",
+            "pellet igniter",
+            "pellet stove operation",
+            "electric fireplace operation",
+            "electric insert",
+            "heater fan"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Operated"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
+                "Gas Insert",
+                "Gas Log Set",
+                "Pellet Stove",
+                "Electric"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "startsLimited": [
+            {
+              "field": "fp_type::spec",
+              "value": "Wood Burning — Masonry",
+              "reason": "Not Operated",
+              "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
+            },
+            {
+              "field": "fp_type::spec",
+              "value": "Wood Burning — Prefab",
+              "reason": "Not Operated",
+              "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
+            },
+            {
+              "field": "fp_type::spec",
+              "value": "Pellet Stove",
+              "reason": "Not Operated",
+              "sentence": "The pellet stove was not operated during the inspection. The hopper, vent pipe and visible parts were inspected visually."
+            }
+          ],
+          "layout": "row"
         },
         {
           "id": "fp_chimney",
@@ -7971,8 +8029,7 @@
                 "Wood Burning — Masonry",
                 "Wood Burning — Prefab",
                 "Gas Insert",
-                "Gas Log Set",
-                "Decorative Only"
+                "Gas Log Set"
               ],
               "exact": true
             }
@@ -8036,6 +8093,70 @@
           ]
         },
         {
+          "id": "fp_gas_vent",
+          "label": "Gas Venting",
+          "keywords": [
+            "gas fireplace vent",
+            "direct vent",
+            "b-vent fireplace",
+            "sealed combustion",
+            "spillage fireplace"
+          ],
+          "dependsOnSpec": {
+            "nodeId": "fp_type",
+            "includes": [
+              "gas"
+            ]
+          },
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Gas Venting",
+              "values": [
+                "Direct Vent (Sealed)",
+                "B-Vent — Proper Draft"
+              ]
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "requires": [
+            {
+              "utility": "gas"
+            }
+          ]
+        },
+        {
+          "id": "fp_pellet_vent",
+          "label": "Pellet Vent Pipe",
+          "keywords": [
+            "pellet vent",
+            "pl vent",
+            "pellet exhaust"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [
+                "Pellet Stove"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
           "id": "fp_gas_logs",
           "label": "Gas Logs",
           "keywords": [
@@ -8093,75 +8214,6 @@
           "condition": true
         },
         {
-          "id": "fp_gas_vent",
-          "label": "Gas Venting",
-          "keywords": [
-            "gas fireplace vent",
-            "direct vent",
-            "b-vent fireplace",
-            "sealed combustion",
-            "spillage fireplace"
-          ],
-          "dependsOnSpec": {
-            "nodeId": "fp_type",
-            "includes": [
-              "gas"
-            ]
-          },
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Gas Venting",
-              "values": [
-                "Direct Vent (Sealed)",
-                "B-Vent — Proper Draft"
-              ]
-            }
-          ],
-          "condition": true,
-          "limitations": [
-            "Not Tested"
-          ],
-          "requires": [
-            {
-              "utility": "gas"
-            }
-          ]
-        },
-        {
-          "id": "fp_co_prox",
-          "label": "CO Detector Proximity",
-          "keywords": [
-            "carbon monoxide fireplace",
-            "co detector near fireplace",
-            "co alarm proximity",
-            "co same level"
-          ],
-          "dependsOnSpec": {
-            "nodeId": "fp_type",
-            "includes": [
-              "wood",
-              "gas",
-              "pellet"
-            ]
-          },
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "CO Detector Proximity",
-              "values": [
-                "CO Detector on Same Level",
-                "CO Within Required Proximity"
-              ]
-            }
-          ],
-          "condition": true
-        },
-        {
           "id": "fp_service",
           "label": "Last Known Service",
           "keywords": [
@@ -8213,6 +8265,37 @@
           ]
         },
         {
+          "id": "fp_co_prox",
+          "label": "CO Detector Proximity",
+          "keywords": [
+            "carbon monoxide fireplace",
+            "co detector near fireplace",
+            "co alarm proximity",
+            "co same level"
+          ],
+          "dependsOnSpec": {
+            "nodeId": "fp_type",
+            "includes": [
+              "wood",
+              "gas",
+              "pellet"
+            ]
+          },
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "CO Detector Proximity",
+              "values": [
+                "CO Detector on Same Level",
+                "CO Within Required Proximity"
+              ]
+            }
+          ],
+          "condition": true
+        },
+        {
           "id": "fireplace_manufactured_fireplace_venting",
           "label": "Fireplace Venting (Manufactured Home)",
           "keywords": [],
@@ -8244,85 +8327,6 @@
             "multi_unit"
           ],
           "condition": true
-        },
-        {
-          "id": "fp_pellet_op",
-          "label": "Hopper / Auger / Igniter",
-          "keywords": [
-            "pellet hopper",
-            "auger",
-            "pellet igniter",
-            "pellet stove operation"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Tested"
-          ],
-          "requires": [
-            {
-              "specNodeId": "fp_type",
-              "includes": [
-                "Pellet Stove"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable"
-            }
-          ],
-          "layout": "row"
-        },
-        {
-          "id": "fp_pellet_vent",
-          "label": "Pellet Vent Pipe",
-          "keywords": [
-            "pellet vent",
-            "pl vent",
-            "pellet exhaust"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "requires": [
-            {
-              "specNodeId": "fp_type",
-              "includes": [
-                "Pellet Stove"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable"
-            }
-          ],
-          "layout": "row"
-        },
-        {
-          "id": "fp_electric_op",
-          "label": "Electric Unit Operation",
-          "keywords": [
-            "electric fireplace operation",
-            "electric insert",
-            "heater fan"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Tested"
-          ],
-          "requires": [
-            {
-              "specNodeId": "fp_type",
-              "includes": [
-                "Electric"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable"
-            }
-          ],
-          "layout": "row"
         }
       ],
       "subsystems": [
@@ -8332,17 +8336,20 @@
           "nodeIds": [
             "fp_type",
             "fp_firebox",
-            "fp_damper"
+            "fp_damper",
+            "fp_operation"
           ]
         },
         {
-          "id": "fireplace__chimney_flue",
-          "name": "Chimney & Flue",
+          "id": "fireplace__chimney_flue_venting",
+          "name": "Chimney, Flue & Venting",
           "nodeIds": [
             "fp_chimney",
             "fp_liner",
             "fp_cap",
-            "fp_arrestor"
+            "fp_arrestor",
+            "fp_gas_vent",
+            "fp_pellet_vent"
           ]
         },
         {
@@ -8350,26 +8357,16 @@
           "name": "Gas",
           "nodeIds": [
             "fp_gas_logs",
-            "fp_gas_shutoff",
-            "fp_gas_vent",
-            "fp_co_prox"
+            "fp_gas_shutoff"
           ]
         },
         {
-          "id": "fireplace__pellet_electric",
-          "name": "Pellet / Electric",
-          "nodeIds": [
-            "fp_pellet_op",
-            "fp_pellet_vent",
-            "fp_electric_op"
-          ]
-        },
-        {
-          "id": "fireplace__service",
-          "name": "Service",
+          "id": "fireplace__service_safety",
+          "name": "Service & Safety",
           "nodeIds": [
             "fp_service",
-            "fp_creosote"
+            "fp_creosote",
+            "fp_co_prox"
           ]
         },
         {
@@ -9113,6 +9110,15 @@
           }
         },
         {
+          "node": "fp_operation",
+          "when": {
+            "specNodeId": "fp_type",
+            "includes": [
+              "gas"
+            ]
+          }
+        },
+        {
           "node": "plumb_wh_burner",
           "when": {
             "specNodeId": "plumb_wh_type::type",
@@ -9200,12 +9206,6 @@
           }
         },
         {
-          "node": "fp_electric_op"
-        },
-        {
-          "node": "fp_pellet_op"
-        },
-        {
           "node": "hvac_boiler_circulator"
         },
         {
@@ -9219,6 +9219,16 @@
         },
         {
           "node": "hvac_elec_furnace_elements"
+        },
+        {
+          "node": "fp_operation",
+          "when": {
+            "specNodeId": "fp_type",
+            "includes": [
+              "electric",
+              "pellet"
+            ]
+          }
         }
       ],
       "reasons": [

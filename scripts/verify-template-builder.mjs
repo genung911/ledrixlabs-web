@@ -780,6 +780,23 @@ async function runTypes(files) {
           && !!vent && vent.every.length === 0 && !wm);
         // The answer lists themselves are the app's verify:interior-surfaces (pack, Ledrix Default, 4-Point; byte copies here).
       }
+      // Fireplace "we operate it" (owner 2026-11-06, mockup AVMufpdYL6BrMPw2MXZsY2, "all is approved"): the switch shows on an
+      // item offering "Not Operated"; Off/On and the sentence are each one setNodeField of startsLimited.
+      {
+        const fop = (() => { let f = null; const w = n => { if (n.id === 'fp_operation') f = n; (n.children ?? []).forEach(w); }; w(fsys('fireplace')); return f; })();
+        const fbx = (() => { let f = null; const w = n => { if (n.id === 'fp_firebox') f = n; (n.children ?? []).forEach(w); }; w(fsys('fireplace')); return f; })();
+        const FLD = 'fp_type::spec';
+        const off = fop ? E.ops.operates(fop, FLD, 'Gas Insert', false) : [];
+        const on = fop ? E.ops.operates(fop, FLD, 'Wood Burning — Masonry', true) : [];
+        const v = o => (o.length === 1 && o[0].op === 'setNodeField' && o[0].field === 'startsLimited' ? o[0].value : null);
+        r('fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank',
+          !!fop && E.canStartLimited(fop) && !!fbx && !E.canStartLimited(fbx)
+          && (v(off) ?? []).length === 4 && (v(off) ?? []).some(e => e.value === 'Gas Insert' && e.reason === 'Not Operated' && e.field === FLD && e.sentence.trim())
+          && (v(on) ?? []).length === 2 && !(v(on) ?? []).some(e => e.value === 'Wood Burning — Masonry')
+          && E.ops.operates(fop, FLD, 'Pellet Stove', false).length === 0 && E.ops.operates(fop, FLD, 'Electric', true).length === 0
+          && E.ops.startsSentence(fop, FLD, 'Pellet Stove', '  ').length === 0
+          && (v(E.ops.startsSentence(fop, FLD, 'Pellet Stove', 'We do not run pellet stoves.')) ?? []).find(e => e.value === 'Pellet Stove')?.sentence === 'We do not run pellet stoves.');
+      }
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
@@ -1135,6 +1152,13 @@ const RULES = {
       && /\{ label: 'Switch on', disabled: disabled && [^,]+, onSelect: \(\) => \{ onOps\(includeOps\(tree, t\.id, true\)\); \} \}/.test(ep)
       ? [] : ['components/templates/ItemRow.tsx'];
   },
+  'fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence': all => {
+    const tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return /\{\[\.\.\.layout\.every, \.\.\.own\]\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
+      && /onChange=\{v => \{ onOps\(ops\.operates\(node, f, value, v\)\); \}\}/.test(tb)
+      && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
+      && /const on = !entry;/.test(tb) && !/'startsLimited'/.test(tb) ? [] : ['components/templates/TypeBuilder.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1331,6 +1355,10 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{[...layout.every, ...own].filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onBlur={() => { if (!text.trim()) { setText(entry.sentence); return; } onOps(ops.startsSentence(node, f, value, text)); }}', 'onBlur={() => { onOps([]); }}'), 'the sentence is never saved'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'const on = !entry;', 'const on = !!entry;'), 'the switch shows On for an Off answer'],
   ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "{ label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(includeOps(tree, node.id, false)); } },", "{ label: 'Delete', disabled: disabled && LOCKED, onSelect: () => { onOps([{ op: 'removeNode', nodeId: node.id }] as TemplateOp[]); } },"), 'Switch off becomes Delete'],
   ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "onOps(includeOps(tree, node.id, false))", "onOps(includeOps(tree, node.id, true))"), 'Switch off switches it on'],
   ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "if (t && t !== node.label) onOps(ops.rename(node.id, t));", "if (t && t !== node.label) {}"), 'renaming saves nothing'],
@@ -1420,6 +1448,10 @@ const EXEC_MUT = [
   { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },
   { name: 'the catalog drops the equipment rule', file: 'catalogModel.ts', from: "...(rule ? { appliesWhen: rule }", to: "...(false ? { appliesWhen: rule }", check: 'catalog: each component applies only to its equipment ("Heating System is Gas Furnace or Propane")', run: runDesktop },
   { name: 'Condition off is stored as missing (= on in the app)', file: 'catalogModel.ts', from: "condition: p.condition,", to: "...(p.condition ? { condition: true } : {}),", check: 'catalog: Condition OFF is stored as an explicit false (the app reads a missing value as ON)', run: runDesktop },
+  { name: 'switching Off writes no reason', file: 'editorModel.ts', from: 'reason, sentence: defaultStartsSentence(value) }])];', to: "reason: '', sentence: defaultStartsSentence(value) }])];", check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
+  { name: 'switching On leaves the entry', file: 'editorModel.ts', from: 'on ? cur.filter(e => !(e.field === field && e.value === value))', to: 'on ? cur', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
+  { name: 'an item with no Not Operated reason gets the switch', file: 'editorModel.ts', from: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true && !!startsLimitedReason(n);', to: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true;', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
+  { name: 'a blank sentence is saved', file: 'editorModel.ts', from: 'if (!t || !cur.some(', to: 'if (!cur.some(', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },

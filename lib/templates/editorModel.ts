@@ -179,8 +179,34 @@ export function recordsNothingHere(n: TemplateNode): boolean {
 }
 const listOrNull = (xs: string[]) => { const v = xs.map(s => s.trim()).filter(Boolean); return v.length ? v : null; };
 
+/** "We operate it" (owner 2026-11-06, Fireplace — mockup AVMufpdYL6BrMPw2MXZsY2): an item that can start as the
+ *  company's limitation carries `startsLimited`, one entry per type answer that is Off. The switch shows on any assessed
+ *  item that offers "Not Operated" among its limitation reasons (Ledrix's Fireplace › Operation; also a company's own
+ *  item, so a saved template can add one) — an item that cannot be "Not Operated" has nothing to start as. */
+export type StartsLimitedEntry = { field: string; value: string; reason: string; sentence: string };
+export const startsLimitedList = (n: TemplateNode): StartsLimitedEntry[] => (Array.isArray((n as { startsLimited?: unknown }).startsLimited) ? (n as { startsLimited: StartsLimitedEntry[] }).startsLimited : []);
+export const startsLimitedReason = (n: TemplateNode): string | null =>
+  startsLimitedList(n)[0]?.reason ?? (n.limitations ?? []).find(r => /^not operated$/i.test(r.trim())) ?? null;
+export const canStartLimited = (n: TemplateNode): boolean => n.condition === true && !!startsLimitedReason(n);
+export const defaultStartsSentence = (value: string): string =>
+  `The ${value.replace(/\s+—\s+/g, ' ').toLowerCase()} was not operated during the inspection.`;
+
 export const ops = {
   rename: (nodeId: string, label: string): TemplateOp[] => (label.trim() ? [setField(nodeId, 'label', label.trim())] : []),
+  /** The company operates (On) or does not operate (Off) this kind: Off adds the answer's entry, On removes it — one op. */
+  operates: (n: TemplateNode, field: string, value: string, on: boolean): TemplateOp[] => {
+    const cur = startsLimitedList(n), had = cur.some(e => e.field === field && e.value === value);
+    const reason = startsLimitedReason(n);
+    if (on === !had || !reason) return [];
+    return [setField(n.id, 'startsLimited', on ? cur.filter(e => !(e.field === field && e.value === value))
+      : [...cur, { field, value, reason, sentence: defaultStartsSentence(value) }])];
+  },
+  /** The report sentence for an answer that is Off — one op; empty text is refused (a disclosure needs words). */
+  startsSentence: (n: TemplateNode, field: string, value: string, text: string): TemplateOp[] => {
+    const cur = startsLimitedList(n), t = text.trim();
+    if (!t || !cur.some(e => e.field === field && e.value === value && e.sentence !== t)) return [];
+    return [setField(n.id, 'startsLimited', cur.map(e => (e.field === field && e.value === value ? { ...e, sentence: t } : e)))];
+  },
   describe: (nodeId: string, text: string): TemplateOp[] => [setField(nodeId, 'description', text.trim() ? text : null)],
   /** Whether a new inspection covers this system. The app's rule (ledrix-app inspectionOffering.ts, mirrored by
    *  isCovered below): covered = `defaultActive === true`; a template that switches NONE on uses Ledrix's default

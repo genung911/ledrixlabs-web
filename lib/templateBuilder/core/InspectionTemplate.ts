@@ -64,6 +64,9 @@ export type TemplateNode = {
   /** A method row's "could not be done" chip, opening its limitation reasons (app 2026-11-03: Roof Method's
    *  "Not walked / not inspected"). Absent = no chip. */
   limitLabel?: string;
+  /** "We don't operate it" (owner 2026-11-06, Fireplace): per type answer, the item starts as this limitation and the
+   *  report prints the company's sentence. Mirrors the app's InspectionTemplate.ts. */
+  startsLimited?: Array<{ field: string; value: string; reason: string; sentence: string }>;
   freeFormValue?: boolean;
   pointsTo?: { systemId: string; nodeId: string };
   /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */

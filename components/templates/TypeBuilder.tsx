@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, canStartLimited, itemSummary, ops, startsLimitedList, startsLimitedReason } from '@/lib/templates/editorModel';
 import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
@@ -162,6 +162,9 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const own = itemsForType(layout, pick);
   return (
     <div className="space-y-3">
+      {[...layout.every, ...own].filter(canStartLimited).map(n => (
+        <OperatesSwitch key={n.id} node={n} field={layout.question.field} value={pick} onOps={apply} disabled={disabled} />
+      ))}
       {section(SECTION_ID.type, pick, rowsForType(layout, pick).length, <>
         {row(layout.questionNode, <Pill tone="accent">The type question</Pill>)}
         {/* No "All types" / "Also: …" text (owner 2026-11-05) — the only tag is Ledrix's Typical. */}
@@ -217,5 +220,36 @@ function CopiesRow({ g, open, onToggle, onOps, onOpen, disabled }: { g: CopyGrou
         </div>
       )}
     </li>
+  );
+}
+
+/** "We operate it" (owner 2026-11-06, mockup https://claude.ai/artifact/AVMufpdYL6BrMPw2MXZsY2): per type answer, Off =
+ *  the company does not operate that kind, so the item (Fireplace › Operation) starts on the phone as the limitation
+ *  and the report prints the sentence below. On = rated normally. Each change is one op (editorModel.ops). */
+function OperatesSwitch({ node, field: f, value, onOps, disabled }: { node: TemplateNode; field: string; value: string; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const entry = startsLimitedList(node).find(e => e.field === f && e.value === value) ?? null;
+  const [text, setText] = useState(entry?.sentence ?? '');
+  const [shown, setShown] = useState(entry?.sentence ?? '');
+  if ((entry?.sentence ?? '') !== shown) { setShown(entry?.sentence ?? ''); setText(entry?.sentence ?? ''); }
+  const on = !entry;
+  return (
+    <div className="overflow-hidden rounded-xl border border-hairline" aria-label={`${node.label} for ${value}`}>
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-ink">We operate it</span>
+          <span className="block text-xs text-muted">{on ? `${node.label} is rated normally for ${value}.` : <>{node.label} starts as <Pill tone="warn">Limitation · {entry!.reason}</Pill> — the inspector can change it on a job (phone build 720 or later).</>}</span>
+        </span>
+        <Toggle on={on} label={`We operate ${value}`} disabled={disabled || !startsLimitedReason(node)} onChange={v => { onOps(ops.operates(node, f, value, v)); }} />
+      </div>
+      {entry && (
+        <div className="border-t border-hairline px-3 py-2">
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-muted" htmlFor={`sl-${node.id}-${value}`}>Report sentence</label>
+          <textarea id={`sl-${node.id}-${value}`} value={text} disabled={disabled} rows={2} onChange={e => setText(e.target.value)}
+            onBlur={() => { if (!text.trim()) { setText(entry.sentence); return; } onOps(ops.startsSentence(node, f, value, text)); }}
+            className={`${field} mt-1 w-full py-1.5 text-sm`} />
+          <p className="text-[11px] text-muted">Printed under {node.label}’s limitation in the report, in place of Ledrix’s wording.</p>
+        </div>
+      )}
+    </div>
   );
 }

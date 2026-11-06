@@ -5147,12 +5147,54 @@
         "top-mount damper"
        ],
        "condition": true
+      },
+      {
+       "id": "fp_operation",
+       "label": "Operation",
+       "kind": "component",
+       "keywords": [
+        "fireplace operation",
+        "operate the fireplace",
+        "light the fireplace",
+        "fireplace draft",
+        "pellet hopper",
+        "auger",
+        "pellet igniter",
+        "pellet stove operation",
+        "electric fireplace operation",
+        "electric insert",
+        "heater fan"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Operated"
+       ],
+       "startsLimited": [
+        {
+         "field": "fp_type::spec",
+         "value": "Wood Burning — Masonry",
+         "reason": "Not Operated",
+         "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
+        },
+        {
+         "field": "fp_type::spec",
+         "value": "Wood Burning — Prefab",
+         "reason": "Not Operated",
+         "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
+        },
+        {
+         "field": "fp_type::spec",
+         "value": "Pellet Stove",
+         "reason": "Not Operated",
+         "sentence": "The pellet stove was not operated during the inspection. The hopper, vent pipe and visible parts were inspected visually."
+        }
+       ]
       }
      ]
     },
     {
-     "id": "fireplace__chimney_flue",
-     "label": "Chimney & Flue",
+     "id": "fireplace__chimney_flue_venting",
+     "label": "Chimney, Flue & Venting",
      "kind": "subsystem",
      "children": [
       {
@@ -5242,6 +5284,46 @@
        "limitations": [
         "Not Visible"
        ]
+      },
+      {
+       "id": "fp_gas_vent",
+       "label": "Gas Venting",
+       "kind": "component",
+       "keywords": [
+        "gas fireplace vent",
+        "direct vent",
+        "b-vent fireplace",
+        "sealed combustion",
+        "spillage fireplace"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Gas Venting",
+         "values": [
+          "Direct Vent (Sealed)",
+          "B-Vent — Proper Draft"
+         ]
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "fp_pellet_vent",
+       "label": "Pellet Vent Pipe",
+       "kind": "component",
+       "keywords": [
+        "pellet vent",
+        "pl vent",
+        "pellet exhaust"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
       }
      ]
     },
@@ -5287,60 +5369,12 @@
         "log lighter valve"
        ],
        "condition": true
-      },
-      {
-       "id": "fp_gas_vent",
-       "label": "Gas Venting",
-       "kind": "component",
-       "keywords": [
-        "gas fireplace vent",
-        "direct vent",
-        "b-vent fireplace",
-        "sealed combustion",
-        "spillage fireplace"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Gas Venting",
-         "values": [
-          "Direct Vent (Sealed)",
-          "B-Vent — Proper Draft"
-         ]
-        }
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
-      },
-      {
-       "id": "fp_co_prox",
-       "label": "CO Detector Proximity",
-       "kind": "component",
-       "keywords": [
-        "carbon monoxide fireplace",
-        "co detector near fireplace",
-        "co alarm proximity",
-        "co same level"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "CO Detector Proximity",
-         "values": [
-          "CO Detector on Same Level",
-          "CO Within Required Proximity"
-         ]
-        }
-       ],
-       "condition": true
       }
      ]
     },
     {
-     "id": "fireplace__service",
-     "label": "Service",
+     "id": "fireplace__service_safety",
+     "label": "Service & Safety",
      "kind": "subsystem",
      "children": [
       {
@@ -5384,6 +5418,28 @@
        "limitations": [
         "Not Visible"
        ]
+      },
+      {
+       "id": "fp_co_prox",
+       "label": "CO Detector Proximity",
+       "kind": "component",
+       "keywords": [
+        "carbon monoxide fireplace",
+        "co detector near fireplace",
+        "co alarm proximity",
+        "co same level"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "CO Detector Proximity",
+         "values": [
+          "CO Detector on Same Level",
+          "CO Within Required Proximity"
+         ]
+        }
+       ],
+       "condition": true
       }
      ]
     },
@@ -5412,56 +5468,6 @@
        "kind": "component",
        "keywords": [],
        "condition": true
-      }
-     ]
-    },
-    {
-     "id": "fireplace__pellet_electric",
-     "label": "Pellet / Electric",
-     "kind": "subsystem",
-     "children": [
-      {
-       "id": "fp_pellet_op",
-       "label": "Hopper / Auger / Igniter",
-       "kind": "component",
-       "keywords": [
-        "pellet hopper",
-        "auger",
-        "pellet igniter",
-        "pellet stove operation"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
-      },
-      {
-       "id": "fp_pellet_vent",
-       "label": "Pellet Vent Pipe",
-       "kind": "component",
-       "keywords": [
-        "pellet vent",
-        "pl vent",
-        "pellet exhaust"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Visible"
-       ]
-      },
-      {
-       "id": "fp_electric_op",
-       "label": "Electric Unit Operation",
-       "kind": "component",
-       "keywords": [
-        "electric fireplace operation",
-        "electric insert",
-        "heater fan"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
       }
      ]
     }

@@ -98,6 +98,11 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   method:           { check: strList, class: 'policy', why: 'method values are disclosures in the report' },
   limitations:      { check: strList, class: 'policy', why: 'limitation reasons are disclosures in the report' },
   limitLabel:       { check: nonEmpty, class: 'content', why: 'the method row\'s "could not be done" chip (2026-11-03)' },
+  // 2026-11-06 (owner, Fireplace "we don't operate it"): per type answer, the item starts as this limitation and the
+  // report prints the company's sentence (templates/startsLimited). Judged against the template by templateValidate.
+  startsLimited:    { check: (v) => (Array.isArray(v) && v.every(e => obj(e) && !onlyKeys(e, ['field', 'value', 'reason', 'sentence'])
+    && typeof e.field === 'string' && /^[^:]+::[^:]+$/.test(e.field) && !nonEmpty(e.value) && !nonEmpty(e.reason) && !nonEmpty(e.sentence)) ? null
+    : 'must be a list of {field "<nodeId>::<attrId>", value, reason, sentence}'), class: 'policy', why: 'what the company does not operate — a disclosure in the report' },
   defaultActive:    { check: bool, class: 'policy', why: 'what a new inspection covers' },
   appliesToTypes:   { check: strList, class: 'policy', why: 'when this item is inspected (legacy Equipment Types)' },
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },

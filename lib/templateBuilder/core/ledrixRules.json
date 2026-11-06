@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.06.1",
+ "packVersion": "2026.11.06.2",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -1557,10 +1557,26 @@
       "Wood Burning — Masonry",
       "Wood Burning — Prefab",
       "Gas Insert",
-      "Gas Log Set",
-      "Decorative Only"
+      "Gas Log Set"
      ],
      "exact": true
+    }
+   ]
+  },
+  "fp_operation": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry",
+      "Wood Burning — Prefab",
+      "Gas Insert",
+      "Gas Log Set",
+      "Pellet Stove",
+      "Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -1588,8 +1604,7 @@
       "Wood Burning — Masonry",
       "Wood Burning — Prefab",
       "Gas Insert",
-      "Gas Log Set",
-      "Decorative Only"
+      "Gas Log Set"
      ],
      "exact": true
     }
@@ -1620,6 +1635,31 @@
     ]
    }
   },
+  "fp_gas_vent": {
+   "requires": [
+    {
+     "utility": "gas"
+    }
+   ],
+   "dependsOnSpec": {
+    "nodeId": "fp_type",
+    "includes": [
+     "gas"
+    ]
+   }
+  },
+  "fp_pellet_vent": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Pellet Stove"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
   "fp_gas_logs": {
    "requires": [
     {
@@ -1641,16 +1681,12 @@
     ]
    }
   },
-  "fp_gas_vent": {
-   "requires": [
-    {
-     "utility": "gas"
-    }
-   ],
+  "fp_creosote": {
    "dependsOnSpec": {
     "nodeId": "fp_type",
     "includes": [
-     "gas"
+     "wood",
+     "pellet"
     ]
    }
   },
@@ -1663,51 +1699,6 @@
      "pellet"
     ]
    }
-  },
-  "fp_creosote": {
-   "dependsOnSpec": {
-    "nodeId": "fp_type",
-    "includes": [
-     "wood",
-     "pellet"
-    ]
-   }
-  },
-  "fp_pellet_op": {
-   "requires": [
-    {
-     "specNodeId": "fp_type",
-     "includes": [
-      "Pellet Stove"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable"
-    }
-   ]
-  },
-  "fp_pellet_vent": {
-   "requires": [
-    {
-     "specNodeId": "fp_type",
-     "includes": [
-      "Pellet Stove"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable"
-    }
-   ]
-  },
-  "fp_electric_op": {
-   "requires": [
-    {
-     "specNodeId": "fp_type",
-     "includes": [
-      "Electric"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable"
-    }
-   ]
   },
   "kit_dishwasher": {
    "requires": [
