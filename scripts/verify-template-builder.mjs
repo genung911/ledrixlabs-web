@@ -594,6 +594,24 @@ async function runDesktop(files) {
       EC.EQUIPMENT_CATALOG.length === 8 && EC.EQUIPMENT_CATALOG.every(t => t.groups.some(g => g.id === 'electrical')
         && t.groups.flatMap(g => g.components).filter(c => c.kind === 'reading').every(c => c.reading?.units?.length && c.caption)
         && new Set(t.groups.flatMap(g => g.components.map(c => c.id))).size === t.groups.flatMap(g => g.components).length));
+    // ── suggestions inside each type's list (owner 2026-11-05, mockup DbUgEVKPbCeigN6G8YTaAL) ──
+    const FIELD = 'hvac_heating::fuel_source', ids = (ts) => ts.map(t => t.id).join();
+    r('suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers); a mini-split follows another field',
+      ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Gas Furnace')) === 'gas_furnace' && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Propane')) === 'gas_furnace'
+      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Boiler')) === 'gas_boiler,oil_boiler,electric_boiler' && ids(C.catalogTypesOffField(cdr.tree, sysOf(), FIELD)) === 'mini_split');
+    const gf = [EC.catalogType('gas_furnace')], sug = () => C.suggestionsFor(sysOf(), gf).map(x => x.component.id);
+    r('suggest: only parts the template lacks — nothing already there, no readings or data plates',
+      !sug().includes('burner') && !sug().includes('vent') && !sug().includes('plate') && !sug().includes('supplytemp') && sug().includes('condensate') && sug().includes('ignition'));
+    const sBefore = cdr.log.length;
+    const sa = E.applyManual(cdr, C.suggestOps(cdr.tree, sysOf(), 'gas_furnace', ['ignition', 'condensate']), OWNER, 6200); if (sa.ok) cdr = sa.draft;
+    const sg = (sysOf().children ?? []).find(n => n.catalogRef === 'gas_furnace');
+    const ign = (sg?.children ?? []).find(n => n.catalogRef === 'gas_furnace.ignition'), cond = (sg?.trimmed ?? []).find(n => n.catalogRef === 'gas_furnace.condensate');
+    r('suggest: a Typical part is added switched on, an If-present part switched off (offered on site) — one change set, with the equipment rule',
+      sa.ok && cdr.log.length === sBefore + 1 && !!ign && !(sg?.children ?? []).some(n => n.catalogRef === 'gas_furnace.condensate') && !!cond
+      && JSON.stringify(cond.appliesWhen) === JSON.stringify({ field: FIELD, anyOf: ['Gas Furnace', 'Propane'] }));
+    r('suggest: a switched-off part is still in the template, so it is not suggested again', !sug().includes('condensate') && !sug().includes('ignition'));
+    const mt = C.catalogMatches(sysOf(), gf);
+    r('suggest: the template\'s own matching items are tagged by how Ledrix lists them (Burner / Flame is Typical)', mt.hvac_burner === 'typical' && mt[ind.id] === 'if_present' && !mt.hvac_heating);
     }
   } catch (e) {
     r(`desktop scenario completed (${e?.message})`, false);
@@ -883,11 +901,17 @@ const RULES = {
     return !/license_number|licenseNumber|License #|license number"/i.test(page) && /Coming later/.test(imp) && !/onClick|role="radio"/.test(imp)
       && !/compliant|compliance score|%\s*covered/i.test(page + sp) ? [] : ['app/app/templates/create/page.tsx'];
   },
-  'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': all => {
-    const panel = strip(all['components/templates/CatalogPanel.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
-    return /<CatalogPanel tree=\{tree\} system=\{system\} onOps=\{onOps\} disabled=\{disabled\} \/>/.test(parts)
-      && /onOps\(catalogOps\(tree, system, type\.id, addable\)\)/.test(panel) && !/op: '/.test(panel)
-      && /<Toggle on=\{false\} disabled label=\{`Evidence for/.test(panel) ? [] : ['components/templates/CatalogPanel.tsx'];
+  'suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box': all => {
+    const panel = strip(all['components/templates/CatalogPanel.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return /\{catTypes\.length > 0 && <li className="px-3 py-2"><LedrixSuggestions tree=\{tree\} system=\{system\} types=\{catTypes\}/.test(tb) && /catalogTypesForAnswer\(tree, system, layout\.question\.field, pick\)/.test(tb)
+      && /\{!typeView && catalogTypesForSystem\(system\)\.length > 0 && <LedrixSuggestions /.test(parts) && !/<CatalogPanel/.test(parts)
+      && /onOps\(suggestOps\(tree, system, type\.id, ids\)\)/.test(panel) && !/op: '/.test(panel) && !/catalogOps|evidenceOnly|Toggle/.test(panel)
+      && /'\+ Add' : '\+ Add as optional'/.test(panel) ? [] : ['components/templates/CatalogPanel.tsx'];
+  },
+  'types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count': all => {
+    const tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return !/Also: \{|<Pill>Only |<Pill>All types<\/Pill>/.test(tb) && /matches\[n\.id\] === 'typical' \? <Pill tone="ok">Typical<\/Pill>/.test(tb)
+      && /\{v\} <span className="font-normal opacity-70">\{rowsForType\(layout, v\)\.length\}<\/span><\/>/.test(tb) && !/suggestionsFor/.test(tb) ? [] : ['components/templates/TypeBuilder.tsx'];
   },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
@@ -971,7 +995,7 @@ const RULES = {
       // the panel's type lists keep the shared items (third pass): no "Every" section anywhere
       && !/Every \$\{(s|system)\.label/.test(t + b) && !/SECTION_ID\.every|tb-sec-every/.test(t + b)
       && /rowsForType\(layout, v\)\.length/.test(b)
-      && /section\(SECTION_ID\.type, pick, rowsForType\(layout, pick\)\.length, <>\s*\{row\(layout\.questionNode, <Pill tone="accent">The type question<\/Pill>\)\}\s*\{layout\.every\.map\(n => row\(n, <Pill>All types<\/Pill>\)\)\}\s*\{own\.map\(n => row\(n, shared\(n, pick\)\)\)\}/.test(b)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
+      && /section\(SECTION_ID\.type, pick, rowsForType\(layout, pick\)\.length, <>\s*\{row\(layout\.questionNode, <Pill tone="accent">The type question<\/Pill>\)\}[\s\S]{0,160}?\{layout\.every\.map\(n => row\(n, tagOf\(n\)\)\)\}\s*\{own\.map\(n => row\(n, tagOf\(n\)\)\)\}/.test(b)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
   },
   // owner 2026-11-05: "merge those two by putting a pencil next to the system name to edit it" — systems, groups and items.
   'names: a system, group or item is renamed by the pencil beside its title, with no separate Name box': all => {
@@ -1061,7 +1085,8 @@ const MUT = {
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
-  'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
+  'suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box': rep('components/templates/EditorParts.tsx', '{!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions', '<CatalogPanel /> {!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions'),
+  'types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count': rep('components/templates/TypeBuilder.tsx', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : typical(n);', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : <>{typical(n)}<span>Also: {(layout.shows[n.id] ?? []).join(", ")}</span></>;'),
   'types: a typed system shows the by-type layout in its panel (never in the menu), and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
   'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': add('components/templates/TypeBuilder.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requires', value: [] };"),
   'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': rep('components/templates/Tree.tsx', '{found.length > 0 && (', '{(s.children ?? []).map(c => <li key={c.id}>{c.label}</li>)}{found.length > 0 && ('),
@@ -1071,8 +1096,12 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/TypeBuilder.tsx', '{catTypes.length > 0 && <li className="px-3 py-2"><LedrixSuggestions', '{false && <li className="px-3 py-2"><LedrixSuggestions'), 'a type\'s list loses the suggestions'],
+  ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/CatalogPanel.tsx', "{c.presence === 'typical' ? '+ Add' : '+ Add as optional'}", "+ Add"), 'an If-present part no longer says it is added as optional'],
+  ['types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count', rep('components/templates/TypeBuilder.tsx', '{layout.every.map(n => row(n, tagOf(n)))}', '{layout.every.map(n => row(n, <Pill>All types</Pill>))}'), 'the All types tag is back'],
+  ['types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count', rep('components/templates/TypeBuilder.tsx', '{rowsForType(layout, v).length}</span></>', '{rowsForType(layout, v).length} · +{v.length}</span></>'), 'the chips gain a suggestion count'],
   ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/Tree.tsx', '>+ Add system<', '>+ Add system / component<'), 'the menu offers to add items again'],
-  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, <Pill>All types</Pill>))}\n', ''), 'a type\'s list leaves out the items every type shows'],
+  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, tagOf(n)))}\n', ''), 'a type\'s list leaves out the items every type shows'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '{typeView && <TypeChips', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} />{typeView && <TypeChips'), 'the system Name box is back'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/Workspace.tsx', ' onRename={v => onOps(ops.rename(system.id, v))}', ''), 'a system title has no pencil'],
   ['tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name', rep('components/templates/PhonePreview.tsx', '<span className="pv-tips"', '<span className="pv-guide">{n.description}</span><span className="pv-x"'), 'the preview prints Tips under the name again'],
@@ -1107,6 +1136,10 @@ const EXEC_MUT = [
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
+  { name: 'an If-present suggestion is added switched on', file: 'catalogModel.ts', from: "if (o.op === 'addNode' && o.node.kind === 'component' && o.node.catalogRef && off.includes(o.node.catalogRef)) trims.push", to: "if (false) trims.push", check: 'suggest: a Typical part is added switched on, an If-present part switched off (offered on site) — one change set, with the equipment rule', run: runDesktop },
+  { name: 'a switched-off part is suggested again', file: 'catalogModel.ts', from: "[...(x.children ?? []), ...(x.trimmed ?? [])].forEach", to: "[...(x.children ?? [])].forEach", check: 'suggest: a switched-off part is still in the template, so it is not suggested again', run: runDesktop },
+  { name: 'readings are suggested', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly) continue;", to: "if (r.present) continue;", check: 'suggest: only parts the template lacks — nothing already there, no readings or data plates', run: runDesktop },
+  { name: 'Boiler maps to one boiler only', file: 'catalogModel.ts', from: "return !!r && r.field === field && r.anyOf.includes(value); });", to: "return !!r && r.field === field && r.anyOf[0] === value && t.id !== 'oil_boiler'; });", check: 'suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers); a mini-split follows another field', run: runDesktop },
   { name: 'the catalog adds a component the template already has', file: 'catalogModel.ts', from: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && !x.row.present && ", to: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && ", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds evidence the phone cannot collect', file: 'catalogModel.ts', from: "!x.row.evidenceOnly && pickRecordsSomething", to: "pickRecordsSomething", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },

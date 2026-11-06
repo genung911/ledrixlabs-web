@@ -33,13 +33,16 @@ export type CatalogRow = {
   component: CatalogComponent;
   /** Already in the template — the item's label, so the panel can say where. */
   present: string | null;
+  /** …and the item itself (a switched-off item counts: it is still in the template, offered on site). */
+  presentId: string | null;
   /** Readings and data plates need Evidence, which the phone cannot collect yet. */
   evidenceOnly: boolean;
 };
 
 const components = (n: TemplateNode): TemplateNode[] => {
   const out: TemplateNode[] = [];
-  const walk = (x: TemplateNode) => (x.children ?? []).forEach(c => { if (c.kind === 'component') out.push(c); walk(c); });
+  // Switched-off items (the `trimmed` pocket) are still in the template — an optional part must not be suggested again.
+  const walk = (x: TemplateNode) => [...(x.children ?? []), ...(x.trimmed ?? [])].forEach(c => { if (c.kind === 'component') out.push(c); walk(c); });
   walk(n);
   return out;
 };
@@ -54,7 +57,7 @@ export function catalogRows(system: TemplateNode, typeId: string): Array<{ label
     rows: g.components.map(c => {
       const ref = catalogRefOf(type.id, c.id);
       const hit = have.find(n => n.catalogRef === ref) ?? have.find(n => !n.catalogRef && catalogLabelMatches(c, n.label));
-      return { component: c, present: hit ? hit.label : null, evidenceOnly: c.kind !== 'part' };
+      return { component: c, present: hit ? hit.label : null, presentId: hit ? hit.id : null, evidenceOnly: c.kind !== 'part' };
     }),
   }));
 }
@@ -144,3 +147,61 @@ export function catalogOps(tree: InspectionTemplate, system: TemplateNode, typeI
 
 /** The defaults a pick starts with (DECISIONS 2026-10-26 (third) #3): a part → Condition on, Details off. */
 export const defaultPick = (c: CatalogComponent): Pick => ({ id: c.id, condition: c.kind === 'part', details: false });
+
+// ── Suggestions inside each type's list (owner 2026-11-05, mockup https://claude.ai/artifact/DbUgEVKPbCeigN6G8YTaAL:
+// "merged with the present and not present items so its one list … labled as typical and Ledrix Suggestion"). The
+// separate catalog box is gone: a typed system's type list shows the parts Ledrix suggests for that type that the
+// template does not have yet, each added with one click. "Typical" parts are added switched ON; "If present" parts are
+// added switched OFF (the set-aside pocket, offered on site), so checklists stay short and the inspector adds one when
+// the unit has it. Readings stay hidden until the phone can collect them.
+
+/** The catalog equipment types a type-question answer stands for: their rule, as this template can carry it, reads
+ *  that field and includes that answer (Gas Furnace → gas furnace; Boiler → gas, oil and electric boiler). */
+export function catalogTypesForAnswer(tree: InspectionTemplate, system: TemplateNode, field: string, value: string): CatalogEquipmentType[] {
+  return catalogTypesForSystem(system).filter(t => { const r = ruleFor(tree, t); return !!r && r.field === field && r.anyOf.includes(value); });
+}
+
+/** Catalog types this system offers that a type question does NOT decide (Heating's mini-split follows Distribution). */
+export function catalogTypesOffField(tree: InspectionTemplate, system: TemplateNode, field: string): CatalogEquipmentType[] {
+  return catalogTypesForSystem(system).filter(t => ruleFor(tree, t)?.field !== field);
+}
+
+export type Suggestion = { type: CatalogEquipmentType; component: CatalogComponent };
+
+/** What Ledrix suggests that the template does not have: parts only (readings need Evidence), one per name. */
+export function suggestionsFor(system: TemplateNode, types: CatalogEquipmentType[]): Suggestion[] {
+  const out: Suggestion[] = [];
+  const seen = new Set<string>();
+  for (const type of types) for (const g of catalogRows(system, type.id)) for (const r of g.rows) {
+    if (r.present || r.evidenceOnly) continue;
+    const k = `${type.id}/${r.component.id}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ type, component: r.component });
+  }
+  return out;
+}
+
+/** The template's items that are a catalog part of these types, with how Ledrix lists them (for the "Typical" tag). */
+export function catalogMatches(system: TemplateNode, types: CatalogEquipmentType[]): Record<string, CatalogComponent['presence']> {
+  const out: Record<string, CatalogComponent['presence']> = {};
+  for (const type of types) for (const g of catalogRows(system, type.id)) for (const r of g.rows) {
+    if (r.presentId && !r.evidenceOnly && out[r.presentId] !== 'typical') out[r.presentId] = r.component.presence;
+  }
+  return out;
+}
+
+/** Add suggested parts of ONE equipment type as one change set: each with its default pick, the type's rule, and —
+ *  for an "If present" part — switched off straight away (trimNode into the pocket, offered on site). */
+export function suggestOps(tree: InspectionTemplate, system: TemplateNode, typeId: string, componentIds: string[]): TemplateOp[] {
+  const type = catalogType(typeId);
+  if (!type) return [];
+  const comps = type.groups.flatMap(g => g.components).filter(c => componentIds.includes(c.id));
+  const add = catalogOps(tree, system, typeId, comps.map(defaultPick));
+  const off = comps.filter(c => c.presence === 'if_present').map(c => catalogRefOf(typeId, c.id));
+  const trims: TemplateOp[] = [];
+  for (const o of add) {
+    if (o.op === 'addNode' && o.node.kind === 'component' && o.node.catalogRef && off.includes(o.node.catalogRef)) trims.push({ op: 'trimNode', nodeId: o.node.id });
+  }
+  return [...add, ...trims];
+}

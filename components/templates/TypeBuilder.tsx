@@ -4,7 +4,8 @@
 // https://claude.ai/artifact/RUWz7xuKn2qPkq22eFEMS9). Cooling covers six kinds of AC but an inspector only ever sees one
 // kind's items; this shows the builder the same thing: type chips, the chosen type's items — the ones every type shares
 // listed in each type, no separate "Every" section (owner 2026-11-05) — (shared
-// ones say where else they show), a grid of items × types whose ticks write the item's rule, count copies as one row,
+// ones carry no "Also: …" text — owner 2026-11-05: "It adds confusion"), Ledrix's suggested parts at the end of each
+// type's list (CatalogPanel.LedrixSuggestions; matching items tagged Typical), a grid of items × types whose ticks write the item's rule, count copies as one row,
 // and items that follow another system's answer in their own section. The layout itself is lib/templates/typeLayout
 // (pure); every edit is template ops through `onOps`, one change set each.
 import { useState } from 'react';
@@ -12,6 +13,8 @@ import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/cor
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel';
 import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
+import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
+import { LedrixSuggestions } from './CatalogPanel';
 import { ChipList, Pill, Toggle, btn, field, label } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -74,11 +77,15 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
       <ul className="divide-y divide-hairline">{children}</ul>
     </div>
   );
-  const shared = (n: TemplateNode, v: string) => {
+  // Ledrix's equipment for the chosen answer (Gas Furnace → gas furnace; Boiler → three boilers), and what of the
+  // template it already covers: a matching Typical part says so.
+  const catTypes = pick === GRID || pick === FULL_LIST ? [] : catalogTypesForAnswer(tree, system, layout.question.field, pick);
+  const offTypes = catalogTypesOffField(tree, system, layout.question.field);
+  const matches = catalogMatches(system, [...catTypes, ...offTypes]);
+  const typical = (n: TemplateNode) => (matches[n.id] === 'typical' ? <Pill tone="ok">Typical</Pill> : null);
+  const tagOf = (n: TemplateNode) => {
     const g = copyGroupOf(layout, n.id);
-    const others = (layout.shows[n.id] ?? []).filter(x => x !== v);
-    if (g) return <Pill tone="warn">×1–{g.items.length}</Pill>;
-    return others.length ? <span className="max-w-[45%] truncate text-[11px] text-muted" title={others.join(', ')}>Also: {others.join(', ')}</span> : <Pill>Only {v}</Pill>;
+    return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : typical(n);
   };
 
   const otherSection = layout.other.length > 0 && section(SECTION_ID.other, `When the ${layout.other[0].question.systemLabel.toLowerCase()} answer says so`, layout.other.length, <>
@@ -149,9 +156,11 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
     <div className="space-y-3">
       {section(SECTION_ID.type, pick, rowsForType(layout, pick).length, <>
         {row(layout.questionNode, <Pill tone="accent">The type question</Pill>)}
-        {layout.every.map(n => row(n, <Pill>All types</Pill>))}
-        {own.map(n => row(n, shared(n, pick)))}
+        {/* No "All types" / "Also: …" text (owner 2026-11-05) — the only tag is Ledrix's Typical. */}
+        {layout.every.map(n => row(n, tagOf(n)))}
+        {own.map(n => row(n, tagOf(n)))}
         {!own.length && <li className="px-3 py-3 text-xs text-muted">No items only for {pick} yet.</li>}
+        {catTypes.length > 0 && <li className="px-3 py-2"><LedrixSuggestions tree={tree} system={system} types={catTypes} onOps={apply} disabled={disabled} /></li>}
         <li className="px-3 py-2">
           <form className="flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); const o = addForTypeOps(tree, system, layout, pick, newName); if (o.length && apply(o)) setNewName(''); }}>
             <input value={newName} onChange={e => setNewName(e.target.value)} disabled={disabled} aria-label={`New item for ${pick}`} placeholder={`+ Add item for ${pick}`} className={`${field} min-w-[10rem] flex-1 py-1.5`} />
@@ -163,6 +172,7 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
       {gatedSections}
       {specialSection}
       {otherSection}
+      {offTypes.map(t => <LedrixSuggestions key={t.id} tree={tree} system={system} types={[t]} onOps={apply} disabled={disabled} when />)}
     </div>
   );
 }

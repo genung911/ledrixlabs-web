@@ -11,7 +11,8 @@ import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/tem
 import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from '@/lib/templates/editorModel';
 import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
-import { CatalogPanel } from './CatalogPanel';
+import { LedrixSuggestions } from './CatalogPanel';
+import { catalogTypesForSystem } from '@/lib/templates/catalogModel';
 import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
@@ -205,7 +206,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         </form>
       </div>
 
-      <CatalogPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
+      {/* A system the type chips don't lay out gets Ledrix's suggestions at the end of its list (owner 2026-11-05). */}
+      {!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions tree={tree} system={system} types={catalogTypesForSystem(system)} onOps={onOps} disabled={disabled} when />}
       <SpecialHomesPanel tree={tree} system={system} onOps={onOps} disabled={disabled} />
 
     </div>
