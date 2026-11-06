@@ -913,6 +913,11 @@ const RULES = {
     return !/Also: \{|<Pill>Only |<Pill>All types<\/Pill>/.test(tb) && /matches\[n\.id\] === 'typical' \? <Pill tone="ok">Typical<\/Pill>/.test(tb)
       && /\{v\} <span className="font-normal opacity-70">\{rowsForType\(layout, v\)\.length\}<\/span><\/>/.test(tb) && !/suggestionsFor/.test(tb) ? [] : ['components/templates/TypeBuilder.tsx'];
   },
+  'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': all => {
+    const e = strip(all[EDIT] ?? '');
+    return /const ASK_LEDRIX = false;/.test(e) && /\{ASK_LEDRIX && <div role="tablist" aria-label="Editor mode"/.test(e) && /\{ASK_LEDRIX && <div className=\{`min-h-0 flex-1 \$\{mode === 'ledrix'[\s\S]{0,80}<LedrixPanel/.test(e)
+      && (e.match(/<LedrixPanel/g) ?? []).length === 1 ? [] : [EDIT];
+  },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
     const opsUsed = [...s.matchAll(/op: '(\w+)'/g)].map(m => m[1]);
@@ -1092,10 +1097,12 @@ const MUT = {
   'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': rep('components/templates/Tree.tsx', '{found.length > 0 && (', '{(s.children ?? []).map(c => <li key={c.id}>{c.label}</li>)}{found.length > 0 && ('),
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': rep('components/templates/TypeBuilder.tsx', '<div className="flex flex-wrap gap-1.5" role="group"', '<div className="flex gap-1.5 overflow-x-auto" role="group"'),
   'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': rep('components/templates/Workspace.tsx', 'useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);', ''),
+  'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': rep(EDIT, 'const ASK_LEDRIX = false;', 'const ASK_LEDRIX = true;'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)', rep(EDIT, "{ASK_LEDRIX && <div role=\"tablist\" aria-label=\"Editor mode\"", "{true && <div role=\"tablist\" aria-label=\"Editor mode\""), 'the Editor / Ask Ledrix tabs show again'],
   ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/TypeBuilder.tsx', '{catTypes.length > 0 && <li className="px-3 py-2"><LedrixSuggestions', '{false && <li className="px-3 py-2"><LedrixSuggestions'), 'a type\'s list loses the suggestions'],
   ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/CatalogPanel.tsx', "{c.presence === 'typical' ? '+ Add' : '+ Add as optional'}", "+ Add"), 'an If-present part no longer says it is added as optional'],
   ['types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count', rep('components/templates/TypeBuilder.tsx', '{layout.every.map(n => row(n, tagOf(n)))}', '{layout.every.map(n => row(n, <Pill>All types</Pill>))}'), 'the All types tag is back'],

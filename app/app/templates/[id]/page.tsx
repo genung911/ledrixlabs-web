@@ -58,6 +58,11 @@ const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'review', label: 'Review & Publish', icon: 'M4 12l16-8-6 16-3-7-7-1z' },
 ];
 
+/** Ask Ledrix (the template assistant) is HIDDEN, not deleted (owner 2026-11-05: "hide both" — the tab and, with only one
+ *  tab left, the Editor label). Ledrix's suggested parts in each type's list cover "what am I missing?" with no model
+ *  call. The panel, /api/template-assistant and lib/templates/assistant.ts stay as they are; flip this to bring it back. */
+const ASK_LEDRIX = false;
+
 export default function TemplateEditorPage() {
   const { access } = useWorkspace();
   const params = useParams<{ id: string }>();
@@ -307,19 +312,19 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
-                <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">
+                {ASK_LEDRIX && <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">
                   {(['edit', 'ledrix'] as const).map(t => <button key={t} role="tab" aria-selected={mode === t} onClick={() => setMode(t)}
                     className={`-mb-px border-b-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide ${mode === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
                     {t === 'edit' ? 'Editor' : <>Ask Ledrix <Pill tone="accent">AI</Pill></>}</button>)}
-                </div>
+                </div>}
                 <div className={`${mode === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
                   <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab} typeView={selView} reveal={reveal}
                     onOpenBuildingTypes={() => setSection('buildings')} />
                 </div>
-                <div className={`min-h-0 flex-1 ${mode === 'ledrix' ? 'flex flex-col' : 'hidden'}`}>
+                {ASK_LEDRIX && <div className={`min-h-0 flex-1 ${mode === 'ledrix' ? 'flex flex-col' : 'hidden'}`}>
                   <LedrixPanel core={m.core} change={d.change} selection={sel} onSelect={select} author={me} readOnly={readOnly}
                     target={m.live ? { templateId: m.live.id } : { draftId: m.server!.id }} />
-                </div>
+                </div>}
               </section>
               <aside aria-label="Inspector preview" className={`${view === 'preview' ? 'flex' : 'hidden'} min-h-0 flex-col items-center gap-3 overflow-y-auto lg:col-span-2 2xl:col-span-1 2xl:flex`}>
                 <PhonePreview tree={tree} selection={sel} onSelect={s => select(s)} answer={answer} />
