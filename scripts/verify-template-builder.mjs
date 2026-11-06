@@ -1110,6 +1110,15 @@ const RULES = {
       && /\{g\.every\.length > 0\s*\? stage\(num\(\), 'Checked in every home'/.test(mb) && /: <div className="border-t border-hairline first:border-t-0">\{add\}<\/div>\}/.test(mb)
       && !/\+\+k/.test(mb.replace('shown > 1 ? ++k : null', '')) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
+  'materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels': all => {
+    const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
+    // Owner 2026-11-06: "I do not have a way to rename a section like Surfaces" → "add a pencil, no mock up".
+    return /: <GroupName label=\{g\.node\.label\} disabled=\{disabled\} onRename=\{v => onOps\(ops\.rename\(g\.node\.id, v\)\)\} \/>\}/.test(mb)
+      && /\{g\.node\.id === system\.id\s*\? <p [^>]*>\{system\.label\}<\/p>/.test(mb)
+      && /aria-label=\{`Rename \$\{label\}`\}[^>]*disabled=\{disabled\}/.test(mb) && /onClick=\{\(\) => \{ setV\(label\); cancelled\.current = false; setEditing\(true\); \}\}/.test(mb)
+      && /if \(cancelled\.current\) \{ cancelled\.current = false; return; \} const t = v\.trim\(\); if \(t && t !== label\) onRename\(t\);/.test(mb)
+      && /if \(e\.key === 'Escape'\) \{ cancelled\.current = true;/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1306,6 +1315,11 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', ': <GroupName label={g.node.label} disabled={disabled} onRename={v => onOps(ops.rename(g.node.id, v))} />}', ': <p>{g.node.label}</p>}'), 'the pencil is gone'],
+  ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'onRename={v => onOps(ops.rename(g.node.id, v))}', 'onRename={v => onOps(ops.rename(system.id, v))}'), 'the pencil renames the system'],
+  ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'if (t && t !== label) onRename(t);', 'if (t && t !== label) {}'), 'saving does nothing'],
+  ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', "if (e.key === 'Escape') { cancelled.current = true;", "if (e.key === 'Escape') { cancelled.current = false;"), 'Esc saves instead of cancelling'],
+  ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'title="Rename group" disabled={disabled}', 'title="Rename group"'), 'the pencil works while the draft is locked'],
   ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', '{g.every.length > 0\n              ? stage(', '{true\n              ? stage('), 'the empty "every home" heading comes back'],
   ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', 'const num = () => (shown > 1 ? ++k : null);', 'const num = () => ++k;'), 'a lone part is numbered 1 again'],
   ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', ': <div className="border-t border-hairline first:border-t-0">{add}</div>}', ': null}'), 'the Add box goes with the empty heading'],

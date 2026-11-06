@@ -5,7 +5,7 @@
 // brings, or, with no materials question, the items that record a choice — (2) what each answer of any other question
 // brings ("Brought by", 2026-11-06), then (3) what every home gets. The layout is
 // lib/templates/materialLayout (pure); every edit is template ops through `onOps`, one change set each.
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { itemSummary, ops } from '@/lib/templates/editorModel';
@@ -52,7 +52,9 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
           onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />;
         return (
           <section key={g.node.id} aria-label={g.node.label} className="overflow-hidden rounded-xl border border-hairline">
-            <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{g.node.id === system.id ? system.label : g.node.label}</p>
+            {g.node.id === system.id
+              ? <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{system.label}</p>
+              : <GroupName label={g.node.label} disabled={disabled} onRename={v => onOps(ops.rename(g.node.id, v))} />}
             {g.questions.map(q => stage(num(), q.attr.label || q.node.label, ' · the inspector ticks every one seen',
               <MaterialQuestionRows key={q.field} q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />))}
             {!g.questions.length && g.materials.length > 0 && stage(num(), 'Recorded', ' · the inspector picks an answer', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
@@ -63,6 +65,33 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** A group's heading, with a pencil that turns it into a box (owner 2026-11-06: rename a group where you work, not only
+ *  in Full list). Enter or leaving it saves — one change, through the editor's rename — and Esc cancels. */
+function GroupName({ label, onRename, disabled }: { label: string; onRename: (v: string) => boolean; disabled: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(label);
+  const cancelled = useRef(false);
+  if (editing) {
+    const done = () => { setEditing(false); if (cancelled.current) { cancelled.current = false; return; } const t = v.trim(); if (t && t !== label) onRename(t); };
+    return (
+      <div className="border-b border-hairline bg-ground px-2 py-1">
+        <input autoFocus value={v} aria-label="Group name" onChange={e => setV(e.target.value)} onBlur={done}
+          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { cancelled.current = true; (e.target as HTMLInputElement).blur(); } }}
+          className="w-full rounded-md border border-accent bg-surface px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink outline-none" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1 border-b border-hairline bg-ground py-0.5 pl-3 pr-1">
+      <p className="min-w-0 flex-1 truncate py-1 text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <button type="button" aria-label={`Rename ${label}`} title="Rename group" disabled={disabled} className={`${btn.icon} shrink-0 disabled:opacity-40`}
+        onClick={() => { setV(label); cancelled.current = false; setEditing(true); }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+      </button>
     </div>
   );
 }
