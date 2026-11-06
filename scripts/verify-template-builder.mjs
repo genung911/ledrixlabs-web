@@ -530,6 +530,19 @@ async function runDesktop(files) {
         && b4.ok && !b4.tree.associationNotInspected && b5.ok && !b5.tree.associationNotInspected);
       const b6 = S.buildStarterTree('company', S.forkTree(DEF, 'Mine'), DEF, choice({ propertyTypes: ['manufactured'], also: ['older', 'log'] }));
       r('kind of home: a copy of the company’s own template is not asked (nothing added)', b6.ok && activeSpecial(b6.tree).length === 0 && !b6.tree.olderCutoffYear);
+      // ── strictly what was picked (owner 2026-11-05, mockup HANP7FdGGVT542cfPt4YaU) ──
+      const anySpecial = (t) => { const out = []; const w = (n) => { if (SH.SPECIAL_HOMES.some(e => e.id === n.id)) out.push(n.id); (n.children ?? []).forEach(w); (n.trimmed ?? []).forEach(w); }; t.systems.forEach(w); (t.trimmedSystems ?? []).forEach(w); return out.sort(); };
+      const specialGroups = (t) => { let n = 0; const w = (x) => { if (x.kind !== 'component' && /special/i.test(x.label ?? '')) n++; (x.children ?? []).forEach(w); (x.trimmed ?? []).forEach(w); }; t.systems.forEach(w); return n; };
+      r('only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group',
+        b5.ok && anySpecial(b5.tree).length === 0 && specialGroups(b5.tree) === 0 && SH.templateKinds(b5.tree).length === 0 && b5.tree.alsoKinds === undefined, anySpecial(b5.ok ? b5.tree : DEF).slice(0, 4).join());
+      r('only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older',
+        b1.ok && JSON.stringify(anySpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort()) && JSON.stringify(b1.tree.alsoKinds) === JSON.stringify(['older'])
+        && SH.templateKinds({ ...b1.tree, propertyTypes: ['manufactured'] }).join() === 'manufactured,older');   // the page stores propertyTypes on the fork first
+      r('only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older',
+        b2.ok && JSON.stringify(b2.tree.alsoKinds) === JSON.stringify(['new_construction']) && SH.templateKinds({ olderCutoffYear: 1950 }).join() === 'older'
+        && SH.templateKinds({}).length === 0 && SH.templateKinds({ propertyTypes: ['multi_unit_many'], alsoKinds: ['log'] }).join() === 'multi_unit,log');
+      r('only what you pick: switching a kind off names exactly its active checkpoints', b1.ok && SH.activeKindCheckpoints(b1.tree, 'older').length > 0
+        && SH.activeKindCheckpoints(b1.tree, 'older').every(id => SH.SPECIAL_HOMES.find(e => e.id === id)?.kind === 'older') && SH.activeKindCheckpoints(b1.tree, 'log').length === 0);
       const p7 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['multi_unit_one'], also: ['log'] }));
       r('kind of home: multi-unit + log → those two kinds, every checkpoint ticked to start', p7.kinds.join() === 'multi_unit,log' && p7.ticked.length === 20);
       r('create: the blank start has no systems; every card reports real counts from its tree',
@@ -880,7 +893,8 @@ const RULES = {
   },
   'property types: picked on the Overview and when creating; shown and filtered on the Templates page': all => {
     const ov = strip(all['components/templates/Sections.tsx'] ?? ''), cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ls = strip(all['app/app/templates/page.tsx'] ?? '');
-    return /<PropertyTypePicker value=\{propertyTypesOf\(tree\)\}[^>]*onChange=\{v => onOps\(ops\.propertyTypes\(v\)\)\}/.test(ov)
+    const hk = strip(all['components/templates/HomeKinds.tsx'] ?? '');
+    return /<HomeKindsCard tree=\{tree\} onOps=\{onOps\} disabled=\{disabled\} \/>/.test(ov) && /<PropertyTypePicker value=\{pts\}[^>]*onChange=\{v => propose\(v, also\)\}/.test(hk) && /fields\.push\(\.\.\.ops\.propertyTypes\(nextPts\)\)/.test(hk)
       && /forked\.propertyTypes = picked/.test(cr) && /propertyTypesOf\(t\.tree\)\.includes\(ptFilter\)/.test(ls) ? [] : ['components/templates/Sections.tsx'];
   },
   // 2026-11-05 (owner rulings): the kind of home is asked under a Ledrix starting point and the draft is built by
@@ -922,6 +936,16 @@ const RULES = {
     const e = strip(all[EDIT] ?? '');
     return /const ASK_LEDRIX = false;/.test(e) && /\{ASK_LEDRIX && <div role="tablist" aria-label="Editor mode"/.test(e) && /\{ASK_LEDRIX && <div className=\{`min-h-0 flex-1 \$\{mode === 'ledrix'[\s\S]{0,80}<LedrixPanel/.test(e)
       && (e.match(/<LedrixPanel/g) ?? []).length === 1 ? [] : [EDIT];
+  },
+  'only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none': all => {
+    const p = strip(all['components/templates/SpecialHomesPanel.tsx'] ?? '');
+    return /const own = useMemo\(\(\) => new Set\(templateKinds\(tree\)\), \[tree\]\);/.test(p) && /specialRows\(tree, system, source\)\.filter\(r => own\.has\(r\.kind\)\)/.test(p)
+      && /if \(isCopiedSystem\(system\) \|\| !source \|\| !rows\.length \|\| rows\.every\(r => r\.inTemplate\)\) return null;/.test(p) ? [] : ['components/templates/SpecialHomesPanel.tsx'];
+  },
+  'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': all => {
+    const h = strip(all['components/templates/HomeKinds.tsx'] ?? '');
+    return /if \(!added\.length && !removedActive\.length\) \{ onOps\(fields\); setPending\(null\); return; \}/.test(h) && /const r = starterOps\(tree, ids, source\);/.test(h)
+      && /onOps\(\[\.\.\.pending\.fields, \.\.\.r\.ops\]\)/.test(h) && /\.\.\.\(off \? switchOff\.map\(id => \(\{ op: 'trimNode', nodeId: id \}\)/.test(h) && !/op: 'addNode'/.test(h) ? [] : ['components/templates/HomeKinds.tsx'];
   },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
@@ -1103,10 +1127,14 @@ const MUT = {
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': rep('components/templates/TypeBuilder.tsx', '<div className="flex flex-wrap gap-1.5" role="group"', '<div className="flex gap-1.5 overflow-x-auto" role="group"'),
   'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': rep('components/templates/Workspace.tsx', 'useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);', ''),
   'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': rep(EDIT, 'const ASK_LEDRIX = false;', 'const ASK_LEDRIX = true;'),
+  'only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none': rep('components/templates/SpecialHomesPanel.tsx', 'specialRows(tree, system, source).filter(r => own.has(r.kind))', 'specialRows(tree, system, source)'),
+  'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': rep('components/templates/HomeKinds.tsx', 'if (!added.length && !removedActive.length) { onOps(fields); setPending(null); return; }', 'onOps(fields); setPending(null); return;'),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none', rep('components/templates/SpecialHomesPanel.tsx', '|| rows.every(r => r.inTemplate)) return null;', ') return null;'), 'the card stays when there is nothing left to add'],
+  ['only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)', rep('components/templates/HomeKinds.tsx', "...(off ? switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp) : [])", "...switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp)"), '"Keep them" switches the checkpoints off anyway'],
   ['ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)', rep(EDIT, "{ASK_LEDRIX && <div role=\"tablist\" aria-label=\"Editor mode\"", "{true && <div role=\"tablist\" aria-label=\"Editor mode\""), 'the Editor / Ask Ledrix tabs show again'],
   ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/TypeBuilder.tsx', '{catTypes.length > 0 && <li className="px-3 py-2"><LedrixSuggestions', '{false && <li className="px-3 py-2"><LedrixSuggestions'), 'a type\'s list loses the suggestions'],
   ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/CatalogPanel.tsx', "{c.presence === 'typical' ? '+ Add' : '+ Add as optional'}", "+ Add"), 'an If-present part no longer says it is added as optional'],
@@ -1148,6 +1176,10 @@ const EXEC_MUT = [
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
+  { name: 'a starting point keeps the unpicked kinds switched off', file: 'startingPoints.ts', from: "const base = withoutSetAsideSpecials(tree);", to: "const base = tree;", check: 'only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group', run: runDesktop },
+  { name: 'Older / Log are forgotten after creation', file: 'startingPoints.ts', from: "if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });", to: "", check: 'only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older', run: runDesktop },
+  { name: 'a legacy cutoff year no longer means Older', file: 'core/specialHomes.ts', from: "const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';", to: "const legacyOlder = false;", check: 'only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older', run: runDesktop },
+  { name: 'switching Older off also switches off other kinds', file: 'core/specialHomes.ts', from: "return SPECIAL_HOMES.filter(s => s.kind === kind && isActive(tpl, s.id)).map(s => s.id);", to: "return SPECIAL_HOMES.filter(s => isActive(tpl, s.id)).map(s => s.id);", check: 'only what you pick: switching a kind off names exactly its active checkpoints', run: runDesktop },
   { name: 'an If-present suggestion is added switched on', file: 'catalogModel.ts', from: "if (o.op === 'addNode' && o.node.kind === 'component' && o.node.catalogRef && off.includes(o.node.catalogRef)) trims.push", to: "if (false) trims.push", check: 'suggest: a Typical part is added switched on, an If-present part switched off (offered on site) — one change set, with the equipment rule', run: runDesktop },
   { name: 'a switched-off part is suggested again', file: 'catalogModel.ts', from: "[...(x.children ?? []), ...(x.trimmed ?? [])].forEach", to: "[...(x.children ?? [])].forEach", check: 'suggest: a switched-off part is still in the template, so it is not suggested again', run: runDesktop },
   { name: 'Heating suggests the heads Cooling checks', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly || r.component.checkedIn) continue;", to: "if (r.present || r.evidenceOnly) continue;", check: 'suggest: under the mini-split chip Heating suggests only what Cooling does not check (the outdoor defrost drain)', run: runDesktop },

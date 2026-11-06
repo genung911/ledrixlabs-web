@@ -15,6 +15,10 @@ import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel
 import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
+import { SPECIAL_HOMES, SPECIAL_KINDS } from '@/lib/templateBuilder/core/specialHomes';
+
+/** A special-home checkpoint says which kind of home it is for ("Manufactured"), not just "Special home" (owner 2026-11-05). */
+const kindLabel = (id: string) => { const k = SPECIAL_HOMES.find(s => s.id === id)?.kind; return SPECIAL_KINDS.find(x => x.id === k)?.label ?? 'Special home'; };
 import { ChipList, Pill, Toggle, btn, field, label } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -96,7 +100,7 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
       {g.nodes.map(n => row(n, <span className="text-[11px] text-muted">Follows {g.question.label}</span>))}
     </>));
   const specialSection = layout.special.length > 0 && section(SECTION_ID.special, 'Special homes', layout.special.length, <>
-      {layout.special.map(n => row(n, <Pill>Special home</Pill>))}
+      {layout.special.map(n => row(n, <Pill>{kindLabel(n.id)}</Pill>))}
     </>);
 
   if (pick === GRID) {

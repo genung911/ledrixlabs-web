@@ -158,7 +158,17 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   // may still inspect"): the systems every NEW job from this template starts with marked Not inspected — association
   // responsibility (specialHomes.associationPremarks; seeded once at inspection creation, cleared by the inspector).
   associationNotInspected: { check: checkSystemIdList, class: 'policy', why: 'which systems start each job marked Not inspected — association responsibility' },
+  // 2026-11-05 (owner: a template holds only the homes it is for): Older / Log / New construction, beside propertyTypes.
+  alsoKinds: { check: checkAlsoKinds, class: 'content', why: 'which other kinds of home it is for (older, log, new construction)' },
 };
+
+const ALSO_KIND_IDS = ['older', 'log', 'new_construction'];
+function checkAlsoKinds(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  if (v.some(x => !ALSO_KIND_IDS.includes(x as string))) return `may only hold ${ALSO_KIND_IDS.join(', ')}`;
+  if (new Set(v).size !== v.length) return 'lists a kind twice';
+  return null;
+}
 
 function checkSystemIdList(v: unknown): string | null {
   if (!Array.isArray(v)) return 'must be a list';

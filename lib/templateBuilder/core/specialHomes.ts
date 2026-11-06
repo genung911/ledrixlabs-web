@@ -172,6 +172,39 @@ export function specialRows(tpl: InspectionTemplate, system: Pick<TemplateNode, 
   });
 }
 
+/** The kinds of home a template is for (owner 2026-11-05, mockup HANP7FdGGVT542cfPt4YaU: "I shouldnt see anything about
+ *  manufactured/mobile homes since i didnt check that one … strictly what i select"): its property types' kinds plus
+ *  `alsoKinds`. A template from before `alsoKinds` that set an older-home cutoff counts as Older. None = single-family
+ *  only: the builder offers no special-home checkpoints at all. */
+export function templateKinds(tpl: Pick<InspectionTemplate, 'propertyTypes' | 'alsoKinds' | 'olderCutoffYear'>): SpecialKind[] {
+  const own = new Set<string>(Array.isArray(tpl.propertyTypes) ? tpl.propertyTypes : []);
+  const also = new Set<string>(Array.isArray(tpl.alsoKinds) ? tpl.alsoKinds : []);
+  const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';
+  return SPECIAL_KINDS.filter(k => k.propertyTypes.some(p => own.has(p)) || also.has(k.id) || (k.id === 'older' && legacyOlder)).map(k => k.id);
+}
+
+/** A starting point's copy WITHOUT Ledrix's set-aside special-home checkpoints (and any set-aside group holding one), so a template carries nothing for a home it is not for — the phone offers set-aside items on site. The kinds
+ *  picked are then added back, active, by starterOps. Active nodes are never touched. Pure: returns a new tree. */
+export function withoutSetAsideSpecials(tpl: InspectionTemplate): InspectionTemplate {
+  const t = clone(tpl);
+  // A set-aside GROUP that holds any special checkpoint is Ledrix's "Special Homes" container and goes whole — the
+  // shipped Exterior one also carries three manufactured-home repeats the 42 → 32 cleanup took off the list.
+  const holds = (n: TemplateNode): boolean => [...(n.children ?? []), ...(n.trimmed ?? [])].some(c => SPECIAL_IDS.has(c.id) || holds(c));
+  const special = (n: TemplateNode): boolean => SPECIAL_IDS.has(n.id) || (n.kind !== 'component' && holds(n));
+  const prune = (n: TemplateNode) => {
+    if (n.trimmed) { n.trimmed = n.trimmed.filter(x => !special(x)); if (!n.trimmed.length) delete n.trimmed; }
+    (n.children ?? []).forEach(prune);
+    (n.trimmed ?? []).forEach(prune);
+  };
+  t.systems.forEach(prune);
+  return t;
+}
+
+/** Every special checkpoint of `kind` an inspector sees in this template (active), for switching a kind off. */
+export function activeKindCheckpoints(tpl: InspectionTemplate, kind: SpecialKind): string[] {
+  return SPECIAL_HOMES.filter(s => s.kind === kind && isActive(tpl, s.id)).map(s => s.id);
+}
+
 /** The kind a template's property types point at, if any (shown first, marked on its chip). */
 export function kindForTemplate(tpl: Pick<InspectionTemplate, 'propertyTypes'>): SpecialKind | null {
   const own = new Set<string>(Array.isArray(tpl.propertyTypes) ? tpl.propertyTypes : []);

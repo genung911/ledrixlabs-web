@@ -17,7 +17,7 @@
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { CompanyContext, InspectionType, LiveTemplate } from './api';
 import { isCovered } from './editorModel';
-import { ASSOCIATION_SYSTEMS, starterCheckpoints, starterKinds, starterOps, type SpecialKind } from '@/lib/templateBuilder/core/specialHomes';
+import { ASSOCIATION_SYSTEMS, starterCheckpoints, starterKinds, starterOps, withoutSetAsideSpecials, type SpecialKind } from '@/lib/templateBuilder/core/specialHomes';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { validateOps } from '@/lib/templateBuilder/core/templateValidate';
 
@@ -184,14 +184,20 @@ export function buildStarterTree(kind: StartKind, tree: InspectionTemplate, sour
   { ok: true; tree: InspectionTemplate } | { ok: false; error: string } {
   if (!asksKindOfHome(kind)) return { ok: true, tree };
   const plan = kindPlan(kind, c);
-  const r = starterOps(tree, plan.ticked, source);
+  // Owner 2026-11-05 (mockup HANP7FdGGVT542cfPt4YaU, "strictly what i select"): the copy keeps NONE of Ledrix's set-aside
+  // special-home checkpoints; only the picked kinds' ticked ones are added back, active. The kinds beyond property types
+  // are kept with the template (alsoKinds) so the builder offers only those.
+  const base = withoutSetAsideSpecials(tree);
+  const r = starterOps(base, plan.ticked, source);
   if (!r.ok) return { ok: false, error: r.error };
   const fields: TemplateOp[] = [];
+  const also = plan.kinds.filter((k): k is 'older' | 'log' | 'new_construction' => k === 'older' || k === 'log' || k === 'new_construction');
+  if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });
   if (c.also.includes('older') && c.olderCutoffYear !== null) fields.push({ op: 'setTemplateField', field: 'olderCutoffYear', value: c.olderCutoffYear });
   if (plan.condo && c.associationPremark) fields.push({ op: 'setTemplateField', field: 'associationNotInspected', value: [...ASSOCIATION_SYSTEMS] });
   const all = [...r.ops, ...fields];
-  if (!all.length) return { ok: true, tree };
-  const rep = validateOps(tree, all);
+  if (!all.length) return { ok: true, tree: base };
+  const rep = validateOps(base, all);
   if (!rep.ok) return { ok: false, error: rep.ops.flatMap(o => o.errors.map(e => e.message)).join('; ') || 'The starting checkpoints could not be added.' };
   return { ok: true, tree: rep.result };
 }

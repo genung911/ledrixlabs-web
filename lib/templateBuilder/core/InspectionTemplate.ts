@@ -98,6 +98,9 @@ export type InspectionTemplate = {
   propertyTypes?: import('./propertyTypes').PropertyTypeId[];
   /** The year before which the company calls a home "older" (app, 2026-11-05). Stored only. */
   olderCutoffYear?: number;
+  /** Older / Log / New construction — the kinds of home this template is for beyond its property types (owner
+   *  2026-11-05; mirrors the app's InspectionTemplate.alsoKinds). */
+  alsoKinds?: Array<'older' | 'log' | 'new_construction'>;
   /** Systems every NEW job starts with marked Not inspected — association responsibility (app, 2026-11-05). */
   associationNotInspected?: string[];
   /** Company overrides of the pinned set's requirements (app Phase A). */
