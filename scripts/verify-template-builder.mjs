@@ -842,7 +842,10 @@ const RULES = {
     if (!(sw.includes('system') && sw.filter(x => x === 'node').length === 2 && sw.includes('off.node'))) bad.push(`Workspace switches: ${JSON.stringify(sw)}`);
     const ui = Object.entries(all).filter(([f]) => /^components\/templates\/[^/]+\.tsx$/.test(f)).map(([f, t]) => [f, strip(t)]);
     for (const [f, t] of ui) if (/Set this (system|group|item) aside|label: 'Set aside'|ops\.setAside\(|ops\.restore\(|>Restore</.test(t)) bad.push(f);
-    if (!/offKids\(n\)\.map\(t => offRow\(/.test(tree) || !/offSystems\.map\(/.test(tree)) bad.push('Tree: off groups/items/systems not shown');
+    // owner 2026-11-05 (systems-only menu): off SYSTEMS stay in the menu; off groups/items are the panel's "Switched off"
+    // section, and the menu's search still finds them, marked off.
+    if (!/offSystems\.map\(/.test(tree) || !/for \(const o of m\.trimmed \?\? \[\]\) if \(o\.label\.toLowerCase\(\)\.includes\(q\)\) out\.push\(\{ node: o, trail: t, off: true \}\)/.test(tree)
+      || !/id=\{SECTION_ID\.off\}/.test(parts)) bad.push('off groups/items/systems not shown');
     if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
     return bad;
   },
@@ -943,11 +946,11 @@ const RULES = {
     const r = strip(all['components/templates/RuleEditor.tsx'] ?? '');
     return /const next = writeRule\(conds\);/.test(r) && /onSave\(next\)/.test(r) && !/appliesWhen/.test(r) ? [] : ['components/templates/RuleEditor.tsx'];
   },
-  'types: a typed system shows the by-type layout in its panel and its tree, and the preview answers with the chosen type': all => {
+  'types: a typed system shows the by-type layout in its panel (never in the menu), and the preview answers with the chosen type': all => {
     const page = strip(all[EDIT] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tree = strip(all['components/templates/Tree.tsx'] ?? ''), pv = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return (/typeLayoutOf\(tree, s, defs\)/.test(page) && /const defs = rulesFor\(tree\)/.test(page) && /<PhonePreview tree=\{tree\} selection=\{sel\} onSelect=\{s => select\(s\)\} answer=\{answer\}/.test(page)
-      && /typeView=\{selView\}/.test(page) && /typeViewFor=\{typeViewFor\}/.test(page)
-      && /<TypeBuilder tree=\{tree\} system=\{system\} layout=\{typeView\.layout\}/.test(parts) && /typedRows\(s, tv\)/.test(tree)
+      && /typeView=\{selView\}/.test(page)
+      && /<TypeBuilder tree=\{tree\} system=\{system\} layout=\{typeView\.layout\}/.test(parts) && !/typeViewFor|typedRows/.test(tree)
       && /if \(answer\) next\[answer\.key\] = \[answer\.value\];/.test(pv)) ? [] : [EDIT, 'components/templates/EditorParts.tsx', 'components/templates/Tree.tsx', 'components/templates/PhonePreview.tsx'];
   },
   'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': all => {
@@ -956,18 +959,19 @@ const RULES = {
   },
   // SECOND PASS (owner 2026-11-05: "I don't think we need the breakdown on the left menu … Having it in both is confusing
   // and the screen jumps around").
-  'types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section': all => {
+  // owner 2026-11-05 (fourth pass): "I almost feel like the left menu should be systems only. Components are in the working
+  // area of the page." The type sections, special homes and switched-off parts are sections in the panel.
+  'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': all => {
     const t = strip(all['components/templates/Tree.tsx'] ?? ''), b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
-    const start = t.indexOf('const typedRows = ('), end = t.indexOf('return (', t.indexOf('return [', start) + 1);
-    const block = start > 0 ? t.slice(start, t.indexOf('};', t.indexOf('return [', start)) + 2) : '';
-    return (block && !/nodeId: n\.id|leaf\(|offRow\(|\.map\(n => /.test(block)
-      // owner 2026-11-05 (third pass): no "Every <system>" section — the shared items show in each type's own list
+    const a = t.indexOf('{shown.map((s, i) => {'), sysRow = a < 0 ? '' : t.slice(a, t.indexOf('{found.length > 0 && (', a));
+    return (!/\.children \?\? \[\]\)\.map\(c => /.test(t) && !/typedRows|sectionRow|offRow\(|AddToTemplate/.test(t)
+      && /onClick=\{\(\) => onSelect\(\{ systemId: s\.id, nodeId: null \}\)\}/.test(sysRow) && /\{itemCount\(s\)\}/.test(sysRow) && /ops\.move\(s\.id, null, i - 1\)/.test(sysRow)
+      && /const results = useMemo\(\(\) => new Map\(query \?/.test(t) && /onSelect\(\{ systemId: s\.id, nodeId: node\.id \}\)/.test(t)
+      && /const o = ops\.addSystem\(tree, v\);/.test(t) && />\+ Add system</.test(t) && !/Add system \/ component/.test(t)
+      // the panel's type lists keep the shared items (third pass): no "Every" section anywhere
       && !/Every \$\{(s|system)\.label/.test(t + b) && !/SECTION_ID\.every|tb-sec-every/.test(t + b)
-      && /sectionRow\(`type:\$\{v\}`, v, rowsForType\(L, v\)\.length, SECTION_ID\.type, \{ type: v \}\)/.test(block)
       && /rowsForType\(layout, v\)\.length/.test(b)
-      && /section\(SECTION_ID\.type, pick, rowsForType\(layout, pick\)\.length, <>\s*\{row\(layout\.questionNode, <Pill tone="accent">The type question<\/Pill>\)\}\s*\{layout\.every\.map\(n => row\(n, <Pill>All types<\/Pill>\)\)\}\s*\{own\.map\(n => row\(n, shared\(n, pick\)\)\)\}/.test(b)
-      && /if \(type\) tv\.onPick\(type\);/.test(block) && /onReveal\?\.\(anchor\);/.test(block)
-      && /onSelect\(\{ systemId: s\.id, nodeId: null \}\);/.test(block)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
+      && /section\(SECTION_ID\.type, pick, rowsForType\(layout, pick\)\.length, <>\s*\{row\(layout\.questionNode, <Pill tone="accent">The type question<\/Pill>\)\}\s*\{layout\.every\.map\(n => row\(n, <Pill>All types<\/Pill>\)\)\}\s*\{own\.map\(n => row\(n, shared\(n, pick\)\)\)\}/.test(b)) ? [] : ['components/templates/Tree.tsx', 'components/templates/TypeBuilder.tsx'];
   },
   // owner 2026-11-05: "merge those two by putting a pencil next to the system name to edit it" — systems, groups and items.
   'names: a system, group or item is renamed by the pencil beside its title, with no separate Name box': all => {
@@ -1058,20 +1062,17 @@ const MUT = {
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
   'catalog: the system panel offers the catalog, which adds only through catalogOps and never offers Evidence yet': rep('components/templates/CatalogPanel.tsx', '<Toggle on={false} disabled label={`Evidence for', '<Toggle on={false} label={`Evidence for'),
-  'types: a typed system shows the by-type layout in its panel and its tree, and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
+  'types: a typed system shows the by-type layout in its panel (never in the menu), and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
   'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': add('components/templates/TypeBuilder.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requires', value: [] };"),
-  'types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section':
-    rep('components/templates/Tree.tsx', "...(L.special.length ? [sectionRow('special'", "...L.every.map(n => <li key={n.id}><button onClick={() => onSelect({ systemId: s.id, nodeId: n.id })}>{n.label}</button></li>),\n      ...(L.special.length ? [sectionRow('special'"),
+  'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': rep('components/templates/Tree.tsx', '{found.length > 0 && (', '{(s.children ?? []).map(c => <li key={c.id}>{c.label}</li>)}{found.length > 0 && ('),
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': rep('components/templates/TypeBuilder.tsx', '<div className="flex flex-wrap gap-1.5" role="group"', '<div className="flex gap-1.5 overflow-x-auto" role="group"'),
   'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': rep('components/templates/Workspace.tsx', 'useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);', ''),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'sectionRow(`type:${v}`, v, rowsForType(L, v).length, SECTION_ID.type, { type: v })', 'sectionRow(`type:${v}`, v, L.typed.length, SECTION_ID.type, { type: v })'), 'a type row counts something other than its chip'],
-  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', 'onReveal?.(anchor);', ''), 'a section row does not reveal its section'],
-  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/Tree.tsx', '    return [\n', '    return [\n      sectionRow(\'every\', `Every ${s.label.toLowerCase()} system`, L.every.length + 1, \'tb-sec-every\'),\n'), 'the "Every" section is back in the tree'],
-  ['types: a typed system\'s tree shows ONLY its sections (no item rows), each counted as its panel counts it, and a row picks the type and reveals that section', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, <Pill>All types</Pill>))}\n', ''), 'a type\'s list leaves out the items every type shows'],
+  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/Tree.tsx', '>+ Add system<', '>+ Add system / component<'), 'the menu offers to add items again'],
+  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, <Pill>All types</Pill>))}\n', ''), 'a type\'s list leaves out the items every type shows'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '{typeView && <TypeChips', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} />{typeView && <TypeChips'), 'the system Name box is back'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/Workspace.tsx', ' onRename={v => onOps(ops.rename(system.id, v))}', ''), 'a system title has no pencil'],
   ['tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name', rep('components/templates/PhonePreview.tsx', '<span className="pv-tips"', '<span className="pv-guide">{n.description}</span><span className="pv-x"'), 'the preview prints Tips under the name again'],
