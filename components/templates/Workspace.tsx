@@ -9,7 +9,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import { assessesCondition, includeOps, isCovered, itemSummary, locate, locateOff, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
-import { ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
+import { CommitInput, ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
 import { Pill, Toggle, btn, label } from './ui';
@@ -57,6 +57,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (!loc || loc.depth === 0) {
     return (
       <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label} onRename={v => onOps(ops.rename(system.id, v))} renameDisabled={disabled}
+        tips={{ value: system.description ?? '', what: 'system', onCommit: v => onOps(ops.describe(system.id, v)) }}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
@@ -69,6 +70,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (node.kind !== 'component') {
     return (
       <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
+        tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
       </Shell>
@@ -99,6 +101,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
+      tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
       action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
@@ -152,12 +155,16 @@ function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; 
   );
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal, onRename, renameDisabled }: {
+function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrollKey, reveal, onRename, renameDisabled, tips }: {
   kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
   scrollKey: string; reveal?: Reveal | null;
   /** The name is edited in the title itself, behind a pencil — no separate Name box (owner 2026-11-05). */
   onRename?: (v: string) => void; renameDisabled?: boolean;
+  /** Tips (the node's `description`) open from an ⓘ beside the title, like the phone's ⓘ (owner 2026-11-05). */
+  tips?: { value: string; what: 'system' | 'group' | 'item'; onCommit: (v: string) => void };
 }) {
+  const [tipsOpen, setTipsOpen] = useState(false);
+  useEffect(() => { setTipsOpen(false); }, [scrollKey]);
   const box = useRef<HTMLDivElement>(null);
   // A new selection opens at the top of its panel.
   useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);
@@ -174,7 +181,10 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrol
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{kind === 'Component' ? <rect x="5" y="5" width="14" height="14" rx="3" /> : <path d="M3 10.5L12 4l9 6.5V20H3z" />}</svg>
         </div>
         <div className="min-w-0 flex-1">
-          <TitleName title={title} kind={kind} onRename={onRename} disabled={renameDisabled} resetKey={scrollKey} />
+          <div className="flex min-w-0 items-center gap-0.5">
+            <TitleName title={title} kind={kind} onRename={onRename} disabled={renameDisabled} resetKey={scrollKey} />
+            {tips && <TipsButton has={!!tips.value.trim()} open={tipsOpen} onClick={() => setTipsOpen(o => !o)} />}
+          </div>
           <p className="truncate text-xs text-muted">{kind}{sub ? ` · ${sub}` : ''}</p>
           {badge && <div className="mt-1">{badge}</div>}
         </div>
@@ -182,9 +192,38 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, children, scrol
         {onClose && <button aria-label="Close item" className={btn.icon} onClick={onClose} title="Back to the system">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
       </header>
+      {tips && tipsOpen && <TipsBox tips={tips} disabled={renameDisabled} onDone={() => setTipsOpen(false)} />}
       {tabs && <div role="tablist" aria-label="Component" className="mt-2 flex overflow-x-auto border-b border-hairline px-2">{tabs}</div>}
       {!tabs && <div className="mt-3 border-b border-hairline" />}
       <div ref={box} data-editor-scroll className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
+}
+
+/** The ⓘ beside the title: blue and filled when Tips are written, grey outline when not — the phone's own signal. */
+function TipsButton({ has, open, onClick }: { has: boolean; open: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-expanded={open} aria-label={has ? 'Tips (written) — show or edit' : 'Add tips'} title={has ? 'Tips' : 'Add tips'}
+      className={`${btn.icon} shrink-0`}>
+      <span className={`inline-flex h-[17px] w-[17px] items-center justify-center rounded-full border-[1.5px] font-serif text-[10px] font-extrabold italic ${has ? 'border-accent bg-accent text-white' : 'border-muted text-muted'}`}>i</span>
+    </button>
+  );
+}
+
+/** The Tips box the ⓘ opens, under the title. Saves when you leave the box; Done closes it. */
+function TipsBox({ tips, disabled, onDone }: { tips: NonNullable<Parameters<typeof Shell>[0]['tips']>; disabled?: boolean; onDone: () => void }) {
+  const hint = tips.what === 'item'
+    ? 'Inspectors see these when they tap the blue ⓘ beside the item on the phone. Never in the report.'
+    : `Inspectors see these on the ${tips.what}’s tile on the phone. Never in the report.`;
+  return (
+    <div className="mx-4 mt-2 space-y-1.5 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2.5">
+      <label className={label} htmlFor="tb-tips">Tips</label>
+      <CommitInput id="tb-tips" value={tips.value} multiline ariaLabel={`${tips.what[0].toUpperCase()}${tips.what.slice(1)} tips`} disabled={disabled} onCommit={tips.onCommit}
+        placeholder={tips.what === 'item' ? 'What to look at, how your company wants it done' : `Tips or training for inspectors on this ${tips.what}`} />
+      <div className="flex items-center gap-2">
+        <p className="flex-1 text-[11px] text-muted">{hint}</p>
+        <button type="button" className={btn.secondary + ' px-3 py-1'} onClick={onDone}>Done</button>
+      </div>
     </div>
   );
 }

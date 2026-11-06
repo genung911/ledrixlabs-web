@@ -20,14 +20,14 @@ type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
 
 /** A text input that commits on blur / Enter, and follows outside changes when not being edited. */
-export function CommitInput({ value, onCommit, multiline, ariaLabel, placeholder, className = '', disabled }: {
-  value: string; onCommit: (v: string) => void; multiline?: boolean; ariaLabel: string; placeholder?: string; className?: string; disabled?: boolean;
+export function CommitInput({ value, onCommit, multiline, ariaLabel, placeholder, className = '', disabled, id }: {
+  value: string; onCommit: (v: string) => void; multiline?: boolean; ariaLabel: string; placeholder?: string; className?: string; disabled?: boolean; id?: string;
 }) {
   const [v, setV] = useState(value);
   const [focused, setFocused] = useState(false);
   useEffect(() => { if (!focused) setV(value); }, [value, focused]);
   const commit = () => { setFocused(false); if (v !== value) onCommit(v); };
-  const common = { value: v, disabled, 'aria-label': ariaLabel, placeholder, onFocus: () => setFocused(true), onBlur: commit,
+  const common = { id, value: v, disabled, 'aria-label': ariaLabel, placeholder, onFocus: () => setFocused(true), onBlur: commit,
     onChange: (e: { target: { value: string } }) => setV(e.target.value) };
   return multiline
     ? <textarea {...common} rows={3} className={`${field} resize-y ${className}`} />
@@ -133,11 +133,6 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 
   return (
     <div className="space-y-5 px-4 py-4">
-      <div className="space-y-2">
-        <label className={label}>Tips</label>
-        <CommitInput value={system.description ?? ''} multiline ariaLabel="System tips" placeholder="Tips or training for inspectors on this system (optional)" disabled={disabled}
-          onCommit={v => onOps(ops.describe(system.id, v))} />
-      </div>
 
 
       {typeView && <TypeChips layout={typeView.layout} pick={typeView.pick} onPick={typeView.onPick} systemLabel={system.label} />}
@@ -217,15 +212,11 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   );
 }
 
-// ── a group: name, guidance and its items ──────────────────────────────────────────────────────────────────
+// ── a group: its items (name and Tips live in the panel title) ──────────────────────────────────────────────────────────────────
 
 export function GroupDetails({ node, onOps, onOpen, disabled }: { node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean }) {
   return (
     <div className="space-y-5 px-4 py-4">
-      <div>
-        <label className={label}>Tips</label>
-        <CommitInput value={node.description ?? ''} multiline ariaLabel="Group tips" placeholder="Tips or training for inspectors on this group (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
-      </div>
       <div>
         <p className={label}>Items in this group</p>
         <ul className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
@@ -257,11 +248,6 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
   return (
     <div className="space-y-5 px-4 py-4">
       {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Recorded in another section. Edit it there.</p>}
-      <div>
-        <label className={label}>Tips</label>
-        <CommitInput value={node.description ?? ''} multiline ariaLabel="Item tips" placeholder="What to look at, how your company wants it done (optional)" disabled={disabled} onCommit={v => onOps(ops.describe(node.id, v))} />
-        <p className="mt-1 text-[11px] text-muted">Inspectors see these when they tap the blue ⓘ beside the item on the phone. Never in the report.</p>
-      </div>
       <div>
         <p className={label}>Inspectors record</p>
         <div className="overflow-hidden rounded-xl border border-hairline">
