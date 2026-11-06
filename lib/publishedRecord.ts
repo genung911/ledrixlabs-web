@@ -24,6 +24,9 @@ export const PUBLISHED_FINDING_FIELDS = [
   'id', 'issueTitle', 'issue', 'observationBullets', 'description', 'severity', 'isSafety',
   'unit', 'component', 'location', 'room', 'structureId',
   'recommendation', 'prosToCall', 'imageUri',
+  // The section the PDF prints the finding under, decided on the phone (findingGroups.reportSystemOf) — the website has
+  // no template, so a company's Move to… and its own sections reach the share page only this way (owner 2026-11-06).
+  'reportSystem', 'reportSystemLabel',
 ] as const;
 
 /** Spec fields a homeowner may see. Both spellings of the manual fields, as the device and the server use them. */
