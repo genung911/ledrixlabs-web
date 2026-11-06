@@ -72,7 +72,7 @@ function normKey(key: string, byId: Map<string, TemplateNode>): string {
 }
 
 /** Every predicate of an item's effective rule, with its normalised key. */
-function predsOf(defs: RuleDefinitions, id: string, byId: Map<string, TemplateNode>): Array<{ key: string; p: Pred; dep: boolean }> {
+export function predsOf(defs: RuleDefinitions, id: string, byId: Map<string, TemplateNode>): Array<{ key: string; p: Pred; dep: boolean }> {
   const d = defs.nodes[baseOf(id)];
   if (!d) return [];
   const out: Array<{ key: string; p: Pred; dep: boolean }> = [];
@@ -82,7 +82,7 @@ function predsOf(defs: RuleDefinitions, id: string, byId: Map<string, TemplateNo
 }
 
 /** Does the phone's resolver show this item when the type question — and nothing else — is answered `value`? */
-function showsFor(preds: Array<{ key: string; p: Pred; dep: boolean }>, id: string, field: string, value: string): boolean {
+export function showsFor(preds: Array<{ key: string; p: Pred; dep: boolean }>, id: string, field: string, value: string): boolean {
   const mine = preds.filter(x => x.key === field);
   if (!mine.length) return true;
   // dependsOnSpec is read by the resolver as `{ specNodeId, includes }` (applicability.predicatesOf), the shape it already has here.
@@ -91,7 +91,7 @@ function showsFor(preds: Array<{ key: string; p: Pred; dep: boolean }>, id: stri
 }
 
 /** Every node in the template (active), by id, and which system each sits in. */
-function indexTree(tree: InspectionTemplate) {
+export function indexTree(tree: InspectionTemplate) {
   const byId = new Map<string, TemplateNode>();
   const systemOf = new Map<string, TemplateNode>();
   for (const s of tree.systems ?? []) {

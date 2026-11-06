@@ -8,13 +8,16 @@
 // type's list (CatalogPanel.LedrixSuggestions; matching items tagged Typical), a grid of items × types whose ticks write the item's rule, count copies as one row,
 // and items that follow another system's answer in their own section. The layout itself is lib/templates/typeLayout
 // (pure); every edit is template ops through `onOps`, one change set each.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel';
 import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
+import { MaterialQuestionRows } from './MaterialsBuilder';
+import { materialLayoutOf } from '@/lib/templates/materialLayout';
+import { rulesFor } from './phonePreviewModel';
 import { SPECIAL_HOMES, SPECIAL_KINDS } from '@/lib/templateBuilder/core/specialHomes';
 
 /** A special-home checkpoint says which kind of home it is for ("Manufactured"), not just "Special home" (owner 2026-11-05). */
@@ -56,6 +59,9 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   tree: InspectionTemplate; system: TemplateNode; layout: TypeLayout; pick: string; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
   const [msg, setMsg] = useState<string | null>(null);
+  // A materials question inside a typed system (Electrical's wiring type) is drawn materials first, one row per answer
+  // with the card it brings (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf).
+  const materialQs = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)).flatMap(g => g.questions), [tree, system]);
   const [openCopies, setOpenCopies] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const apply = (o: TemplateOp[]) => { if (!o.length) return true; const ok = onOps(o); if (ok) setMsg(null); return ok; };
@@ -96,9 +102,14 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
       {layout.other.map(({ node, question }) => row(node, <span className="text-[11px] text-muted">Follows {question.systemLabel} › {question.label}</span>))}
     </>);
   // Items another question in this system decides, and special-home checkpoints: their own sections.
-  const gatedSections = layout.gated.map((g, i) => section(SECTION_ID.gated(i), `Shown by ${g.question.label}`, g.nodes.length, <>
+  const gatedSections = layout.gated.map((g, i) => {
+    const mq = materialQs.find(q => q.field === g.key);
+    if (mq) return section(SECTION_ID.gated(i), `Materials · ${g.question.label}`, mq.cards.length, <li>
+      <MaterialQuestionRows q={mq} tree={tree} system={system} onOps={apply} onOpen={onOpen} selected={selected} disabled={disabled} /></li>);
+    return section(SECTION_ID.gated(i), `Shown by ${g.question.label}`, g.nodes.length, <>
       {g.nodes.map(n => row(n, <span className="text-[11px] text-muted">Follows {g.question.label}</span>))}
-    </>));
+    </>);
+  });
   const specialSection = layout.special.length > 0 && section(SECTION_ID.special, 'Special homes', layout.special.length, <>
       {layout.special.map(n => row(n, <Pill>{kindLabel(n.id)}</Pill>))}
     </>);

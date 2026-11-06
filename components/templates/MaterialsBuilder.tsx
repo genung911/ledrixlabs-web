@@ -1,0 +1,108 @@
+'use client';
+
+// A system laid out materials first (owner 2026-11-05, mockup https://claude.ai/artifact/VPAuQHWYGoQghmimznXpgf,
+// "Approved use recommendations"): each group as (1) its materials — one row per answer with the condition card it
+// brings, or, with no materials question, the items that record a choice — then (2) what every home gets. The layout is
+// lib/templates/materialLayout (pure); every edit is template ops through `onOps`, one change set each.
+import { useMemo, useState } from 'react';
+import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
+import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
+import { itemSummary, ops } from '@/lib/templates/editorModel';
+import { addMaterialOps, materialLayoutOf, removeMaterialOps, type MaterialQuestion } from '@/lib/templates/materialLayout';
+import { rulesFor } from './phonePreviewModel';
+import { btn, field } from './ui';
+
+type OnOps = (o: TemplateOp[]) => boolean;
+
+export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabled }: {
+  tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+}) {
+  const groups = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
+  const item = (n: TemplateNode) => (
+    <li key={n.id}>
+      <button className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-ink/5 ${selected === n.id ? 'bg-accent/10' : ''}`} onClick={() => onOpen(n.id)}>
+        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink">{n.label}</span>
+          <span className="block truncate text-xs text-muted">{itemSummary(n)}</span></span>
+        <span aria-hidden className="text-muted">›</span>
+      </button>
+    </li>
+  );
+  const stage = (n: number | null, title: string, hint: string, body: React.ReactNode) => (
+    <div className="border-t border-hairline first:border-t-0">
+      <p className="flex items-baseline gap-2 px-3 pb-1 pt-2.5 text-xs font-semibold text-ink">
+        {n !== null && <span className="inline-flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-accent/15 text-[11px] text-accent">{n}</span>}
+        {title}<span className="font-normal text-muted">{hint}</span></p>
+      {body}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3" aria-label="Materials first">
+      {groups.map(g => {
+        const hasMaterials = g.questions.length > 0 || g.materials.length > 0;
+        return (
+          <section key={g.node.id} aria-label={g.node.label} className="overflow-hidden rounded-xl border border-hairline">
+            <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{g.node.id === system.id ? system.label : g.node.label}</p>
+            {g.questions.map(q => stage(1, q.attr.label || q.node.label, ' · the inspector ticks every one seen',
+              <MaterialQuestionRows key={q.field} q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />))}
+            {!g.questions.length && g.materials.length > 0 && stage(1, 'Materials and types', ' · recorded with their condition', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
+            {stage(hasMaterials ? 2 : null, 'Checked in every home', '', <>
+              <ul className="divide-y divide-hairline">{g.every.map(item)}</ul>
+              <AddItem label={g.node.id === system.id ? system.label : g.node.label} disabled={disabled}
+                onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />
+            </>)}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function AddItem({ label, onAdd, disabled }: { label: string; onAdd: (name: string) => boolean; disabled: boolean }) {
+  const [name, setName] = useState('');
+  return (
+    <form className="flex flex-wrap gap-1.5 px-3 py-2" onSubmit={e => { e.preventDefault(); if (name.trim() && onAdd(name.trim())) setName(''); }}>
+      <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label={`New item in ${label}`} placeholder="+ Add item" className={`${field} min-w-[10rem] flex-1 py-1.5`} />
+      <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !name.trim()}>Add</button>
+    </form>
+  );
+}
+
+/** One materials question: a row per answer → the card it brings; "+ Add material"; remove (asks first). */
+export function MaterialQuestionRows({ q, tree, system, onOps, onOpen, selected, disabled }: {
+  q: MaterialQuestion; tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+}) {
+  const [name, setName] = useState('');
+  const [removing, setRemoving] = useState<string | null>(null);
+  const row = (value: string, card: TemplateNode | null, typed = false) => (
+    <li key={value} className={`flex items-center gap-2 px-3 py-1.5 ${card && selected === card.id ? 'bg-accent/10' : ''}`}>
+      <span className="w-36 flex-none truncate text-sm font-semibold text-ink" title={value}>{value}</span>
+      {card ? (
+        <button className="min-w-0 flex-1 truncate text-left text-xs text-muted hover:text-ink" onClick={() => onOpen(card.id)}>
+          → <span className="text-sm text-ink">{card.label}</span> · {itemSummary(card)}</button>
+      ) : <span className="min-w-0 flex-1 text-xs text-muted">No condition card</span>}
+      {!typed && removing !== value && <button type="button" aria-label={`Remove ${value}`} disabled={disabled} className="px-1 text-xs text-muted hover:text-ink" onClick={() => setRemoving(value)}>Remove</button>}
+      {!typed && removing === value && (
+        <span className="flex flex-none items-center gap-1.5 text-xs">
+          <span className="text-body">{card ? `Remove ${value} and switch its card off?` : `Remove ${value}?`}</span>
+          <button type="button" className={btn.secondary + ' px-2 py-0.5 text-xs'} disabled={disabled} onClick={() => { if (onOps(removeMaterialOps(q, value))) setRemoving(null); }}>Remove</button>
+          <button type="button" className={btn.ghost + ' px-2 py-0.5 text-xs'} onClick={() => setRemoving(null)}>Cancel</button>
+        </span>
+      )}
+    </li>
+  );
+  return (
+    <div>
+      <ul className="divide-y divide-hairline">
+        {q.rows.map(r => row(r.value, r.card))}
+        {q.typed && row('Other (typed)', q.typed, true)}
+      </ul>
+      <form className="flex flex-wrap items-center gap-1.5 px-3 py-2" onSubmit={e => { e.preventDefault(); const o = addMaterialOps(tree, system, q, name); if (o.length && onOps(o)) setName(''); }}>
+        <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label={`New material for ${q.attr.label || q.node.label}`}
+          placeholder="+ Add material" className={`${field} min-w-[10rem] flex-1 py-1.5`} />
+        <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !name.trim()}>Add</button>
+        <button type="button" className={btn.ghost + ' px-2 py-1 text-xs'} onClick={() => onOpen(q.node.id)}>Edit the question</button>
+      </form>
+    </div>
+  );
+}

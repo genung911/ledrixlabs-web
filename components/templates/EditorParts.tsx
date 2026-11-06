@@ -16,6 +16,7 @@ import { catalogTypesForSystem } from '@/lib/templates/catalogModel';
 import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
+import { MaterialsBuilder } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -130,6 +131,11 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   const [parent, setParent] = useState(homes[0]?.id ?? system.id);
   const [name, setName] = useState('');
   useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // A system the type chips don't lay out opens materials first (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf);
+  // "Full list" is the stored order, for reordering and adding groups.
+  const [fullList, setFullList] = useState(false);
+  const byMaterials = !typeView && !fullList;
+  const laidOut = (typeView && typeView.pick !== FULL_LIST) || byMaterials;
   const offRows = (system.trimmed ?? []).map(t => ({ t, under: system.label })).concat(rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))));
 
   return (
@@ -141,7 +147,20 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         <TypeBuilder tree={tree} system={system} layout={typeView.layout} pick={typeView.pick} onOps={onOps} selected={sel.nodeId} disabled={disabled}
           onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
       )}
-      {typeView && typeView.pick !== FULL_LIST && offRows.length > 0 && (
+      {!typeView && (
+        <div className="flex items-center gap-2">
+          <div role="tablist" aria-label="Layout" className="inline-flex rounded-lg border border-hairline bg-ground p-0.5">
+            {([['materials', 'Materials first'], ['list', 'Full list']] as const).map(([k, t]) => (
+              <button key={k} role="tab" aria-selected={(k === 'list') === fullList} onClick={() => setFullList(k === 'list')}
+                className={`rounded-md px-3 py-1 text-xs font-semibold ${(k === 'list') === fullList ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{t}</button>
+            ))}
+          </div>
+          <span className="text-xs text-muted">{fullList ? 'Every item in its group, as stored. Reorder and add groups here.' : 'What the inspector records, in the order they work.'}</span>
+        </div>
+      )}
+      {byMaterials && <MaterialsBuilder tree={tree} system={system} onOps={onOps} selected={sel.nodeId} disabled={disabled}
+        onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />}
+      {laidOut && offRows.length > 0 && (
         <ul id={SECTION_ID.off} aria-label="Switched off" className="scroll-mt-2 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
           {offRows.map(({ t, under }) => (
             <li key={t.id}><button className="flex w-full items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
@@ -152,7 +171,7 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         </ul>
       )}
 
-      <div className={typeView && typeView.pick !== FULL_LIST ? 'hidden' : ''}>
+      <div className={laidOut ? 'hidden' : ''}>
         <div className="mb-2 flex items-center justify-between">
           <p className={label + ' mb-0'}>Items</p><span className="rounded-full bg-ground px-2 py-0.5 font-mono text-xs text-body">{rows.filter(r => r.node.kind === 'component').length}</span>
         </div>

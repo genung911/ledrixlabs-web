@@ -122,6 +122,7 @@ const sourceFiles = () => Object.fromEntries([
   ...DESKTOP.map(f => [`${f}.ts`, read(`lib/templates/${f}.ts`)]),
   // BUILT BY TYPE (2026-11-05): the layout, and the preview's own rule capture it reads (one source with the phone).
   ['typeLayout.ts', read('lib/templates/typeLayout.ts')],
+  ['materialLayout.ts', read('lib/templates/materialLayout.ts')],
   ['phonePreviewModel.ts', read('components/templates/phonePreviewModel.ts')],
   ['core/ledrixRules.json', read('lib/templateBuilder/core/ledrixRules.json')],
 ]);
@@ -745,6 +746,51 @@ async function runTypes(files) {
     const fdefs = PM.rulesFor(fresh);
     const ruleFree = id => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return !x || (!(x.requires ?? []).length && !x.dependsOnSpec); };
     const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);
+    // ── MATERIALS FIRST (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf, "Approved use recommendations") ──
+    {
+      const ML = await import(pathToFileURL(join(dir, 'materialLayout.ts')).href);
+      const fsys = id => fresh.systems.find(s => s.id === id);
+      const mat = id => ML.materialLayoutOf(fresh, fsys(id), fdefs);
+      const grp = (L, label) => L.find(g => g.node.label === label);
+      const P = mat('plumbing'), sup = grp(P, 'Supply'), drn = grp(P, 'Drain · Waste · Vent');
+      const q = sup?.questions[0];
+      const pairs = q ? q.rows.map(x => `${x.value}>${x.card?.label ?? '-'}`).join('|') : '';
+      globalThis.__matDebug = { pairs, typed: q?.typed?.label, every: sup?.every.map(n => n.label).join('|'), drain: drn?.questions[0]?.rows.length };
+      r('materials: Plumbing Supply is its materials question, each answer with the ONE card the phone shows for it, the typed answer\'s card, then what every home gets',
+        !TL.typeLayoutOf(fresh, fsys('plumbing'), fdefs) && sup?.questions.length === 1 && q.rows.length === 6
+        && q.rows.every(x => x.card && PM.itemApplies(fdefs, x.card.id, k => (k === q.field || k === q.node.id ? x.value : undefined)))
+        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff Location|Functional Flow|Water Pressure'
+        && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
+      const I = mat('interior'), surf = grp(I, 'Surfaces');
+      const A = mat('attic'), ins = grp(A, 'Insulation');
+      r('materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)',
+        !!surf && surf.questions.length === 0 && surf.materials.map(n => n.label).join('|') === 'Flooring Material|Wall Material|Countertop Material'
+        && !surf.every.some(n => (n.attributes ?? []).length) && !!ins && ins.materials.some(n => n.label === 'Insulation'));
+      const EL = TL.typeLayoutOf(fresh, fsys('electrical'), fdefs), elq = mat('electrical').flatMap(g => g.questions);
+      r('materials: in a typed system (Electrical), the wiring-type section is a materials question drawn as rows; Service Entrance (an answer brings two items) is a type, not a material',
+        !!EL && EL.gated.some(g => elq.some(q => q.field === g.key && q.rows.length >= 6 && q.rows.every(x => x.card))) && !elq.some(q => q.node.id === 'elec_entrance'));
+      const E2 = mat('exterior');
+      r('materials: Exterior siding is laid out the same way (found from its own rules, not a list of systems)', E2.some(g => g.questions.some(x => x.rows.length >= 8 && x.rows.every(y => y.card))));
+      // + Add material / remove — on a draft, through the editor's own change sets.
+      let dm = T.createDraft({ companyId: 'co_1', templateId: 'tpl_m', live: clone(DEFAULT_TREE), now: 3000 });
+      const msys = () => dm.tree.systems.find(s => s.id === 'plumbing');
+      const mq = () => grp(ML.materialLayoutOf(dm.tree, msys(), PM.rulesFor(dm.tree)), 'Supply').questions[0];
+      const n0 = dm.log.length;
+      const add = E.applyManual(dm, ML.addMaterialOps(dm.tree, msys(), mq(), 'Brass'), OWNER, 3100); if (add.ok) dm = add.draft;
+      const brass = mq()?.rows.find(x => x.value === 'Brass');
+      const shows = (defs, id, v) => PM.itemApplies(defs, id, k => (k === mq().field || k === mq().node.id ? v : undefined));   // the answer under both keys, as the phone stores it
+      const dd = PM.rulesFor(dm.tree);
+      r('materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set',
+        add.ok && dm.log.length === n0 + 1 && brass?.card?.label === 'Brass Supply Piping'
+        && shows(dd, brass.card.id, 'Brass') && !shows(dd, brass.card.id, 'Copper') && ML.addMaterialOps(dm.tree, msys(), mq(), 'brass').length === 0
+        && !shows(dd, mq().typed.id, 'Brass') && shows(dd, mq().typed.id, 'Bamboo'));
+      const pvcCard = mq()?.rows.find(x => x.value === 'PVC')?.card;
+      const rm = E.applyManual(dm, ML.removeMaterialOps(mq(), 'PVC'), OWNER, 3200); if (rm.ok) dm = rm.draft;
+      const live = []; const w = (n) => { live.push(n.id); (n.children ?? []).forEach(w); }; msys().children.forEach(w);
+      r('materials: removing a material takes the answer out and switches its card off (restorable) — one change set',
+        rm.ok && !!pvcCard && !mq().attr.values.includes('PVC') && !live.includes(pvcCard.id)
+        && JSON.stringify(msys()).includes(`"id":"${pvcCard.id}"`));
+    }
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
       typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.length > 0 && L.every.every(n => ruleFree(n.id)))
       && typedSystems.find(([s]) => s.id === 'heating')[1].every.map(n => n.id).join('|') === 'hvac_heating_age|hvac_dataplate|hvac_distribution|hvac_thermostat');
@@ -947,6 +993,16 @@ const RULES = {
     return /if \(!added\.length && !removedActive\.length\) \{ onOps\(fields\); setPending\(null\); return; \}/.test(h) && /const r = starterOps\(tree, ids, source\);/.test(h)
       && /onOps\(\[\.\.\.pending\.fields, \.\.\.r\.ops\]\)/.test(h) && /\.\.\.\(off \? switchOff\.map\(id => \(\{ op: 'trimNode', nodeId: id \}\)/.test(h) && !/op: 'addNode'/.test(h) ? [] : ['components/templates/HomeKinds.tsx'];
   },
+  'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': all => {
+    const ep = strip(all['components/templates/EditorParts.tsx'] ?? ''), tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
+    return /const byMaterials = !typeView && !fullList;/.test(ep) && /\{byMaterials && <MaterialsBuilder tree=\{tree\} system=\{system\}/.test(ep) && /<div className=\{laidOut \? 'hidden' : ''\}>/.test(ep)
+      && /const mq = materialQs\.find\(q => q\.field === g\.key\);\s*if \(mq\) return section\(/.test(tb) ? [] : ['components/templates/EditorParts.tsx'];
+  },
+  'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': all => {
+    const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
+    return /onOps\(removeMaterialOps\(q, value\)\)/.test(mb) && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
+      && !/op: '/.test(mb) && /removing === value &&/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+  },
   'building types: edited only through setTemplateField structureTypes': all => {
     const s = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
     const opsUsed = [...s.matchAll(/op: '(\w+)'/g)].map(m => m[1]);
@@ -1129,10 +1185,14 @@ const MUT = {
   'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': rep(EDIT, 'const ASK_LEDRIX = false;', 'const ASK_LEDRIX = true;'),
   'only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none': rep('components/templates/SpecialHomesPanel.tsx', 'specialRows(tree, system, source).filter(r => own.has(r.kind))', 'specialRows(tree, system, source)'),
   'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': rep('components/templates/HomeKinds.tsx', 'if (!added.length && !removedActive.length) { onOps(fields); setPending(null); return; }', 'onOps(fields); setPending(null); return;'),
+  'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': rep('components/templates/EditorParts.tsx', 'const byMaterials = !typeView && !fullList;', 'const byMaterials = false;'),
+  'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': rep('components/templates/MaterialsBuilder.tsx', "onClick={() => { if (onOps(removeMaterialOps(q, value))) setRemoving(null); }}", "onClick={() => { onOps([{ op: 'removeAttribute', nodeId: q.node.id, attrId: q.attr.id }]); }}"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows', rep('components/templates/TypeBuilder.tsx', 'if (mq) return section(', 'if (false) return section('), 'Electrical\'s wiring section goes back to a plain list'],
+  ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', '{!typed && removing === value && (', '{!typed && (removing === value || true) && ('), 'Remove no longer asks first'],
   ['only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none', rep('components/templates/SpecialHomesPanel.tsx', '|| rows.every(r => r.inTemplate)) return null;', ') return null;'), 'the card stays when there is nothing left to add'],
   ['only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)', rep('components/templates/HomeKinds.tsx', "...(off ? switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp) : [])", "...switchOff.map(id => ({ op: 'trimNode', nodeId: id }) as TemplateOp)"), '"Keep them" switches the checkpoints off anyway'],
   ['ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)', rep(EDIT, "{ASK_LEDRIX && <div role=\"tablist\" aria-label=\"Editor mode\"", "{true && <div role=\"tablist\" aria-label=\"Editor mode\""), 'the Editor / Ask Ledrix tabs show again'],
@@ -1176,6 +1236,10 @@ const EXEC_MUT = [
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
+  { name: 'an answer bringing two items counts as a material', file: 'materialLayout.ts', from: "if (per.some(r => r.cards.length > 1)) continue;", to: "", check: 'materials: in a typed system (Electrical), the wiring-type section is a materials question drawn as rows; Service Entrance (an answer brings two items) is a type, not a material', run: runTypes },
+  { name: 'adding a material leaves Other showing for it', file: 'materialLayout.ts', from: "const narrowed = !q.typed ||", to: "const narrowed = true ||", check: 'materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set', run: runTypes },
+  { name: 'removing a material leaves its card on', file: 'materialLayout.ts', from: "...(card ? ops.setAside(card.id) : [])", to: "", check: 'materials: removing a material takes the answer out and switches its card off (restorable) — one change set', run: runTypes },
+  { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)', run: runTypes },
   { name: 'a starting point keeps the unpicked kinds switched off', file: 'startingPoints.ts', from: "const base = withoutSetAsideSpecials(tree);", to: "const base = tree;", check: 'only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group', run: runDesktop },
   { name: 'Older / Log are forgotten after creation', file: 'startingPoints.ts', from: "if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });", to: "", check: 'only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older', run: runDesktop },
   { name: 'a legacy cutoff year no longer means Older', file: 'core/specialHomes.ts', from: "const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';", to: "const legacyOlder = false;", check: 'only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older', run: runDesktop },
