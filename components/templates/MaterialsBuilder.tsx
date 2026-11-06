@@ -10,6 +10,7 @@ import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/cor
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { itemSummary, ops } from '@/lib/templates/editorModel';
 import { addMaterialOps, materialLayoutOf, removeMaterialOps, switchMaterialOnOps, type BroughtBy, type MaterialQuestion } from '@/lib/templates/materialLayout';
+import { ItemRow } from './ItemRow';
 import { rulesFor } from './phonePreviewModel';
 import { Pill, Toggle, btn, field } from './ui';
 
@@ -19,15 +20,7 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
   tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
   const groups = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
-  const item = (n: TemplateNode) => (
-    <li key={n.id}>
-      <button className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-ink/5 ${selected === n.id ? 'bg-accent/10' : ''}`} onClick={() => onOpen(n.id)}>
-        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink">{n.label}</span>
-          <span className="block truncate text-xs text-muted">{itemSummary(n)}</span></span>
-        <span aria-hidden className="text-muted">›</span>
-      </button>
-    </li>
-  );
+  const item = (n: TemplateNode) => <ItemRow key={n.id} tree={tree} node={n} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />;
   const stage = (n: number | null, title: string, hint: string, body: React.ReactNode) => (
     <div className="border-t border-hairline first:border-t-0">
       <p className="flex items-baseline gap-2 px-3 pb-1 pt-2.5 text-xs font-semibold text-ink">

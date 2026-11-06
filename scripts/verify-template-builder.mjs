@@ -1119,6 +1119,22 @@ const RULES = {
       && /if \(cancelled\.current\) \{ cancelled\.current = false; return; \} const t = v\.trim\(\); if \(t && t !== label\) onRename\(t\);/.test(mb)
       && /if \(e\.key === 'Escape'\) \{ cancelled\.current = true;/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
+  'rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on': all => {
+    // Owner 2026-11-06: "should all of these rows have the 3 dot menu…" → "build it, no mock up, yes switch off not delete".
+    const ir = strip(all['components/templates/ItemRow.tsx'] ?? ''), mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
+    const tb = strip(all['components/templates/TypeBuilder.tsx'] ?? ''), ep = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return /<button className="min-w-0 flex-1 py-1 text-left" onClick=\{\(\) => onOpen\(node\.id\)\}>/.test(ir)
+      && /\{ label: 'Rename', disabled: disabled && LOCKED, onSelect: \(\) => \{ setV\(node\.label\); cancelled\.current = false; setRenaming\(true\); \} \}/.test(ir)
+      && /if \(t && t !== node\.label\) onOps\(ops\.rename\(node\.id, t\)\);/.test(ir) && /if \(e\.key === 'Escape'\) \{ cancelled\.current = true;/.test(ir)
+      && /\{ label: 'Move to…', disabled: \(disabled && LOCKED\) \|\| moveBlockFor\(tree, node\.id\) \|\| false, onSelect: \(\) => setMoving\(true\) \}/.test(ir)
+      && /<MoveToDialog tree=\{tree\} nodeId=\{node\.id\} onOps=\{onOps\}/.test(ir)
+      && /\{ label: 'Switch off', disabled: disabled && LOCKED, onSelect: \(\) => \{ onOps\(includeOps\(tree, node\.id, false\)\); \} \}/.test(ir)
+      && !/label: 'Delete'|removeNode|op: '/.test(ir)
+      && /const item = \(n: TemplateNode\) => <ItemRow key=\{n\.id\} tree=\{tree\} node=\{n\} onOps=\{onOps\}/.test(mb)
+      && /return <ItemRow key=\{n\.id\} tree=\{tree\} node=\{n\} onOps=\{apply\}/.test(tb)
+      && /\{ label: 'Switch on', disabled: disabled && [^,]+, onSelect: \(\) => \{ onOps\(includeOps\(tree, t\.id, true\)\); \} \}/.test(ep)
+      ? [] : ['components/templates/ItemRow.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1315,6 +1331,15 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "{ label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(includeOps(tree, node.id, false)); } },", "{ label: 'Delete', disabled: disabled && LOCKED, onSelect: () => { onOps([{ op: 'removeNode', nodeId: node.id }] as TemplateOp[]); } },"), 'Switch off becomes Delete'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "onOps(includeOps(tree, node.id, false))", "onOps(includeOps(tree, node.id, true))"), 'Switch off switches it on'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "if (t && t !== node.label) onOps(ops.rename(node.id, t));", "if (t && t !== node.label) {}"), 'renaming saves nothing'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "moveBlockFor(tree, node.id) || false", "false"), 'Move to… offered for an item that cannot move'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', "if (e.key === 'Escape') { cancelled.current = true;", "if (e.key === 'Escape') { cancelled.current = false;"), 'Esc saves the rename'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/ItemRow.tsx', '<button className="min-w-0 flex-1 py-1 text-left" onClick={() => onOpen(node.id)}>', '<button className="min-w-0 flex-1 py-1 text-left">'), 'clicking the row no longer opens the item'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/MaterialsBuilder.tsx', 'const item = (n: TemplateNode) => <ItemRow key={n.id}', 'const item = (n: TemplateNode) => <li key={n.id}>{n.label}</li>; const _x = (n: TemplateNode) => <ItemRow key={n.id}'), 'Materials first goes back to plain rows'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/TypeBuilder.tsx', 'return <ItemRow key={n.id} tree={tree} node={n} onOps={apply}', 'return <li key={n.id}>{n.label}</li>; <ItemRow key={n.id} tree={tree} node={n} onOps={apply}'), 'the type view goes back to plain rows'],
+  ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/EditorParts.tsx', 'onOps(includeOps(tree, t.id, true))', 'onOps(includeOps(tree, t.id, false))'), 'Switch on in the Off list does nothing'],
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', ': <GroupName label={g.node.label} disabled={disabled} onRename={v => onOps(ops.rename(g.node.id, v))} />}', ': <p>{g.node.label}</p>}'), 'the pencil is gone'],
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'onRename={v => onOps(ops.rename(g.node.id, v))}', 'onRename={v => onOps(ops.rename(system.id, v))}'), 'the pencil renames the system'],
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'if (t && t !== label) onRename(t);', 'if (t && t !== label) {}'), 'saving does nothing'],

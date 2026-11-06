@@ -15,6 +15,7 @@ import { assessesCondition, itemSummary, ops } from '@/lib/templates/editorModel
 import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
+import { ItemRow } from './ItemRow';
 import { MaterialQuestionRows } from './MaterialsBuilder';
 import { materialLayoutOf } from '@/lib/templates/materialLayout';
 import { rulesFor } from './phonePreviewModel';
@@ -69,15 +70,7 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const row = (n: TemplateNode, tag?: React.ReactNode): React.ReactNode => {
     const g = copyGroupOf(layout, n.id);
     if (g) return <CopiesRow key={g.id} g={g} open={openCopies === g.id} onToggle={() => setOpenCopies(openCopies === g.id ? null : g.id)} onOps={apply} onOpen={onOpen} disabled={disabled} />;
-    return (
-      <li key={n.id} className={`flex items-center gap-2 px-3 py-2 ${selected === n.id ? 'bg-accent/10' : ''}`}>
-        <button className="min-w-0 flex-1 text-left" onClick={() => onOpen(n.id)}>
-          <p className="truncate text-sm font-medium text-ink">{n.label}</p>
-          <p className="truncate text-xs text-muted">{itemSummary(n)}</p>
-        </button>
-        {tag}
-      </li>
-    );
+    return <ItemRow key={n.id} tree={tree} node={n} onOps={apply} onOpen={onOpen} selected={selected} disabled={disabled} tag={tag} />;
   };
   const section = (id: string, title: string, count: number, children: React.ReactNode, action?: React.ReactNode): React.ReactNode => (
     <div id={id} key={id} className="scroll-mt-2 overflow-hidden rounded-xl border border-hairline">

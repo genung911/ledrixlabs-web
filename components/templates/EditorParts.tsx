@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import type { InspectionTemplate, TemplateNode, ComponentAttribute } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp, FindingShortcut } from '@/lib/templateBuilder/core/templateOps';
-import { assessesCondition, flatItems, itemSummary, linksOf, locate, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, flatItems, includeOps, itemSummary, linksOf, locate, ops } from '@/lib/templates/editorModel';
 import { displayLabel } from './systemLabel';
 import { ChipList, Menu, Pill, Toggle, btn, field, label } from './ui';
 import { LedrixSuggestions } from './CatalogPanel';
@@ -163,10 +163,11 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
       {laidOut && offRows.length > 0 && (
         <ul id={SECTION_ID.off} aria-label="Switched off" className="scroll-mt-2 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
           {offRows.map(({ t, under }) => (
-            <li key={t.id}><button className="flex w-full items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
+            <li key={t.id} className="flex items-center gap-1 pr-1"><button className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
               <span className="min-w-0 flex-1"><span className={`block truncate text-muted ${t.kind !== 'component' ? 'text-xs font-semibold uppercase tracking-wide' : 'text-sm font-medium'}`}>{t.label}</span>
                 <span className="block truncate text-xs text-muted">Not included · in {under}</span></span>
-              <span className="text-[10px] font-semibold uppercase text-muted">off</span></button></li>
+              <span className="text-[10px] font-semibold uppercase text-muted">off</span></button>
+              <Menu label={`More for ${t.label}`} items={[{ label: 'Switch on', disabled: disabled && 'The draft can’t change right now.', onSelect: () => { onOps(includeOps(tree, t.id, true)); } }]} /></li>
           ))}
         </ul>
       )}
