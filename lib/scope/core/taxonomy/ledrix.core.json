@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.05.3",
-  "revision": 272,
+  "packVersion": "2026.11.05.4",
+  "revision": 273,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -46,6 +46,7 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Heat Pump",
+                "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
                 "Boiler",
@@ -111,7 +112,8 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "heat pump"
+                "heat pump",
+                "mini-split"
               ]
             }
           ]
@@ -441,6 +443,7 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Heat Pump",
+                "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
                 "Boiler",
@@ -519,6 +522,7 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Heat Pump",
+                "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
                 "Boiler",

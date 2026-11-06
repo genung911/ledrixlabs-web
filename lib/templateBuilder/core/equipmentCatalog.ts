@@ -33,6 +33,9 @@ export type CatalogComponent = {
   reading?: { name: string; units: string[]; point?: { system: string; id: string } };
   /** Default report caption for evidence ('reading' and 'plate'). */
   caption?: string;
+  /** Checked under ANOTHER system (owner 2026-11-05: a mini-split's heads and outdoor unit are checked once, under
+   *  Cooling). Kept as knowledge — it still matches a template's own item — but never suggested here. */
+  checkedIn?: string;
 };
 
 export type CatalogGroup = { id: string; label: string; why: string; components: CatalogComponent[] };
@@ -75,6 +78,9 @@ export function catalogLabelMatches(c: CatalogComponent, label: string): boolean
 
 const HEAT_FUEL = 'hvac_heating::fuel_source';
 
+/** A mini-split's heads, outdoor unit and their wiring are checked once, under Cooling's Ductless Mini-Split (owner
+ *  2026-11-05, mockup https://claude.ai/artifact/1rBASiR6LfsbeL1aQctbBS) — Heating does not suggest them again. */
+const inCooling = (c: CatalogComponent): CatalogComponent => ({ ...c, checkedIn: 'Cooling' });
 const T = (id: string, label: string, details?: string[]): CatalogComponent => ({ id, label, presence: 'typical', kind: 'part', ...(details ? { details } : {}) });
 const D = (id: string, label: string, note: string, details?: string[]): CatalogComponent => ({ id, label, presence: 'if_present', note, kind: 'part', ...(details ? { details } : {}) });
 const R = (id: string, label: string, units: string[], caption: string, point?: { system: string; id: string }, note?: string): CatalogComponent =>
@@ -233,21 +239,22 @@ export const EQUIPMENT_CATALOG: CatalogEquipmentType[] = [
     ] },
     boilerReadings([R('amps', 'Element current draw', ['A'], 'Element Current Draw', undefined, 'if your company measures it')]),
   ] },
-  { id: 'mini_split', label: 'Ductless mini-split', system: 'heating', intro: 'Components Ledrix knows for a ductless mini-split — no ducts, no central filter, no combustion.', equipmentRule: { field: 'hvac_distribution::spec', anyOf: ['Ductless'] }, groups: [
+  { id: 'mini_split', label: 'Ductless mini-split', system: 'heating', intro: 'Components Ledrix knows for a ductless mini-split — no ducts, no central filter, no combustion.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Ductless Mini-Split'] }, groups: [
     { id: 'outdoor', label: 'Outdoor unit', why: 'every mini-split', components: [
-      T('compressor', 'Compressor & outdoor coil'), T('ofan', 'Outdoor fan'),
-      T('lines', 'Refrigerant lines & insulation', ['Copper with foam insulation', 'Aluminum']),
-      T('pad', 'Pad / mounting & clearances', ['Ground pad', 'Wall bracket', 'Roof stand']),
-      D('linecover', 'Line-set cover', 'if installed'), D('odrain', 'Outdoor defrost drain', 'heat-pump models in freezing climates'),
+      ...[T('compressor', 'Compressor & outdoor coil'), T('ofan', 'Outdoor fan'),
+        T('lines', 'Refrigerant lines & insulation', ['Copper with foam insulation', 'Aluminum']),
+        T('pad', 'Pad / mounting & clearances', ['Ground pad', 'Wall bracket', 'Roof stand']),
+        D('linecover', 'Line-set cover', 'if installed')].map(inCooling),
+      D('odrain', 'Outdoor defrost drain', 'heat-pump models in freezing climates'),
     ] },
     { id: 'heads', label: 'Indoor heads', why: 'assessed together — a finding names the room', components: [
-      T('head', 'Indoor heads (head count)', ['1 head', '2 heads', '3 heads', '4 heads', '5 or more heads']),
-      T('hfilter', 'Head filters', ['Washable mesh', 'Mesh + carbon / ion insert']), T('hcoil', 'Head coil & blower wheel'),
-      T('hdrain', 'Head condensate line', ['Gravity line', 'Routed in line-set cover']),
-      D('hpump', 'Head condensate pump', "when the head can't drain by gravity"), T('controller', 'Remote / wall controller'),
+      ...[T('head', 'Indoor heads (head count)', ['1 head', '2 heads', '3 heads', '4 heads', '5 or more heads']),
+        T('hfilter', 'Head filters', ['Washable mesh', 'Mesh + carbon / ion insert']), T('hcoil', 'Head coil & blower wheel'),
+        T('hdrain', 'Head condensate line', ['Gravity line', 'Routed in line-set cover']),
+        D('hpump', 'Head condensate pump', "when the head can't drain by gravity"), T('controller', 'Remote / wall controller')].map(inCooling),
     ] },
     { id: 'electrical', label: 'Electrical', why: 'every mini-split', components: [
-      T('odisc', 'Outdoor disconnect'), T('interconnect', 'Interconnect wiring'),
+      ...[T('odisc', 'Outdoor disconnect'), T('interconnect', 'Interconnect wiring')].map(inCooling),
     ] },
     { ...READ_GROUP, components: [
       R('discharge', 'Head discharge air temperature', F, 'Mini-Split Discharge Air Temperature', { system: 'cooling', id: 'discharge' }),

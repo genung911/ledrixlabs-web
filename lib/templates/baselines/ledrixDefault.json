@@ -43,6 +43,7 @@
                     "Electric Baseboard",
                     "Electric Wall Heater",
                     "Heat Pump",
+                    "Ductless Mini-Split",
                     "Propane",
                     "Oil Furnace",
                     "Boiler",
@@ -265,6 +266,22 @@
               "keywords": [],
               "trimmed": [],
               "condition": true
+            },
+            {
+              "id": "heating__link_hvac_ms_heads",
+              "label": "Indoor Heads & Outdoor Unit",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "cooling",
+                "nodeId": "hvac_ms_heads"
+              },
+              "appliesWhen": {
+                "field": "hvac_heating::fuel_source",
+                "anyOf": [
+                  "Ductless Mini-Split"
+                ]
+              },
+              "whenUnknown": "hide"
             }
           ],
           "trimmed": []

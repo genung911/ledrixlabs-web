@@ -1,13 +1,14 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.05.3",
+ "packVersion": "2026.11.05.4",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "heat pump"
+      "heat pump",
+      "mini-split"
      ]
     }
    ]
@@ -101,6 +102,7 @@
       "Electric Baseboard",
       "Electric Wall Heater",
       "Heat Pump",
+      "Ductless Mini-Split",
       "Propane",
       "Oil Furnace",
       "Boiler",
@@ -146,6 +148,7 @@
       "Electric Baseboard",
       "Electric Wall Heater",
       "Heat Pump",
+      "Ductless Mini-Split",
       "Propane",
       "Oil Furnace",
       "Boiler",

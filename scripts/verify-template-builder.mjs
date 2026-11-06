@@ -538,7 +538,7 @@ async function runDesktop(files) {
     // ── the equipment component catalog (owner rulings 2026-10-26) ──────────────────────────────────────────
     const C = await import(pathToFileURL(join(dir, 'catalogModel.ts')).href);
     const EC = await import(pathToFileURL(join(dir, 'core/equipmentCatalog.ts')).href);
-    const FUEL = ['Gas Furnace', 'Electric Heat', 'Heat Pump', 'Propane', 'Oil Furnace', 'Boiler', 'Radiant Heat'];
+    const FUEL = ['Gas Furnace', 'Electric Heat', 'Heat Pump', 'Ductless Mini-Split', 'Propane', 'Oil Furnace', 'Boiler', 'Radiant Heat'];
     const HEAT = { id: 'cat_1', name: 'Catalog', version: 1, systems: [{ id: 'heating', label: 'Heating', kind: 'system', children: [
       { id: 'heating__plant', label: 'Heating Plant', kind: 'subsystem', children: [
         { id: 'hvac_heating', label: 'Heating System', kind: 'component', condition: false, attributes: [{ id: 'fuel_source', label: 'Fuel Source', values: FUEL }] },
@@ -596,9 +596,14 @@ async function runDesktop(files) {
         && new Set(t.groups.flatMap(g => g.components.map(c => c.id))).size === t.groups.flatMap(g => g.components).length));
     // ── suggestions inside each type's list (owner 2026-11-05, mockup DbUgEVKPbCeigN6G8YTaAL) ──
     const FIELD = 'hvac_heating::fuel_source', ids = (ts) => ts.map(t => t.id).join();
-    r('suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers); a mini-split follows another field',
+    const oldTree = clone(cdr.tree); oldTree.systems[0].children[0].children[0].attributes[0].values = FUEL.filter(v => v !== 'Ductless Mini-Split');
+    r('suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers; Ductless Mini-Split → mini-split, nothing under another field)',
       ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Gas Furnace')) === 'gas_furnace' && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Propane')) === 'gas_furnace'
-      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Boiler')) === 'gas_boiler,oil_boiler,electric_boiler' && ids(C.catalogTypesOffField(cdr.tree, sysOf(), FIELD)) === 'mini_split');
+      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Boiler')) === 'gas_boiler,oil_boiler,electric_boiler'
+      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Ductless Mini-Split')) === 'mini_split' && ids(C.catalogTypesOffField(cdr.tree, sysOf(), FIELD)) === ''
+      && ids(C.catalogTypesOffField(oldTree, oldTree.systems[0], FIELD)) === '');
+    r('suggest: under the mini-split chip Heating suggests only what Cooling does not check (the outdoor defrost drain)',
+      C.suggestionsFor(sysOf(), [EC.catalogType('mini_split')]).map(x => x.component.id).join() === 'odrain');
     const gf = [EC.catalogType('gas_furnace')], sug = () => C.suggestionsFor(sysOf(), gf).map(x => x.component.id);
     r('suggest: only parts the template lacks — nothing already there, no readings or data plates',
       !sug().includes('burner') && !sug().includes('vent') && !sug().includes('plate') && !sug().includes('supplytemp') && sug().includes('condensate') && sug().includes('ignition'));
@@ -1145,8 +1150,10 @@ const EXEC_MUT = [
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
   { name: 'an If-present suggestion is added switched on', file: 'catalogModel.ts', from: "if (o.op === 'addNode' && o.node.kind === 'component' && o.node.catalogRef && off.includes(o.node.catalogRef)) trims.push", to: "if (false) trims.push", check: 'suggest: a Typical part is added switched on, an If-present part switched off (offered on site) — one change set, with the equipment rule', run: runDesktop },
   { name: 'a switched-off part is suggested again', file: 'catalogModel.ts', from: "[...(x.children ?? []), ...(x.trimmed ?? [])].forEach", to: "[...(x.children ?? [])].forEach", check: 'suggest: a switched-off part is still in the template, so it is not suggested again', run: runDesktop },
-  { name: 'readings are suggested', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly) continue;", to: "if (r.present) continue;", check: 'suggest: only parts the template lacks — nothing already there, no readings or data plates', run: runDesktop },
-  { name: 'Boiler maps to one boiler only', file: 'catalogModel.ts', from: "return !!r && r.field === field && r.anyOf.includes(value); });", to: "return !!r && r.field === field && r.anyOf[0] === value && t.id !== 'oil_boiler'; });", check: 'suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers); a mini-split follows another field', run: runDesktop },
+  { name: 'Heating suggests the heads Cooling checks', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly || r.component.checkedIn) continue;", to: "if (r.present || r.evidenceOnly) continue;", check: 'suggest: under the mini-split chip Heating suggests only what Cooling does not check (the outdoor defrost drain)', run: runDesktop },
+  { name: 'a type the template cannot answer shows under every chip', file: 'catalogModel.ts', from: "return !!r && r.field !== field; });", to: "return r?.field !== field; });", check: 'suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers; Ductless Mini-Split → mini-split, nothing under another field)', run: runDesktop },
+  { name: 'readings are suggested', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly || r.component.checkedIn) continue;", to: "if (r.present || r.component.checkedIn) continue;", check: 'suggest: only parts the template lacks — nothing already there, no readings or data plates', run: runDesktop },
+  { name: 'Boiler maps to one boiler only', file: 'catalogModel.ts', from: "return !!r && r.field === field && r.anyOf.includes(value); });", to: "return !!r && r.field === field && r.anyOf[0] === value && t.id !== 'oil_boiler'; });", check: 'suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers; Ductless Mini-Split → mini-split, nothing under another field)', run: runDesktop },
   { name: 'the catalog adds a component the template already has', file: 'catalogModel.ts', from: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && !x.row.present && ", to: ".filter((x): x is { p: Pick; row: CatalogRow } => !!x.row && ", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds evidence the phone cannot collect', file: 'catalogModel.ts', from: "!x.row.evidenceOnly && pickRecordsSomething", to: "pickRecordsSomething", check: 'catalog: only real picks are added — present, evidence and record-nothing picks are skipped', run: runDesktop },
   { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },

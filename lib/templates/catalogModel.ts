@@ -161,19 +161,22 @@ export function catalogTypesForAnswer(tree: InspectionTemplate, system: Template
   return catalogTypesForSystem(system).filter(t => { const r = ruleFor(tree, t); return !!r && r.field === field && r.anyOf.includes(value); });
 }
 
-/** Catalog types this system offers that a type question does NOT decide (Heating's mini-split follows Distribution). */
+/** Catalog types this system offers that ANOTHER question decides (a rule on a different field). A type whose answer the
+ *  template does not offer is left out: added without a rule it would show for every type (owner 2026-11-05 — the
+ *  mini-split block showed under Gas Furnace). */
 export function catalogTypesOffField(tree: InspectionTemplate, system: TemplateNode, field: string): CatalogEquipmentType[] {
-  return catalogTypesForSystem(system).filter(t => ruleFor(tree, t)?.field !== field);
+  return catalogTypesForSystem(system).filter(t => { const r = ruleFor(tree, t); return !!r && r.field !== field; });
 }
 
 export type Suggestion = { type: CatalogEquipmentType; component: CatalogComponent };
 
-/** What Ledrix suggests that the template does not have: parts only (readings need Evidence), one per name. */
+/** What Ledrix suggests that the template does not have: parts only (readings need Evidence), never a part checked
+ *  under another system (owner 2026-11-05: a mini-split's heads and outdoor unit are Cooling's). */
 export function suggestionsFor(system: TemplateNode, types: CatalogEquipmentType[]): Suggestion[] {
   const out: Suggestion[] = [];
   const seen = new Set<string>();
   for (const type of types) for (const g of catalogRows(system, type.id)) for (const r of g.rows) {
-    if (r.present || r.evidenceOnly) continue;
+    if (r.present || r.evidenceOnly || r.component.checkedIn) continue;   // checkedIn: checked under another system (a mini-split's heads → Cooling)
     const k = `${type.id}/${r.component.id}`;
     if (seen.has(k)) continue;
     seen.add(k);
