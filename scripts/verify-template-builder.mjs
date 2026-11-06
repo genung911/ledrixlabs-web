@@ -779,7 +779,16 @@ const RULES = {
   'writes: the live template is never inserted, upserted or hard-deleted from the browser': all =>
     /from\('company_templates'\)\s*\.(insert|upsert|delete)\(/.test(strip(all[API] ?? '')) ? [API] : [],
   'isolation: no inspection, finding or snapshot table is touched': all => Object.entries(all).filter(([, s]) => /from\(\s*'(inspections|anomalies|technical_specs|inspection_templates?)'\s*\)/.test(strip(s))).map(([f]) => f),
-  'isolation: browser storage is written only by draftStore': all => browserFiles(all).filter(([f, s]) => f !== 'lib/templateBuilder/draftStore.ts' && /localStorage|sessionStorage|indexedDB/.test(strip(s))).map(([f]) => f),
+  'isolation: browser storage is written only by draftStore': all => browserFiles(all).filter(([f, s]) => f !== 'lib/templateBuilder/draftStore.ts' && f !== 'lib/templates/lastPlace.ts' && /localStorage|sessionStorage|indexedDB/.test(strip(s))).map(([f]) => f),
+  // owner 2026-11-05: reopening a template returns to where you left off — remembered in this browser, place only.
+  'where you left off: lastPlace keeps only the place (selection, section, tab, type chips, labels), never template content, and the editor restores it before the draft loads': all => {
+    const lp = strip(all['lib/templates/lastPlace.ts'] ?? ''), e = strip(all[EDIT] ?? ''), list = strip(all['app/app/templates/page.tsx'] ?? '');
+    const place = (lp.match(/export type Place = \{([\s\S]*?)\n\};/) ?? [])[1] ?? '';
+    const fields = [...place.matchAll(/^\s*(\w+):/gm)].map(m => m[1]).sort().join(',');
+    return (fields === 'at,ctab,href,section,sel,title,typePick,where' && !/tree|core|ops/.test(place)
+      && /const p = readPlace\(companyId, pk\);\s*if \(p\) \{ setSel\(p\.sel\); setSection/.test(e) && /if \(!placeReady \|\| !tree \|\| !m \|\| !sel\.systemId\) return;/.test(e)
+      && /forgetPlace\(companyId, pk\)/.test(e) && /readLastPlace\(access\.companyId\)/.test(list) && /const lastLive = last && data &&/.test(list)) ? [] : ['lib/templates/lastPlace.ts', EDIT, 'app/app/templates/page.tsx'];
+  },
   'isolation: the phone preview reads the draft and writes nothing': all => ['components/templates/PhonePreview.tsx', 'components/templates/phonePreviewModel.ts']
     .filter(f => /workspace|fetch\(|\.from\(|supabase/i.test(strip(all[f] ?? 'missing'))),
   'no model key or service-role key in browser code': all => browserFiles(all).filter(([, s]) => /SERVICE_ROLE|GATEWAY_KEY|x-ledrix-key|OPENAI/i.test(s)).map(([f]) => f),
@@ -1020,6 +1029,7 @@ const MUT = {
   'writes: the live template is never inserted, upserted or hard-deleted from the browser': add(API, "\nworkspace.from('company_templates').delete().eq('id', x);"),
   'isolation: no inspection, finding or snapshot table is touched': add('lib/templates/useDraft.ts', "\nworkspace.from('inspection_templates').select('*');"),
   'isolation: browser storage is written only by draftStore': add(EDIT, "\nlocalStorage.setItem('x', '1');"),
+  'where you left off: lastPlace keeps only the place (selection, section, tab, type chips, labels), never template content, and the editor restores it before the draft loads': rep('lib/templates/lastPlace.ts', '  typePick: Record<string, string>;', '  typePick: Record<string, string>;\n  tree: unknown;'),
   'isolation: the phone preview reads the draft and writes nothing': add('components/templates/PhonePreview.tsx', "\nfetch('/api/x');"),
   'no model key or service-role key in browser code': add('components/templates/LedrixPanel.tsx', "\nconst k = process.env.GATEWAY_KEY;"),
   'route: requires a signed-in user': rep(ROUTE, 'admin.auth.getUser(token)', 'admin.auth.getUser()'),

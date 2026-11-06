@@ -10,11 +10,12 @@
 // browser, and the actions that need the server (new, duplicate, rename, delete, type assignment) say so.
 import { PROPERTY_TYPES, propertyTypeLabel, propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
 import Link from 'next/link';
+import { readLastPlace, type Place } from '@/lib/templates/lastPlace';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { Card, Empty, ErrorBox, Loading, Page, PageHeader, formatWhen } from '@/components/workspace/ui';
-import { Banner, Menu, Modal, Pill, btn, field, label } from '@/components/templates/ui';
+import { Banner, Menu, Modal, Pill, btn, field, label, timeAgo } from '@/components/templates/ui';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import {
   STOCK_TYPES, TemplateApiError, addInspectionType, assignTemplate, baseLabel, deleteTemplate, detectBackend, listDrafts,
@@ -73,6 +74,13 @@ export default function TemplatesPage() {
   const newDrafts = (data?.drafts ?? []).filter(d => !d.templateId);
   const unassigned = (data?.types ?? []).filter(t => !t.templateId).length;
   const [ptFilter, setPtFilter] = useState<PropertyTypeId | null>(null);
+  // CONTINUE EDITING (owner 2026-11-05): the template last edited on this computer, and where in it — shown only while
+  // that template (or its unpublished draft) still exists. Read after mount: storage is this browser's, never the server's.
+  const [last, setLast] = useState<(Place & { key: string }) | null>(null);
+  useEffect(() => { if (access.companyId && author) setLast(readLastPlace(access.companyId)); }, [access.companyId, author]);
+  const lastLive = last && data && (last.key.startsWith('draft:')
+    ? data.drafts.some(d => !d.templateId && `draft:${d.id}` === last.key)
+    : data.templates.some(t => t.id === last.key)) ? last : null;
   const usedTypes = useMemo(() => PROPERTY_TYPES.map(p => p.id).filter(id => (data?.templates ?? []).some(t => propertyTypesOf(t.tree).includes(id))), [data]);
 
   return (
@@ -94,6 +102,16 @@ export default function TemplatesPage() {
       )}
       {notice && <div className="mb-4"><Banner tone="warn" title={notice} actions={<button className={btn.ghost} onClick={() => setNotice(null)}>Dismiss</button>} /></div>}
 
+      {lastLive && (
+        <Link href={lastLive.href} className="mb-4 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 hover:bg-accent/10" aria-label={`Continue editing ${lastLive.title}`}>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Continue editing</span>
+            <span className="block truncate text-sm font-semibold text-ink">{[lastLive.title, ...lastLive.where].filter(Boolean).join(' › ')}</span>
+          </span>
+          <span className="shrink-0 text-xs text-muted">{timeAgo(lastLive.at)}</span>
+          <span aria-hidden className="text-accent-ink">→</span>
+        </Link>
+      )}
       {state.kind === 'loading' && <Card><Loading /></Card>}
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {data && (

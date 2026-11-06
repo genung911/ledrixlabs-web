@@ -42,6 +42,7 @@ import { previewAnswer, typeLayoutOf, type TypeLayout } from '@/lib/templates/ty
 import { rulesFor } from '@/components/templates/phonePreviewModel';
 import type { TypeView } from '@/components/templates/EditorParts';
 import { TemplateApiError } from '@/lib/templates/api';
+import { forgetPlace, placeKey, readPlace, writePlace } from '@/lib/templates/lastPlace';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type Section = 'overview' | 'buildings' | 'systems' | 'gates' | 'counts' | 'requirements' | 'report' | 'review';
@@ -86,6 +87,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const [sel, setSel] = useState<Sel>({ systemId: null, nodeId: null });
   const [section, setSection] = useState<Section>('systems');
   const [ctab, setCtab] = useState<ComponentTab>('overview');
+  const [typePick, setTypePick] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<'edit' | 'ledrix'>('edit');
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [problem, setProblem] = useState<string | null>(null);
@@ -94,8 +96,29 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick(x => x + 1), 30_000); return () => clearInterval(t); }, []);
 
+  // WHERE YOU LEFT OFF (owner 2026-11-05): reopening a template puts you back on the system, item, Builder section, tab
+  // and type chips you had — remembered on this computer (lib/templates/lastPlace). Restored once, before the draft
+  // loads, so the "first system" fallback below never overrides it; ids that no longer exist fall back as usual.
+  const pk = placeKey(templateId, draftId);
+  const [placeReady, setPlaceReady] = useState(false);
+  useEffect(() => {
+    const p = readPlace(companyId, pk);
+    if (p) { setSel(p.sel); setSection(p.section as Section); setCtab(p.ctab as ComponentTab); setTypePick(p.typePick ?? {}); }
+    setPlaceReady(true);
+  }, [companyId, pk]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   const m = d.model;
   const tree = m?.core.tree;
+  useEffect(() => {
+    if (!placeReady || !tree || !m || !sel.systemId) return;
+    const sys = tree.systems.find(x => x.id === sel.systemId);
+    const node = sel.nodeId ? locate(tree, sel.nodeId)?.node : null;
+    const where = section === 'systems' ? [sys?.label, node?.label].filter((x): x is string => !!x) : [SECTIONS.find(x => x.id === section)?.label ?? ''];
+    writePlace(companyId, pk, {
+      sel, section, ctab, typePick, title: m.core.name, where, at: Date.now(),
+      href: templateId === 'new' && draftId ? `/app/templates/new?draft=${encodeURIComponent(draftId)}` : `/app/templates/${encodeURIComponent(templateId)}`,
+    });
+  }, [placeReady, tree, m, sel, section, ctab, typePick, companyId, pk, templateId, draftId]);
   useEffect(() => { if (tree && !sel.systemId && tree.systems[0]) setSel({ systemId: tree.systems[0].id, nodeId: null }); }, [tree, sel.systemId]);
   // A selection whose item was removed falls back to its system, then to the first system.
   useEffect(() => {
@@ -114,7 +137,6 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
     for (const s of tree.systems) { const L = typeLayoutOf(tree, s, defs); if (L) out.set(s.id, L); }
     return out;
   }, [tree]);
-  const [typePick, setTypePick] = useState<Record<string, string>>({});
   const typeViewFor = useCallback((systemId: string | null): TypeView | null => {
     const L = systemId ? layouts.get(systemId) : undefined;
     if (!L || !systemId) return null;
@@ -172,7 +194,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   };
   const doDiscard = async () => {
     setBusy(true);
-    try { await d.discard(); setDialog(null); if (isNew) onDone(); }
+    try { await d.discard(); forgetPlace(companyId, pk); setDialog(null); if (isNew) onDone(); }
     catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be discarded.'); }
     finally { setBusy(false); }
   };
