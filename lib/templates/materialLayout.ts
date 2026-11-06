@@ -8,7 +8,9 @@
 //   1. MATERIALS — a materials question (Supply Material) whose every answer brings at most ONE condition card (Copper →
 //      Copper Supply Piping): one row per answer with the card it brings, plus the card a typed answer brings ("Other").
 //      A group with no such question lists its items that record a choice (Flooring Material, Insulation) here instead.
-//   2. CHECKED IN EVERY HOME — everything else in the group.
+//   2. BROUGHT BY — any other question in the system: each answer and the items it brings in this group (owner
+//      2026-11-06: Service Entrance → Service Drop / Mast; Overcurrent Protection: Fuses → Fuses / Fuse Holders).
+//   3. CHECKED IN EVERY HOME — everything else in the group.
 // Which card each answer brings is the phone's own resolver over the effective rules (typeLayout.showsFor), never a
 // guess from names. "+ Add material" adds the answer and its card (shown only for that answer) as one change set;
 // switching a material Off takes its answer out and switches its card off; it stays listed as Off, and switching it on
@@ -25,7 +27,11 @@ export type MaterialRow = { value: string; card: TemplateNode | null };
  *  card is in the Off list — found from that card, which still says which answer brings it. */
 export type OffMaterial = { value: string; card: TemplateNode };
 export type MaterialQuestion = { node: TemplateNode; attr: Attr; field: string; rows: MaterialRow[]; typed: TemplateNode | null; cards: TemplateNode[]; off: OffMaterial[] };
-export type MaterialGroup = { node: TemplateNode; questions: MaterialQuestion[]; materials: TemplateNode[]; every: TemplateNode[] };
+/** "Brought by" (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc): a question in the system that is not a materials
+ *  question, with each answer and the items it brings in THIS group (an answer may bring several, or none). An item shown
+ *  only for some answers is listed here, never under "every home". */
+export type BroughtBy = { field: string; node: TemplateNode; label: string; rows: { value: string; cards: TemplateNode[] }[]; typed: TemplateNode[]; cards: TemplateNode[] };
+export type MaterialGroup = { node: TemplateNode; questions: MaterialQuestion[]; materials: TemplateNode[]; brought: BroughtBy[]; every: TemplateNode[] };
 
 const TYPED_PROBE = '\u0000typed answer';
 
@@ -37,6 +43,17 @@ export function materialLayoutOf(tree: InspectionTemplate, system: TemplateNode,
   const parentOf = new Map(rows.map(r => [r.node.id, r.parentId]));
   // The group an item belongs to: its nearest subsystem, or the system itself.
   const groupOf = (id: string): string => { let p = parentOf.get(id); while (p && p !== system.id && byId.get(p)?.kind !== 'subsystem') p = parentOf.get(p); return p ?? system.id; };
+
+  // An in-system question an item can depend on: `<nodeId>::<attrId>` (or a single-field item's bare id), not a count.
+  const inSystem = new Set(items.map(n => n.id));
+  const fieldOf = (key: string): { n: TemplateNode; a: Attr } | null => {
+    const [nid, aid] = key.split('::');
+    const n = byId.get(nid);
+    if (!n || !inSystem.has(nid)) return null;
+    const a = aid ? (n.attributes ?? []).find(x => x.id === aid) : (n.attributes ?? []).length === 1 ? n.attributes![0] : undefined;
+    if (!a || a.values.length < 2 || a.id === 'count' || a.values.every(v => /^\d+$/.test(v))) return null;
+    return { n, a };
+  };
 
   // Every materials question in the system: an in-system field whose answers each bring at most one item, at least two in all.
   const questions: MaterialQuestion[] = [];
@@ -82,11 +99,29 @@ export function materialLayoutOf(tree: InspectionTemplate, system: TemplateNode,
     const own = items.filter(n => groupOf(n.id) === gid);
     const qs = questions.filter(q => groupOf(q.node.id) === gid);
     const taken = new Set([...qs.map(q => q.node.id), ...qs.flatMap(q => q.cards.map(c => c.id))]);
-    const rest = own.filter(n => !taken.has(n.id) && !questions.some(q => q.cards.includes(n)));
+    const left = own.filter(n => !taken.has(n.id) && !questions.some(q => q.cards.includes(n)));
+    // Brought by: each in-system question (not a materials question, not a count) the group's remaining items depend on.
+    const brought: BroughtBy[] = [];
+    for (const n of left) {
+      const k = (preds.get(n.id) ?? []).map(x => x.key).find(key => !questions.some(q => q.field === key) && fieldOf(key) && fieldOf(key)!.n.id !== n.id);
+      if (!k) continue;
+      let b = brought.find(x => x.field === k);
+      if (!b) {
+        const f = fieldOf(k)!;
+        const label = f.a.label && f.a.label.trim().toLowerCase() !== f.n.label.trim().toLowerCase() ? `${f.n.label} › ${f.a.label}` : f.n.label;
+        b = { field: k, node: f.n, label, rows: f.a.values.map(value => ({ value, cards: [] })), typed: [], cards: [] };
+        brought.push(b);
+      }
+      b.cards.push(n);
+      let any = false;
+      for (const r of b.rows) if (showsFor(preds.get(n.id) ?? [], n.id, k, r.value)) { r.cards.push(n); any = true; }
+      if (showsFor(preds.get(n.id) ?? [], n.id, k, TYPED_PROBE) && !any) b.typed.push(n);
+    }
+    const rest = left.filter(n => !brought.some(b => b.cards.includes(n)));
     // No materials question here: the items that record a choice (a material or a type) come first.
     const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);
     const every = rest.filter(n => !materials.includes(n));
-    if (qs.length || materials.length || every.length) out.push({ node, questions: qs, materials, every });
+    if (qs.length || materials.length || brought.length || every.length) out.push({ node, questions: qs, materials, brought, every });
   }
   return out;
 }

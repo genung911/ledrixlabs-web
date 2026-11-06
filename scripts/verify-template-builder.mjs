@@ -767,9 +767,32 @@ async function runTypes(files) {
       r('materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)',
         !!surf && surf.questions.length === 0 && surf.materials.map(n => n.label).join('|') === 'Flooring Material|Wall Material|Countertop Material'
         && !surf.every.some(n => (n.attributes ?? []).length) && !!ins && ins.materials.some(n => n.label === 'Insulation'));
-      const EL = TL.typeLayoutOf(fresh, fsys('electrical'), fdefs), elq = mat('electrical').flatMap(g => g.questions);
-      r('materials: in a typed system (Electrical), the wiring-type section is a materials question drawn as rows; Service Entrance (an answer brings two items) is a type, not a material',
-        !!EL && EL.gated.some(g => elq.some(q => q.field === g.key && q.rows.length >= 6 && q.rows.every(x => x.card))) && !elq.some(q => q.node.id === 'elec_entrance'));
+      // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
+      // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
+      const ids = (l) => (l ?? []).map(n => n.id).join('|');
+      const EG = mat('electrical'), svc = grp(EG, 'Service'), pnl = grp(EG, 'Panel'), bw = grp(EG, 'Branch Wiring'), dev = grp(EG, 'Devices & Protection');
+      const typedIds = fresh.systems.filter(x => TL.typeLayoutOf(fresh, x, fdefs)).map(x => x.id).sort().join('|');
+      r('electrical: no type chips (Service Entrance decides 3 of 27 items); Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
+        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|water_heater');
+      const row = (b, v) => ids(b?.rows.find(x => x.value === v)?.cards);
+      const se = svc?.brought.find(b => b.label === 'Service Entrance');
+      r('electrical: Service records Size, Entrance and Main Disconnect; Service Entrance brings the drop and mast for Overhead and Service Mast, the lateral for Underground; Meter Base is every home',
+        ids(svc?.materials) === 'elec_service|elec_entrance|elec_main' && svc?.brought.length === 1
+        && row(se, 'Overhead') === 'elec_svc_drop|elec_svc_mast' && row(se, 'Service Mast') === 'elec_svc_drop|elec_svc_mast' && row(se, 'Underground (Lateral)') === 'elec_svc_lateral'
+        && ids(svc?.every) === 'elec_meter');
+      const oc = pnl?.brought.find(b => b.label === 'Panel › Overcurrent Protection');
+      r('electrical: Fuses / Fuse Holders is brought by the fuse answers of Overcurrent Protection — never "every home"; breakers bring nothing extra',
+        !!oc && row(oc, 'Circuit Breakers') === '' && row(oc, 'Fuses — Edison / Type S') === 'elec_fuses' && row(oc, 'Cartridge Fuses') === 'elec_fuses'
+        && !pnl.every.some(n => n.id === 'elec_fuses') && ids(pnl.every) === 'elec_deadfront|elec_breakers' && ids(pnl.materials) === 'elec_panel|elec_bonding|gar_subpanel');
+      const wq = bw?.questions[0];
+      r('electrical: Branch Wiring is its wiring-type materials rows (one card each, Other for typed) then every home; Devices records GFCI / AFCI',
+        !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 6 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
+        && ids(bw.every) === 'kit_circuits|laundry_dryer' && !bw.brought.length
+        && ids(dev?.materials) === 'elec_grounding' && ids(dev?.every) === 'elec_receptacles|int_lighting|elec_ext_lighting');
+      // A list where one material question decides most of the system is still not a type (several(k)): Plumbing's Supply alone.
+      const sup1 = clone(fresh); const plS = sup1.systems.find(x => x.id === 'plumbing'); plS.children = plS.children.filter(c => c.label === 'Supply');
+      r('types: a material question that decides most of a system is still a material list, not type chips (Plumbing Supply on its own)',
+        !TL.typeLayoutOf(sup1, plS, PM.rulesFor(sup1)) && grp(ML.materialLayoutOf(sup1, plS, PM.rulesFor(sup1)), 'Supply')?.questions.length === 1);
       const E2 = mat('exterior');
       r('materials: Exterior siding is laid out the same way (found from its own rules, not a list of systems)', E2.some(g => g.questions.some(x => x.rows.length >= 8 && x.rows.every(y => y.card))));
       // + Add material / remove — on a draft, through the editor's own change sets.
@@ -872,12 +895,9 @@ async function runTypes(files) {
         && HL.question.field === 'hvac_heating::fuel_source'
         && ['hvac_furnace', 'hvac_cabinet'].every(id => FORCED.every(v => heatShows(id, v)) && OTHERS.every(v => !heatShows(id, v))));
     }
-    const EL = typedSystems.find(([s]) => s.id === 'electrical')?.[1];
-    const elGated = EL ? Object.fromEntries(EL.gated.map(g => [g.question.label, g.nodes.map(n => n.id).sort().join('|')])) : {};
-    r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)',
-      !!EL && !EL.every.some(n => n.id === 'elec_fuses' || n.id.startsWith('elec_wir_'))
-      && elGated['Panel › Overcurrent Protection'] === 'elec_fuses'
-      && elGated['Wiring › Type'] === 'elec_wir_al|elec_wir_cloth|elec_wir_conduit|elec_wir_kt|elec_wir_mc|elec_wir_nm|elec_wir_other');
+    const FP = typedSystems.find(([s]) => s.id === 'fireplace')?.[1];
+    r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Fireplace: by Chimney)',
+      !!FP && FP.gated.some(g => g.key.startsWith('fp_chimney') && g.nodes.length > 0 && g.nodes.every(n => !FP.every.includes(n))));
     // a special-home checkpoint added to Heating lands in "Special homes", not "Every"
     let d2 = T.createDraft({ companyId: 'co_1', templateId: 'tpl_2', live: clone(DEFAULT_TREE), now: 5000 });
     const SH = await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href);
@@ -1351,13 +1371,16 @@ const EXEC_MUT = [
   { name: 'switching an item off deletes it instead', file: 'editorModel.ts', from: ": [{ op: 'trimNode', nodeId: id }];", to: ": [{ op: 'unaddNode', nodeId: id } as any];", check: 'switch: an item switched off is kept (off, offered on site) and switching it on brings it back', run: runDesktop },
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
-  { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Electrical: fuses by Overcurrent Protection, wiring cards by Wiring Type)', run: runTypes },
+  { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Fireplace: by Chimney)', run: runTypes },
   { name: 'the Furnace forced-air rule is dropped from the pack', file: 'core/ledrixRules.json', from: '  "hvac_furnace": {\n   "requires": [', to: '  "hvac_furnace": {\n   "x_requires": [', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
   { name: 'Cabinet / Access shows for a boiler', file: 'core/ledrixRules.json', from: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [', to: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [\n      "Boiler",', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
   { name: 'a ruled item is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)', run: runTypes },
   { name: 'a special-home checkpoint is called Every', file: 'typeLayout.ts', from: "    if (specialIds.has(baseOf(n.id))) { special.push(n); continue; }", to: "", check: 'types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"', run: runTypes },
   { name: 'the type layout ignores the rules', file: 'typeLayout.ts', from: "  return collapseToActive(resolveApplicability(node as never, { specValue: () => value }).state);", to: "  return true;", check: 'types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', run: runTypes },
-  { name: 'a material list is laid out by type', file: 'typeLayout.ts', from: "if (c > best && several(k))", to: "if (c > best)", check: 'types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list', run: runTypes },
+  { name: 'a material list is laid out by type', file: 'typeLayout.ts', from: "if (c > best && several(k))", to: "if (c > best)", check: 'types: a material question that decides most of a system is still a material list, not type chips (Plumbing Supply on its own)', run: runTypes },
+  { name: 'chips for a question that decides a few items', file: 'typeLayout.ts', from: "if (best * 3 < items.length) return null;", to: "", check: 'electrical: no type chips (Service Entrance decides 3 of 27 items); Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs', run: runTypes },
+  { name: 'Brought by is dropped (fuses back under every home)', file: 'materialLayout.ts', from: "if (!k) continue;", to: "if (k || !k) continue;", check: 'electrical: Fuses / Fuse Holders is brought by the fuse answers of Overcurrent Protection — never "every home"; breakers bring nothing extra', run: runTypes },
+  { name: 'an answer brings only its first item', file: 'materialLayout.ts', from: "{ r.cards.push(n); any = true; }", to: "{ if (!r.cards.length) r.cards.push(n); any = true; }", check: 'electrical: Service records Size, Entrance and Main Disconnect; Service Entrance brings the drop and mast for Overhead and Service Mast, the lateral for Underground; Meter Base is every home', run: runTypes },
   { name: 'count copies are not collapsed', file: 'typeLayout.ts', from: "    if (g.items.length < 2) { typed.push(...g.items); continue; }", to: "    { typed.push(...g.items); continue; }", check: 'types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only', run: runTypes },
   { name: 'the copies row edits only the first copy', file: 'typeLayout.ts', from: "  return group.items.flatMap(edit);", to: "  return group.items.slice(0, 1).flatMap(edit);", check: 'types: editing the copies row changes every copy at once, as ONE change set (one undo)', run: runTypes },
   { name: "the grid widens past Ledrix's rule", file: 'typeLayout.ts', from: "    if (outside.length) return { ok: false,", to: "    if (false) return { ok: false,", check: "types: a type Ledrix's rule excludes cannot be ticked, and no item can be left with no type (refused, nothing written)", run: runTypes },

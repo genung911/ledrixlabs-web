@@ -103,8 +103,8 @@ export function indexTree(tree: InspectionTemplate) {
 
 /**
  * The type layout of `system`, or null when its items don't change with one type answer inside it (it keeps the plain
- * list). The type question is the in-system field that the most items' rules read (at least two), excluding count
- * fields (a count shows N copies; it is not a type).
+ * list). The type question is the in-system field that the most items' rules read (at least two, and at least a third of
+ * the system's items), excluding count fields (a count shows N copies; it is not a type).
  */
 export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, defs: RuleDefinitions): TypeLayout | null {
   const { byId, systemOf } = indexTree(tree);
@@ -130,6 +130,11 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
   let field: string | null = null; let best = 1;
   for (const [k, c] of tally) if (c > best && several(k)) { best = c; field = k; }
   if (!field) return null;
+  // Chips only when the question decides at least a THIRD of the system (owner 2026-11-06, mockup
+  // NC6nHJ1mUGuv2ikCUfU3Cc): Heating 19/25, Cooling 20/25, Water Heater 8/13, Fireplace 7/16, Roofing 10/23 keep them;
+  // Electrical's Service Entrance (3/27) does not — the system is laid out group by group (materialLayout), where the
+  // question shows as "Brought by" in its own group.
+  if (best * 3 < items.length) return null;
   const qf = fieldNode(field)!;
   const question: TypeQuestion = { nodeId: qf.n.id, attrId: qf.a!.id, field, label: qf.a!.label || qf.n.label, values: [...qf.a!.values] };
 
