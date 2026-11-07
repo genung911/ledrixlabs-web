@@ -1096,9 +1096,13 @@ const RULES = {
     if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
     return bad;
   },
-  'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': all => {
+  'switches: an item is ONE screen (the Item tab) — Condition, Details and Requirements switches, with Condition\'s and Details\' settings right under their switch; Requirements and Applicability stay tabs': all => {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
-    return /const visible: ComponentTab\[\] = \['overview', \.\.\.\(assessesCondition\(node\) \? \['condition' as const\] : \[\]\), \.\.\.\(detailsOn \? \['details' as const\] : \[\]\), \.\.\.\(reqsOn \? \['requirements' as const\] : \[\]\), 'applicability'\];/.test(ws)
+    // Owner 2026-11-06 (mockup CjKszYz3e9KT39kvF43mkD): "merge overview and details" — and Condition the same way.
+    return /const visible: ComponentTab\[\] = \['overview', \.\.\.\(reqsOn \? \['requirements' as const\] : \[\]\), 'applicability'\];/.test(ws)
+      && /conditionBody=\{<ComponentCondition node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>\} detailsBody=\{<ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>\}/.test(ws)
+      && /\{assessesCondition\(node\) && conditionBody && <div aria-label="Condition settings"/.test(parts) && /\{detailsOn && detailsBody && <div aria-label="Details settings"/.test(parts)
+      && /overview: 'Item'/.test(ws)
       && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
       && /Nothing to record — inspectors won’t see this item\./.test(parts) && !/ReportTab/.test(ws) ? [] : ['components/templates/Workspace.tsx'];
   },
@@ -1158,9 +1162,12 @@ const RULES = {
     return /if \(!added\.length && !removedActive\.length\) \{ onOps\(fields\); setPending\(null\); return; \}/.test(h) && /const r = starterOps\(tree, ids, source\);/.test(h)
       && /onOps\(\[\.\.\.pending\.fields, \.\.\.r\.ops\]\)/.test(h) && /\.\.\.\(off \? switchOff\.map\(id => \(\{ op: 'trimNode', nodeId: id \}\)/.test(h) && !/op: 'addNode'/.test(h) ? [] : ['components/templates/HomeKinds.tsx'];
   },
-  'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': all => {
+  'group first: a system without type chips lists its groups (no Materials first / Full list switch), a group opens its own screen with everything set in it; typed systems keep their chips and draw a materials section as rows': all => {
     const ep = strip(all['components/templates/EditorParts.tsx'] ?? ''), tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
-    return /const byMaterials = !typeView && !fullList;/.test(ep) && /\{byMaterials && <MaterialsBuilder tree=\{tree\} system=\{system\}/.test(ep) && /<div className=\{laidOut \? 'hidden' : ''\}>/.test(ep)
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), gl = strip(all['components/templates/GroupList.tsx'] ?? '');
+    return /const byGroups = !typeView;/.test(ep) && /\{byGroups && <GroupList tree=\{tree\} system=\{system\}/.test(ep) && /<div className=\{laidOut \? 'hidden' : ''\}>/.test(ep)
+      && !/Materials first|setFullList/.test(ep) && /<MaterialsBuilder tree=\{tree\} system=\{system\} only=\{node\.id\}/.test(ep)
+      && /<GroupDetails tree=\{tree\} system=\{system\} node=\{node\}/.test(ws) && /onClick=\{onOpen\}/.test(gl) && /onOpenGroup=\{id => onSelect\(\{ systemId: system\.id, nodeId: id \}\)\}/.test(ep)
       && /const mq = materialQs\.find\(q => q\.field === g\.key\);\s*if \(mq\) return section\(/.test(tb) ? [] : ['components/templates/EditorParts.tsx'];
   },
   'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': all => {
@@ -1182,7 +1189,7 @@ const RULES = {
     const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
     // Owner 2026-11-06: "I do not have a way to rename a section like Surfaces" → "add a pencil, no mock up".
     return /: <GroupName label=\{g\.node\.label\} disabled=\{disabled\} onRename=\{v => onOps\(ops\.rename\(g\.node\.id, v\)\)\} \/>\}/.test(mb)
-      && /\{g\.node\.id === system\.id\s*\? <p [^>]*>\{system\.label\}<\/p>/.test(mb)
+      && /\{only \? null : g\.node\.id === system\.id\s*\? <p [^>]*>\{system\.label\}<\/p>/.test(mb)
       && /aria-label=\{`Rename \$\{label\}`\}[^>]*disabled=\{disabled\}/.test(mb) && /onClick=\{\(\) => \{ setV\(label\); cancelled\.current = false; setEditing\(true\); \}\}/.test(mb)
       && /if \(cancelled\.current\) \{ cancelled\.current = false; return; \} const t = v\.trim\(\); if \(t && t !== label\) onRename\(t\);/.test(mb)
       && /if \(e\.key === 'Escape'\) \{ cancelled\.current = true;/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
@@ -1226,6 +1233,13 @@ const RULES = {
     return /\{suggest && <>\{ruleSentence\(r\)\} · <button/.test(ae) && /\{suggest && isOpen\(a\.id, 'rule'\) && \(/.test(ae)
       && /\{suggest && picked && r\.kind !== 'never' && \(\s*<ModeToggle/.test(ae) && /<Toggle on=\{suggest\} label="Suggest advisories from the home’s details"/.test(ae)
       && /const inline = field\.replace\(\/\\bw-full\\b\\s\*\/, ''\);/.test(ae) && !/className=\{`\$\{field\}[^`]*text-xs`\}/.test(ae) ? [] : ['components/templates/AdvisoriesEditor.tsx'];
+  },
+  'group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops': all => {
+    const gl = strip(all['components/templates/GroupList.tsx'] ?? '');
+    return /if \(t && t !== g\.label\) onOps\(ops\.rename\(g\.id, t\)\);/.test(gl) && /onSelect: \(\) => \{ onOps\(ops\.move\(g\.id, system\.id, idx - 1\)\); \}/.test(gl)
+      && /onSelect: \(\) => \{ onOps\(ops\.move\(g\.id, system\.id, idx \+ 1\)\); \}/.test(gl) && /\{ label: 'Move to…', disabled: \(disabled && LOCKED\) \|\| moveBlockFor\(tree, g\.id\) \|\| false/.test(gl)
+      && /\{ label: 'Switch off', disabled: disabled && LOCKED, onSelect: \(\) => \{ onOps\(includeOps\(tree, g\.id, false\)\); \} \}/.test(gl)
+      && /onOps\(ops\.addItem\(tree, system\.id, system\.id, name, groups\.length \? 'subsystem' : 'component'\)\)/.test(gl) && !/op: '/.test(gl) ? [] : ['components/templates/GroupList.tsx'];
   },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
@@ -1402,7 +1416,7 @@ const MUT = {
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
   'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(includeOps(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
-  'switches: an item’s Overview carries Condition, Details and Requirements; each tab shows only when its switch is on': rep('components/templates/Workspace.tsx', "...(detailsOn ? ['details' as const] : [])", "'details' as const"),
+  'switches: an item is ONE screen (the Item tab) — Condition, Details and Requirements switches, with Condition\'s and Details\' settings right under their switch; Requirements and Applicability stay tabs': rep('components/templates/Workspace.tsx', "detailsBody={<ComponentFields node={node} onOps={onOps} disabled={disabled} />}", "detailsBody={null}"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
@@ -1416,13 +1430,16 @@ const MUT = {
   'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': rep(EDIT, 'const ASK_LEDRIX = false;', 'const ASK_LEDRIX = true;'),
   'only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none': rep('components/templates/SpecialHomesPanel.tsx', 'specialRows(tree, system, source).filter(r => own.has(r.kind))', 'specialRows(tree, system, source)'),
   'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': rep('components/templates/HomeKinds.tsx', 'if (!added.length && !removedActive.length) { onOps(fields); setPending(null); return; }', 'onOps(fields); setPending(null); return;'),
-  'materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows': rep('components/templates/EditorParts.tsx', 'const byMaterials = !typeView && !fullList;', 'const byMaterials = false;'),
+  'group first: a system without type chips lists its groups (no Materials first / Full list switch), a group opens its own screen with everything set in it; typed systems keep their chips and draw a materials section as rows': rep('components/templates/EditorParts.tsx', 'const byGroups = !typeView;', 'const byGroups = false;'),
   'materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem': rep('components/templates/MaterialsBuilder.tsx', "if (!v) onOps(removeMaterialOps(q, r.value));", "if (!v) onOps([{ op: 'removeAttribute', nodeId: q.node.id, attrId: q.attr.id }]);"),
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': rep('components/templates/Workspace.tsx', "|| moveBlockFor(tree, id) || false", "|| false"),
   'building types: edited only through setTemplateField structureTypes': add('components/templates/BuildingTypes.tsx', "\nconst x = [{ op: 'addNode', parentId: null }];"),
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', 'onSelect: () => { onOps(includeOps(tree, g.id, false)); } }', "onSelect: () => { onOps([{ op: 'trimNode', nodeId: g.id }] as TemplateOp[]); } }"), 'switch off writes its own op'],
+  ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', 'onOps(ops.move(g.id, system.id, idx + 1))', 'onOps(ops.move(g.id, system.id, idx - 1))'), 'move down moves up'],
+  ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', "groups.length ? 'subsystem' : 'component'", "'component'"), 'the add box adds items next to the groups'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', 'if (suggestAdv) delete tree.suggestAdvisories; else tree.suggestAdvisories = false;', ''), 'the answer never reaches the draft'],
   ['advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width', rep('components/templates/AdvisoriesEditor.tsx', '{suggest && picked && r.kind !== \'never\' && (', '{picked && r.kind !== \'never\' && ('), 'No still shows Suggest / Always add'],
   ['advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width', rep('components/templates/AdvisoriesEditor.tsx', '{suggest && isOpen(a.id, \'rule\') && (', '{isOpen(a.id, \'rule\') && ('), 'No still opens the rule'],
@@ -1455,7 +1472,7 @@ const MUT3 = [
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) : home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) :', "const o = fresh ? [{ op: 'addNode', parentId: t!.system.id, node: { id: 'g', label: newGroup!, kind: 'subsystem' } }] as TemplateOp[] :"), 'the dialog makes the new group with its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'onSubmit={e => { e.preventDefault(); addGroup(); }}', 'onSubmit={e => { e.preventDefault(); }}'), '"+ New group" does nothing'],
-  ['materials: a system without type chips opens materials first (Full list keeps the stored order); typed systems draw a materials section as rows', rep('components/templates/TypeBuilder.tsx', 'if (mq) return section(', 'if (false) return section('), 'Electrical\'s wiring section goes back to a plain list'],
+  ['group first: a system without type chips lists its groups (no Materials first / Full list switch), a group opens its own screen with everything set in it; typed systems keep their chips and draw a materials section as rows', rep('components/templates/TypeBuilder.tsx', 'if (mq) return section(', 'if (false) return section('), 'Electrical\'s wiring section goes back to a plain list'],
   ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', '{q.off.length > 0 && (<>', '{false && (<>'), 'an Off material disappears again'],
   ['materials: the materials view adds, removes and opens only through materialLayout ops and the editor\'s addItem', rep('components/templates/MaterialsBuilder.tsx', 'if (v) onOps(switchMaterialOnOps(q, o));', 'if (v) onOps(removeMaterialOps(q, o.value));'), 'switching a material on does nothing'],
   ['only what you pick: the special-homes card offers only this template\'s kinds and hides when there are none', rep('components/templates/SpecialHomesPanel.tsx', '|| rows.every(r => r.inTemplate)) return null;', ') return null;'), 'the card stays when there is nothing left to add'],

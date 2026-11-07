@@ -16,10 +16,13 @@ import { Pill, Toggle, btn, field } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
 
-export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabled }: {
+export function MaterialsBuilder({ tree, system, only, onOps, onOpen, selected, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+  /** One group's screen (2026-11-06, group first): only that group, without its heading (the panel title carries it). */
+  only?: string;
 }) {
-  const groups = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
+  const all = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
+  const groups = only ? all.filter(g => g.node.id === only) : all;
   const item = (n: TemplateNode) => <ItemRow key={n.id} tree={tree} node={n} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />;
   const stage = (n: number | null, title: string, hint: string, body: React.ReactNode) => (
     <div className="border-t border-hairline first:border-t-0">
@@ -30,6 +33,16 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
     </div>
   );
 
+  // A group the materials layout has no entry for (a typed system's group): its items as rows, and "+ Add item".
+  if (only && !groups.length) {
+    const g = (system.children ?? []).find(c => c.id === only);
+    return (
+      <section aria-label={g?.label ?? 'Group'} className="overflow-hidden rounded-xl border border-hairline">
+        <ul className="divide-y divide-hairline">{(g?.children ?? []).map(item)}</ul>
+        <div className="border-t border-hairline first:border-t-0"><AddItem label={g?.label ?? ''} disabled={disabled} onAdd={name => onOps(ops.addItem(tree, system.id, only, name))} /></div>
+      </section>
+    );
+  }
   return (
     <div className="space-y-3" aria-label="Materials first">
       {groups.map(g => {
@@ -45,7 +58,7 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
           onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />;
         return (
           <section key={g.node.id} aria-label={g.node.label} className="overflow-hidden rounded-xl border border-hairline">
-            {g.node.id === system.id
+            {only ? null : g.node.id === system.id
               ? <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{system.label}</p>
               : <GroupName label={g.node.label} disabled={disabled} onRename={v => onOps(ops.rename(g.node.id, v))} />}
             {g.questions.map(q => stage(num(), q.attr.label || q.node.label, ' · the inspector ticks every one seen',

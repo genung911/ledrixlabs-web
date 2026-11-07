@@ -16,6 +16,7 @@ import { catalogTypesForSystem } from '@/lib/templates/catalogModel';
 import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
+import { GroupList } from './GroupList';
 import { MaterialsBuilder } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -131,11 +132,11 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   const [parent, setParent] = useState(homes[0]?.id ?? system.id);
   const [name, setName] = useState('');
   useEffect(() => { if (!homes.some(g => g.id === parent)) setParent(homes[0]?.id ?? system.id); }, [system.id, kind, homes.map(g => g.id).join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
-  // A system the type chips don't lay out opens materials first (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf);
-  // "Full list" is the stored order, for reordering and adding groups.
-  const [fullList, setFullList] = useState(false);
-  const byMaterials = !typeView && !fullList;
-  const laidOut = (typeView && typeView.pick !== FULL_LIST) || byMaterials;
+  // A system the type chips don't lay out is GROUP FIRST (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD, "Approved"):
+  // its groups, each opening its own screen; no "Materials first / Full list" switch. The stored list below stays only
+  // for a typed system's "Full list" chip.
+  const byGroups = !typeView;
+  const laidOut = (typeView && typeView.pick !== FULL_LIST) || byGroups;
   const offRows = (system.trimmed ?? []).map(t => ({ t, under: system.label })).concat(rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))));
 
   return (
@@ -147,19 +148,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         <TypeBuilder tree={tree} system={system} layout={typeView.layout} pick={typeView.pick} onOps={onOps} selected={sel.nodeId} disabled={disabled}
           onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
       )}
-      {!typeView && (
-        <div className="flex items-center gap-2">
-          <div role="tablist" aria-label="Layout" className="inline-flex rounded-lg border border-hairline bg-ground p-0.5">
-            {([['materials', 'Materials first'], ['list', 'Full list']] as const).map(([k, t]) => (
-              <button key={k} role="tab" aria-selected={(k === 'list') === fullList} onClick={() => setFullList(k === 'list')}
-                className={`rounded-md px-3 py-1 text-xs font-semibold ${(k === 'list') === fullList ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{t}</button>
-            ))}
-          </div>
-          <span className="text-xs text-muted">{fullList ? 'Every item in its group, as stored. Reorder and add groups here.' : 'What the inspector records, in the order they work.'}</span>
-        </div>
-      )}
-      {byMaterials && <MaterialsBuilder tree={tree} system={system} onOps={onOps} selected={sel.nodeId} disabled={disabled}
-        onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />}
+      {byGroups && <GroupList tree={tree} system={system} onOps={onOps} selected={sel.nodeId} disabled={disabled}
+        onOpenGroup={id => onSelect({ systemId: system.id, nodeId: id })} onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />}
       {laidOut && offRows.length > 0 && (
         <ul id={SECTION_ID.off} aria-label="Switched off" className="scroll-mt-2 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
           {offRows.map(({ t, under }) => (
@@ -236,29 +226,27 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 
 // ── a group: its items (name and Tips live in the panel title) ──────────────────────────────────────────────────────────────────
 
-export function GroupDetails({ node, onOps, onOpen, disabled }: { node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean }) {
+export function GroupDetails({ tree, system, node, onOps, onOpen, selected, disabled }: {
+  tree: InspectionTemplate; system: TemplateNode; node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+}) {
+  // A GROUP'S OWN SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): everything set in it — its materials with
+  // their cards and switches, what an answer brings, then its other items and "+ Add item" — the one group's slice of
+  // the materials layout. Its name, Tips, ⋯ and switch are the panel title's.
   return (
-    <div className="space-y-5 px-4 py-4">
-      <div>
-        <p className={label}>Items in this group</p>
-        <ul className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
-          {(node.children ?? []).map(c => (
-            <li key={c.id}><button className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-ink/5" onClick={() => onOpen(c.id)}>
-              <span className="min-w-0"><span className="block truncate text-sm font-medium text-ink">{c.label}</span><span className="block truncate text-xs text-muted">{itemSummary(c)}</span></span>
-              <span aria-hidden className="text-muted">›</span></button></li>
-          ))}
-          {!node.children?.length && <li className="px-3 py-3 text-xs text-muted">No items yet. Add one from the tree.</li>}
-        </ul>
-      </div>
+    <div className="px-4 py-4">
+      <MaterialsBuilder tree={tree} system={system} only={node.id} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
     </div>
   );
 }
 
 // ── a component: Details tab ────────────────────────────────────────────────────────────────────────────────
 
-export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled }: {
+export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled, conditionBody, detailsBody }: {
   tree: InspectionTemplate; systemId: string; node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
   onDetails: (on: boolean) => void; onReqs: (on: boolean) => void; onOps: OnOps; disabled: boolean;
+  /** ONE ITEM SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): Condition's and Details' settings open right under
+   *  their switch, instead of on tabs of their own. */
+  conditionBody?: React.ReactNode; detailsBody?: React.ReactNode;
 }) {
   const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
   const Row = ({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) => (
@@ -276,9 +264,11 @@ export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, r
           <Row title="Condition" hint="Satisfactory · Limitation · Finding">
             <Toggle on={assessesCondition(node)} disabled={disabled} label="Condition" onChange={v => onOps(ops.assessed(node.id, v))} />
           </Row>
+          {assessesCondition(node) && conditionBody && <div aria-label="Condition settings" className="border-b border-hairline bg-ground/40">{conditionBody}</div>}
           <Row title="Details" hint="Material, type or count">
             <Toggle on={detailsOn} disabled={disabled} label="Details" onChange={onDetails} />
           </Row>
+          {detailsOn && detailsBody && <div aria-label="Details settings" className="border-b border-hairline bg-ground/40">{detailsBody}</div>}
           <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount}` : 'Proof photos and readings'}>
             <Toggle on={reqsOn} disabled={disabled} label="Requirements" onChange={onReqs} />
           </Row>

@@ -19,7 +19,8 @@ type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
 export type ComponentTab = 'overview' | 'condition' | 'details' | 'requirements' | 'applicability';
 
-const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Overview', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
+// 'overview' is the ITEM tab since 2026-11-06 (owner, mockup CjKszYz3e9KT39kvF43mkD): Condition and Details open inside it.
+const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
 
 /** A request to bring one panel section into view (the tree's section rows, owner 2026-11-05). `n` changes per click. */
 export type Reveal = { id: string; n: number };
@@ -80,7 +81,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
         tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
         menu={moveMenu(node.id)}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
-        <GroupDetails node={node} onOps={onOps} onOpen={open} disabled={disabled} />
+        <GroupDetails tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} />
         {moveDialog}
       </Shell>
     );
@@ -104,9 +105,10 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const detailsOn = !!(node.attributes?.length || node.method?.length) || !!o.details;
   const reqsOn = reqs > 0 || !!o.reqs;
   const mark = (k: 'details' | 'reqs', v: boolean) => setOpened(cur => ({ ...cur, [node.id]: { ...cur[node.id], [k]: v } }));
-  const onDetails = (on: boolean) => { const x = ops.switchDetails(node, on); if (x.length && !onOps(x)) return; mark('details', on); if (on) setTab('details'); };
+  const onDetails = (on: boolean) => { const x = ops.switchDetails(node, on); if (x.length && !onOps(x)) return; mark('details', on); };
   const onReqs = (on: boolean) => { const x = ops.switchRequirements(node, on); if (x.length && !onOps(x)) return; mark('reqs', on); if (on) setTab('requirements'); };
-  const visible: ComponentTab[] = ['overview', ...(assessesCondition(node) ? ['condition' as const] : []), ...(detailsOn ? ['details' as const] : []), ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
+  // One item screen: Condition and Details are inside the Item tab; Requirements (its own editor) and Applicability stay tabs.
+  const visible: ComponentTab[] = ['overview', ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
@@ -119,9 +121,8 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
           {TAB_LABEL[t]}{t === 'requirements' && reqs > 0 && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqs}</span>}
         </button>
       ))}>
-      {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled} />}
-      {cur === 'condition' && <ComponentCondition node={node} onOps={onOps} disabled={disabled} />}
-      {cur === 'details' && <ComponentFields node={node} onOps={onOps} disabled={disabled} />}
+      {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled}
+        conditionBody={<ComponentCondition node={node} onOps={onOps} disabled={disabled} />} detailsBody={<ComponentFields node={node} onOps={onOps} disabled={disabled} />} />}
       {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
       {moveDialog}
