@@ -1090,9 +1090,8 @@ const RULES = {
     const ui = Object.entries(all).filter(([f]) => /^components\/templates\/[^/]+\.tsx$/.test(f)).map(([f, t]) => [f, strip(t)]);
     for (const [f, t] of ui) if (/Set this (system|group|item) aside|label: 'Set aside'|ops\.setAside\(|ops\.restore\(|>Restore</.test(t)) bad.push(f);
     // owner 2026-11-05 (systems-only menu): off SYSTEMS stay in the menu; off groups/items are the panel's "Switched off"
-    // section, and the menu's search still finds them, marked off.
-    if (!/offSystems\.map\(/.test(tree) || !/for \(const o of m\.trimmed \?\? \[\]\) if \(o\.label\.toLowerCase\(\)\.includes\(q\)\) out\.push\(\{ node: o, trail: t, off: true \}\)/.test(tree)
-      || !/id=\{SECTION_ID\.off\}/.test(parts)) bad.push('off groups/items/systems not shown');
+    // section. (The menu's search was removed 2026-11-06, owner: "I don't think it is needed".)
+    if (!/offSystems\.map\(/.test(tree) || !/id=\{SECTION_ID\.off\}/.test(parts)) bad.push('off groups/items/systems not shown');
     if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
     return bad;
   },
@@ -1291,7 +1290,7 @@ const RULES = {
   'requirements: the Publish button is disabled with the reason while the draft carries what inspections can’t use': all => {
     const e = strip(all[EDIT] ?? '');
     return (/const reqs = unpublishableRequirements\(tree\);/.test(e) && /: reqs\.length \? `Not publishable yet — inspections can’t use/.test(e)
-      && /const canPublish = !publishBlock && /.test(e) && /disabled=\{!canPublish\} title=\{publishBlock \?\? undefined\}/.test(e)) ? [] : [EDIT];
+      && /const canPublish = !publishBlock && /.test(e) && /disabled=\{!canPublish\} title=\{publishBlock \?\? 'Changes the live template — for new inspections only\.'\}/.test(e)) ? [] : [EDIT];
   },
   // 2026-10-26: the six sections each render a real view of the draft (no dead navigation), and the inspector preview
   // renders the draft tree itself.
@@ -1320,12 +1319,14 @@ const RULES = {
   // and the screen jumps around").
   // owner 2026-11-05 (fourth pass): "I almost feel like the left menu should be systems only. Components are in the working
   // area of the page." The type sections, special homes and switched-off parts are sections in the panel.
-  'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': all => {
+  'menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note': all => {
     const t = strip(all['components/templates/Tree.tsx'] ?? ''), b = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
-    const a = t.indexOf('{shown.map((s, i) => {'), sysRow = a < 0 ? '' : t.slice(a, t.indexOf('{found.length > 0 && (', a));
+    const a = t.indexOf('{shown.map((s, i) => {'), sysRow = a < 0 ? '' : t.slice(a, t.indexOf('{offSystems.map(', a));
+    const e = strip(all[EDIT] ?? '');
     return (!/\.children \?\? \[\]\)\.map\(c => /.test(t) && !/typedRows|sectionRow|offRow\(|AddToTemplate/.test(t)
       && /onClick=\{\(\) => onSelect\(\{ systemId: s\.id, nodeId: null \}\)\}/.test(sysRow) && /\{itemCount\(s\)\}/.test(sysRow) && /ops\.move\(s\.id, null, i - 1\)/.test(sysRow)
-      && /const results = useMemo\(\(\) => new Map\(query \?/.test(t) && /onSelect\(\{ systemId: s\.id, nodeId: node\.id \}\)/.test(t)
+      && !/<input[^>]*Search systems|findIn\(|setQ\(/.test(t) && /const shown = tree\.systems;/.test(t)
+      && !/Save draft keeps changes private/.test(e) && /title=\{`Keeps changes private\$\{server \? ' and shared with your owner and admins' : ' in this browser'\}\. The live template doesn’t change\.`\}>Save draft</.test(e)
       && /const o = ops\.addSystem\(tree, v\);/.test(t) && />\+ Add system</.test(t) && !/Add system \/ component/.test(t)
       // the panel's type lists keep the shared items (third pass): no "Every" section anywhere
       && !/Every \$\{(s|system)\.label/.test(t + b) && !/SECTION_ID\.every|tb-sec-every/.test(t + b)
@@ -1424,7 +1425,7 @@ const MUT = {
   'types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count': rep('components/templates/TypeBuilder.tsx', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : typical(n);', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : <>{typical(n)}<span>Also: {(layout.shows[n.id] ?? []).join(", ")}</span></>;'),
   'types: a typed system shows the by-type layout in its panel (never in the menu), and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
   'types: the grid writes rules only through typeRuleOps (the validated appliesWhen op), never a rule field of its own': add('components/templates/TypeBuilder.tsx', "\nconst x = { op: 'setNodeField', nodeId: 'a', field: 'requires', value: [] };"),
-  'menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system': rep('components/templates/Tree.tsx', '{found.length > 0 && (', '{(s.children ?? []).map(c => <li key={c.id}>{c.label}</li>)}{found.length > 0 && ('),
+  'menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note': rep('components/templates/Tree.tsx', '              </div>\n            </li>', '              </div>{(s.children ?? []).map(c => <li key={c.id}>{c.label}</li>)}\n            </li>'),
   'types: the type chips wrap (never a sideways-scrolling row with the chosen chip out of sight)': rep('components/templates/TypeBuilder.tsx', '<div className="flex flex-wrap gap-1.5" role="group"', '<div className="flex gap-1.5 overflow-x-auto" role="group"'),
   'types: no jumping — a new selection opens its panel at the top, a section row scrolls only the editor box, nothing calls scrollIntoView': rep('components/templates/Workspace.tsx', 'useLayoutEffect(() => { if (box.current) box.current.scrollTop = 0; }, [scrollKey]);', ''),
   'ask ledrix: hidden — no Editor / Ask Ledrix tabs and no assistant panel mounted while ASK_LEDRIX is false (owner 2026-11-05)': rep(EDIT, 'const ASK_LEDRIX = false;', 'const ASK_LEDRIX = true;'),
@@ -1437,6 +1438,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note', rep('components/templates/Tree.tsx', '  const shown = tree.systems;', "  const [q, setQ] = useState(''); const shown = tree.systems; const box = <input placeholder=\"Search systems\" onChange={e => setQ(e.target.value)} />;"), 'the search box comes back'],
+  ['menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note', rep(EDIT, '        {(blocking > 0 && !(!server || !owner)) || publishBlock ? (', '        <p>Save draft keeps changes private.</p>{(blocking > 0 && !(!server || !owner)) || publishBlock ? ('), 'the note is back on the page'],
   ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', 'onSelect: () => { onOps(includeOps(tree, g.id, false)); } }', "onSelect: () => { onOps([{ op: 'trimNode', nodeId: g.id }] as TemplateOp[]); } }"), 'switch off writes its own op'],
   ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', 'onOps(ops.move(g.id, system.id, idx + 1))', 'onOps(ops.move(g.id, system.id, idx - 1))'), 'move down moves up'],
   ['group first: each group row\'s ⋯ renames it in the row, moves it up / down or to another system, or switches it off; the add box adds a group (or an item when there are none) — all through the editor\'s ops', rep('components/templates/GroupList.tsx', "groups.length ? 'subsystem' : 'component'", "'component'"), 'the add box adds items next to the groups'],
@@ -1482,8 +1485,8 @@ const MUT3 = [
   ['suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box', rep('components/templates/CatalogPanel.tsx', "{c.presence === 'typical' ? '+ Add' : '+ Add as optional'}", "+ Add"), 'an If-present part no longer says it is added as optional'],
   ['types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count', rep('components/templates/TypeBuilder.tsx', '{layout.every.map(n => row(n, tagOf(n)))}', '{layout.every.map(n => row(n, <Pill>All types</Pill>))}'), 'the All types tag is back'],
   ['types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count', rep('components/templates/TypeBuilder.tsx', '{rowsForType(layout, v).length}</span></>', '{rowsForType(layout, v).length} · +{v.length}</span></>'), 'the chips gain a suggestion count'],
-  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/Tree.tsx', '>+ Add system<', '>+ Add system / component<'), 'the menu offers to add items again'],
-  ['menu: the left menu is systems only (count, reorder, off) — items, groups and type sections live in the work area; search still finds items; the add button adds a system', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, tagOf(n)))}\n', ''), 'a type\'s list leaves out the items every type shows'],
+  ['menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note', rep('components/templates/Tree.tsx', '>+ Add system<', '>+ Add system / component<'), 'the menu offers to add items again'],
+  ['menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note', rep('components/templates/TypeBuilder.tsx', '        {layout.every.map(n => row(n, tagOf(n)))}\n', ''), 'a type\'s list leaves out the items every type shows'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/EditorParts.tsx', '{typeView && <TypeChips', '<CommitInput value={system.label} ariaLabel="System name" onCommit={() => {}} />{typeView && <TypeChips'), 'the system Name box is back'],
   ['names: a system, group or item is renamed by the pencil beside its title, with no separate Name box', rep('components/templates/Workspace.tsx', ' onRename={v => onOps(ops.rename(system.id, v))}', ''), 'a system title has no pencil'],
   ['tips: the description box is called Tips, and the phone preview marks company Tips with the ⓘ, never a line under the name', rep('components/templates/PhonePreview.tsx', '<span className="pv-tips"', '<span className="pv-guide">{n.description}</span><span className="pv-x"'), 'the preview prints Tips under the name again'],

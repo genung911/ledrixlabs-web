@@ -231,16 +231,21 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(m.hasDraft || d.save.kind !== 'clean') && <button className={btn.secondary} disabled={busy} onClick={() => setDialog('discard')}>Discard draft</button>}
-            <button className={btn.secondary} disabled={!canSave} onClick={() => d.flush()}>Save draft</button>
-            <button className={btn.primary} disabled={!canPublish} title={publishBlock ?? undefined} onClick={() => setDialog('publish')}>Publish</button>
+            {/* The save / publish explanation is a hover note now (owner 2026-11-06: "text that I think can be moved to
+                hover notes"), not a line under the title. */}
+            <button className={btn.secondary} disabled={!canSave} onClick={() => d.flush()}
+              title={`Keeps changes private${server ? ' and shared with your owner and admins' : ' in this browser'}. The live template doesn’t change.`}>Save draft</button>
+            <button className={btn.primary} disabled={!canPublish} title={publishBlock ?? 'Changes the live template — for new inspections only.'} onClick={() => setDialog('publish')}>Publish</button>
           </div>
         </div>
-        <p className="mt-1.5 text-[11px] text-muted">
-          Save draft keeps changes private{server ? ' and shared with your owner and admins' : ' in this browser'}. Only Publish changes the live template — for new inspections only.
-          {blocking > 0 && !(!server || !owner)
-            ? <> <button className="font-semibold text-accent-ink hover:underline" onClick={() => go('review')}>{blocking} to fix before publishing →</button></>
-            : publishBlock && <> {publishBlock}</>}
-        </p>
+        {/* Only what needs doing stays on the page: what to fix before publishing, or why Publish is off. */}
+        {(blocking > 0 && !(!server || !owner)) || publishBlock ? (
+          <p className="mt-1.5 text-[11px] text-muted">
+            {blocking > 0 && !(!server || !owner)
+              ? <button className="font-semibold text-accent-ink hover:underline" onClick={() => go('review')}>{blocking} to fix before publishing →</button>
+              : publishBlock}
+          </p>
+        ) : null}
         <nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">
           {SECTIONS.map(s => {
             const on = section === s.id;
