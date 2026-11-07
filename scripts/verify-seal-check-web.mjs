@@ -112,7 +112,7 @@ async function suiteCheck(file = 'lib/seal/check.ts') {
     ok('§2 its gates are the app\'s own for the same rows (hard → locks, soft → notes)',
       r0.ok && JSON.stringify(lockKeys(r0)) === JSON.stringify(want0.filter(g => g.hard).map(g => `gate:${g.key}`).sort())
       && JSON.stringify(r0.notes.map(g => g.key)) === JSON.stringify(want0.filter(g => !g.hard).map(g => g.key)), JSON.stringify([r0.locks, r0.notes, want0]));
-    ok('§2 …the fixture owes required facts, so it is locked, and says which', r0.ok && !r0.sealable && r0.locks.some(l => l.key === 'gate:facts' && /—/.test(l.detail)));
+    ok('§2 …the fixture owes required facts, so it is locked, and says which', r0.ok && !r0.sealable && r0.locks.some(l => l.key === 'gate:facts' && l.items?.length > 0 && l.items.every(i => i.label && l.detail.split('\n').includes(i.label))));
     const factsLock = r0.ok ? r0.locks.find(l => l.key === 'gate:facts') : null;
     ok('§2 …and every one of those facts opens its own Scope item (the phone\'s own nodeId, through the real gates)',
       !!factsLock?.items?.length && factsLock.items.every(it => typeof it.nodeId === 'string' && it.nodeId.length > 0 && String(it.label ?? '').trim().length > 0)   /* 2026-11-04: an Age row reads "Heating Age", no dash */, JSON.stringify(factsLock?.items));
@@ -194,7 +194,7 @@ function sealServer({ heartbeat = true, versions = [], reports = [rep([], 'Kelly
   };
   return { fetch, writes, calls: base.calls };
 }
-// The fixture owes required facts (a hard gate); the success path is run with those two facts' gate removed — the
+// The fixture owes required facts (a hard gate); the success path is run with the facts gate removed — the
 // orchestration is what §5 tests; the gate itself is §2's and §5's refusal below.
 const softOnly = async () => { const A = await import(pathToFileURL(join(ROOT, 'lib/report/assemble.mjs')).href);
   return { createAssembler: () => { const a = A.createAssembler(); return { ...a, assembleServerRecord: async (x) => { const r = await a.assembleServerRecord(x); return { ...r, gates: (r.gates ?? []).filter(g => !g.hard), hardGate: false }; } }; } }; };

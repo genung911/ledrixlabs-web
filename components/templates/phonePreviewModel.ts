@@ -215,6 +215,20 @@ export type CondPick = 'ok' | 'lim' | 'fnd';
 export const pickKey = (nodeId: string, attrId: string) => nodeId + '::' + attrId;
 export const METHOD_ATTR = '__method';
 
+/** ledrix-app src/components/systems/ScopeRowList.tsx — `rowTitle`: a row the pack titles by its picked type
+ *  (`typeTitle`: the Furnace reads "Gas Furnace", "Heat Pump", "Propane Furnace"). One picked value titles it; none or
+ *  several keep the item's own name. Display only. The titles come from the generated ledrixRules.json. */
+const TYPE_TITLES = ((LEDRIX_RULES as { typeTitles?: Record<string, { field: string; map?: Record<string, string> }> }).typeTitles ?? {});
+export function previewRowTitle(n: TemplateNode, picks: Picks): string {
+  const tt = TYPE_TITLES[n.id];
+  if (!tt || typeof tt.field !== 'string') return n.label;
+  const [host, attr] = tt.field.split('::');
+  if (!host || !attr) return n.label;
+  const v = picks[pickKey(host, attr)] ?? [];
+  if (v.length !== 1) return n.label;
+  return tt.map && typeof tt.map[v[0]] === 'string' ? tt.map[v[0]] : v[0];
+}
+
 export function leafProgress(n: TemplateNode, picks: Picks, cond: Record<string, CondPick>, readings: Record<string, string>) {
   const ax = axesOf(n);
   let met = 0, total = 0;

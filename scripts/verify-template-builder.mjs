@@ -73,6 +73,10 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
     const mine = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json'));
     ok(`core/ledrixRules.json carries exactly the app pack's rule fields (${Object.keys(want).length} nodes, pack ${pack.packVersion})`,
       JSON.stringify(mine.nodes) === JSON.stringify(want) && mine.packVersion === pack.packVersion, 're-export it from ledrix-app src/core/taxonomy/ledrix.core.json');
+    const titles = {};
+    for (const sys of pack.systems) for (const n of sys.nodes) if (n.typeTitle) titles[n.id] = n.typeTitle;
+    ok(`core/ledrixRules.json carries the app pack's type titles (${Object.keys(titles).join(', ') || 'none'})`,
+      Object.keys(titles).length > 0 && JSON.stringify(mine.typeTitles ?? {}) === JSON.stringify(titles), 're-export it from ledrix-app src/core/taxonomy/ledrix.core.json');
   }
   const fieldsOf = (src, type) => {
     const a = src.indexOf(`export type ${type} = {`);
@@ -1017,6 +1021,13 @@ async function runTypes(files) {
     const HL = sx.ok ? TL.typeLayoutOf(d2.tree, d2.tree.systems.find(s => s.id === 'heating'), PM.rulesFor(d2.tree)) : null;
     r('types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"',
       !!HL && HL.special.map(n => n.id).join('|') === 'hvac_manufactured_furnace' && !HL.every.some(n => n.id === 'hvac_manufactured_furnace'));
+    // The Furnace is titled by its picked forced-air type, as Scope titles it (ledrix-app ScopeRowList rowTitle).
+    const furnace = { id: 'hvac_furnace', label: 'Furnace', kind: 'component' };
+    const titleFor = vs => PM.previewRowTitle(furnace, vs ? { 'hvac_heating::fuel_source': vs } : {});
+    r('types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names',
+      titleFor(['Gas Furnace']) === 'Gas Furnace' && titleFor(['Heat Pump']) === 'Heat Pump' && titleFor(['Propane']) === 'Propane Furnace'
+      && titleFor(null) === 'Furnace' && titleFor(['Gas Furnace', 'Heat Pump']) === 'Furnace'
+      && PM.previewRowTitle({ id: 'hvac_cabinet', label: 'Cabinet / Access', kind: 'component' }, { 'hvac_heating::fuel_source': ['Gas Furnace'] }) === 'Cabinet / Access');
   } catch (e) {
     r(`types scenario completed (${e?.message})`, false);
   }
@@ -1066,6 +1077,8 @@ const RULES = {
       && /const p = readPlace\(companyId, pk\);\s*if \(p\) \{ setSel\(p\.sel\); setSection/.test(e) && /if \(!placeReady \|\| !tree \|\| !m \|\| !sel\.systemId\) return;/.test(e)
       && /forgetPlace\(companyId, pk\)/.test(e) && /readLastPlace\(access\.companyId\)/.test(list) && /const lastLive = last && data &&/.test(list)) ? [] : ['lib/templates/lastPlace.ts', EDIT, 'app/app/templates/page.tsx'];
   },
+  'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': all =>
+    /<span className="pv-ct">\{previewRowTitle\(n, picks\)\}/.test(strip(all['components/templates/PhonePreview.tsx'] ?? '')) ? [] : ['components/templates/PhonePreview.tsx'],
   'isolation: the phone preview reads the draft and writes nothing': all => ['components/templates/PhonePreview.tsx', 'components/templates/phonePreviewModel.ts']
     .filter(f => /workspace|fetch\(|\.from\(|supabase/i.test(strip(all[f] ?? 'missing'))),
   'no model key or service-role key in browser code': all => browserFiles(all).filter(([, s]) => /SERVICE_ROLE|GATEWAY_KEY|x-ledrix-key|OPENAI/i.test(s)).map(([f]) => f),
@@ -1460,6 +1473,7 @@ console.log('mutations');
 const add = (f, x) => s => ({ ...s, [f]: (s[f] ?? '') + x });
 const rep = (f, a, b) => s => ({ ...s, [f]: (s[f] ?? '').replace(a, () => b) });
 const MUT = {
+  'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),
@@ -1650,6 +1664,9 @@ const EXEC_MUT = [
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
   { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Fireplace: by Chimney)', run: runTypes },
+  { name: 'the preview row title ignores the type', file: 'phonePreviewModel.ts', from: "  if (v.length !== 1) return n.label;\n  return tt.map", to: "  return n.label;\n  return tt.map", check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
+  { name: 'the Propane name is not applied', file: 'phonePreviewModel.ts', from: "return tt.map && typeof tt.map[v[0]] === 'string' ? tt.map[v[0]] : v[0];", to: "return v[0];", check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
+  { name: 'the type titles are not exported', file: 'core/ledrixRules.json', from: ' "typeTitles": {', to: ' "x_typeTitles": {', check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
   { name: 'the Furnace forced-air rule is dropped from the pack', file: 'core/ledrixRules.json', from: '  "hvac_furnace": {\n   "requires": [', to: '  "hvac_furnace": {\n   "x_requires": [', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
   { name: 'Cabinet / Access shows for a boiler', file: 'core/ledrixRules.json', from: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [', to: '  "hvac_cabinet": {\n   "requires": [\n    {\n     "specNodeId": "hvac_heating::fuel_source",\n     "includes": [\n      "Boiler",', check: 'types: Heating\'s Furnace and Cabinet / Access are filed under exactly the forced-air types, and the preview shows them for each forced-air type and for no other', run: runTypes },
   { name: 'a ruled item is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)', run: runTypes },

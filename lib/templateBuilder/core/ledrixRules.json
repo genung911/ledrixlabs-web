@@ -1,7 +1,43 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.07.3",
+ "packVersion": "2026.11.07.4",
  "nodes": {
+  "hvac_type_boiler": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_type_minisplit": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_type_radiant": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Radiant Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
   "hvac_backup_heat": {
    "requires": [
     {
@@ -274,6 +310,78 @@
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
       "Radiant Heat"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_split": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Split System"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_package": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Package Unit"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_heatpump": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Heat Pump AC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_minisplit": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_window": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Window / Wall AC"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "ac_type_evap": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Evaporative Cooler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -891,6 +999,114 @@
    "requires": [
     {
      "utility": "water"
+    }
+   ]
+  },
+  "wh_t_tank_gas": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tank_propane": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Propane"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tank_electric": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tank_oil": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Oil"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tankless_gas": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tankless — Natural Gas"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tankless_propane": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tankless — Propane"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_tankless_electric": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tankless — Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_heatpump": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Heat Pump (Hybrid)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "wh_t_solar": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Solar Assisted"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -2108,6 +2324,84 @@
     }
    ]
   },
+  "fp_t_wood_masonry": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Masonry"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "fp_t_wood_prefab": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Wood Burning — Prefab"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "fp_t_gas_insert": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Gas Insert"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "fp_t_gas_logs": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Gas Log Set"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "fp_t_pellet": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Pellet Stove"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "fp_t_electric": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Electric"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
   "fp_damper": {
    "requires": [
     {
@@ -2265,6 +2559,14 @@
      "utility": "water"
     }
    ]
+  }
+ },
+ "typeTitles": {
+  "hvac_furnace": {
+   "field": "hvac_heating::fuel_source",
+   "map": {
+    "Propane": "Propane Furnace"
+   }
   }
  }
 }
