@@ -326,7 +326,7 @@ const NAV_RULES = {
     const labels = [...t.matchAll(/\{ id: '[a-z]+', label: '([^']+)', icon:/g)].map(m => m[1]);
     // 2026-11-06 (owner): Building Types left the rail — buildings are the strip across the top of Systems.
     if (labels.join(' · ') !== 'Overview · Systems · Gates · How Many? · Requirements · Report Content · Review & Publish') bad.push(labels.join(' · '));
-    if (!/<nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">/.test(t)) bad.push('sections are not a scrolling tab row');
+    if (!/<nav aria-label="Template sections" className="-mb-3 mt-2 flex min-w-0 flex-1 gap-1 overflow-x-auto">/.test(t)) bad.push('sections are not a scrolling tab row');   // 2026-11-06: shares its row with Edit / Preview
     const header = t.slice(t.indexOf('{/* top bar */}'), t.indexOf('<nav aria-label="Template sections"'));
     if (!/>Publish<\/button>/.test(header) || !/>Save draft<\/button>/.test(header) || !/>Discard draft<\/button>/.test(header)) bad.push('publish controls left the header');
     if (/xl:w-\[220px\]/.test(t)) bad.push('the second column is still there');

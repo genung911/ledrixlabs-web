@@ -29,7 +29,7 @@ import { LevelPill } from '@/components/templates/RequirementsEditor';
 import { LedrixPanel } from '@/components/templates/LedrixPanel';
 import { PhonePreview } from '@/components/templates/PhonePreview';
 import { buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
-import { BuildingLensProvider, BuildingStrip } from '@/components/templates/BuildingLens';
+import { BuildingLensProvider, BuildingPicker } from '@/components/templates/BuildingLens';
 import { buildingsOf } from '@/lib/templates/buildingModel';
 import { GatesPanel } from '@/components/templates/GatesPanel';
 import { CountsPanel } from '@/components/templates/CountsPanel';
@@ -251,7 +251,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               : publishBlock}
           </p>
         ) : null}
-        <nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">
+        <div className="flex items-end gap-2">
+        <nav aria-label="Template sections" className="-mb-3 mt-2 flex min-w-0 flex-1 gap-1 overflow-x-auto">
           {SECTIONS.map(s => {
             const on = section === s.id;
             const badge = s.id === 'systems' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
@@ -265,6 +266,15 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             );
           })}
         </nav>
+        {/* Edit / Preview at the end of the tab row (2026-11-06, mockup 28zjLMm9yntyJYgbKHcPbZ) — only where the preview
+            column doesn't fit beside the editor, as before. */}
+        {section === 'systems' && (
+          <div role="tablist" aria-label="View" className="mb-[-6px] inline-flex shrink-0 rounded-lg border border-hairline bg-ground p-0.5 2xl:hidden">
+            {(['edit', 'preview'] as const).map(v => <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
+              className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{v === 'edit' ? 'Edit' : 'Preview'}</button>)}
+          </div>
+        )}
+        </div>
       </div>
 
       <div className="space-y-2 px-4 pt-3 empty:hidden lg:px-6">
@@ -305,17 +315,11 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}
           <div className={`${section === 'systems' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
-            <div className="flex items-center gap-2 px-4 pt-3 2xl:hidden lg:px-6">
-              <div role="tablist" aria-label="View" className="inline-flex rounded-lg border border-hairline bg-ground p-0.5">
-                {(['edit', 'preview'] as const).map(v => <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{v === 'edit' ? 'Edit template' : 'Inspector preview'}</button>)}
-              </div>
-            </div>
-            {/* BUILDINGS ACROSS THE TOP, like the phone: pick one and Systems shows that building. */}
-            <div className="px-4 pt-3 lg:px-6"><BuildingStrip tree={tree} value={building} onChange={setBuilding} onOps={onOps} disabled={!!readOnly} /></div>
             <BuildingLensProvider tree={tree} buildingId={building}>
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
+                {/* THE BUILDING, at the top of the column it acts on (2026-11-06): its systems list is right under it. */}
+                <div className="mb-2"><BuildingPicker tree={tree} value={building} onChange={setBuilding} onOps={onOps} disabled={!!readOnly} /></div>
                 <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
