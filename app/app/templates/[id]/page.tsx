@@ -185,7 +185,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
     setProblem(null); d.change(r.draft); return true;
   }, [m, readOnly, me, d]);
 
-  const select = useCallback((s: Sel) => { setSel(s); setMode('edit'); }, []);
+  // Selecting anything opens its rows (2026-11-07: one shape at every level); go() can then pick one of its screens.
+  const select = useCallback((s: Sel) => { setSel(s); setMode('edit'); setCtab('overview'); }, []);
   const go = useCallback((s: string, to?: Sel, tab?: ComponentTab) => {
     // 'buildings' (the old Building Types tab, 2026-11-06): Systems, with the first building selected in the strip.
     if (s === 'buildings') { setSection('systems'); setBuilding(tree ? buildingsOf(tree)[0]?.id ?? null : null); return; }
@@ -336,7 +337,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               {/* The requirements list (owner 2026-11-06: no Requirements tab — each item's Requirements tab sets them). */}
               <div className="mt-6"><RequirementsSection tree={tree} onGo={go} /></div>
               {/* Every limitation once (2026-11-07); each is set on its system's screen. */}
-              <div className="mt-6"><LimitationsList tree={tree} onOpen={sid => { go('systems', { systemId: sid, nodeId: null }); setTimeout(() => document.getElementById('limitations')?.scrollIntoView({ block: 'start' }), 80); }} /></div>
+              <div className="mt-6"><LimitationsList tree={tree} onOpen={sid => go('systems', { systemId: sid, nodeId: null }, 'limitations')} /></div>
             </div>
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}

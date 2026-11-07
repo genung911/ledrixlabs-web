@@ -122,9 +122,11 @@ export function AddToTemplate({ tree, systemId, onOps, disabled, onAdded }: {
  *  time"). Absent for a system whose items don't change with one type answer — it keeps the plain list. */
 export type TypeView = { layout: TypeLayout; pick: string; onPick: (v: string) => void };
 
-export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disabled, typeView }: {
+export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disabled, typeView, about }: {
   tree: InspectionTemplate; system: TemplateNode; sel: Sel; onSelect: (s: Sel) => void; onOps: OnOps; onOpen: (id: string) => void; disabled: boolean;
   typeView?: TypeView | null;
+  /** "About this part" rows (Limitations first, owner 2026-11-07) — above what's inside, under a typed system's chips. */
+  about?: React.ReactNode;
 }) {
   const rows = flatItems(system);
   const hasGroups = (system.children ?? []).some(c => c.kind === 'subsystem');
@@ -148,6 +150,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 
 
       {typeView && <TypeChips layout={typeView.layout} pick={typeView.pick} onPick={typeView.onPick} systemLabel={system.label} />}
+      {about}
+      {about && <p className={label + ' -mb-3'}>What’s inside</p>}
       {typeView && typeView.pick !== FULL_LIST && (
         <TypeBuilder tree={tree} system={system} layout={typeView.layout} pick={typeView.pick} onOps={onOps} selected={sel.nodeId} disabled={disabled}
           onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
@@ -230,14 +234,17 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 
 // ── a group: its items (name and Tips live in the panel title) ──────────────────────────────────────────────────────────────────
 
-export function GroupDetails({ tree, system, node, onOps, onOpen, selected, disabled }: {
+export function GroupDetails({ tree, system, node, onOps, onOpen, selected, disabled, about }: {
   tree: InspectionTemplate; system: TemplateNode; node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+  about?: React.ReactNode;
 }) {
   // A GROUP'S OWN SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): its items, one kind of row for all, and
   // "+ Add item". A materials question's answers open inside that question's item ("This should not show the list of
   // options till we tap into siding"). Its name, Tips, ⋯ and switch are the panel title's.
   return (
-    <div className="px-4 py-4">
+    <div className="space-y-5 px-4 py-4">
+      {about}
+      {about && <p className={label + ' -mb-3'}>What’s inside</p>}
       <GroupItems tree={tree} system={system} groupId={node.id} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
     </div>
   );
@@ -245,46 +252,29 @@ export function GroupDetails({ tree, system, node, onOps, onOpen, selected, disa
 
 // ── a component: Details tab ────────────────────────────────────────────────────────────────────────────────
 
-export function ComponentOverview({ tree, systemId, node, reqCount, detailsOn, reqsOn, onDetails, onReqs, onOps, disabled, conditionBody, detailsBody }: {
-  tree: InspectionTemplate; systemId: string; node: TemplateNode; reqCount: number; detailsOn: boolean; reqsOn: boolean;
-  onDetails: (on: boolean) => void; onReqs: (on: boolean) => void; onOps: OnOps; disabled: boolean;
-  /** ONE ITEM SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): Condition's and Details' settings open right under
-   *  their switch, instead of on tabs of their own. */
-  conditionBody?: React.ReactNode; detailsBody?: React.ReactNode;
-}) {
-  const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
-  const Row = ({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) => (
-    <div className="flex items-center gap-3 border-b border-hairline px-3 py-3 last:border-b-0">
-      <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-ink">{title}</p><p className="text-xs text-muted">{hint}</p></div>
-      {children}
-    </div>
-  );
+/** "ABOUT THIS PART" (owner 2026-11-07, mockup https://claude.ai/artifact/CgiHJ5LqFQb4hAFSrAr3ox): the rows about a system,
+ *  group or item itself — Limitations first; an item adds Condition · Details · Requirements · Applies when, which
+ *  replaced its tabs. Same row look as the groups and items under them; each opens its own screen. */
+export function AboutRows({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-5 px-4 py-4">
-      {node.pointsTo && <p className="rounded-lg bg-ground px-3 py-2 text-xs text-body">Recorded in another section. Edit it there.</p>}
-      <div>
-        <p className={label}>Inspectors record</p>
-        <div className="overflow-hidden rounded-xl border border-hairline">
-          <Row title="Condition" hint="Satisfactory · Limitation · Finding">
-            <Toggle on={assessesCondition(node)} disabled={disabled} label="Condition" onChange={v => onOps(ops.assessed(node.id, v))} />
-          </Row>
-          {assessesCondition(node) && conditionBody && <div aria-label="Condition settings" className="border-b border-hairline bg-ground/40">{conditionBody}</div>}
-          <Row title="Details" hint="Material, type or count">
-            <Toggle on={detailsOn} disabled={disabled} label="Details" onChange={onDetails} />
-          </Row>
-          {detailsOn && detailsBody && <div aria-label="Details settings" className="border-b border-hairline bg-ground/40">{detailsBody}</div>}
-          <Row title="Requirements" hint={reqCount ? `Proof photos and readings · ${reqCount}` : 'Proof photos and readings'}>
-            <Toggle on={reqsOn} disabled={disabled} label="Requirements" onChange={onReqs} />
-          </Row>
-        </div>
-        {nothing && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
-      </div>
-      {!node.pointsTo && <AlsoShowIn tree={tree} systemId={systemId} node={node} onOps={onOps} disabled={disabled} />}
+    <div>
+      <p className={label}>About this part</p>
+      <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">{children}</div>
     </div>
   );
 }
+export function FacetRow({ title, line, count, onOpen }: { title: string; line: string; count?: number; onOpen: () => void }) {
+  return (
+    <button onClick={onOpen} className="flex w-full items-center gap-2 bg-ground/60 py-2.5 pl-3 pr-3 text-left hover:bg-accent/10">
+      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{title}</span>
+        <span className="block truncate text-xs text-muted">{line}</span></span>
+      {count !== undefined && <span className="rounded-full bg-ground px-2 py-0.5 font-mono text-xs text-body">{count}</span>}
+      <span aria-hidden className="text-muted">›</span>
+    </button>
+  );
+}
 
-function AlsoShowIn({ tree, systemId, node, onOps, disabled }: { tree: InspectionTemplate; systemId: string; node: TemplateNode; onOps: OnOps; disabled: boolean }) {
+export function AlsoShowIn({ tree, systemId, node, onOps, disabled }: { tree: InspectionTemplate; systemId: string; node: TemplateNode; onOps: OnOps; disabled: boolean }) {
   const links = linksOf(tree, node.id);
   return (
     <div>
@@ -330,12 +320,6 @@ export function ComponentCondition({ node, onOps, disabled }: { node: TemplateNo
         <p className={label}>Quick findings <span className="ml-1 normal-case tracking-normal"><Pill>Phone support next</Pill></span></p>
         <ChipList values={shortcuts} disabled={disabled} addLabel="Add quick finding" placeholder="e.g. Disconnected joint"
           onChange={v => onOps(ops.findingShortcuts(node, v, Date.now()))} />
-      </div>
-      <div>
-        <p className={label}>Limitation reasons</p>
-        <ChipList values={node.limitations ?? []} disabled={disabled} addLabel="Add limitation reason" placeholder="e.g. Concealed by insulation"
-          onChange={v => onOps(ops.limitations(node.id, v))} />
-        <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation.</p>
       </div>
     </div>
   );

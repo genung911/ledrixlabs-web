@@ -1,5 +1,8 @@
 'use client';
 
+// LIMITATIONS AT EVERY LEVEL (owner 2026-11-07, mockup https://claude.ai/artifact/CgiHJ5LqFQb4hAFSrAr3ox, "approved"): the
+// first row of every system, group and item is Limitations (LimitationsRow), and it opens that part's own screen
+// (PartLimitations) — an item's own reasons with the situations that reach it. Before that, the same day:
 // LIMITATIONS — inside each system (owner 2026-11-07: "should this be worked into the what inspect area? Below conditions
 // section would be limitations?" → mockup https://claude.ai/artifact/FSTfPJUMmjGDVFqiqneD6o → "Approved" → "Build and
 // push"). The Limitations step (once Gates; overview mockup W8UhcgEhYqmY2ZBQpgbKbx) left the builder: a system's screen
@@ -17,8 +20,9 @@ import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { gateNodes, type Gate, type GateEffect, type GateReason } from '@/lib/scope/core/taxonomy/gates';
-import { LEDRIX_GATES, gatesOfSystem, isRemoved, limitRows, ownGates, sayReason, systemIndex, systemsOfGate, templateGates, type GateEntry } from '@/lib/templates/limitationModel';
-import { Pill, btn, field, label } from './ui';
+import { LEDRIX_GATES, gateReachesPart, gatesOfPart, isRemoved, limitRows, ownGates, parentIndex, partLimitSummary, sayReason, systemIndex, systemsOfGate, templateGates, type GateEntry } from '@/lib/templates/limitationModel';
+import { ops } from '@/lib/templates/editorModel';
+import { ChipList, Pill, btn, field, label } from './ui';
 import { displayLabel } from './systemLabel';
 
 function walk(systems: readonly TemplateNode[], f: (n: TemplateNode, path: string[]) => void, path: string[] = []) {
@@ -64,29 +68,62 @@ function useGates(tree: InspectionTemplate, onOps: (o: TemplateOp[]) => boolean)
   return { own, gates, systems, ledrixOf, overridden, save, put, reset, turnOff, setReason, covered, areaLeaves, toggleItem };
 }
 
-/** A system's Limitations section, under its groups. */
-export function SystemLimitations({ tree, system, onOps, disabled }: { tree: InspectionTemplate; system: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+/** THE LIMITATIONS ROW (owner 2026-11-07, mockup CgiHJ5LqFQb4hAFSrAr3ox): the first row of every system, group and item —
+ *  styled like the rows under it, with what can limit this part and a count. Tap = that part's Limitations screen. */
+export function LimitationsRow({ tree, part, onOpen }: { tree: InspectionTemplate; part: TemplateNode; onOpen: () => void }) {
+  const { count, line } = useMemo(() => partLimitSummary(templateGates(tree), tree.systems ?? [], part), [tree, part]);
+  return (
+    <button onClick={onOpen} aria-label={`Limitations for ${part.label}`}
+      className="flex w-full items-center gap-2 bg-ground/60 py-2.5 pl-3 pr-3 text-left hover:bg-accent/10">
+      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">Limitations</span>
+        <span className="block truncate text-xs text-muted">{line}</span></span>
+      <span className={`rounded-full px-2 py-0.5 font-mono text-xs ${count ? 'bg-amber-600/15 text-amber-700 dark:text-amber-300' : 'bg-ground text-body'}`}>{count}</span>
+      <span aria-hidden className="text-muted">›</span>
+    </button>
+  );
+}
+
+/** A part's Limitations screen (system, group or item): what can limit it — an item's own reasons first — and every
+ *  situation that reaches it, each edited in place (its items shown for this part). A utility names the other systems
+ *  it reaches; a situation set higher up says where it is set. "+ Add a limitation" offers rows inside this part. */
+export function PartLimitations({ tree, system, part, onOps, disabled, policy, onOpenItem }: {
+  tree: InspectionTemplate; system: TemplateNode; part: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean;
+  /** An item's company switch (e.g. "Your company operates the TPR valve") — it sits with the reason it creates. */
+  policy?: React.ReactNode;
+  onOpenItem?: (id: string) => void;
+}) {
   const G = useGates(tree, onOps);
   const { systems, gates } = G;
   const idx = useMemo(() => systemIndex(systems), [systems]);
-  const mine = useMemo(() => gatesOfSystem(gates, systems, system.id), [gates, systems, system.id]);
+  const parents = useMemo(() => parentIndex(systems), [systems]);
+  const inPart = (id: string) => { for (let p: string | undefined = id, n = 0; p && n < 50; p = parents.get(p), n++) if (p === part.id) return true; return false; };
+  const mine = useMemo(() => gatesOfPart(gates, systems, part.id), [gates, systems, part.id]);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const here = (g: Gate) => G.covered(g).filter(n => idx.get(n.id) === system.id).length;
-  const count = mine.reduce((a, g) => a + limitRows(g).filter(r => r.limits).length, 0);
+  const isItem = part.kind === 'component';
+  const here = (g: Gate) => G.covered(g).filter(n => inPart(n.id)).length;
   const sysName = (id: string) => displayLabel(systems.find(s => s.id === id)?.label ?? id);
-  // Ledrix's gates this template turned off, that would reach this system.
-  const offHere = G.own.filter(isRemoved).filter(e => { const l = G.ledrixOf(e.id); return !!l && systemsOfGate(l, systems, idx).includes(system.id); });
-  // "+ Add a limitation": a row in THIS system with limitation reasons or a method, not already a gate's row.
+  // Ledrix's gates this template turned off, that would reach this part.
+  const offHere = G.own.filter(isRemoved).filter(e => { const l = G.ledrixOf(e.id); return !!l && gateReachesPart(l, part.id, parents); });
+  // Items inside this group / system with their own reasons — each opens that item's Limitations.
+  const itemReasons = useMemo(() => {
+    if (isItem) return [];
+    const out: TemplateNode[] = [];
+    const visit = (n: TemplateNode) => { if (n.kind === 'component' && n.limitations?.length) out.push(n); (n.children ?? []).forEach(visit); };
+    (part.children ?? []).forEach(visit);
+    return out;
+  }, [part, isItem]);
+  // "+ Add a limitation": a row in THIS part with limitation reasons or a method, not already a gate's row.
   const candidates = useMemo(() => {
     const out: { node: TemplateNode; parent: TemplateNode | null; path: string }[] = [];
     const visit = (ns: readonly TemplateNode[], parent: TemplateNode | null) => ns.forEach(n => {
       if ((n.limitations?.length || n.method?.length) && !gates.some(g => g.row === n.id)) out.push({ node: n, parent, path: pathOf(systems, n.id) });
       visit(n.children ?? [], n);
     });
-    visit([system], null);
+    const parentNode = (() => { const pid = parents.get(part.id); return pid ? find(systems, pid)?.node ?? null : null; })();
+    visit([part], parentNode);
     return out;
-  }, [system, systems, gates]);
+  }, [part, systems, gates, parents]);
   const addGate = (c: { node: TemplateNode; parent: TemplateNode | null }) => {
     const g: Gate = { id: `company_${c.node.id}`, label: displayLabel(c.parent?.label ?? c.node.label), row: c.node.id, origin: 'company',
       ...(c.parent ? { area: [c.parent.id] } : {}),
@@ -94,55 +131,82 @@ export function SystemLimitations({ tree, system, onOps, disabled }: { tree: Ins
         ...(c.node.method ?? []).map(v => ({ value: v, effect: 'none' as GateEffect }))] };
     if (G.put(g)) { setOpen(g.id); setAdding(false); }
   };
+  const setHere = (g: Gate) => [g.row, ...(g.area ?? [])].some(x => !!x && inPart(x));
 
   return (
-    <section aria-label={`Limitations for ${system.label}`} id="limitations" className="scroll-mt-2 border-t-2 border-hairline px-4 pb-5 pt-4">
-      <div className="flex flex-wrap items-baseline gap-2">
-        <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Limitations · {count}</h3>
-        <p className="text-xs text-muted">When the inspector can’t fully inspect something here: what the checklist and the report do. Ledrix’s are set already.</p>
-      </div>
-      {!mine.length && <p className="mt-2 text-sm text-muted">Nothing limits {displayLabel(system.label)} — every item is rated as seen.</p>}
-      <div className="mt-2 space-y-2">
-        {mine.map(g => {
-          const others = systemsOfGate(g, systems, idx).filter(s => s !== system.id);
-          const isOpen = open === g.id;
-          const n = here(g);
-          return (
-            <div key={g.id} className="overflow-hidden rounded-xl border border-hairline">
-              {limitRows(g).map(row => (
-                <button key={row.reasons.map(r => r.value).join('|')} onClick={() => setOpen(isOpen ? null : g.id)} aria-expanded={isOpen}
-                  className="grid w-full gap-1 border-b border-hairline px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-ink/5 md:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.6fr)] md:items-center md:gap-3">
-                  <span className="min-w-0">
-                    <span className="font-semibold text-ink">{g.label}: {row.reasons.map(r => sayReason(r.value)).join(' or ')}</span>
-                    {g.utility && others.length > 0 && <span className="block text-[11px] text-muted">Utility · also {others.map(sysName).join(', ')}</span>}
-                  </span>
-                  <span>{row.effect === 'remove' ? <Pill tone="warn">Skipped</Pill> : row.effect === 'qualify' ? <Pill tone="accent">Still rated</Pill> : <Pill>Rated as seen</Pill>}</span>
-                  <span className="text-xs text-body">{row.effect === 'remove'
-                    ? `${plural(n)} here don’t count as missed. Report: ${g.utility ? `“Not tested — ${g.label.toLowerCase()} off” for each.` : `“${g.label} — not inspected:” and the reason.`}`
-                    : row.effect === 'qualify' ? `Each rating ends “(${row.reasons[0].phrase ?? ''})”.` : 'Nothing extra.'}</span>
-                </button>
-              ))}
-              {isOpen && <GateEditor G={G} gate={g} systemId={system.id} idx={idx} disabled={disabled} onGone={() => setOpen(null)} />}
-            </div>
-          );
-        })}
-      </div>
-      {offHere.length > 0 && <p className="mt-2 text-xs text-muted">Turned off for this template: {offHere.map(e => G.ledrixOf(e.id)?.label ?? e.id).join(', ')}{' '}
-        <button className={btn.ghost} disabled={disabled} onClick={() => G.save(G.own.filter(e => !offHere.some(o => o.id === e.id && isRemoved(e))))}>Turn back on</button></p>}
-      <button className={`${btn.ghost} mt-2`} disabled={disabled} onClick={() => setAdding(a => !a)}>+ Add a limitation</button>
-      {adding && (
-        <ul className="mt-1 max-h-64 overflow-y-auto rounded-lg border border-hairline">
-          {candidates.map(c => <li key={c.node.id}><button className="w-full px-3 py-1.5 text-left text-xs text-body hover:bg-ink/5" onClick={() => addGate(c)}>{c.path}</button></li>)}
-          {!candidates.length && <li className="px-3 py-1.5 text-xs text-muted">No other row in {displayLabel(system.label)} has limitation reasons or a method.</li>}
-        </ul>
+    <div className="space-y-4 px-4 py-4">
+      <p className="text-xs text-muted">When the inspector can’t fully inspect {displayLabel(part.label)}: what the checklist and the report do. Ledrix’s are set already; tap one to change it.</p>
+      {policy}
+      {isItem && (
+        <div>
+          <p className={label}>This item’s reasons</p>
+          <ChipList values={part.limitations ?? []} disabled={disabled} addLabel="Add a reason" placeholder="e.g. Snow covered"
+            onChange={v => onOps(ops.limitations(part.id, v))} />
+          <p className="mt-1 text-[11px] text-muted">Shown first when an inspector taps Limitation on {part.label}. It’s named as not inspected, with the reason, and doesn’t count as missed.</p>
+        </div>
       )}
-    </section>
+      <div>
+        <p className={label}>Situations{mine.length ? ` · ${mine.length}` : ''}</p>
+        {!mine.length && <p className="text-sm text-muted">Nothing limits {displayLabel(part.label)}{isItem ? ' beyond its own reasons' : ''} — every item is rated as seen.</p>}
+        <div className="space-y-2">
+          {mine.map(g => {
+            const others = systemsOfGate(g, systems, idx).filter(s => s !== system.id);
+            const isOpen = open === g.id;
+            const n = here(g);
+            const where = g.utility ? (others.length ? `Utility · also ${others.map(sysName).join(', ')}` : 'Utility')
+              : setHere(g) ? (g.row ? `Recorded on ${pathOf(systems, g.row)}` : '') : `Set for ${pathOf(systems, g.area?.[0] ?? g.row)} · applies here`;
+            return (
+              <div key={g.id} className="overflow-hidden rounded-xl border border-hairline">
+                {limitRows(g).map(row => (
+                  <button key={row.reasons.map(r => r.value).join('|')} onClick={() => setOpen(isOpen ? null : g.id)} aria-expanded={isOpen}
+                    className="grid w-full gap-1 border-b border-hairline px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-ink/5 md:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.6fr)] md:items-center md:gap-3">
+                    <span className="min-w-0">
+                      <span className="font-semibold text-ink">{g.utility ? `${g.label} off` : row.reasons.map(r => sayReason(r.value)).join(' or ')}</span>
+                      {where && <span className="block text-[11px] text-muted">{where}</span>}
+                    </span>
+                    <span>{row.effect === 'remove' ? <Pill tone="warn">Skipped</Pill> : row.effect === 'qualify' ? <Pill tone="accent">Still rated</Pill> : <Pill>Rated as seen</Pill>}</span>
+                    <span className="text-xs text-body">{row.effect === 'remove'
+                      ? `${plural(n)} here don’t count as missed. Report: ${g.utility ? `“Not tested — ${g.label.toLowerCase()} off” for each.` : `“${g.label} — not inspected:” and the reason.`}`
+                      : row.effect === 'qualify' ? `Each rating ends “(${row.reasons[0].phrase ?? ''})”.` : 'Nothing extra.'}</span>
+                  </button>
+                ))}
+                {isOpen && <GateEditor G={G} gate={g} inPart={inPart} disabled={disabled} onGone={() => setOpen(null)} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {itemReasons.length > 0 && (
+        <div>
+          <p className={label}>Items with their own reasons</p>
+          <ul className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+            {itemReasons.map(n => (
+              <li key={n.id}><button className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-ink/5" onClick={() => onOpenItem?.(n.id)}>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink">{n.label}</span>
+                  <span className="block truncate text-xs text-muted">{(n.limitations ?? []).join(', ')}</span></span>
+                <span aria-hidden className="text-muted">›</span></button></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {offHere.length > 0 && <p className="text-xs text-muted">Turned off for this template: {offHere.map(e => G.ledrixOf(e.id)?.label ?? e.id).join(', ')}{' '}
+        <button className={btn.ghost} disabled={disabled} onClick={() => G.save(G.own.filter(e => !offHere.some(o => o.id === e.id && isRemoved(e))))}>Turn back on</button></p>}
+      <div>
+        <button className={btn.ghost} disabled={disabled} onClick={() => setAdding(a => !a)}>+ Add a limitation{part.kind !== 'system' ? ` for ${displayLabel(part.label)}` : ''}</button>
+        {adding && (
+          <ul className="mt-1 max-h-64 overflow-y-auto rounded-lg border border-hairline">
+            {candidates.map(c => <li key={c.node.id}><button className="w-full px-3 py-1.5 text-left text-xs text-body hover:bg-ink/5" onClick={() => addGate(c)}>{c.path}</button></li>)}
+            {!candidates.length && <li className="px-3 py-1.5 text-xs text-muted">No row in {displayLabel(part.label)} has limitation reasons or a method yet{isItem ? ' — add a reason above first' : ''}.</li>}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
-/** One gate, edited in place under its rows. Items are shown for THIS system (a utility reaches others too). */
-function GateEditor({ G, gate: current, systemId, idx, disabled, onGone }: {
-  G: ReturnType<typeof useGates>; gate: Gate; systemId: string; idx: Map<string, string>; disabled: boolean; onGone: () => void;
+/** One gate, edited in place under its rows. Items are shown for THIS part (a gate may reach others too). */
+function GateEditor({ G, gate: current, inPart, disabled, onGone }: {
+  G: ReturnType<typeof useGates>; gate: Gate; inPart: (id: string) => boolean; disabled: boolean; onGone: () => void;
 }) {
   const { systems } = G;
   return (
@@ -183,7 +247,7 @@ function GateEditor({ G, gate: current, systemId, idx, disabled, onGone }: {
             {(() => {
               const inNow = new Set(G.covered(current).map(n => n.id));
               const all = current.utility ? [...inNow, ...(G.ledrixOf(current.id)?.items ?? []).map(i => i.node).filter(id => !inNow.has(id))] : G.areaLeaves(current);
-              return [...new Set(all)].filter(id => idx.get(id) === systemId).map(id => {
+              return [...new Set(all)].filter(id => inPart(id)).map(id => {
                 const n = find(systems, id)?.node;
                 if (!n) return null;
                 const on = inNow.has(id);
@@ -201,6 +265,7 @@ function GateEditor({ G, gate: current, systemId, idx, disabled, onGone }: {
 
 /** Review & Publish: every limitation once, with the systems it reaches; Open goes to the first one. */
 export function LimitationsList({ tree, onOpen }: { tree: InspectionTemplate; onOpen: (systemId: string) => void }) {
+  // Open = that system's Limitations screen (2026-11-07).
   const gates = templateGates(tree);
   const systems = tree.systems ?? [];
   const idx = systemIndex(systems);
@@ -210,7 +275,7 @@ export function LimitationsList({ tree, onOpen }: { tree: InspectionTemplate; on
     <section aria-label="All limitations" className="rounded-xl border border-hairline bg-surface">
       <div className="border-b border-hairline px-4 py-3">
         <h3 className="text-sm font-semibold text-ink">Limitations</h3>
-        <p className="text-xs text-muted">Each one is set on its system’s screen, under the groups.</p>
+        <p className="text-xs text-muted">Each one is set from the Limitations row of its system, group or item.</p>
       </div>
       {!rows.length ? <p className="px-4 py-3 text-sm text-muted">No limitations — Ledrix’s are turned off for this template.</p> : (
         <div className="overflow-x-auto">

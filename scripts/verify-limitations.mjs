@@ -4,8 +4,11 @@
 // "Approved" → "Build and push").
 //   §1 executed  lib/templates/limitationModel.ts on Ledrix's default template and pack: which systems a gate reaches,
 //                the rows a gate reads as, and the count beside each system
-//   §2 wiring    the system screen shows its limitations under the groups, edits them in place (items shown for that
-//                system), the systems list shows the count, the Limitations step is gone, Review lists them all once
+//                and (2026-11-07, one shape at every level, mockup CgiHJ5LqFQb4hAFSrAr3ox) which gates reach a group or an
+//                item, and the Limitations row's count and line
+//   §2 wiring    every system, group and item starts with a Limitations row that opens that part's own screen (edits in
+//                place, items shown for that part, an item's own reasons, the TPR switch with its reason), the systems
+//                list shows the count, the Limitations step is gone, Review lists them all once and opens them
 // Mutations run on a COPY of the model in a temp dir, or on the source text in memory.
 import { registerHooks } from 'node:module';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
@@ -32,7 +35,7 @@ registerHooks({
 const read = p => readFileSync(join(ROOT, p), 'utf8');
 const SRC = {
   model: read('lib/templates/limitationModel.ts'), gp: read('components/templates/GatesPanel.tsx'), ws: read('components/templates/Workspace.tsx'),
-  tree: read('components/templates/Tree.tsx'), page: read('app/app/templates/[id]/page.tsx'),
+  tree: read('components/templates/Tree.tsx'), page: read('app/app/templates/[id]/page.tsx'), ep: read('components/templates/EditorParts.tsx'),
 };
 const TPL = JSON.parse(read('lib/templates/baselines/ledrixDefault.json'));
 let run = 0;
@@ -66,23 +69,43 @@ async function checks(src) {
   const c = M.limitCounts(TPL);
   out['the count beside a system: Attic 3, Roofing 4 (Walked changes nothing), Plumbing 1, Exterior none'] =
     c.get('attic') === 3 && c.get('roofing') === 4 && c.get('plumbing') === 1 && !c.has('exterior') && c.get('water_heater') === 3;
+  const P = (id) => M.gatesOfPart(gates, sys, id).map(x => x.id);
+  out['a part is reached by a gate set inside it, or by one whose area holds it: Roofing, Covering and Asphalt Shingle get the roof method; Drainage does not; Fixtures gets Water off, Fuel · Gas does not'] =
+    P('roofing').includes('roof_method') && P('roofing__covering').includes('roof_method') && P('roof_cov_asphalt').includes('roof_method')
+    && !P('roofing__drainage').includes('roof_method') && P('plumbing__fixtures').includes('utility_water') && !P('plumbing__fuel_gas').includes('utility_water')
+    && P('attic').includes('attic_access') && !P('exterior').length;
+  const find = (ns, id) => { for (const n of ns) { if (n.id === id) return n; const r = find(n.children ?? [], id); if (r) return r; } return null; };
+  const a = M.partLimitSummary(gates, sys, find(sys, 'roof_cov_asphalt')), dr = M.partLimitSummary(gates, sys, find(sys, 'roofing__drainage'));
+  out['the Limitations row: Asphalt Shingle counts its own reason and the roof method (5) and names them; Drainage says None · tap to add'] =
+    a.count === 5 && a.line.startsWith('Not Accessed, ') && a.line.includes('Drone') && dr.count === 0 && dr.line === 'None · tap to add';
   const off = { ...TPL, gates: [{ id: 'attic_access', removed: true }] };
   out['a gate turned off for the template leaves the count'] = !M.limitCounts(off).has('attic');
 
   const strip = s => s.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
-  const ws = strip(src.ws), gp = strip(src.gp), tr = strip(src.tree), pg = strip(src.page);
-  out['the system screen shows its limitations under the groups'] =
-    /<ItemsPanel tree=\{tree\} system=\{system\}[^\n]*\/>\s*(?:\{\}\s*)?<SystemLimitations tree=\{tree\} system=\{system\} onOps=\{onOps\} disabled=\{disabled\} \/>\s*<\/Shell>/.test(ws)
-    && /const mine = useMemo\(\(\) => gatesOfSystem\(gates, systems, system\.id\), \[gates, systems, system\.id\]\);/.test(gp);
-  out['a row edits in place; its items are this system’s; a utility names the other systems; + Add offers this system’s rows'] =
-    /\{isOpen && <GateEditor G=\{G\} gate=\{g\} systemId=\{system\.id\}/.test(gp)
-    && /\.filter\(id => idx\.get\(id\) === systemId\)\.map\(id =>/.test(gp)
-    && /\{g\.utility && others\.length > 0 && <span[^>]*>Utility · also \{others\.map\(sysName\)\.join\(', '\)\}<\/span>\}/.test(gp)
-    && /visit\(\[system\], null\);/.test(gp);
+  const ws = strip(src.ws), gp = strip(src.gp), tr = strip(src.tree), pg = strip(src.page), ep = strip(src.ep);
+  out['a system, a group and an item each start with a Limitations row that opens that part’s own Limitations screen'] =
+    /about=\{<AboutRows><LimitationsRow tree=\{tree\} part=\{system\} onOpen=\{\(\) => setTab\('limitations'\)\} \/><\/AboutRows>\}/.test(ws)
+    && /about=\{<AboutRows><LimitationsRow tree=\{tree\} part=\{node\} onOpen=\{\(\) => setTab\('limitations'\)\} \/><\/AboutRows>\}/.test(ws)
+    && /<AboutRows>\s*<LimitationsRow tree=\{tree\} part=\{node\} onOpen=\{\(\) => setTab\('limitations'\)\} \/>\s*<FacetRow title="Condition"/.test(ws)
+    && /if \(tab === 'limitations'\) return limitsScreen\(system, system\.label\);/.test(ws)
+    && /if \(tab === 'limitations'\) return limitsScreen\(node, `\$\{path\} › \$\{node\.label\}`\);/.test(ws)
+    && /<PartLimitations tree=\{tree\} system=\{system\} part=\{part\}/.test(ws)
+    && /\{about\}/.test(ep) && (ep.match(/\{about\}/g) ?? []).length === 2
+    && /const mine = useMemo\(\(\) => gatesOfPart\(gates, systems, part\.id\), \[gates, systems, part\.id\]\);/.test(gp)
+    && /const \{ count, line \} = useMemo\(\(\) => partLimitSummary\(templateGates\(tree\), tree\.systems \?\? \[\], part\), \[tree, part\]\);/.test(gp);
+  out['the screen: an item’s own reasons first, each situation edited in place with this part’s items, a utility names the other systems, + Add offers rows inside this part'] =
+    /\{isItem && \([\s\S]{0,200}<ChipList values=\{part\.limitations \?\? \[\]\}[\s\S]{0,200}onChange=\{v => onOps\(ops\.limitations\(part\.id, v\)\)\}/.test(gp)
+    && /\{isOpen && <GateEditor G=\{G\} gate=\{g\} inPart=\{inPart\}/.test(gp)
+    && /\.filter\(id => inPart\(id\)\)\.map\(id =>/.test(gp)
+    && /Utility · also \$\{others\.map\(sysName\)\.join\(', '\)\}/.test(gp)
+    && /visit\(\[part\], parentNode\);/.test(gp)
+    && !/Limitation reasons/.test(ep);
+  out['the TPR “we operate it” switch sits on the item’s Limitations screen'] =
+    /if \(tab === 'limitations'\) return limitsScreen\(node, `\$\{path\} › \$\{node\.label\}`, <EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws) && /\{policy\}/.test(gp);
   out['the systems list shows the count'] = /const limits = useMemo\(\(\) => limitCounts\(tree\), \[tree\]\);/.test(tr) && /\{itemCount\(s\)\}\{limits\.get\(s\.id\) \?/.test(tr);
   out['the Limitations step is gone (an old link opens What you inspect); Review lists them all once'] =
     !/\{ id: 'gates', label:/.test(pg) && !/section === 'gates'/.test(pg) && /s === 'counts' \|\| s === 'gates' \? 'systems'/.test(pg)
-    && /<LimitationsList tree=\{tree\} onOpen=\{sid => \{ go\('systems', \{ systemId: sid, nodeId: null \}\);/.test(pg);
+    && /<LimitationsList tree=\{tree\} onOpen=\{sid => go\('systems', \{ systemId: sid, nodeId: null \}, 'limitations'\)\} \/>/.test(pg);
   return out;
 }
 
@@ -96,13 +119,21 @@ const MUT = [
   ['every reason is its own row', rep('model', "const k = `${r.effect}|${r.effect === 'qualify' ? r.phrase ?? '' : ''}`;", 'const k = r.value;')],
   ['a row that changes nothing counts', rep('model', "limits: rs[0].effect !== 'none'", 'limits: true')],
   ['turned-off gates still count', rep('model', 'effectiveGates(LEDRIX_GATES, ownGates(tree))', 'effectiveGates(LEDRIX_GATES, [])')],
-  ['the system screen drops them', rep('ws', '        <SystemLimitations tree={tree} system={system} onOps={onOps} disabled={disabled} />\n', '')],
-  ['every gate in every system', rep('gp', 'const mine = useMemo(() => gatesOfSystem(gates, systems, system.id), [gates, systems, system.id]);', 'const mine = useMemo(() => gates, [gates, systems, system.id]);')],
-  ['other systems’ items shown', rep('gp', '.filter(id => idx.get(id) === systemId).map(id =>', '.map(id =>')],
-  ['+ Add offers every system', rep('gp', 'visit([system], null);', 'visit(systems, null);')],
+  ['an area doesn’t reach what sits in it', rep('model', "  return (g.area ?? []).some(a => up.has(baseOf(a)));", '  return false;')],
+  ['a gate set inside a part doesn’t reach it', rep('model', '  if (touched.some(t => ancestorsOf(t, parents).includes(partId))) return true;', '')],
+  ['an item’s own reasons don’t count', rep('model', '  count += own.length;\n', '')],
+  ['no row on the system', rep('ws', "about={<AboutRows><LimitationsRow tree={tree} part={system} onOpen={() => setTab('limitations')} /></AboutRows>}", '')],
+  ['no row on a group', rep('ws', "about={<AboutRows><LimitationsRow tree={tree} part={node} onOpen={() => setTab('limitations')} /></AboutRows>}", '')],
+  ['the system row opens nothing', rep('ws', "if (tab === 'limitations') return limitsScreen(system, system.label);", '')],
+  ['every gate on every part', rep('gp', 'const mine = useMemo(() => gatesOfPart(gates, systems, part.id), [gates, systems, part.id]);', 'const mine = useMemo(() => gates, [gates, systems, part.id]);')],
+  ['other parts’ items shown', rep('gp', '.filter(id => inPart(id)).map(id =>', '.map(id =>')],
+  ['+ Add offers everything', rep('gp', 'visit([part], parentNode);', 'visit(systems, null);')],
+  ['the item’s reasons are not on its screen', rep('gp', 'onChange={v => onOps(ops.limitations(part.id, v))}', 'onChange={() => {}}')],
+  ['the TPR switch leaves', rep('ws', ', <EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />);', ');')],
   ['no count in the list', rep('tree', '{itemCount(s)}{limits.get(s.id) ?', '{itemCount(s)}{false ?')],
   ['the step comes back', rep('page', "  { id: 'report', label: 'Report',", "  { id: 'gates', label: 'Limitations', icon: '' },\n  { id: 'report', label: 'Report',")],
   ['Review drops the list', rep('page', '<LimitationsList tree={tree} onOpen=', '<div data-x=')],
+  ['Review opens the system, not its Limitations', rep('page', "nodeId: null }, 'limitations')} />", "nodeId: null })} />")],
 ];
 let survived = 0;
 for (const [name, fn] of MUT) { const s = { ...SRC }; fn(s); const r = await checks(s); if (Object.values(r).every(Boolean)) { survived++; console.error(`  x mutation survived: ${name}`); } }

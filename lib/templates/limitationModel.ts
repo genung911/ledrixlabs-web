@@ -68,3 +68,51 @@ export function limitCounts(tree: InspectionTemplate): Map<string, number> {
 
 /** How a reason reads in the "When the inspector records…" column. */
 export const sayReason = (v: string) => (v === '*limitation' ? 'Not inspected (any reason)' : v);
+
+// ── ONE SHAPE AT EVERY LEVEL (owner 2026-11-07, mockup https://claude.ai/artifact/CgiHJ5LqFQb4hAFSrAr3ox, "approved"):
+// every system, group and item starts with a Limitations row that opens THAT part's limitations. A gate reaches a part
+// when its row, an area root or one of its items sits in the part — or the part sits inside one of its areas (the roof
+// method's area is Covering, so Asphalt Shingle is reached).
+
+/** node id → its parent's id (systems have none). */
+export function parentIndex(systems: readonly TemplateNode[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const walk = (n: TemplateNode) => (n.children ?? []).forEach(c => { out.set(c.id, n.id); walk(c); });
+  systems.forEach(walk);
+  return out;
+}
+const ancestorsOf = (id: string, parents: Map<string, string>): string[] => {
+  const out: string[] = [];
+  for (let p: string | undefined = id, n = 0; p && n < 50; p = parents.get(p), n++) out.push(p);
+  return out;
+};
+
+/** Does this gate reach the part? */
+export function gateReachesPart(g: Gate, partId: string, parents: Map<string, string>): boolean {
+  const touched = [g.row, ...(g.area ?? []), ...(g.items ?? []).map(i => i.node)].filter((x): x is string => !!x).map(baseOf);
+  if (touched.some(t => ancestorsOf(t, parents).includes(partId))) return true;          // something of it sits in the part
+  const up = new Set(ancestorsOf(partId, parents));
+  return (g.area ?? []).some(a => up.has(baseOf(a)));                                    // the part sits in its area
+}
+export const gatesOfPart = (gates: readonly Gate[], systems: readonly TemplateNode[], partId: string): Gate[] => {
+  const parents = parentIndex(systems);
+  return gates.filter(g => gateReachesPart(g, partId, parents));
+};
+
+/** The Limitations row's count and one line: the situations that change this part's checklist, plus an item's own
+ *  reasons. "None · tap to add" when there are none. */
+export function partLimitSummary(gates: readonly Gate[], systems: readonly TemplateNode[], part: TemplateNode): { count: number; line: string } {
+  const reach = gatesOfPart(gates, systems, part.id);
+  const said: string[] = [];
+  let count = 0;
+  for (const g of reach) {
+    const rows = limitRows(g).filter(r => r.limits);
+    count += rows.length;
+    if (g.utility) { if (rows.length) said.push(`${g.label} off`); }
+    else said.push(...rows.flatMap(r => r.reasons.map(x => sayReason(x.value))));
+  }
+  const own = part.kind === 'component' ? (part.limitations ?? []) : [];
+  count += own.length;
+  const line = [...own, ...said].filter((x, i, a) => a.indexOf(x) === i);
+  return { count, line: line.length ? line.join(', ') : 'None · tap to add' };
+}

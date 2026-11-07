@@ -1077,8 +1077,10 @@ const RULES = {
   },
   // 2026-10-24: the editor's condition switch shows what the APP will do (assessesCondition), never the raw field.
   'editor: the condition switch shows the app rule, not the raw field': all => {
-    const s = strip(all['components/templates/EditorParts.tsx'] ?? '');
-    return (/<Toggle on=\{assessesCondition\(node\)\}/.test(s) && !/node\.condition (===|&&)/.test(s)) ? [] : ['components/templates/EditorParts.tsx'];
+    // 2026-11-07: the switch is on the item's Condition screen (one shape at every level).
+    const s = strip(all['components/templates/EditorParts.tsx'] ?? ''), w = strip(all['components/templates/Workspace.tsx'] ?? '');
+    return (/sw\('Inspectors rate its condition', 'Satisfactory · Limitation · Finding', assessesCondition\(node\), v => onOps\(ops\.assessed\(node\.id, v\)\)\)/.test(w)
+      && ![s, w].some(x => /node\.condition (===|&&)/.test(x))) ? [] : ['components/templates/Workspace.tsx'];
   },
   'route: the prompt is built on the server': all => {
     const s = all[ROUTE] ?? '';
@@ -1125,15 +1127,18 @@ const RULES = {
     if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
     return bad;
   },
-  'switches: an item is ONE screen (the Item tab) — Condition, Details and Requirements switches, with Condition\'s and Details\' settings right under their switch; Requirements and Applicability stay tabs': all => {
-    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
-    // Owner 2026-11-06 (mockup CjKszYz3e9KT39kvF43mkD): "merge overview and details" — and Condition the same way.
-    return /const visible: ComponentTab\[\] = \['overview', \.\.\.\(reqsOn \? \['requirements' as const\] : \[\]\), 'applicability'\];/.test(ws)
-      && /conditionBody=\{<><EveryTypeOperates [^>]*\/><ComponentCondition node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/><\/>\} detailsBody=\{<><MaterialAnswers [^>]*\/><ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/><\/>\}/.test(ws)
-      && /\{assessesCondition\(node\) && conditionBody && <div aria-label="Condition settings"/.test(parts) && /\{detailsOn && detailsBody && <div aria-label="Details settings"/.test(parts)
-      && /overview: 'Item'/.test(ws)
+  'item: no tabs — its rows (Limitations · Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': all => {
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), page = strip(all[EDIT] ?? '');
+    // Owner 2026-11-07 (mockup CgiHJ5LqFQb4hAFSrAr3ox): one screen shape at every level. Before: one Item tab (2026-11-06).
+    const at = ws.indexOf('<AboutRows>\n          <LimitationsRow tree={tree} part={node}');
+    const rows = at < 0 ? '' : ws.slice(at, ws.indexOf('</AboutRows>', at));
+    return ['Condition', 'Details', 'Requirements', 'Applies when'].every((t, i, a) => rows.indexOf(`<FacetRow title="${t}"`) > (i ? rows.indexOf(`<FacetRow title="${a[i - 1]}"`) : 0))
+      && ['condition', 'details', 'requirements', 'applicability'].every(t => new RegExp(`if \\(tab === '${t}'\\) return facet\\('${t}',`).test(ws))
+      && /if \(tab === 'limitations'\) return limitsScreen\(node,/.test(ws)
+      && /onBack=\{\{ label: node\.label, go: \(\) => setTab\('overview'\) \}\}/.test(ws)
       && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
-      && /Nothing to record — inspectors won’t see this item\./.test(parts) && !/ReportTab/.test(ws) ? [] : ['components/templates/Workspace.tsx'];
+      && /Nothing to record — inspectors won’t see this item\./.test(ws) && !/ReportTab|const visible: ComponentTab/.test(ws)
+      && /const select = useCallback\(\(s: Sel\) => \{ setSel\(s\); setMode\('edit'\); setCtab\('overview'\); \}, \[\]\);/.test(page) ? [] : ['components/templates/Workspace.tsx'];
   },
   'property types: picked on the Overview and when creating; shown and filtered on the Templates page': all => {
     const ov = strip(all['components/templates/Sections.tsx'] ?? ''), cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ls = strip(all['app/app/templates/page.tsx'] ?? '');
@@ -1214,7 +1219,7 @@ const RULES = {
       && /const cards = new Set\(\(layout\.find\(g => g\.node\.id === groupId\)\?\.questions \?\? \[\]\)\.flatMap\(q => \[\.\.\.q\.rows\.map\(r => r\.card\?\.id\), q\.typed\?\.id\]\)/.test(mb)
       && /const rows = \(group\?\.children \?\? \[\]\)\.filter\(c => !cards\.has\(c\.id\) && \(!lens \|\| lens\.isIn\(c\.id\)\)\);/.test(mb)
       && /\.filter\(q => q\.node\.id === node\.id\)/.test(mb) && /<MaterialQuestionRows q=\{q\} tree=\{tree\} system=\{system\}/.test(mb)
-      && /detailsBody=\{<><MaterialAnswers tree=\{tree\} system=\{system\} node=\{node\}/.test(ws) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+      && /\{detailsOn && <><MaterialAnswers tree=\{tree\} system=\{system\} node=\{node\}/.test(ws) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
   'rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on': all => {
     // Owner 2026-11-06: "should all of these rows have the 3 dot menu…" → "build it, no mock up, yes switch off not delete".
@@ -1241,7 +1246,7 @@ const RULES = {
     return !/layout\.every\.filter\(canStartLimited\)/.test(tb)
       && /if \(!layout \|\| !canStartLimited\(node\) \|\| !layout\.every\.some\(n => n\.id === node\.id\)\) return null;/.test(tb)
       && /<OperatesSwitch node=\{node\} field=\{layout\.question\.field\} value="\*"/.test(tb)
-      && /conditionBody=\{<><EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws)
+      && /if \(tab === 'limitations'\) return limitsScreen\(node, `\$\{path\} › \$\{node\.label\}`, <EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws)
       && /\{own\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
       && /onChange=\{v => \{ onOps\(ops\.operates\(node, f, value, v\)\); \}\}/.test(tb)
       && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
@@ -1295,11 +1300,12 @@ const RULES = {
       && /What other buildings do you include with a/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)
       ? [] : ['components/templates/BuildingLens.tsx'];
   },
-  'limitations: each system lists its own under the groups — when the inspector records it, what the checklist does, what the report says; a tap edits it there': all => {
+  'limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there': all => {
     // Owner 2026-11-06: "Should this be called limitations?" · "even here the what happens seems vague or confusing".
     // Owner 2026-11-07 (mockup FSTfPJUMmjGDVFqiqneD6o): in each system, under its groups. Deeper: verify-limitations.mjs.
     const gp = strip(all['components/templates/GatesPanel.tsx'] ?? '');
-    return /Limitations · \{count\}/.test(gp) && /When the inspector records/.test(gp) && /On the checklist/.test(gp) && /In the report/.test(gp)
+    // Owner 2026-11-07 (mockup CgiHJ5LqFQb4hAFSrAr3ox): a Limitations row first in every system, group and item.
+    return /export function LimitationsRow\(/.test(gp) && /export function PartLimitations\(/.test(gp) && /When the inspector records/.test(gp) && /On the checklist/.test(gp) && /In the report/.test(gp)
       && /onClick=\{\(\) => setOpen\(isOpen \? null : g\.id\)\}/.test(gp) && /\{isOpen && <GateEditor /.test(gp) ? [] : ['components/templates/GatesPanel.tsx'];
   },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
@@ -1463,7 +1469,7 @@ const MUT = {
   'no model key or service-role key in browser code': add('components/templates/LedrixPanel.tsx', "\nconst k = process.env.GATEWAY_KEY;"),
   'route: requires a signed-in user': rep(ROUTE, 'admin.auth.getUser(token)', 'admin.auth.getUser()'),
   "route: owner/admin, working on their own company's template or draft": rep(ROUTE, ".eq('id', templateId as string).eq('company_id', profile.company_id)", ".eq('id', templateId as string)"),
-  'editor: the condition switch shows the app rule, not the raw field': rep('components/templates/EditorParts.tsx', '<Toggle on={assessesCondition(node)}', '<Toggle on={node.condition === true}'),
+  'editor: the condition switch shows the app rule, not the raw field': rep('components/templates/Workspace.tsx', "'Satisfactory · Limitation · Finding', assessesCondition(node),", "'Satisfactory · Limitation · Finding', node.condition === true,"),
   'route: the prompt is built on the server': rep(ROUTE, 'askModel(prompt.system, prompt.user)', 'askModel(String((body as any).system), prompt.user)'),
   'route: the cost cap is counted before the model is called': rep(ROUTE, 'const used = await bumpUsage(admin, user.id);', 'const used = 0;'),
   'route: the reply shape is normalized before grades are filtered and the browser checks it': all => /normalizeChanges\(\(parsed as \{ changes: unknown\[\] \}\)\.changes\)/.test(strip(all[ROUTE] ?? '')) ? [] : [ROUTE],
@@ -1482,7 +1488,7 @@ const MUT = {
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
   'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(lens ? lens.set(system.id, v) : includeOps(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
-  'switches: an item is ONE screen (the Item tab) — Condition, Details and Requirements switches, with Condition\'s and Details\' settings right under their switch; Requirements and Applicability stay tabs': rep('components/templates/Workspace.tsx', "<ComponentFields node={node} onOps={onOps} disabled={disabled} /></>}", "</>}"),
+  'item: no tabs — its rows (Limitations · Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': rep('components/templates/Workspace.tsx', "if (tab === 'details') return facet('details',", "if (tab === 'nope') return facet('details',"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
@@ -1503,8 +1509,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['limitations: each system lists its own under the groups — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', 'onClick={() => setOpen(isOpen ? null : g.id)}', 'onClick={() => {}}'), 'a tap opens nothing'],
-  ['limitations: each system lists its own under the groups — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', '{isOpen && <GateEditor ', '{false && <GateEditor '), 'the editor never shows'],
+  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', 'onClick={() => setOpen(isOpen ? null : g.id)}', 'onClick={() => {}}'), 'a tap opens nothing'],
+  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', '{isOpen && <GateEditor ', '{false && <GateEditor '), 'the editor never shows'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/Tree.tsx', 'const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);', 'const covered = isCovered(tree, s);'), 'the systems list ignores the building'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/GroupList.tsx', 'const kids = (system.children ?? []).filter(c => !lens || lens.isIn(c.id));', 'const kids = system.children ?? [];'), 'a building lists parts it doesn\'t have'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('app/app/templates/[id]/page.tsx', '<BuildingLensProvider tree={tree} buildingId={building}>', '<BuildingLensProvider tree={tree} buildingId={null}>'), 'the strip changes nothing'],
@@ -1523,7 +1529,7 @@ const MUT3 = [
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', '      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;\n', ''), 'the picks never reach the draft'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('components/templates/Sections.tsx', 'onChange={l => { onOps(advisoryOps(l)); }}', 'onChange={() => {}}'), 'the builder\'s picker writes nothing'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/[id]/page.tsx', '<ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} />', '<ReportSection tree={tree} onGo={go} onOps={() => false} disabled={!!readOnly} />'), 'the page never passes the edits'],
-  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/Workspace.tsx', 'conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />', 'conditionBody={<>'), 'the TPR switch is not on its item'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/Workspace.tsx', ', <EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />);', ');'), 'the TPR switch is not on its item\'s Limitations'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[...layout.every, ...own].filter(canStartLimited).map(n => ('), 'the TPR switch is back at the top of the system'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],
@@ -1539,7 +1545,7 @@ const MUT3 = [
   ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/TypeBuilder.tsx', 'return <ItemRow key={n.id} tree={tree} node={n} onOps={apply}', 'return <li key={n.id}>{n.label}</li>; <ItemRow key={n.id} tree={tree} node={n} onOps={apply}'), 'the type view goes back to plain rows'],
   ['rows: an item row in Materials first and the type view opens the item, and its ⋯ menu offers Rename, Move to… and Switch off (never delete); an Off row offers Switch on', rep('components/templates/EditorParts.tsx', 'lens.set(t.id, true) : includeOps(tree, t.id, true)', 'lens.set(t.id, true) : includeOps(tree, t.id, false)'), 'Switch on in the Off list does nothing'],
   ['group screen: a group lists its items, one kind of row for all — a materials question\'s cards are not rows there; its answers, cards and switches open inside that question\'s own item, under Details', rep('components/templates/MaterialsBuilder.tsx', 'const rows = (group?.children ?? []).filter(c => !cards.has(c.id) && (!lens || lens.isIn(c.id)));', 'const rows = group?.children ?? [];'), 'the cards are rows on the group screen again'],
-  ['group screen: a group lists its items, one kind of row for all — a materials question\'s cards are not rows there; its answers, cards and switches open inside that question\'s own item, under Details', rep('components/templates/Workspace.tsx', 'detailsBody={<><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} />', 'detailsBody={<>'), 'the answers never open on the item'],
+  ['group screen: a group lists its items, one kind of row for all — a materials question\'s cards are not rows there; its answers, cards and switches open inside that question\'s own item, under Details', rep('components/templates/Workspace.tsx', '{detailsOn && <><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} />', '{detailsOn && <>'), 'the answers never open on the item'],
   ['group screen: a group lists its items, one kind of row for all — a materials question\'s cards are not rows there; its answers, cards and switches open inside that question\'s own item, under Details', rep('components/templates/MaterialsBuilder.tsx', '.filter(q => q.node.id === node.id)', '.filter(() => false)'), 'no item shows its answers'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) : home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) :', "const o = fresh ? [{ op: 'addNode', parentId: t!.system.id, node: { id: 'g', label: newGroup!, kind: 'subsystem' } }] as TemplateOp[] :"), 'the dialog makes the new group with its own op'],

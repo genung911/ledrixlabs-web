@@ -9,22 +9,26 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import { assessesCondition, includeOps, isCovered, itemSummary, locate, locateOff, ops, recordsNothingHere } from '@/lib/templates/editorModel';
 import { requirementsOf } from '@/lib/templates/requirementModel';
-import { CommitInput, ComponentCondition, ComponentFields, ComponentOverview, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
+import { AboutRows, AlsoShowIn, CommitInput, ComponentCondition, ComponentFields, FacetRow, GroupDetails, ItemsPanel, LinkOverview, UnseenPill, notShownToInspectors, type TypeView } from './EditorParts';
 import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
 import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
-import { SystemLimitations } from './GatesPanel';
+import { LimitationsRow, PartLimitations } from './GatesPanel';
 import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
-export type ComponentTab = 'overview' | 'condition' | 'details' | 'requirements' | 'applicability';
+export type ComponentTab = 'overview' | 'limitations' | 'condition' | 'details' | 'requirements' | 'applicability';
 
-// 'overview' is the ITEM tab since 2026-11-06 (owner, mockup CjKszYz3e9KT39kvF43mkD): Condition and Details open inside it.
-const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applicability' };
+// ONE SHAPE AT EVERY LEVEL (owner 2026-11-07, mockup https://claude.ai/artifact/CgiHJ5LqFQb4hAFSrAr3ox, "approved"): an item
+// has no tabs. 'overview' is its rows (Limitations · Condition · Details · Requirements · Applies when); every other value
+// is the screen one of those rows opens, with back to the item. A system's and a group's 'limitations' is their own
+// Limitations screen. Selecting anything opens its rows ('overview'). Links (an item shown from another system) keep
+// their two tabs.
+const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', limitations: 'Limitations', condition: 'Condition', details: 'Details', requirements: 'Requirements', applicability: 'Applies when' };
 
 /** A request to bring one panel section into view (the tree's section rows, owner 2026-11-05). `n` changes per click. */
 export type Reveal = { id: string; n: number };
@@ -68,15 +72,22 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (!system) return <p className="px-4 py-6 text-sm text-muted">{tree.systems.length ? 'Pick a system or component in the tree.' : 'Add a system to start.'}</p>;
   const open = (id: string) => onSelect({ systemId: system.id, nodeId: id });
 
+  // A part's Limitations screen opens from its first row; an item's limitations from inside its rows.
+  const openLimits = (id: string) => { onSelect({ systemId: system.id, nodeId: id }); setTab('limitations'); };
+  const limitsScreen = (part: TemplateNode, sub: string, policy?: React.ReactNode) => (
+    <Shell scrollKey={`${sk}|limitations`} reveal={null} kind="Limitations" title="Limitations" sub={sub} onBack={{ label: part.label, go: () => setTab('overview') }}>
+      <PartLimitations tree={tree} system={system} part={part} onOps={onOps} disabled={disabled} policy={policy} onOpenItem={openLimits} />
+    </Shell>
+  );
   if (!loc || loc.depth === 0) {
+    if (tab === 'limitations') return limitsScreen(system, system.label);
     return (
       <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label} onRename={v => onOps(ops.rename(system.id, v))} renameDisabled={disabled}
         tips={{ value: system.description ?? '', what: 'system', onCommit: v => onOps(ops.describe(system.id, v)) }}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={lens ? lens.isIn(system.id) : isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(lens ? lens.set(system.id, v) : includeOps(tree, system.id, v))} />}>
-        <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
-        {/* LIMITATIONS, under the groups (owner 2026-11-07, mockup FSTfPJUMmjGDVFqiqneD6o): the step moved into the system. */}
-        <SystemLimitations tree={tree} system={system} onOps={onOps} disabled={disabled} />
+        <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView}
+          about={<AboutRows><LimitationsRow tree={tree} part={system} onOpen={() => setTab('limitations')} /></AboutRows>} />
       </Shell>
     );
   }
@@ -88,12 +99,14 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const up = !typeView && loc.parent && loc.parent.id !== system.id && loc.parent.kind !== 'component' ? loc.parent : null;
   const close = { label: up ? up.label : system.label, go: () => onSelect({ systemId: system.id, nodeId: up ? up.id : null }) };
   if (node.kind !== 'component') {
+    if (tab === 'limitations') return limitsScreen(node, `${path} › ${node.label}`);
     return (
       <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
         tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
         menu={moveMenu(node.id)}
         action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
-        <GroupDetails tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} />
+        <GroupDetails tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled}
+          about={<AboutRows><LimitationsRow tree={tree} part={node} onOpen={() => setTab('limitations')} /></AboutRows>} />
         {moveDialog}
       </Shell>
     );
@@ -119,24 +132,49 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const mark = (k: 'details' | 'reqs', v: boolean) => setOpened(cur => ({ ...cur, [node.id]: { ...cur[node.id], [k]: v } }));
   const onDetails = (on: boolean) => { const x = ops.switchDetails(node, on); if (x.length && !onOps(x)) return; mark('details', on); };
   const onReqs = (on: boolean) => { const x = ops.switchRequirements(node, on); if (x.length && !onOps(x)) return; mark('reqs', on); if (on) setTab('requirements'); };
-  // One item screen: Condition and Details are inside the Item tab; Requirements (its own editor) and Applicability stay tabs.
-  const visible: ComponentTab[] = ['overview', ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
-  const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
+  const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
+  // The screen one of the item's rows opens: same header shape, back goes to the item.
+  const facet = (t: Exclude<ComponentTab, 'overview'>, body: React.ReactNode) => (
+    <Shell scrollKey={`${sk}|${t}`} reveal={null} kind={TAB_LABEL[t]} title={TAB_LABEL[t]} sub={`${path} › ${node.label}`} onBack={{ label: node.label, go: () => setTab('overview') }}>
+      {body}
+    </Shell>
+  );
+  const sw = (title: string, hint: string, on: boolean, onChange: (v: boolean) => void) => (
+    <div className="mx-4 mt-4 flex items-center gap-3 rounded-xl border border-hairline px-3 py-3">
+      <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-ink">{title}</p><p className="text-xs text-muted">{hint}</p></div>
+      <Toggle on={on} disabled={disabled} label={title} onChange={onChange} />
+    </div>
+  );
+  if (tab === 'limitations') return limitsScreen(node, `${path} › ${node.label}`, <EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />);
+  if (tab === 'condition') return facet('condition', <>
+    {sw('Inspectors rate its condition', 'Satisfactory · Limitation · Finding', assessesCondition(node), v => onOps(ops.assessed(node.id, v)))}
+    {assessesCondition(node) && <ComponentCondition node={node} onOps={onOps} disabled={disabled} />}</>);
+  if (tab === 'details') return facet('details', <>
+    {sw('Inspectors record details', 'Material, type or count', detailsOn, onDetails)}
+    {detailsOn && <><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} /><ComponentFields node={node} onOps={onOps} disabled={disabled} /></>}</>);
+  if (tab === 'requirements') return facet('requirements', <>
+    {sw('Requirements', 'Proof photos and readings', reqsOn, onReqs)}
+    {reqsOn && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}</>);
+  if (tab === 'applicability') return facet('applicability', <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />);
+  // THE ITEM: its rows, then where else it shows.
+  const shortcuts = ((node as TemplateNode & { findingShortcuts?: unknown[] }).findingShortcuts ?? []).length;
+  const aw = (node as TemplateNode & { appliesWhen?: unknown }).appliesWhen;
   return (
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
       menu={moveMenu(node.id)}
-      action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
-      tabs={visible.map(t => (
-        <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
-          className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${cur === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>
-          {TAB_LABEL[t]}{t === 'requirements' && reqs > 0 && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqs}</span>}
-        </button>
-      ))}>
-      {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled}
-        conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} /><ComponentCondition node={node} onOps={onOps} disabled={disabled} /></>} detailsBody={<><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} /><ComponentFields node={node} onOps={onOps} disabled={disabled} /></>} />}
-      {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
-      {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
+      action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}>
+      <div className="space-y-5 px-4 py-4">
+        <AboutRows>
+          <LimitationsRow tree={tree} part={node} onOpen={() => setTab('limitations')} />
+          <FacetRow title="Condition" line={assessesCondition(node) ? `Satisfactory · Limitation · Finding${shortcuts ? ` · ${shortcuts} quick finding${shortcuts === 1 ? '' : 's'}` : ''}` : 'Off — not rated'} onOpen={() => setTab('condition')} />
+          <FacetRow title="Details" line={detailsOn ? ((node.attributes ?? []).map(a => a.label).join(' · ') || 'On · nothing asked yet') : 'Off'} onOpen={() => setTab('details')} />
+          <FacetRow title="Requirements" line={reqs ? `${reqs} proof photo${reqs === 1 ? '' : 's'} or reading${reqs === 1 ? '' : 's'}` : reqsOn ? 'On · none yet' : 'Off'} count={reqs || undefined} onOpen={() => setTab('requirements')} />
+          <FacetRow title="Applies when" line={aw === undefined || aw === null ? 'Always, whenever its system is in the inspection' : 'Only when its rule holds'} onOpen={() => setTab('applicability')} />
+        </AboutRows>
+        {nothing && <p className="rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
+        <AlsoShowIn tree={tree} systemId={system.id} node={node} onOps={onOps} disabled={disabled} />
+      </div>
       {moveDialog}
     </Shell>
   );
