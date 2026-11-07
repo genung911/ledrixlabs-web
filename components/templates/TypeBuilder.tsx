@@ -12,7 +12,7 @@ import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { assessesCondition, canStartLimited, itemSummary, ops, startsLimitedList, startsLimitedReason } from '@/lib/templates/editorModel';
-import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
+import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeLayoutOf, typeRuleOps, type CopyGroup, type TypeLayout } from '@/lib/templates/typeLayout';
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
 import { ItemRow } from './ItemRow';
@@ -162,10 +162,9 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const own = itemsForType(layout, pick);
   return (
     <div className="space-y-3">
-      {/* An item every type shows (Water Heater's TPR) has ONE switch for every type ('*'); a type's own item, one per chip. */}
-      {layout.every.filter(canStartLimited).map(n => (
-        <OperatesSwitch key={n.id} node={n} field={layout.question.field} value="*" typeLabel={layout.question.label} onOps={apply} disabled={disabled} />
-      ))}
+      {/* A type's own item (Fireplace › Operation) has its switch on each chip. An item every type shows (Water Heater's TPR)
+          has ONE switch for every type, inside that item's own screen (owner 2026-11-06: "should be inside the details of
+          the TPR valve section not at the beginning of water heater") — EveryTypeOperates, from Workspace. */}
       {own.filter(canStartLimited).map(n => (
         <OperatesSwitch key={n.id} node={n} field={layout.question.field} value={pick} onOps={apply} disabled={disabled} />
       ))}
@@ -230,7 +229,7 @@ function CopiesRow({ g, open, onToggle, onOps, onOpen, disabled }: { g: CopyGrou
 /** "We operate it" (owner 2026-11-06, mockup https://claude.ai/artifact/AVMufpdYL6BrMPw2MXZsY2): per type answer, Off =
  *  the company does not operate that kind, so the item (Fireplace › Operation) starts on the phone as the limitation
  *  and the report prints the sentence below. On = rated normally. Each change is one op (editorModel.ops). */
-function OperatesSwitch({ node, field: f, value, typeLabel, onOps, disabled }: { node: TemplateNode; field: string; value: string; typeLabel?: string; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+export function OperatesSwitch({ node, field: f, value, typeLabel, onOps, disabled }: { node: TemplateNode; field: string; value: string; typeLabel?: string; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
   const every = value === '*';
   const forWhat = every ? `every ${typeLabel ?? 'type'}` : value;
   const entry = startsLimitedList(node).find(e => e.field === f && e.value === value) ?? null;
@@ -259,3 +258,12 @@ function OperatesSwitch({ node, field: f, value, typeLabel, onOps, disabled }: {
     </div>
   );
 }
+
+/** The item-screen switch for an item every type of its system shows (Water Heater's TPR): one "We operate the …" for
+ *  every type ('*'). Nothing for an item the type chips don't lay out, or one that can't start as a limitation. */
+export function EveryTypeOperates({ tree, system, node, onOps, disabled }: { tree: InspectionTemplate; system: TemplateNode; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const layout = useMemo(() => typeLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
+  if (!layout || !canStartLimited(node) || !layout.every.some(n => n.id === node.id)) return null;
+  return <div className="px-4 pt-4"><OperatesSwitch node={node} field={layout.question.field} value="*" typeLabel={layout.question.label} onOps={onOps} disabled={disabled} /></div>;
+}
+

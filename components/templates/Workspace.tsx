@@ -14,6 +14,7 @@ import { RequirementsEditor } from './RequirementsEditor';
 import { RuleEditor } from './RuleEditor';
 import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
+import { EveryTypeOperates } from './TypeBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -122,7 +123,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
         </button>
       ))}>
       {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled}
-        conditionBody={<ComponentCondition node={node} onOps={onOps} disabled={disabled} />} detailsBody={<ComponentFields node={node} onOps={onOps} disabled={disabled} />} />}
+        conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} /><ComponentCondition node={node} onOps={onOps} disabled={disabled} /></>} detailsBody={<ComponentFields node={node} onOps={onOps} disabled={disabled} />} />}
       {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
       {moveDialog}

@@ -1099,7 +1099,7 @@ const RULES = {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? '');
     // Owner 2026-11-06 (mockup CjKszYz3e9KT39kvF43mkD): "merge overview and details" — and Condition the same way.
     return /const visible: ComponentTab\[\] = \['overview', \.\.\.\(reqsOn \? \['requirements' as const\] : \[\]\), 'applicability'\];/.test(ws)
-      && /conditionBody=\{<ComponentCondition node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>\} detailsBody=\{<ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>\}/.test(ws)
+      && /conditionBody=\{<><EveryTypeOperates [^>]*\/><ComponentCondition node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/><\/>\} detailsBody=\{<ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>\}/.test(ws)
       && /\{assessesCondition\(node\) && conditionBody && <div aria-label="Condition settings"/.test(parts) && /\{detailsOn && detailsBody && <div aria-label="Details settings"/.test(parts)
       && /overview: 'Item'/.test(ws)
       && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
@@ -1211,8 +1211,14 @@ const RULES = {
   },
   'fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence': all => {
     const tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
-    // Water Heater (2026-11-06): an item every type shows (TPR) gets ONE switch for every type ('*'); a type's own item, one per chip.
-    return /\{layout\.every\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value="\*"/.test(tb)
+    // Water Heater (2026-11-06): an item every type shows (TPR) gets ONE switch for every type ('*'), INSIDE its own item
+    // screen (owner: "should be inside the details of the TPR valve section not at the beginning of water heater"); a type's
+    // own item, one per chip.
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? '');
+    return !/layout\.every\.filter\(canStartLimited\)/.test(tb)
+      && /if \(!layout \|\| !canStartLimited\(node\) \|\| !layout\.every\.some\(n => n\.id === node\.id\)\) return null;/.test(tb)
+      && /<OperatesSwitch node=\{node\} field=\{layout\.question\.field\} value="\*"/.test(tb)
+      && /conditionBody=\{<><EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws)
       && /\{own\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
       && /onChange=\{v => \{ onOps\(ops\.operates\(node, f, value, v\)\); \}\}/.test(tb)
       && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
@@ -1450,7 +1456,8 @@ const MUT3 = [
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', '      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;\n', ''), 'the picks never reach the draft'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('components/templates/Sections.tsx', 'onChange={l => { onOps(advisoryOps(l)); }}', 'onChange={() => {}}'), 'the builder\'s picker writes nothing'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/[id]/page.tsx', '<ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} />', '<ReportSection tree={tree} onGo={go} onOps={() => false} disabled={!!readOnly} />'), 'the page never passes the edits'],
-  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{layout.every.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the every-type switch (TPR) is not drawn'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/Workspace.tsx', 'conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />', 'conditionBody={<>'), 'the TPR switch is not on its item'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[...layout.every, ...own].filter(canStartLimited).map(n => ('), 'the TPR switch is back at the top of the system'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onBlur={() => { if (!text.trim()) { setText(entry.sentence); return; } onOps(ops.startsSentence(node, f, value, text)); }}', 'onBlur={() => { onOps([]); }}'), 'the sentence is never saved'],
