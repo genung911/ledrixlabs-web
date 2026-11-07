@@ -1,134 +1,58 @@
 'use client';
 
-// A system laid out materials first (owner 2026-11-05, mockup https://claude.ai/artifact/VPAuQHWYGoQghmimznXpgf,
-// "Approved use recommendations"): each group as (1) its materials — one row per answer with the condition card it
-// brings, or, with no materials question, the items that record a choice — (2) what each answer of any other question
-// brings ("Brought by", 2026-11-06), then what every home gets, with no heading (2026-11-06). The layout is
-// lib/templates/materialLayout (pure); every edit is template ops through `onOps`, one change set each.
-import { useMemo, useRef, useState } from 'react';
+// A group's screen and a materials question's answers (owner 2026-11-06, group first → "This should not show the list
+// of options till we tap into siding"). The group lists its items, one kind of row for all; a materials question's
+// answers — each with the condition card it brings and an On/Off switch (mockup LZNLt31XvGjAnMrhhmWL2t) — open inside
+// that question's own item screen. The layout is lib/templates/materialLayout (pure); every edit is template ops through
+// `onOps`, one change set each.
+import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
-import { itemSummary, ops } from '@/lib/templates/editorModel';
-import { addMaterialOps, materialLayoutOf, removeMaterialOps, switchMaterialOnOps, type BroughtBy, type MaterialQuestion } from '@/lib/templates/materialLayout';
+import { itemSummary, locate, ops } from '@/lib/templates/editorModel';
+import { addMaterialOps, materialLayoutOf, removeMaterialOps, switchMaterialOnOps, type MaterialQuestion } from '@/lib/templates/materialLayout';
 import { ItemRow } from './ItemRow';
 import { rulesFor } from './phonePreviewModel';
 import { Pill, Toggle, btn, field } from './ui';
 
 type OnOps = (o: TemplateOp[]) => boolean;
 
-export function MaterialsBuilder({ tree, system, only, onOps, onOpen, selected, disabled }: {
-  tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
-  /** One group's screen (2026-11-06, group first): only that group, without its heading (the panel title carries it). */
-  only?: string;
+/** A GROUP'S SCREEN (owner 2026-11-06: "This should not show the list of options till we tap into siding. Then it's all
+ *  the same whether it's siding, trim, or any other component"): the group's items as rows, one kind of row for all —
+ *  Siding Material, Trim / Fascia / Soffit, Gutters… A materials question's cards (Brick → Brick Veneer…) are not rows
+ *  here: they open with that question's item, in its Details (MaterialAnswers). Then "+ Add item". */
+export function GroupItems({ tree, system, groupId, onOps, onOpen, selected, disabled }: {
+  tree: InspectionTemplate; system: TemplateNode; groupId: string; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
-  const all = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
-  const groups = only ? all.filter(g => g.node.id === only) : all;
-  const item = (n: TemplateNode) => <ItemRow key={n.id} tree={tree} node={n} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />;
-  const stage = (n: number | null, title: string, hint: string, body: React.ReactNode) => (
-    <div className="border-t border-hairline first:border-t-0">
-      <p className="flex items-baseline gap-2 px-3 pb-1 pt-2.5 text-xs font-semibold text-ink">
-        {n !== null && <span className="inline-flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-accent/15 text-[11px] text-accent">{n}</span>}
-        {title}<span className="font-normal text-muted">{hint}</span></p>
-      {body}
-    </div>
-  );
-
-  // A group the materials layout has no entry for (a typed system's group): its items as rows, and "+ Add item".
-  if (only && !groups.length) {
-    const g = (system.children ?? []).find(c => c.id === only);
-    return (
-      <section aria-label={g?.label ?? 'Group'} className="overflow-hidden rounded-xl border border-hairline">
-        <ul className="divide-y divide-hairline">{(g?.children ?? []).map(item)}</ul>
-        <div className="border-t border-hairline first:border-t-0"><AddItem label={g?.label ?? ''} disabled={disabled} onAdd={name => onOps(ops.addItem(tree, system.id, only, name))} /></div>
-      </section>
-    );
-  }
+  const layout = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
+  const group = locate(tree, groupId)?.node ?? null;
+  const cards = new Set((layout.find(g => g.node.id === groupId)?.questions ?? []).flatMap(q => [...q.rows.map(r => r.card?.id), q.typed?.id]).filter((x): x is string => !!x));
+  const rows = (group?.children ?? []).filter(c => !cards.has(c.id));
   return (
-    <div className="space-y-3" aria-label="Materials first">
-      {groups.map(g => {
-        // Up to three parts, numbered as shown (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc): what is recorded (or the
-        // materials), what an answer brings, what every home gets. A part with nothing in it is not shown, and a group of
-        // one part is not numbered (owner 2026-11-06, Interior, mockup SqNS9bXgLH8HwppCXtwBPY). What every home gets has NO
-        // heading (owner 2026-11-06: "'Checked in Every Home' — I dont think this is needed in any section … Its either added
-        // or not"): its items are simply listed, then the Add box, and they are not a numbered part.
-        let k = 0;
-        const parts = (g.questions.length > 0 ? 1 : 0) + (!g.questions.length && g.materials.length > 0 ? 1 : 0) + g.brought.length;
-        const num = () => (parts > 1 ? ++k : null);
-        const add = <AddItem label={g.node.id === system.id ? system.label : g.node.label} disabled={disabled}
-          onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />;
-        return (
-          <section key={g.node.id} aria-label={g.node.label} className="overflow-hidden rounded-xl border border-hairline">
-            {only ? null : g.node.id === system.id
-              ? <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{system.label}</p>
-              : <GroupName label={g.node.label} disabled={disabled} onRename={v => onOps(ops.rename(g.node.id, v))} />}
-            {g.questions.map(q => stage(num(), q.attr.label || q.node.label, ' · the inspector ticks every one seen',
-              <MaterialQuestionRows key={q.field} q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />))}
-            {!g.questions.length && g.materials.length > 0 && stage(num(), 'Recorded', ' · the inspector picks an answer', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
-            {g.brought.map(b => <div key={b.field}>{stage(num(), `Brought by ${b.label}`, ' · shown only for these answers', <BroughtRows b={b} onOpen={onOpen} selected={selected} />)}</div>)}
-            <div className="border-t border-hairline first:border-t-0">
-              {g.every.length > 0 && <ul className="divide-y divide-hairline" aria-label={`${g.node.id === system.id ? system.label : g.node.label} items`}>{g.every.map(item)}</ul>}
-              {add}
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
-/** A group's heading, with a pencil that turns it into a box (owner 2026-11-06: rename a group where you work, not only
- *  in Full list). Enter or leaving it saves — one change, through the editor's rename — and Esc cancels. */
-function GroupName({ label, onRename, disabled }: { label: string; onRename: (v: string) => boolean; disabled: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const [v, setV] = useState(label);
-  const cancelled = useRef(false);
-  if (editing) {
-    const done = () => { setEditing(false); if (cancelled.current) { cancelled.current = false; return; } const t = v.trim(); if (t && t !== label) onRename(t); };
-    return (
-      <div className="border-b border-hairline bg-ground px-2 py-1">
-        <input autoFocus value={v} aria-label="Group name" onChange={e => setV(e.target.value)} onBlur={done}
-          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { cancelled.current = true; (e.target as HTMLInputElement).blur(); } }}
-          className="w-full rounded-md border border-accent bg-surface px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink outline-none" />
+    <section aria-label={group?.label ?? 'Group'} className="overflow-hidden rounded-xl border border-hairline">
+      {rows.length > 0 && <ul className="divide-y divide-hairline">{rows.map(n => <ItemRow key={n.id} tree={tree} node={n} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />)}</ul>}
+      <div className="border-t border-hairline first:border-t-0">
+        <AddItem label={group?.label ?? ''} disabled={disabled} onAdd={name => onOps(ops.addItem(tree, system.id, groupId, name))} />
       </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-1 border-b border-hairline bg-ground py-0.5 pl-3 pr-1">
-      <p className="min-w-0 flex-1 truncate py-1 text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <button type="button" aria-label={`Rename ${label}`} title="Rename group" disabled={disabled} className={`${btn.icon} shrink-0 disabled:opacity-40`}
-        onClick={() => { setV(label); cancelled.current = false; setEditing(true); }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
-      </button>
-    </div>
+    </section>
   );
 }
 
-/** "Brought by": each answer → the items it brings (or "nothing extra"). No switches — answers can share items, so an
- *  answer is changed on its question and an item's rule on the item (owner 2026-11-06, decision 3). */
-function BroughtRows({ b, onOpen, selected }: { b: BroughtBy; onOpen: (id: string) => void; selected: string | null }) {
-  const cards = (list: TemplateNode[]) => list.length ? list.map((c, i) => (
-    <span key={c.id}>{i ? ', ' : ''}<button className={`text-sm text-ink hover:underline ${selected === c.id ? 'font-semibold' : ''}`} onClick={() => onOpen(c.id)}>{c.label}</button></span>
-  )) : <span className="italic">nothing extra</span>;
+/** Inside a materials question's own item screen (Siding Material, Supply Material…), under Details: each answer with the
+ *  card it brings and its On/Off switch, the Off ones, "+ Add material" — what the group screen used to list. Nothing
+ *  for any other item. */
+export function MaterialAnswers({ tree, system, node, onOps, onOpen, selected, disabled }: {
+  tree: InspectionTemplate; system: TemplateNode; node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+}) {
+  const qs = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)).flatMap(g => g.questions).filter(q => q.node.id === node.id), [tree, system, node.id]);
+  if (!qs.length) return null;
   return (
-    <div>
-      <ul className="divide-y divide-hairline">
-        {b.rows.map(r => (
-          <li key={r.value} className="flex items-center gap-2 px-3 py-1.5">
-            <span className="w-44 flex-none truncate text-sm font-semibold text-ink" title={r.value}>{r.value}</span>
-            <span className="min-w-0 flex-1 text-xs text-muted">{r.cards.length ? '→ ' : ''}{cards(r.cards)}</span>
-          </li>
-        ))}
-        {b.typed.length > 0 && (
-          <li className="flex items-center gap-2 px-3 py-1.5">
-            <span className="w-44 flex-none truncate text-sm font-semibold text-ink">Other (typed)</span>
-            <span className="min-w-0 flex-1 text-xs text-muted">→ {cards(b.typed)}</span>
-          </li>
-        )}
-      </ul>
-      <p className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs text-muted">
-        <button type="button" className={btn.ghost + ' px-2 py-1 text-xs'} onClick={() => onOpen(b.node.id)}>Edit the question</button>
-        · to change which answer brings an item, open the item
-      </p>
+    <div className="space-y-3 px-4 pt-4">
+      {qs.map(q => (
+        <div key={q.field} className="overflow-hidden rounded-xl border border-hairline" aria-label={`${q.attr.label || q.node.label} answers`}>
+          <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold text-ink">{q.attr.label || q.node.label} <span className="font-normal text-muted">· each answer and the card it brings · the inspector ticks every one seen</span></p>
+          <MaterialQuestionRows q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
+        </div>
+      ))}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { RuleEditor } from './RuleEditor';
 import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
+import { MaterialAnswers } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -54,7 +55,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
     const kind = off.offSystem ? 'System' : off.node.kind === 'component' ? 'Component' : 'Group';
     const where = off.offSystem ? '' : `${off.parent && off.parent.id !== off.system.id ? pathOf(tree, off.parent.id) + ' › ' + off.parent.label : off.system.label} · `;
     return (
-      <Shell scrollKey={sk} reveal={reveal} kind={kind} title={off.node.label} sub={`${where}${OFF_SUB}`} onClose={off.offSystem ? undefined : () => onSelect({ systemId: off.system.id, nodeId: null })}
+      <Shell scrollKey={sk} reveal={reveal} kind={kind} title={off.node.label} sub={`${where}${OFF_SUB}`} onBack={off.offSystem ? undefined : { label: off.parent && off.parent.id !== off.system.id ? off.parent.label : off.system.label, go: () => onSelect({ systemId: off.system.id, nodeId: off.parent && off.parent.id !== off.system.id ? off.parent.id : null }) }}
         action={<IncludedSwitch on={false} label={off.node.label} disabled={disabled} onChange={v => { if (v) onOps(includeOps(tree, off.node.id, true)); }} />}>
         <OffContents node={off.node} />
       </Shell>
@@ -75,10 +76,14 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   }
   const node = loc.node;
   const path = pathOf(tree, node.id);
-  const close = () => onSelect({ systemId: system.id, nodeId: null });
+  // BACK, ONE LEVEL (owner 2026-11-06: "a back button in the top left corner … next to the home icon … remove the x"): an item
+  // goes back to its group, a group (or an item straight under the system) to the system.
+  // A type-chip system (Heating, Cooling, Water Heater, Fireplace) is reached by its chips, so back goes to the system.
+  const up = !typeView && loc.parent && loc.parent.id !== system.id && loc.parent.kind !== 'component' ? loc.parent : null;
+  const close = { label: up ? up.label : system.label, go: () => onSelect({ systemId: system.id, nodeId: up ? up.id : null }) };
   if (node.kind !== 'component') {
     return (
-      <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
+      <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
         tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
         menu={moveMenu(node.id)}
         action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
@@ -90,7 +95,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (node.pointsTo) {
     const lt: ComponentTab = tab === 'applicability' ? 'applicability' : 'overview';
     return (
-      <Shell scrollKey={sk} reveal={reveal} kind="Link" title={node.label} sub={path} onClose={close}
+      <Shell scrollKey={sk} reveal={reveal} kind="Link" title={node.label} sub={path} onBack={close}
         tabs={(['overview', 'applicability'] as const).map(t => (
           <button key={t} role="tab" aria-selected={lt === t} onClick={() => setTab(t)}
             className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${lt === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>{TAB_LABEL[t]}</button>
@@ -112,7 +117,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const visible: ComponentTab[] = ['overview', ...(reqsOn ? ['requirements' as const] : []), 'applicability'];
   const cur: ComponentTab = visible.includes(tab) ? tab : 'overview';
   return (
-    <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onClose={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
+    <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
       menu={moveMenu(node.id)}
       action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
@@ -123,7 +128,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
         </button>
       ))}>
       {cur === 'overview' && <ComponentOverview tree={tree} systemId={system.id} node={node} reqCount={reqs} detailsOn={detailsOn} reqsOn={reqsOn} onDetails={onDetails} onReqs={onReqs} onOps={onOps} disabled={disabled}
-        conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} /><ComponentCondition node={node} onOps={onOps} disabled={disabled} /></>} detailsBody={<ComponentFields node={node} onOps={onOps} disabled={disabled} />} />}
+        conditionBody={<><EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} /><ComponentCondition node={node} onOps={onOps} disabled={disabled} /></>} detailsBody={<><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} /><ComponentFields node={node} onOps={onOps} disabled={disabled} /></>} />}
       {cur === 'requirements' && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}
       {cur === 'applicability' && <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />}
       {moveDialog}
@@ -168,8 +173,8 @@ function IncludedSwitch({ on, label: name, disabled, onChange }: { on: boolean; 
   );
 }
 
-function Shell({ kind, title, sub, onClose, badge, tabs, action, menu, children, scrollKey, reveal, onRename, renameDisabled, tips }: {
-  kind: string; title: string; sub: string; onClose?: () => void; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
+function Shell({ kind, title, sub, onBack, badge, tabs, action, menu, children, scrollKey, reveal, onRename, renameDisabled, tips }: {
+  kind: string; title: string; sub: string; onBack?: { label: string; go: () => void }; badge?: React.ReactNode; tabs?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode;
   /** The ⋯ menu beside the switch ("Move to…"). */
   menu?: React.ReactNode;
   scrollKey: string; reveal?: Reveal | null;
@@ -192,6 +197,9 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, menu, children,
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-start gap-3 px-4 pt-3">
+        {onBack && <button type="button" aria-label={`Back to ${onBack.label}`} title={`Back to ${onBack.label}`} onClick={onBack.go}
+          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-hairline text-body hover:bg-ink/5 hover:text-ink">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg></button>}
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-hairline text-muted">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{kind === 'Component' ? <rect x="5" y="5" width="14" height="14" rx="3" /> : <path d="M3 10.5L12 4l9 6.5V20H3z" />}</svg>
         </div>
@@ -205,8 +213,6 @@ function Shell({ kind, title, sub, onClose, badge, tabs, action, menu, children,
         </div>
         {action}
         {menu}
-        {onClose && <button aria-label="Close item" className={btn.icon} onClick={onClose} title="Back to the system">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
       </header>
       {tips && tipsOpen && <TipsBox tips={tips} disabled={renameDisabled} onDone={() => setTipsOpen(false)} />}
       {tabs && <div role="tablist" aria-label="Component" className="mt-2 flex overflow-x-auto border-b border-hairline px-2">{tabs}</div>}

@@ -17,7 +17,7 @@ import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
 import { GroupList } from './GroupList';
-import { MaterialsBuilder } from './MaterialsBuilder';
+import { GroupItems } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -229,12 +229,12 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 export function GroupDetails({ tree, system, node, onOps, onOpen, selected, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; node: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
-  // A GROUP'S OWN SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): everything set in it — its materials with
-  // their cards and switches, what an answer brings, then its other items and "+ Add item" — the one group's slice of
-  // the materials layout. Its name, Tips, ⋯ and switch are the panel title's.
+  // A GROUP'S OWN SCREEN (owner 2026-11-06, mockup CjKszYz3e9KT39kvF43mkD): its items, one kind of row for all, and
+  // "+ Add item". A materials question's answers open inside that question's item ("This should not show the list of
+  // options till we tap into siding"). Its name, Tips, ⋯ and switch are the panel title's.
   return (
     <div className="px-4 py-4">
-      <MaterialsBuilder tree={tree} system={system} only={node.id} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
+      <GroupItems tree={tree} system={system} groupId={node.id} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
     </div>
   );
 }
