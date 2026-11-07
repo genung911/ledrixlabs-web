@@ -1295,6 +1295,13 @@ const RULES = {
       && /What other buildings do you include with a/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)
       ? [] : ['components/templates/BuildingLens.tsx'];
   },
+  'limitations: the step opens on an overview — every situation as when the inspector records it, what is skipped or still rated on the checklist, and what the report says; Edit opens that one': all => {
+    // Owner 2026-11-06: "Should this be called limitations?" · "even here the what happens seems vague or confusing".
+    const gp = strip(all['components/templates/GatesPanel.tsx'] ?? '');
+    return /const current = sel \? gates\.find\(g => g\.id === sel\) \?\? null : null;/.test(gp) && /<LimitationsOverview gates=\{gates\}/.test(gp)
+      && />Limitations<\/h2>/.test(gp) && /When the inspector records…/.test(gp) && /On the checklist/.test(gp) && /In the report/.test(gp)
+      && /onEdit=\{id => setSel\(id\)\}/.test(gp) ? [] : ['components/templates/GatesPanel.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1351,9 +1358,10 @@ const RULES = {
   // renders the draft tree itself.
   'workspace: every section in the rail renders its view': all => {
     const e = strip(all[EDIT] ?? '');
-    // 'buildings' left the rail 2026-11-06 (owner): buildings are the strip across the top of Systems.
-    const ids = ['overview', 'systems', 'requirements', 'report', 'review'];
-    return ids.every(id => new RegExp(`\\{ id: '${id}', label: `).test(e) && new RegExp(`section === '${id}' \\? 'flex'|section === '${id}' && `).test(e)) ? [] : [EDIT];
+    // 2026-11-06 (owner, guided builder): four steps in the rail; Overview is the summary (reachable, rendered, not a step).
+    const ids = ['systems', 'gates', 'report', 'review'];
+    return ids.every(id => new RegExp(`\\{ id: '${id}', label: `).test(e) && new RegExp(`section === '${id}' \\? 'flex'|section === '${id}' && `).test(e))
+      && /section === 'overview' && \(/.test(e) && /<RequirementsSection tree=\{tree\} onGo=\{go\} \/>/.test(e) && !/CountsPanel/.test(e) ? [] : [EDIT];
   },
   'workspace: the inspector preview renders the draft tree': all => /<PhonePreview tree=\{tree\} selection=\{sel\}/.test(strip(all[EDIT] ?? '')) ? [] : [EDIT],
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': all => {
@@ -1494,6 +1502,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['limitations: the step opens on an overview — every situation as when the inspector records it, what is skipped or still rated on the checklist, and what the report says; Edit opens that one', rep('components/templates/GatesPanel.tsx', 'const current = sel ? gates.find(g => g.id === sel) ?? null : null;', 'const current = gates.find(g => g.id === sel) ?? gates[0] ?? null;'), 'the step opens on the first gate again'],
+  ['limitations: the step opens on an overview — every situation as when the inspector records it, what is skipped or still rated on the checklist, and what the report says; Edit opens that one', rep('components/templates/GatesPanel.tsx', 'onEdit={id => setSel(id)}', 'onEdit={() => {}}'), 'Edit opens nothing'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/Tree.tsx', 'const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);', 'const covered = isCovered(tree, s);'), 'the systems list ignores the building'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/GroupList.tsx', 'const kids = (system.children ?? []).filter(c => !lens || lens.isIn(c.id));', 'const kids = system.children ?? [];'), 'a building lists parts it doesn\'t have'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('app/app/templates/[id]/page.tsx', '<BuildingLensProvider tree={tree} buildingId={building}>', '<BuildingLensProvider tree={tree} buildingId={null}>'), 'the strip changes nothing'],

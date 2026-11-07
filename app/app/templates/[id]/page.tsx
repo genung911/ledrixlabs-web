@@ -17,7 +17,7 @@
 // /app/templates/new?draft=<id> opens a template that isn't published yet.
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ErrorBox, Loading } from '@/components/workspace/ui';
 import { Banner, Modal, Pill, btn, timeAgo } from '@/components/templates/ui';
@@ -32,7 +32,6 @@ import { buildingTypeChanges, buildingTypeIssues } from '@/components/templates/
 import { BuildingLensProvider, BuildingPicker } from '@/components/templates/BuildingLens';
 import { buildingsOf } from '@/lib/templates/buildingModel';
 import { GatesPanel } from '@/components/templates/GatesPanel';
-import { CountsPanel } from '@/components/templates/CountsPanel';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
@@ -47,17 +46,20 @@ import { TemplateApiError } from '@/lib/templates/api';
 import { forgetPlace, placeKey, readPlace, writePlace } from '@/lib/templates/lastPlace';
 
 type Sel = { systemId: string | null; nodeId: string | null };
-type Section = 'overview' | 'systems' | 'gates' | 'counts' | 'requirements' | 'report' | 'review';
+type Section = 'overview' | 'systems' | 'gates' | 'report' | 'review';
 
+// A GUIDED BUILDER (owner 2026-11-06, mockup https://claude.ai/artifact/W8UhcgEhYqmY2ZBQpgbKbx, "That all sounds and looks
+// good" → "Build and push"): four numbered steps with Back / Next, every one still clickable. Overview is not a step —
+// it's the summary a published template opens on. How Many? left the builder (the phone keeps Ledrix's count questions);
+// the requirements list is part of Review & Publish (each item's own Requirements tab is where they're set).
 const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
-  { id: 'overview', label: 'Overview', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
-  { id: 'systems', label: 'Systems', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
-  { id: 'gates', label: 'Gates', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
-  { id: 'counts', label: 'How Many?', icon: 'M5 12h14M12 5v14M4 4h16v16H4z' },
-  { id: 'requirements', label: 'Requirements', icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' },
-  { id: 'report', label: 'Report Content', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7' },
+  { id: 'systems', label: 'What you inspect', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
+  { id: 'gates', label: 'Limitations', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
+  { id: 'report', label: 'Report', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7' },
   { id: 'review', label: 'Review & Publish', icon: 'M4 12l16-8-6 16-3-7-7-1z' },
 ];
+/** An old place or link to a section that left the steps. */
+const sectionOf = (s: string): Section => (s === 'requirements' ? 'review' : s === 'counts' ? 'systems' : (['overview', 'systems', 'gates', 'report', 'review'].includes(s) ? s as Section : 'systems'));
 
 /** Ask Ledrix (the template assistant) is HIDDEN, not deleted (owner 2026-11-05: "hide both" — the tab and, with only one
  *  tab left, the Editor label). Ledrix's suggested parts in each type's list cover "what am I missing?" with no model
@@ -92,6 +94,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const d = useDraft({ companyId, templateId, draftId });
   const [sel, setSel] = useState<Sel>({ systemId: null, nodeId: null });
   const [section, setSection] = useState<Section>('systems');
+  // Steps looked at this visit — a ✓ on the step bar; never a gate (every step stays clickable).
+  const [visited, setVisited] = useState<Set<Section>>(() => new Set());
+  useEffect(() => { setVisited(v => (v.has(section) ? v : new Set([...v, section]))); }, [section]);
   // The building Systems shows (owner 2026-11-06, mockup HHfBh3wvLanc1CG4UcNxaU): null = the home itself.
   const [building, setBuilding] = useState<string | null>(null);
   const [ctab, setCtab] = useState<ComponentTab>('overview');
@@ -109,14 +114,24 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   // loads, so the "first system" fallback below never overrides it; ids that no longer exist fall back as usual.
   const pk = placeKey(templateId, draftId);
   const [placeReady, setPlaceReady] = useState(false);
+  const restored = useRef(false);
   useEffect(() => {
     const p = readPlace(companyId, pk);
-    if (p) { setSel(p.sel); setSection(p.section as Section); setCtab(p.ctab as ComponentTab); setTypePick(p.typePick ?? {}); }
+    if (p) { setSel(p.sel); setSection(sectionOf(p.section)); setCtab(p.ctab as ComponentTab); setTypePick(p.typePick ?? {}); }
+    restored.current = !!p;
     setPlaceReady(true);
   }, [companyId, pk]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const m = d.model;
   const tree = m?.core.tree;
+  // A published template with no draft opens on its summary (Overview); anything else on step 1 — unless a place was
+  // remembered on this computer.
+  const landed = useRef(false);
+  useEffect(() => {
+    if (landed.current || !placeReady || !m) return;
+    landed.current = true;
+    if (!restored.current && m.live && !m.hasDraft) setSection('overview');
+  }, [placeReady, m]);
   useEffect(() => {
     if (!placeReady || !tree || !m || !sel.systemId) return;
     const sys = tree.systems.find(x => x.id === sel.systemId);
@@ -173,7 +188,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const go = useCallback((s: string, to?: Sel, tab?: ComponentTab) => {
     // 'buildings' (the old Building Types tab, 2026-11-06): Systems, with the first building selected in the strip.
     if (s === 'buildings') { setSection('systems'); setBuilding(tree ? buildingsOf(tree)[0]?.id ?? null : null); return; }
-    setSection(s as Section); if (to) select(to); if (tab) setCtab(tab);
+    setSection(sectionOf(s)); if (to) select(to); if (tab) setCtab(tab);
   }, [select, tree]);
   const issues = useMemo(() => (tree ? validateTemplate(tree) : []), [tree]);
 
@@ -253,14 +268,18 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         ) : null}
         <div className="flex items-end gap-2">
         <nav aria-label="Template sections" className="-mb-3 mt-2 flex min-w-0 flex-1 gap-1 overflow-x-auto">
-          {SECTIONS.map(s => {
+          <button type="button" onClick={() => setSection('overview')} aria-current={section === 'overview' ? 'page' : undefined}
+            className={`flex shrink-0 items-center whitespace-nowrap border-b-2 px-3 py-2 text-sm ${section === 'overview' ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'}`}>Overview</button>
+          <span aria-hidden className="mx-1 my-2 w-px shrink-0 bg-hairline" />
+          {SECTIONS.map((s, i) => {
             const on = section === s.id;
+            const seen = visited.has(s.id) && !on;
             const badge = s.id === 'systems' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
-              : s.id === 'requirements' && reqTotal ? <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqTotal}</span>
               : s.id === 'review' && (counts.errors || reqs.length) ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" /> : null;
             return (
               <button key={s.id} type="button" onClick={() => setSection(s.id)} aria-current={on ? 'page' : undefined}
                 className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm ${on ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${seen ? 'bg-accent text-white' : on ? 'border-[1.5px] border-accent text-accent' : 'border-[1.5px] border-hairline'}`}>{seen ? '✓' : i + 1}</span>
                 {s.label}{badge}
               </button>
             );
@@ -291,6 +310,11 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         <main aria-label="Template section" className="flex min-h-0 min-w-0 flex-1 flex-col">
           {section === 'overview' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
+              {/* The summary, not a step (2026-11-06): Edit goes to step 1. */}
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <button className={btn.primary} onClick={() => setSection('systems')}>Edit this template ›</button>
+                <span className="text-xs text-muted">Four steps: What you inspect · Limitations · Report · Review &amp; Publish.</span>
+              </div>
               <section aria-label="Template version" className="mb-4 rounded-xl border border-hairline bg-surface px-4 py-3 text-xs">
                 <p className="font-semibold uppercase tracking-wide text-muted">Template version</p>
                 <p className="mt-1 font-semibold text-ink">{isNew ? 'Not published yet' : `Live v${m.live!.rowVersion}`}</p>
@@ -302,8 +326,6 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             </div>
           )}
           {section === 'gates' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><GatesPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
-          {section === 'counts' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><CountsPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
-          {section === 'requirements' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><RequirementsSection tree={tree} onGo={go} /></div>}
           {section === 'report' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'review' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
@@ -311,6 +333,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 buildingChanges={bChanges} publishBlock={publishBlock} readOnly={readOnly} liveMoved={d.liveMoved} edits={m.core.log.length} saveState={d.save.kind}
                 isNew={isNew} nextVersion={nextVersion} canSave={canSave} canDiscard={canDiscard} canPublish={canPublish} busy={busy}
                 onSave={() => d.flush()} onDiscard={() => setDialog('discard')} onPublish={() => setDialog('publish')} onGo={go} fixes={fixes} onOps={onOps} />
+              {/* The requirements list (owner 2026-11-06: no Requirements tab — each item's Requirements tab sets them). */}
+              <div className="mt-6"><RequirementsSection tree={tree} onGo={go} /></div>
             </div>
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}
@@ -344,6 +368,19 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             </div>
             </BuildingLensProvider>
           </div>
+          {/* BACK / NEXT (2026-11-06): a convenience through the four steps, never a gate. */}
+          {(() => {
+            const i = SECTIONS.findIndex(x => x.id === section);
+            if (i < 0) return null;
+            const prev = SECTIONS[i - 1], next = SECTIONS[i + 1];
+            return (
+              <div className="flex items-center gap-2 border-t border-hairline bg-surface px-4 py-2 lg:px-6" aria-label="Steps">
+                {prev ? <button className={btn.secondary} onClick={() => setSection(prev.id)}>‹ Back: {prev.label}</button> : <span className="text-xs text-muted">Step 1 of {SECTIONS.length}</span>}
+                <span className="flex-1" />
+                {next && <button className={btn.primary} onClick={() => setSection(next.id)}>Next: {next.label} ›</button>}
+              </div>
+            );
+          })()}
         </main>
       </div>
 

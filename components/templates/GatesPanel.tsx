@@ -1,6 +1,7 @@
 'use client';
 
-// GATES (owner 2026-11-03: mockup "Gate rules" approved — https://claude.ai/artifact/86agi7ZeNTRjWiGuACkT4Y).
+// LIMITATIONS — the step once called Gates (renamed 2026-11-06, owner; overview: mockup W8UhcgEhYqmY2ZBQpgbKbx). GATES (owner
+// 2026-11-03: mockup "Gate rules" approved — https://claude.ai/artifact/86agi7ZeNTRjWiGuACkT4Y).
 // One rule in the checklist itself: a gate (an access or method row, or a utility being on), its reasons, and for each
 // reason REMOVE (the listed items fall off the count; the report names them and why) or QUALIFY (the items stay; their
 // ratings carry a phrase) or nothing. Ledrix ships Crawlspace, Attic, Roof method, the panel's dead front and the three
@@ -38,7 +39,8 @@ export function GatesPanel({ tree, onOps, disabled }: { tree: InspectionTemplate
   const systems = tree.systems ?? [];
   const [sel, setSel] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const current = gates.find(g => g.id === sel) ?? gates[0] ?? null;
+  // No gate picked = the overview (owner 2026-11-06: "the what happens seems vague or confusing").
+  const current = sel ? gates.find(g => g.id === sel) ?? null : null;
   const ledrixOf = (id: string) => LEDRIX.find(g => g.id === id) ?? null;
   const overridden = (id: string) => own.some(e => e.id === id);
 
@@ -97,16 +99,18 @@ export function GatesPanel({ tree, onOps, disabled }: { tree: InspectionTemplate
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div>
-        <h2 className="text-base font-semibold text-ink">Gates</h2>
-        <p className="mt-0.5 max-w-3xl text-sm text-body">A gate is a checklist row or a utility. For each of its reasons, either <b>remove</b> the items it lists (they come off the count and the report names them and why) or <b>qualify</b> the wording (the items stay; each rating in that area carries the phrase). Each inspection keeps the gates it started with.</p>
+        <h2 className="text-base font-semibold text-ink">Limitations</h2>
+        <p className="mt-0.5 max-w-3xl text-sm text-body">When the inspector can’t fully inspect something — no access, viewed from the ground, the water off — what happens to the checklist and what the report says. Ledrix’s are set already; change one only if your company works differently. Each inspection keeps the ones it started with.</p>
       </div>
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-hairline bg-surface lg:grid-cols-[240px_minmax(0,1fr)]">
         <nav aria-label="Gates" className="overflow-y-auto border-b border-hairline p-2 lg:border-b-0 lg:border-r">
-          {group('Ledrix gates', gates.filter(g => g.row && g.origin !== 'company'))}
+          <button onClick={() => setSel(null)} aria-current={!current ? 'true' : undefined}
+            className={`flex w-full items-center rounded-lg px-2.5 py-2 text-left text-[13px] ${!current ? 'bg-accent/15 font-semibold text-accent-ink' : 'text-body hover:bg-ink/5'}`}>All situations</button>
+          {group('Areas', gates.filter(g => g.row && g.origin !== 'company'))}
           {group('Utilities', gates.filter(g => g.utility))}
           {group('This company', gates.filter(g => g.origin === 'company'))}
           {off.length > 0 && <p className="px-2.5 pt-3 text-xs text-muted">Off for this template: {off.map(e => ledrixOf(e.id)?.label ?? e.id).join(', ')} <button className={btn.ghost} disabled={disabled} onClick={() => save(own.filter(e => !isRemoved(e)))}>Turn back on</button></p>}
-          <button className={`${btn.ghost} mt-2`} disabled={disabled} onClick={() => setAdding(a => !a)}>+ Add a gate</button>
+          <button className={`${btn.ghost} mt-2`} disabled={disabled} onClick={() => setAdding(a => !a)}>+ Add a situation</button>
           {adding && (
             <ul className="mt-1 max-h-64 overflow-y-auto">
               {candidates.map(c => <li key={c.node.id}><button className="w-full rounded px-2.5 py-1.5 text-left text-xs text-body hover:bg-ink/5" onClick={() => addGate(c)}>{c.path}</button></li>)}
@@ -121,16 +125,16 @@ export function GatesPanel({ tree, onOps, disabled }: { tree: InspectionTemplate
               {current.origin === 'company' ? <Pill tone="accent">This company</Pill> : overridden(current.id) ? <Pill tone="warn">Changed from Ledrix</Pill> : <Pill>Ledrix</Pill>}
               <span className="flex-1" />
               {current.origin !== 'company' && overridden(current.id) && <button className={btn.secondary} disabled={disabled} onClick={() => reset(current.id)}>Reset to Ledrix</button>}
-              <button className={btn.ghost} disabled={disabled} onClick={() => turnOff(current.id)}>{current.origin === 'company' ? 'Delete gate' : 'Turn off for this template'}</button>
+              <button className={btn.ghost} disabled={disabled} onClick={() => turnOff(current.id)}>{current.origin === 'company' ? 'Delete' : 'Turn off for this template'}</button>
             </div>
             <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-[150px_minmax(0,1fr)]">
-              <dt className={label}>Gate</dt><dd className="text-ink">{current.row ? pathOf(systems, current.row) : `${current.label} — on at this visit`}</dd>
+              <dt className={label}>Recorded on</dt><dd className="text-ink">{current.row ? pathOf(systems, current.row) : `${current.label} — on at this visit`}</dd>
               <dt className={label}>Area it controls</dt><dd className="text-ink">{current.area?.length ? current.area.map(a => pathOf(systems, a)).join(' · ') : 'The items listed below'}</dd>
               <dt className={label}>Report label</dt>
               <dd><input className={field} defaultValue={current.label} disabled={disabled} onBlur={e => { const v = e.target.value.trim(); if (v && v !== current.label) put({ ...current, label: v }); }} /></dd>
             </dl>
             <div className="mt-4 overflow-hidden rounded-xl border border-hairline">
-              <div className="hidden grid-cols-[170px_200px_minmax(0,1fr)] gap-3 bg-ground px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted md:grid"><span>Reason</span><span>Effect</span><span>The phrase</span></div>
+              <div className="hidden grid-cols-[170px_200px_minmax(0,1fr)] gap-3 bg-ground px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted md:grid"><span>When the inspector records</span><span>On the checklist</span><span>In the report</span></div>
               {current.reasons.map((r, i) => (
                 <div key={`${r.value}-${i}`} className="grid gap-2 border-t border-hairline px-3 py-2.5 text-sm md:grid-cols-[170px_200px_minmax(0,1fr)] md:items-center md:gap-3">
                   <span className="text-ink">{r.value === '*limitation' ? <>Any limitation <span className="text-xs text-muted">(its reason is the cause)</span></> : r.value}</span>
@@ -138,20 +142,20 @@ export function GatesPanel({ tree, onOps, disabled }: { tree: InspectionTemplate
                     {(['remove', 'qualify', 'none'] as GateEffect[]).map(eff => (
                       <button key={eff} role="radio" aria-checked={r.effect === eff} disabled={disabled} onClick={() => setReason(current, i, { effect: eff })}
                         className={`px-2.5 py-1 font-semibold ${r.effect === eff ? (eff === 'remove' ? 'bg-safety/15 text-safety' : eff === 'qualify' ? 'bg-amber-600/15 text-amber-700 dark:text-amber-300' : 'bg-ink/10 text-ink') : 'text-body hover:bg-ink/5'}`}>
-                        {eff === 'remove' ? 'Remove' : eff === 'qualify' ? 'Qualify' : 'None'}
+                        {eff === 'remove' ? 'Skipped' : eff === 'qualify' ? 'Still rated' : 'Rated as seen'}
                       </button>
                     ))}
                   </span>
                   {r.effect === 'qualify'
                     ? <input className={`${field} font-mono text-xs`} defaultValue={r.phrase ?? ''} disabled={disabled} aria-label={`Phrase for ${r.value}`}
                         onBlur={e => { const v = e.target.value.trim(); if (v && v !== r.phrase) setReason(current, i, { phrase: v }); }} />
-                    : <span className="text-xs text-muted">{r.effect === 'remove' ? 'Removes the items below.' : 'No effect. Rated as seen.'}</span>}
+                    : <span className="text-xs text-muted">{r.effect === 'remove' ? `Named as not ${current.utility ? 'tested' : 'inspected'}, with the reason. The items below don’t count as missed.` : 'Nothing extra.'}</span>}
                 </div>
               ))}
             </div>
             {current.reasons.some(r => r.effect === 'remove') && (
               <div className="mt-4">
-                <p className={label}>Items removed</p>
+                <p className={label}>Items skipped</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(() => {
                     const inNow = new Set(covered(current).map(n => n.id));
@@ -169,8 +173,45 @@ export function GatesPanel({ tree, onOps, disabled }: { tree: InspectionTemplate
               </div>
             )}
           </section>
-        ) : <div className="p-6"><Banner title="No gates">Ledrix’s gates are turned off for this template.</Banner></div>}
+        ) : <LimitationsOverview gates={gates} systems={systems} count={g => covered(g).length} onEdit={id => setSel(id)} />}
       </div>
     </div>
   );
 }
+
+/** The overview (owner 2026-11-06, mockup W8UhcgEhYqmY2ZBQpgbKbx): every situation in plain words — when the inspector
+ *  records this, which items are skipped (or still rated), and what the report says. Edit opens it. */
+function LimitationsOverview({ gates, systems, count, onEdit }: { gates: Gate[]; systems: readonly TemplateNode[]; count: (g: Gate) => number; onEdit: (id: string) => void }) {
+  if (!gates.length) return <div className="p-6"><Banner title="No limitations">Ledrix’s limitations are turned off for this template.</Banner></div>;
+  const name = (g: Gate) => (g.row ? pathOf(systems, g.row).split(' › ').slice(-1)[0] : g.label);
+  const rows = gates.flatMap(g => {
+    // Reasons with the same effect (and phrase) read as one line: "Viewed from Hatch or Partial Entry".
+    const by = new Map<string, GateReason[]>();
+    for (const r of g.reasons) { const k = `${r.effect}|${r.effect === 'qualify' ? r.phrase ?? '' : ''}`; by.set(k, [...(by.get(k) ?? []), r]); }
+    return [...by.values()].map(rs => ({ g, rs }));
+  });
+  const say = (v: string) => (v === '*limitation' ? 'Not inspected (any reason)' : v);
+  return (
+    <section aria-label="All limitations" className="min-w-0 overflow-auto p-4 lg:p-5">
+      <table className="w-full min-w-[560px] text-left text-sm">
+        <thead className="text-[11px] uppercase tracking-wide text-muted"><tr><th className="py-2 pr-3 font-semibold">When the inspector records…</th><th className="pr-3 font-semibold">On the checklist</th><th className="pr-3 font-semibold">In the report</th><th /></tr></thead>
+        <tbody className="divide-y divide-hairline">
+          {rows.map(({ g, rs }) => {
+            const eff = rs[0].effect, n = count(g);
+            return (
+              <tr key={`${g.id}-${rs.map(r => r.value).join('|')}`} className="align-top">
+                <td className="py-2.5 pr-3 font-semibold text-ink">{g.label}: {rs.map(r => say(r.value)).join(' or ')}</td>
+                <td className="py-2.5 pr-3 text-body">{eff === 'remove' ? <><Pill tone="warn">Skipped</Pill> {g.utility ? `Only what needs it (${n} item${n === 1 ? '' : 's'}).` : `${n} item${n === 1 ? '' : 's'}; they don’t count as missed.`}</>
+                  : eff === 'qualify' ? <><Pill tone="accent">Still rated</Pill> As usual.</> : <><Pill>Rated as seen</Pill> As usual.</>}</td>
+                <td className="py-2.5 pr-3 text-body">{eff === 'remove' ? (g.utility ? `“Not tested — ${g.label.toLowerCase()} off” for each.` : `“${g.label} — not inspected:” and the reason.`)
+                  : eff === 'qualify' ? `Each rating ends “(${rs[0].phrase ?? ''})”.` : '—'}</td>
+                <td className="py-2.5"><button className={btn.ghost + ' text-xs'} onClick={() => onEdit(g.id)}>Edit</button></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
