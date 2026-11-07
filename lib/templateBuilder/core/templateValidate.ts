@@ -129,7 +129,7 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
       for (const e of x.startsLimited as Array<{ field: string; value: string; reason: string; sentence: string }>) {
         const { w, a } = attrOf(String(e.field));
         if (!w || !a) { add('error', 'starts_limited_missing_field', `"${n.label}" starts limited on "${e.field}", which is not in the template.`, n.id); continue; }
-        if (!a.values.includes(e.value)) add('warning', 'starts_limited_unknown_value', `"${n.label}" starts limited for "${e.value}", which "${a.label}" does not offer.`, n.id);
+        if (e.value !== '*' && !a.values.includes(e.value)) add('warning', 'starts_limited_unknown_value', `"${n.label}" starts limited for "${e.value}", which "${a.label}" does not offer.`, n.id);
         if (vals.has(e.value)) add('error', 'starts_limited_duplicate', `"${n.label}" lists "${e.value}" twice.`, n.id);
         vals.add(e.value);
         if (!(n.limitations ?? []).some(r => r.trim().toLowerCase() === String(e.reason).trim().toLowerCase())) add('error', 'starts_limited_reason', `"${n.label}" starts as "${e.reason}", which is not one of its limitation reasons.`, n.id);

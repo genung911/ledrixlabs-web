@@ -797,6 +797,21 @@ async function runTypes(files) {
           && E.ops.startsSentence(fop, FLD, 'Pellet Stove', '  ').length === 0
           && (v(E.ops.startsSentence(fop, FLD, 'Pellet Stove', 'We do not run pellet stoves.')) ?? []).find(e => e.value === 'Pellet Stove')?.sentence === 'We do not run pellet stoves.');
       }
+      // Water Heater (owner 2026-11-06, mockup 5uiien4txXFBSuMSxsD47X, "all is approved"): TPR shows for every type, so it has
+      // one switch for all of them ('*'), not one per chip.
+      {
+        const whL = TL.typeLayoutOf(fresh, fsys('water_heater'), fdefs);
+        const tpr = whL?.every.find(n => n.id === 'plumb_wh_tpr');
+        const FLD = 'plumb_wh_type::type';
+        const on = tpr ? E.ops.operates(tpr, FLD, '*', true) : [];
+        const tpr2 = tpr ? { ...tpr, startsLimited: [] } : null;
+        const off = tpr2 ? E.ops.operates(tpr2, FLD, '*', false) : [];
+        r('water heater: TPR has ONE "We operate the TPR valve" switch for every type (value *), Ledrix starts it Off; switching it On removes the entry, Off writes a sentence naming the item',
+          !!tpr && E.canStartLimited(tpr) && (tpr.startsLimited ?? []).length === 1 && tpr.startsLimited[0].value === '*'
+          && on.length === 1 && on[0].value.length === 0
+          && off.length === 1 && off[0].value.length === 1 && off[0].value[0].value === '*' && /tpr valve & discharge was not operated/i.test(off[0].value[0].sentence)
+          && !whL.typed.concat(whL.every).some(n => n.id !== 'plumb_wh_tpr' && (n.startsLimited ?? []).some(e => e.value === '*')));
+      }
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
@@ -1120,12 +1135,13 @@ const RULES = {
       && /const o = addMaterialOps\(tree, system, q, name\);/.test(mb) && /onOps\(ops\.addItem\(tree, system\.id, g\.node\.id, name\)\)/.test(mb)
       && !/op: '/.test(mb) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
-  'materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more': all => {
+  'materials: no "Checked in every home" heading anywhere — what every home gets is listed plainly, then the Add box; parts are numbered only when there are two or more': all => {
     const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
-    // Owner 2026-11-06 (Interior, mockup SqNS9bXgLH8HwppCXtwBPY): Ventilation showed an empty "every home" heading.
-    return /const shown = parts \+ \(g\.every\.length > 0 \? 1 : 0\);/.test(mb) && /const num = \(\) => \(shown > 1 \? \+\+k : null\);/.test(mb)
-      && /\{g\.every\.length > 0\s*\? stage\(num\(\), 'Checked in every home'/.test(mb) && /: <div className="border-t border-hairline first:border-t-0">\{add\}<\/div>\}/.test(mb)
-      && !/\+\+k/.test(mb.replace('shown > 1 ? ++k : null', '')) ? [] : ['components/templates/MaterialsBuilder.tsx'];
+    // Owner 2026-11-06 (Roofing screenshot): "'Checked in Every Home' — I dont think this is needed in any section".
+    return !/Checked in every home/i.test(mb)
+      && /const num = \(\) => \(parts > 1 \? \+\+k : null\);/.test(mb)
+      && /\{g\.every\.length > 0 && <ul className="divide-y divide-hairline"[^>]*>\{g\.every\.map\(item\)\}<\/ul>\}\s*\{add\}/.test(mb)
+      && !/\+\+k/.test(mb.replace('parts > 1 ? ++k : null', '')) ? [] : ['components/templates/MaterialsBuilder.tsx'];
   },
   'materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels': all => {
     const mb = strip(all['components/templates/MaterialsBuilder.tsx'] ?? '');
@@ -1154,7 +1170,9 @@ const RULES = {
   },
   'fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence': all => {
     const tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');
-    return /\{\[\.\.\.layout\.every, \.\.\.own\]\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
+    // Water Heater (2026-11-06): an item every type shows (TPR) gets ONE switch for every type ('*'); a type's own item, one per chip.
+    return /\{layout\.every\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value="\*"/.test(tb)
+      && /\{own\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
       && /onChange=\{v => \{ onOps\(ops\.operates\(node, f, value, v\)\); \}\}/.test(tb)
       && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
       && /const on = !entry;/.test(tb) && !/'startsLimited'/.test(tb) ? [] : ['components/templates/TypeBuilder.tsx'];
@@ -1355,7 +1373,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{[...layout.every, ...own].filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{layout.every.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the every-type switch (TPR) is not drawn'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onBlur={() => { if (!text.trim()) { setText(entry.sentence); return; } onOps(ops.startsSentence(node, f, value, text)); }}', 'onBlur={() => { onOps([]); }}'), 'the sentence is never saved'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'const on = !entry;', 'const on = !!entry;'), 'the switch shows On for an Off answer'],
@@ -1373,9 +1392,9 @@ const MUT3 = [
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'if (t && t !== label) onRename(t);', 'if (t && t !== label) {}'), 'saving does nothing'],
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', "if (e.key === 'Escape') { cancelled.current = true;", "if (e.key === 'Escape') { cancelled.current = false;"), 'Esc saves instead of cancelling'],
   ['materials: each group heading has a pencil that renames the group (not the system heading), through the editor\'s rename, and Esc cancels', rep('components/templates/MaterialsBuilder.tsx', 'title="Rename group" disabled={disabled}', 'title="Rename group"'), 'the pencil works while the draft is locked'],
-  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', '{g.every.length > 0\n              ? stage(', '{true\n              ? stage('), 'the empty "every home" heading comes back'],
-  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', 'const num = () => (shown > 1 ? ++k : null);', 'const num = () => ++k;'), 'a lone part is numbered 1 again'],
-  ['materials: a group shows "Checked in every home" only with something under it (the Add box stays), and numbers its parts only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', ': <div className="border-t border-hairline first:border-t-0">{add}</div>}', ': null}'), 'the Add box goes with the empty heading'],
+  ['materials: no "Checked in every home" heading anywhere — what every home gets is listed plainly, then the Add box; parts are numbered only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', '<div className="border-t border-hairline first:border-t-0">\n              {g.every.length > 0 && <ul', '<div className="border-t border-hairline first:border-t-0">\n              <p>Checked in every home</p>{g.every.length > 0 && <ul'), 'the heading comes back'],
+  ['materials: no "Checked in every home" heading anywhere — what every home gets is listed plainly, then the Add box; parts are numbered only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', 'const num = () => (parts > 1 ? ++k : null);', 'const num = () => ++k;'), 'a lone part is numbered 1 again'],
+  ['materials: no "Checked in every home" heading anywhere — what every home gets is listed plainly, then the Add box; parts are numbered only when there are two or more', rep('components/templates/MaterialsBuilder.tsx', '{g.every.map(item)}</ul>}\n              {add}', '{g.every.map(item)}</ul>}'), 'the Add box goes'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) : home ? moveOps(tree, nodeId, home.id, after) : [];', "const o: TemplateOp[] = home ? [{ op: 'moveNode', nodeId, parentId: home.id, index: 0 }] : [];"), 'the dialog writes its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'const o = fresh ? moveIntoNewGroupOps(tree, nodeId, t!.system.id, newGroup!) :', "const o = fresh ? [{ op: 'addNode', parentId: t!.system.id, node: { id: 'g', label: newGroup!, kind: 'subsystem' } }] as TemplateOp[] :"), 'the dialog makes the new group with its own op'],
   ['move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps', rep('components/templates/MoveTo.tsx', 'onSubmit={e => { e.preventDefault(); addGroup(); }}', 'onSubmit={e => { e.preventDefault(); }}'), '"+ New group" does nothing'],
@@ -1448,10 +1467,11 @@ const EXEC_MUT = [
   { name: 'the catalog adds a group to a system that has none', file: 'catalogModel.ts', from: "useGroup: hasGroups || kids.length === 0", to: "useGroup: true", check: 'catalog: a system with items but no groups gets items directly (a new group would hide its items)', run: runDesktop },
   { name: 'the catalog drops the equipment rule', file: 'catalogModel.ts', from: "...(rule ? { appliesWhen: rule }", to: "...(false ? { appliesWhen: rule }", check: 'catalog: each component applies only to its equipment ("Heating System is Gas Furnace or Propane")', run: runDesktop },
   { name: 'Condition off is stored as missing (= on in the app)', file: 'catalogModel.ts', from: "condition: p.condition,", to: "...(p.condition ? { condition: true } : {}),", check: 'catalog: Condition OFF is stored as an explicit false (the app reads a missing value as ON)', run: runDesktop },
-  { name: 'switching Off writes no reason', file: 'editorModel.ts', from: 'reason, sentence: defaultStartsSentence(value) }])];', to: "reason: '', sentence: defaultStartsSentence(value) }])];", check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
+  { name: 'switching Off writes no reason', file: 'editorModel.ts', from: 'reason, sentence: defaultStartsSentence(value, n.label) }])];', to: "reason: '', sentence: defaultStartsSentence(value, n.label) }])];", check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'switching On leaves the entry', file: 'editorModel.ts', from: 'on ? cur.filter(e => !(e.field === field && e.value === value))', to: 'on ? cur', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'an item with no Not Operated reason gets the switch', file: 'editorModel.ts', from: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true && !!startsLimitedReason(n);', to: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true;', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'a blank sentence is saved', file: 'editorModel.ts', from: 'if (!t || !cur.some(', to: 'if (!cur.some(', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
+  { name: 'the every-type sentence names the type, not the item', file: 'editorModel.ts', from: "value === '*' ? `The ${itemLabel.toLowerCase()} was not operated during the inspection.`", to: "value === '*' ? `The * was not operated during the inspection.`", check: 'water heater: TPR has ONE "We operate the TPR valve" switch for every type (value *), Ledrix starts it Off; switching it On removes the entry, Off writes a sentence naming the item', run: runTypes },
   { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },

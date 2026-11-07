@@ -188,8 +188,10 @@ export const startsLimitedList = (n: TemplateNode): StartsLimitedEntry[] => (Arr
 export const startsLimitedReason = (n: TemplateNode): string | null =>
   startsLimitedList(n)[0]?.reason ?? (n.limitations ?? []).find(r => /^not operated$/i.test(r.trim())) ?? null;
 export const canStartLimited = (n: TemplateNode): boolean => n.condition === true && !!startsLimitedReason(n);
-export const defaultStartsSentence = (value: string): string =>
-  `The ${value.replace(/\s+—\s+/g, ' ').toLowerCase()} was not operated during the inspection.`;
+/** `value` '*' = every type (an item every type shows — Water Heater's TPR): the sentence names the item instead. */
+export const defaultStartsSentence = (value: string, itemLabel = ''): string =>
+  value === '*' ? `The ${itemLabel.toLowerCase()} was not operated during the inspection.`
+    : `The ${value.replace(/\s+—\s+/g, ' ').toLowerCase()} was not operated during the inspection.`;
 
 export const ops = {
   rename: (nodeId: string, label: string): TemplateOp[] => (label.trim() ? [setField(nodeId, 'label', label.trim())] : []),
@@ -199,7 +201,7 @@ export const ops = {
     const reason = startsLimitedReason(n);
     if (on === !had || !reason) return [];
     return [setField(n.id, 'startsLimited', on ? cur.filter(e => !(e.field === field && e.value === value))
-      : [...cur, { field, value, reason, sentence: defaultStartsSentence(value) }])];
+      : [...cur, { field, value, reason, sentence: defaultStartsSentence(value, n.label) }])];
   },
   /** The report sentence for an answer that is Off — one op; empty text is refused (a disclosure needs words). */
   startsSentence: (n: TemplateNode, field: string, value: string, text: string): TemplateOp[] => {

@@ -3,7 +3,7 @@
 // A system laid out materials first (owner 2026-11-05, mockup https://claude.ai/artifact/VPAuQHWYGoQghmimznXpgf,
 // "Approved use recommendations"): each group as (1) its materials — one row per answer with the condition card it
 // brings, or, with no materials question, the items that record a choice — (2) what each answer of any other question
-// brings ("Brought by", 2026-11-06), then (3) what every home gets. The layout is
+// brings ("Brought by", 2026-11-06), then what every home gets, with no heading (2026-11-06). The layout is
 // lib/templates/materialLayout (pure); every edit is template ops through `onOps`, one change set each.
 import { useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
@@ -35,12 +35,12 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
       {groups.map(g => {
         // Up to three parts, numbered as shown (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc): what is recorded (or the
         // materials), what an answer brings, what every home gets. A part with nothing in it is not shown, and a group of
-        // one part is not numbered; with nothing under "every home" only the Add box stays (owner 2026-11-06, Interior,
-        // mockup SqNS9bXgLH8HwppCXtwBPY).
+        // one part is not numbered (owner 2026-11-06, Interior, mockup SqNS9bXgLH8HwppCXtwBPY). What every home gets has NO
+        // heading (owner 2026-11-06: "'Checked in Every Home' — I dont think this is needed in any section … Its either added
+        // or not"): its items are simply listed, then the Add box, and they are not a numbered part.
         let k = 0;
         const parts = (g.questions.length > 0 ? 1 : 0) + (!g.questions.length && g.materials.length > 0 ? 1 : 0) + g.brought.length;
-        const shown = parts + (g.every.length > 0 ? 1 : 0);
-        const num = () => (shown > 1 ? ++k : null);
+        const num = () => (parts > 1 ? ++k : null);
         const add = <AddItem label={g.node.id === system.id ? system.label : g.node.label} disabled={disabled}
           onAdd={name => onOps(ops.addItem(tree, system.id, g.node.id, name))} />;
         return (
@@ -52,9 +52,10 @@ export function MaterialsBuilder({ tree, system, onOps, onOpen, selected, disabl
               <MaterialQuestionRows key={q.field} q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />))}
             {!g.questions.length && g.materials.length > 0 && stage(num(), 'Recorded', ' · the inspector picks an answer', <ul className="divide-y divide-hairline">{g.materials.map(item)}</ul>)}
             {g.brought.map(b => <div key={b.field}>{stage(num(), `Brought by ${b.label}`, ' · shown only for these answers', <BroughtRows b={b} onOpen={onOpen} selected={selected} />)}</div>)}
-            {g.every.length > 0
-              ? stage(num(), 'Checked in every home', '', <><ul className="divide-y divide-hairline">{g.every.map(item)}</ul>{add}</>)
-              : <div className="border-t border-hairline first:border-t-0">{add}</div>}
+            <div className="border-t border-hairline first:border-t-0">
+              {g.every.length > 0 && <ul className="divide-y divide-hairline" aria-label={`${g.node.id === system.id ? system.label : g.node.label} items`}>{g.every.map(item)}</ul>}
+              {add}
+            </div>
           </section>
         );
       })}

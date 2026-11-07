@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.06.2",
-  "revision": 275,
+  "packVersion": "2026.11.06.3",
+  "revision": 276,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -3085,9 +3085,11 @@
                 "30 Gallon",
                 "40 Gallon",
                 "50 Gallon",
+                "65 Gallon",
                 "75 Gallon",
                 "80 Gallon"
-              ]
+              ],
+              "optional": true
             },
             {
               "id": "location",
@@ -3151,7 +3153,15 @@
           "origin": "core",
           "condition": true,
           "limitations": [
-            "Not Tested"
+            "Not Operated"
+          ],
+          "startsLimited": [
+            {
+              "field": "plumb_wh_type::type",
+              "value": "*",
+              "reason": "Not Operated",
+              "sentence": "The temperature and pressure relief valve was not operated. Older valves may not reseat once lifted; testing by a qualified plumber is recommended."
+            }
           ]
         },
         {
@@ -3258,6 +3268,39 @@
           "kind": "spec",
           "origin": "core",
           "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Heat Pump (Hybrid)",
+                "Solar Assisted"
+              ],
+              "exact": true
+            }
+          ]
+        },
+        {
+          "id": "plumb_wh_seismic",
+          "label": "Seismic Straps",
+          "keywords": [
+            "seismic strap",
+            "seismic straps",
+            "earthquake strap",
+            "water heater strap",
+            "strapping",
+            "seismic bracing",
+            "strapped"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
           "requires": [
             {
               "specNodeId": "plumb_wh_type::type",
@@ -3455,6 +3498,7 @@
             "plumb_wh_expansion",
             "plumb_wh_flue",
             "plumb_wh_pan",
+            "plumb_wh_seismic",
             "plumb_wh_gas_shutoff",
             "plumb_wh_combustion",
             "plumb_wh_burner",
@@ -4544,7 +4588,7 @@
         },
         {
           "id": "roof_surface",
-          "label": "Surface / Granule Wear",
+          "label": "Surface Condition",
           "keywords": [
             "granule loss",
             "surface wear",
@@ -4553,7 +4597,11 @@
             "blister",
             "moss",
             "wear",
-            "balding"
+            "balding",
+            "surface condition",
+            "misaligned shingles",
+            "damaged shingles",
+            "improperly installed"
           ],
           "kind": "spec",
           "origin": "core",
@@ -9190,7 +9238,19 @@
             "specNodeId": "plumb_wh_type::type",
             "includes": [
               "electric",
-              "heat pump"
+              "heat pump",
+              "oil",
+              "tankless"
+            ]
+          }
+        },
+        {
+          "node": "plumb_wh_burner",
+          "when": {
+            "specNodeId": "plumb_wh_type::type",
+            "includes": [
+              "oil",
+              "tankless"
             ]
           }
         },

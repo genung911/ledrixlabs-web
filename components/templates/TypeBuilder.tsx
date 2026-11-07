@@ -162,7 +162,11 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const own = itemsForType(layout, pick);
   return (
     <div className="space-y-3">
-      {[...layout.every, ...own].filter(canStartLimited).map(n => (
+      {/* An item every type shows (Water Heater's TPR) has ONE switch for every type ('*'); a type's own item, one per chip. */}
+      {layout.every.filter(canStartLimited).map(n => (
+        <OperatesSwitch key={n.id} node={n} field={layout.question.field} value="*" typeLabel={layout.question.label} onOps={apply} disabled={disabled} />
+      ))}
+      {own.filter(canStartLimited).map(n => (
         <OperatesSwitch key={n.id} node={n} field={layout.question.field} value={pick} onOps={apply} disabled={disabled} />
       ))}
       {section(SECTION_ID.type, pick, rowsForType(layout, pick).length, <>
@@ -226,20 +230,22 @@ function CopiesRow({ g, open, onToggle, onOps, onOpen, disabled }: { g: CopyGrou
 /** "We operate it" (owner 2026-11-06, mockup https://claude.ai/artifact/AVMufpdYL6BrMPw2MXZsY2): per type answer, Off =
  *  the company does not operate that kind, so the item (Fireplace › Operation) starts on the phone as the limitation
  *  and the report prints the sentence below. On = rated normally. Each change is one op (editorModel.ops). */
-function OperatesSwitch({ node, field: f, value, onOps, disabled }: { node: TemplateNode; field: string; value: string; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+function OperatesSwitch({ node, field: f, value, typeLabel, onOps, disabled }: { node: TemplateNode; field: string; value: string; typeLabel?: string; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const every = value === '*';
+  const forWhat = every ? `every ${typeLabel ?? 'type'}` : value;
   const entry = startsLimitedList(node).find(e => e.field === f && e.value === value) ?? null;
   const [text, setText] = useState(entry?.sentence ?? '');
   const [shown, setShown] = useState(entry?.sentence ?? '');
   if ((entry?.sentence ?? '') !== shown) { setShown(entry?.sentence ?? ''); setText(entry?.sentence ?? ''); }
   const on = !entry;
   return (
-    <div className="overflow-hidden rounded-xl border border-hairline" aria-label={`${node.label} for ${value}`}>
+    <div className="overflow-hidden rounded-xl border border-hairline" aria-label={`${node.label} for ${forWhat}`}>
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-ink">We operate it</span>
-          <span className="block text-xs text-muted">{on ? `${node.label} is rated normally for ${value}.` : <>{node.label} starts as <Pill tone="warn">Limitation · {entry!.reason}</Pill> — the inspector can change it on a job (phone build 720 or later).</>}</span>
+          <span className="block text-sm font-semibold text-ink">{every ? `We operate the ${node.label}` : 'We operate it'}</span>
+          <span className="block text-xs text-muted">{on ? `${node.label} is rated normally for ${forWhat}.` : <>{node.label} starts as <Pill tone="warn">Limitation · {entry!.reason}</Pill> {every ? ' for every type' : ''} — the inspector can change it on a job (phone build {every ? 721 : 720} or later).</>}</span>
         </span>
-        <Toggle on={on} label={`We operate ${value}`} disabled={disabled || !startsLimitedReason(node)} onChange={v => { onOps(ops.operates(node, f, value, v)); }} />
+        <Toggle on={on} label={`We operate ${every ? node.label : value}`} disabled={disabled || !startsLimitedReason(node)} onChange={v => { onOps(ops.operates(node, f, value, v)); }} />
       </div>
       {entry && (
         <div className="border-t border-hairline px-3 py-2">

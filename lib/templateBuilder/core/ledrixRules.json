@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.06.2",
+ "packVersion": "2026.11.06.3",
  "nodes": {
   "hvac_backup_heat": {
    "requires": [
@@ -921,6 +921,22 @@
    }
   },
   "plumb_wh_pan": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Natural Gas",
+      "Tank — Propane",
+      "Tank — Electric",
+      "Tank — Oil",
+      "Heat Pump (Hybrid)",
+      "Solar Assisted"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "plumb_wh_seismic": {
    "requires": [
     {
      "specNodeId": "plumb_wh_type::type",

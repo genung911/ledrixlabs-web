@@ -1900,9 +1900,11 @@
         "30 Gallon",
         "40 Gallon",
         "50 Gallon",
+        "65 Gallon",
         "75 Gallon",
         "80 Gallon"
-       ]
+       ],
+       "optional": true
       },
       {
        "id": "location",
@@ -1959,7 +1961,15 @@
      ],
      "condition": true,
      "limitations": [
-      "Not Tested"
+      "Not Operated"
+     ],
+     "startsLimited": [
+      {
+       "field": "plumb_wh_type::type",
+       "value": "*",
+       "reason": "Not Operated",
+       "sentence": "The temperature and pressure relief valve was not operated. Older valves may not reseat once lifted; testing by a qualified plumber is recommended."
+      }
      ]
     },
     {
@@ -2040,6 +2050,24 @@
       "water heater pan"
      ],
      "condition": true
+    },
+    {
+     "id": "plumb_wh_seismic",
+     "label": "Seismic Straps",
+     "kind": "component",
+     "keywords": [
+      "seismic strap",
+      "seismic straps",
+      "earthquake strap",
+      "water heater strap",
+      "strapping",
+      "seismic bracing",
+      "strapped"
+     ],
+     "condition": true,
+     "limitations": [
+      "Not Visible"
+     ]
     },
     {
      "id": "plumb_wh_gas_shutoff",
@@ -2869,7 +2897,7 @@
       },
       {
        "id": "roof_surface",
-       "label": "Surface / Granule Wear",
+       "label": "Surface Condition",
        "kind": "component",
        "keywords": [
         "granule loss",
@@ -2879,7 +2907,11 @@
         "blister",
         "moss",
         "wear",
-        "balding"
+        "balding",
+        "surface condition",
+        "misaligned shingles",
+        "damaged shingles",
+        "improperly installed"
        ],
        "condition": true,
        "limitations": [

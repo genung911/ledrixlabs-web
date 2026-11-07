@@ -2074,9 +2074,11 @@
                 "30 Gallon",
                 "40 Gallon",
                 "50 Gallon",
+                "65 Gallon",
                 "75 Gallon",
                 "80 Gallon"
-              ]
+              ],
+              "optional": true
             },
             {
               "id": "location",
@@ -2135,7 +2137,15 @@
           "trimmed": [],
           "condition": true,
           "limitations": [
-            "Not Tested"
+            "Not Operated"
+          ],
+          "startsLimited": [
+            {
+              "field": "plumb_wh_type::type",
+              "value": "*",
+              "reason": "Not Operated",
+              "sentence": "The temperature and pressure relief valve was not operated. Older valves may not reseat once lifted; testing by a qualified plumber is recommended."
+            }
           ]
         },
         {
@@ -2222,6 +2232,39 @@
           "condition": true
         },
         {
+          "id": "plumb_wh_seismic",
+          "label": "Seismic Straps",
+          "kind": "component",
+          "keywords": [
+            "seismic strap",
+            "seismic straps",
+            "earthquake strap",
+            "water heater strap",
+            "strapping",
+            "seismic bracing",
+            "strapped"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "findingShortcuts": [
+            {
+              "id": "fs_wh_seismic_missing",
+              "label": "Missing"
+            },
+            {
+              "id": "fs_wh_seismic_one",
+              "label": "Only one strap"
+            },
+            {
+              "id": "fs_wh_seismic_loose",
+              "label": "Loose / improper"
+            }
+          ]
+        },
+        {
           "id": "plumb_wh_gas_shutoff",
           "label": "Gas Shutoff & Sediment Trap",
           "kind": "component",
@@ -2300,26 +2343,7 @@
           "condition": true
         }
       ],
-      "trimmed": [
-        {
-          "id": "plumbing_plumb_wh_tpr_test",
-          "label": "TPR Valve Test",
-          "kind": "component",
-          "keywords": []
-        },
-        {
-          "id": "plumbing_plumb_wh_expansion_test",
-          "label": "Expansion Tank Test",
-          "kind": "component",
-          "keywords": []
-        },
-        {
-          "id": "plumbing_plumb_wh_flue_test",
-          "label": "Flue / Venting Test",
-          "kind": "component",
-          "keywords": []
-        }
-      ],
+      "trimmed": [],
       "locationAxis": "none",
       "walkZone": "mechanical",
       "walkZones": [
@@ -3312,7 +3336,7 @@
             },
             {
               "id": "roof_surface",
-              "label": "Surface / Granule Wear",
+              "label": "Surface Condition",
               "kind": "component",
               "keywords": [
                 "granule loss",
@@ -3322,7 +3346,11 @@
                 "blister",
                 "moss",
                 "wear",
-                "balding"
+                "balding",
+                "surface condition",
+                "misaligned shingles",
+                "damaged shingles",
+                "improperly installed"
               ],
               "trimmed": [],
               "condition": true,
