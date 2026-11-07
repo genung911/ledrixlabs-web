@@ -11,6 +11,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { itemSummary, locate, ops } from '@/lib/templates/editorModel';
 import { addMaterialOps, materialLayoutOf, removeMaterialOps, switchMaterialOnOps, type MaterialQuestion } from '@/lib/templates/materialLayout';
 import { ItemRow } from './ItemRow';
+import { useBuildingLens } from './BuildingLens';
 import { rulesFor } from './phonePreviewModel';
 import { Pill, Toggle, btn, field } from './ui';
 
@@ -26,7 +27,9 @@ export function GroupItems({ tree, system, groupId, onOps, onOpen, selected, dis
   const layout = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
   const group = locate(tree, groupId)?.node ?? null;
   const cards = new Set((layout.find(g => g.node.id === groupId)?.questions ?? []).flatMap(q => [...q.rows.map(r => r.card?.id), q.typed?.id]).filter((x): x is string => !!x));
-  const rows = (group?.children ?? []).filter(c => !cards.has(c.id));
+  const lens = useBuildingLens();
+  // …and with a building selected in the strip, only what's in it (the rest is in the system's Off list).
+  const rows = (group?.children ?? []).filter(c => !cards.has(c.id) && (!lens || lens.isIn(c.id)));
   return (
     <section aria-label={group?.label ?? 'Group'} className="overflow-hidden rounded-xl border border-hairline">
       {rows.length > 0 && <ul className="divide-y divide-hairline">{rows.map(n => <ItemRow key={n.id} tree={tree} node={n} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />)}</ul>}

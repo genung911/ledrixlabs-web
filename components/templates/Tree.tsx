@@ -11,6 +11,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { isCovered, ops } from '@/lib/templates/editorModel';
 import { Arrow } from './EditorParts';
 import { btn, field } from './ui';
+import { useBuildingLens } from './BuildingLens';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 
@@ -29,6 +30,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
 }) {
   // No search box (owner 2026-11-06: "can you remove the search bar, I don't think it is needed") — the systems list is
   // short, and a system opens group first.
+  const lens = useBuildingLens();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const shown = tree.systems;
@@ -44,7 +46,8 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
       <ul className="min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
         {shown.map((s, i) => {
           const on = sel.systemId === s.id;
-          const covered = isCovered(tree, s);
+          // A building selected in the strip (2026-11-06): its systems are the ones it has.
+          const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);
           return (
             <li key={s.id} className="group/sys">
               <div className={`flex items-center gap-1 rounded-lg pl-2 pr-1 ${on ? 'bg-accent/15' : 'hover:bg-ink/5'}`}>

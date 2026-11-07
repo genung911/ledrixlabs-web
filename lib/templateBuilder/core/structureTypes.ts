@@ -29,6 +29,11 @@ export type StructureTypeDef = {
   icon: string;             // one of STRUCTURE_TYPE_ICONS (MaterialCommunityIcons names, drawn on the web too)
   systems: string[];        // ids of this template's own TOP-LEVEL systems, in the order they were chosen
   kind?: StructureTypeKind; // the app's building kind (reports, Ledrix Home); absent = 'other'
+  /** PARTS (owner 2026-11-06, mockup HHfBh3wvLanc1CG4UcNxaU — "In a shop I mainly only want certain parts of
+   *  Plumbing"): groups and items inside its systems that a new building of this type starts WITHOUT. A group listed
+   *  takes its items with it. Absent = every part of its systems. Picked in the Template Builder with this building
+   *  selected in the strip; on site they are offered to add back. */
+  off?: string[];
 };
 
 /** The icons a building type may use. A fixed set: the phone draws MaterialCommunityIcons by name, the web its own
@@ -67,10 +72,29 @@ export function structureTypesOf(tpl: Pick<InspectionTemplate, 'structureTypes'>
   return { types: clone(types), source: 'template' };
 }
 
-/** The systems a NEW building of this type starts with — a copy, de-duplicated, in the type's order. Unknown ids are
- *  kept (inert, as Ledrix's defaults always were); the building owns the list from here on. */
-export const initialBuildingSystems = (t: Pick<StructureTypeDef, 'systems'>): string[] =>
-  [...new Set((t.systems ?? []).filter(s => typeof s === 'string' && s))];
+/** The systems a NEW building of this type starts with — a copy, de-duplicated, in the type's order — and its parts that
+ *  start off, each as "!<id>" (OFF_MARK). One list, so it is stored, synced and frozen exactly as a building's systems
+ *  always were; a "!" entry is never a system id, so every reader of systems passes over it. Unknown ids are kept
+ *  (inert, as Ledrix's defaults always were); the building owns the list from here on. */
+export const initialBuildingSystems = (t: Pick<StructureTypeDef, 'systems' | 'off'>): string[] =>
+  [...new Set([...(t.systems ?? []).filter(s => typeof s === 'string' && s && !s.startsWith(OFF_MARK)),
+    ...(t.off ?? []).filter(s => typeof s === 'string' && s).map(s => OFF_MARK + s)])];
+
+/** A building's list entry that marks one of its parts (a group or item) OFF in that building. */
+export const OFF_MARK = '!';
+/** A building's systems (its list without the off marks). */
+export const buildingSystemsOf = (list: readonly string[] | null | undefined): string[] => (list ?? []).filter(s => !s.startsWith(OFF_MARK));
+/** The parts a building has off (group or item ids). */
+export const buildingPartsOff = (list: readonly string[] | null | undefined): Set<string> =>
+  new Set((list ?? []).filter(s => s.startsWith(OFF_MARK)).map(s => s.slice(OFF_MARK.length)));
+/** Is this node off in the building — itself, or a group it sits in? `parentOf` walks up the template (null at the top).
+ *  Copies (`…~i2`) follow their base id. Pure. */
+export function isPartOff(off: ReadonlySet<string>, nodeId: string, parentOf: (id: string) => string | null | undefined): boolean {
+  if (!off.size) return false;
+  const base = (id: string) => String(id).replace(/~i\d+$/, '');
+  for (let id: string | null | undefined = nodeId, n = 0; id && n < 50; id = parentOf(id), n++) if (off.has(id) || off.has(base(id))) return true;
+  return false;
+}
 
 /** A company's starting list when it chooses to customize: Ledrix's defaults, limited to systems this template has. */
 export function seedStructureTypes(tpl: InspectionTemplate): StructureTypeDef[] {
@@ -138,6 +162,20 @@ export function validateStructureTypes(tpl: InspectionTemplate): StructureTypeIs
       else add('error', 'structure_type_unknown_system', `“${say}” includes a system that is not in this template (“${s}”).`, id || undefined);
     }
     if (!sys.length) add('warning', 'structure_type_empty', `“${say}” starts with no systems — the inspector adds them on site.`, id || undefined);
+    // Parts that start off (2026-11-06): ids of groups or items inside its own systems.
+    if (t.off !== undefined) {
+      if (!Array.isArray(t.off) || t.off.some((x: unknown) => typeof x !== 'string' || !x || (x as string).startsWith(OFF_MARK))) add('error', 'structure_type_off_shape', `“${say}”: the parts it leaves out must be a list of item ids.`, id || undefined);
+      else {
+        const under = new Map<string, string>();   // node id → its top-level system id
+        const walk = (n: { id: string; children?: unknown[] }, top: string) => { under.set(n.id, top); for (const c of (n.children ?? []) as any[]) walk(c, top); };
+        for (const s of tpl.systems) for (const c of (s.children ?? []) as any[]) walk(c, s.id);
+        for (const x of t.off as string[]) {
+          const top = under.get(x);
+          if (!top) add('warning', 'structure_type_off_unknown', `“${say}” leaves out a part that is not in this template (“${x}”).`, id || undefined);
+          else if (!sys.includes(top)) add('warning', 'structure_type_off_outside', `“${say}” leaves out a part of “${active.get(top)?.label ?? top}”, which it does not include.`, id || undefined);
+        }
+      }
+    }
   });
   return out;
 }

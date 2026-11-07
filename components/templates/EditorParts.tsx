@@ -17,6 +17,7 @@ import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
 import { SpecialHomesPanel } from './SpecialHomesPanel';
 import { GroupList } from './GroupList';
+import { useBuildingLens } from './BuildingLens';
 import { GroupItems } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -137,7 +138,10 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
   // for a typed system's "Full list" chip.
   const byGroups = !typeView;
   const laidOut = (typeView && typeView.pick !== FULL_LIST) || byGroups;
-  const offRows = (system.trimmed ?? []).map(t => ({ t, under: system.label })).concat(rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))));
+  const lens = useBuildingLens();
+  // Switched off for the whole template, then (a building selected in the strip, 2026-11-06) what that building leaves out.
+  const offRows: Array<{ t: TemplateNode; under: string; building?: true }> = (system.trimmed ?? []).map(t => ({ t, under: system.label })).concat(rows.flatMap(r => (r.node.trimmed ?? []).map(t => ({ t, under: r.node.label }))))
+    .concat(lens ? lens.offIn(system.id).map(x => ({ t: x.node, under: x.under, building: true as const })) : []);
 
   return (
     <div className="space-y-5 px-4 py-4">
@@ -152,12 +156,12 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
         onOpenGroup={id => onSelect({ systemId: system.id, nodeId: id })} onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />}
       {laidOut && offRows.length > 0 && (
         <ul id={SECTION_ID.off} aria-label="Switched off" className="scroll-mt-2 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
-          {offRows.map(({ t, under }) => (
+          {offRows.map(({ t, under, building }) => (
             <li key={t.id} className="flex items-center gap-1 pr-1"><button className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left" onClick={() => onSelect({ systemId: system.id, nodeId: t.id })}>
               <span className="min-w-0 flex-1"><span className={`block truncate text-muted ${t.kind !== 'component' ? 'text-xs font-semibold uppercase tracking-wide' : 'text-sm font-medium'}`}>{t.label}</span>
                 <span className="block truncate text-xs text-muted">Not included · in {under}</span></span>
               <span className="text-[10px] font-semibold uppercase text-muted">off</span></button>
-              <Menu label={`More for ${t.label}`} items={[{ label: 'Switch on', disabled: disabled && 'The draft can’t change right now.', onSelect: () => { onOps(includeOps(tree, t.id, true)); } }]} /></li>
+              <Menu label={`More for ${t.label}`} items={[{ label: 'Switch on', disabled: disabled && 'The draft can’t change right now.', onSelect: () => { onOps(building && lens ? lens.set(t.id, true) : includeOps(tree, t.id, true)); } }]} /></li>
           ))}
         </ul>
       )}

@@ -14,6 +14,7 @@ import { ItemRow } from './ItemRow';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { rulesFor } from './phonePreviewModel';
 import { Menu, btn, field } from './ui';
+import { useBuildingLens } from './BuildingLens';
 
 const LOCKED = 'The draft can’t change right now.';
 
@@ -21,7 +22,9 @@ export function GroupList({ tree, system, onOpenGroup, onOpen, onOps, selected, 
   tree: InspectionTemplate; system: TemplateNode; onOpenGroup: (id: string) => void; onOpen: (id: string) => void;
   onOps: (o: TemplateOp[]) => boolean; selected: string | null; disabled: boolean;
 }) {
-  const kids = system.children ?? [];
+  const lens = useBuildingLens();
+  // With a building selected, only what's in it is listed; the rest is in its Off list (ItemsPanel).
+  const kids = (system.children ?? []).filter(c => !lens || lens.isIn(c.id));
   const layout = useMemo(() => materialLayoutOf(tree, system, rulesFor(tree)), [tree, system]);
   const [name, setName] = useState('');
   const groups = kids.filter(c => c.kind !== 'component');
@@ -37,6 +40,7 @@ export function GroupList({ tree, system, onOpenGroup, onOpen, onOps, selected, 
   };
   return (
     <div className="space-y-3">
+      {lens && !lens.isIn(system.id) && <p className="rounded-xl border border-dashed border-hairline px-4 py-5 text-center text-sm text-muted">{system.label} isn’t in this building. Switch it on at the top to add it.</p>}
       {groups.length > 0 && (
         <ul aria-label={`${system.label} groups`} className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
           {groups.map(g => <GroupRow key={g.id} tree={tree} system={system} g={g} sub={summary(g)} onOpen={() => onOpenGroup(g.id)} onOps={onOps} selected={selected === g.id} disabled={disabled} />)}
@@ -60,6 +64,7 @@ export function GroupList({ tree, system, onOpenGroup, onOpen, onOps, selected, 
 function GroupRow({ tree, system, g, sub, onOpen, onOps, selected, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; g: TemplateNode; sub: string; onOpen: () => void; onOps: (o: TemplateOp[]) => boolean; selected: boolean; disabled: boolean;
 }) {
+  const lens = useBuildingLens();
   const [renaming, setRenaming] = useState(false);
   const [v, setV] = useState(g.label);
   const [moving, setMoving] = useState(false);
@@ -88,7 +93,7 @@ function GroupRow({ tree, system, g, sub, onOpen, onOps, selected, disabled }: {
         { label: 'Move up', disabled: (disabled && LOCKED) || (idx <= 0 && 'Already first.'), onSelect: () => { onOps(ops.move(g.id, system.id, idx - 1)); } },
         { label: 'Move down', disabled: (disabled && LOCKED) || (idx >= sibs.length - 1 && 'Already last.'), onSelect: () => { onOps(ops.move(g.id, system.id, idx + 1)); } },
         { label: 'Move to…', disabled: (disabled && LOCKED) || moveBlockFor(tree, g.id) || false, onSelect: () => setMoving(true) },
-        { label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(includeOps(tree, g.id, false)); } },
+        { label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(lens ? lens.set(g.id, false) : includeOps(tree, g.id, false)); } },
       ]} />
       {moving && <MoveToDialog tree={tree} nodeId={g.id} onOps={onOps} onClose={() => setMoving(false)} onMoved={() => {}} />}
     </li>

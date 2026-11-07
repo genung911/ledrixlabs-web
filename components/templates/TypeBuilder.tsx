@@ -16,6 +16,7 @@ import { addForTypeOps, copiesOps, copyGroupOf, itemsForType, rowsForType, typeL
 import { catalogMatches, catalogTypesForAnswer, catalogTypesOffField } from '@/lib/templates/catalogModel';
 import { LedrixSuggestions } from './CatalogPanel';
 import { ItemRow } from './ItemRow';
+import { useBuildingLens } from './BuildingLens';
 import { MaterialQuestionRows } from './MaterialsBuilder';
 import { materialLayoutOf } from '@/lib/templates/materialLayout';
 import { rulesFor } from './phonePreviewModel';
@@ -59,6 +60,7 @@ export function TypeChips({ layout, pick, onPick, systemLabel }: { layout: TypeL
 export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selected, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; layout: TypeLayout; pick: string; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
 }) {
+  const lens = useBuildingLens();
   const [msg, setMsg] = useState<string | null>(null);
   // A materials question inside a typed system (Electrical's wiring type) is drawn materials first, one row per answer
   // with the card it brings (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf).
@@ -68,6 +70,7 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const apply = (o: TemplateOp[]) => { if (!o.length) return true; const ok = onOps(o); if (ok) setMsg(null); return ok; };
 
   const row = (n: TemplateNode, tag?: React.ReactNode): React.ReactNode => {
+    if (lens && !lens.isIn(n.id)) return null;   // a building selected: only what's in it (2026-11-06)
     const g = copyGroupOf(layout, n.id);
     if (g) return <CopiesRow key={g.id} g={g} open={openCopies === g.id} onToggle={() => setOpenCopies(openCopies === g.id ? null : g.id)} onOps={apply} onOpen={onOpen} disabled={disabled} />;
     return <ItemRow key={n.id} tree={tree} node={n} onOps={apply} onOpen={onOpen} selected={selected} disabled={disabled} tag={tag} />;

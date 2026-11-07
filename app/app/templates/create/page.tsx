@@ -9,13 +9,14 @@
 // lib/templates/api.startNewTemplateDraft — the same call the dialog made — and opens it in the Template Builder; it is
 // never published here. The company's answers are its own declaration (lib/templates/startingPoints honesty rules):
 // recommendations state facts only, requirements coverage reads "not evaluated", and no individual license is asked.
-import { propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
+import { propertyTypeLabel, propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
 import { PropertyTypePicker } from '@/components/templates/PropertyTypes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdvisoriesEditor } from '@/components/templates/AdvisoriesEditor';
 import { presetAdvisories } from '@/lib/templates/advisoryModel';
+import { LEDRIX_DEFAULT_STRUCTURE_TYPES, newStructureTypeId, seedStructureTypes } from '@/lib/templateBuilder/core/structureTypes';
 import type { Advisory } from '@/lib/templates/reportAdvisories';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ErrorBox, Loading, Page } from '@/components/workspace/ui';
@@ -52,6 +53,10 @@ export default function CreateTemplatePage() {
   const [kindChoice, setKindChoice] = useState<Omit<KindChoice, 'propertyTypes'>>(EMPTY_KIND_CHOICE);
   const [busy, setBusy] = useState(false);
   const [advisories, setAdvisories] = useState<Advisory[]>(() => presetAdvisories());
+  // Other buildings this template includes (2026-11-06): Ledrix's ids picked, and the company's own names.
+  const [otherBuildings, setOtherBuildings] = useState<string[]>(['ledrix_garage', 'ledrix_shop', 'ledrix_adu']);
+  const [ownBuildings, setOwnBuildings] = useState<string[]>([]);
+  const [ownBuilding, setOwnBuilding] = useState('');
   const [suggestAdv, setSuggestAdv] = useState(true);   // "Should Ledrix suggest advisories from the home's details?"
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -116,6 +121,13 @@ export default function CreateTemplatePage() {
       // The company's report advisories, picked on step 1 — the new draft's own list (none picked → Ledrix's list).
       if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;
       if (suggestAdv) delete tree.suggestAdvisories; else tree.suggestAdvisories = false;
+      // The other buildings picked: Ledrix's (limited to this template's systems) and the company's own, starting empty.
+      if (chosen.kind !== 'company') {
+        const seeded = seedStructureTypes(tree).filter(t => otherBuildings.includes(t.id.replace(/^st_/, 'ledrix_')));
+        const taken = seeded.map(t => t.id);
+        const own = ownBuildings.map((n, i) => ({ id: newStructureTypeId(taken, Date.now() + i), name: n, icon: 'home-outline', systems: [] as string[], kind: 'other' as const }));
+        tree.structureTypes = [...seeded, ...own];
+      }
       const draft = await startNewTemplateDraft(access.companyId!, { name: name.trim(), base: chosen.base, tree });
       router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`);
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
@@ -235,6 +247,26 @@ export default function CreateTemplatePage() {
               <PropertyTypePicker value={props ?? propertyTypesOf(chosen.tree)} onChange={setProps} />
               <p className="mt-1 text-[11px] text-muted">What this template is for. You can change it later.</p>
             </div>
+            {/* OTHER BUILDINGS (owner 2026-11-06, mockup HHfBh3wvLanc1CG4UcNxaU): asked about the home this template is for.
+                Each starts with Ledrix's sensible systems; the Template Builder's strip narrows them. */}
+            {chosen.kind !== 'company' && (
+              <div>
+                <p className={label}>What other buildings do you include with a {(() => { const p = (props ?? propertyTypesOf(chosen.tree))[0]; return p ? propertyTypeLabel(p) : 'home'; })()}?</p>
+                <div className="grid gap-1.5 sm:grid-cols-2" role="group" aria-label="Other buildings">
+                  {LEDRIX_DEFAULT_STRUCTURE_TYPES.map(t => (
+                    <label key={t.id} className="flex items-center gap-2 text-sm text-body">
+                      <input type="checkbox" className="h-4 w-4" checked={otherBuildings.includes(t.id)} onChange={e => setOtherBuildings(cur => e.target.checked ? [...cur, t.id] : cur.filter(x => x !== t.id))} />{t.name}
+                    </label>
+                  ))}
+                </div>
+                <form className="mt-1.5 flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); const v = ownBuilding.trim(); if (v && !ownBuildings.some(x => x.toLowerCase() === v.toLowerCase())) { setOwnBuildings([...ownBuildings, v]); setOwnBuilding(''); } }}>
+                  <input value={ownBuilding} onChange={e => setOwnBuilding(e.target.value)} placeholder="+ Your own (e.g. Pole Barn)" aria-label="Your own building" className={`${field} min-w-[10rem] flex-1 py-1.5 text-sm`} />
+                  <button className={btn.secondary + ' px-3 py-1.5 text-xs'} disabled={!ownBuilding.trim()}>Add</button>
+                </form>
+                {ownBuildings.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1.5">{ownBuildings.map(b => <button key={b} type="button" onClick={() => setOwnBuildings(ownBuildings.filter(x => x !== b))}><Pill>{b} ✕</Pill></button>)}</div>}
+                <p className="mt-1 text-[11px] text-muted">The home itself is always the first building. Pick what’s in each one in the Template Builder.</p>
+              </div>
+            )}
             <div>
               <p className={label}>Your company context</p>
               <div className="flex flex-wrap gap-1.5">

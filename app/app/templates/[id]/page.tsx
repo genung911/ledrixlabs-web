@@ -28,7 +28,9 @@ import { publishFixes } from '@/lib/templates/publishFixes';
 import { LevelPill } from '@/components/templates/RequirementsEditor';
 import { LedrixPanel } from '@/components/templates/LedrixPanel';
 import { PhonePreview } from '@/components/templates/PhonePreview';
-import { BuildingTypesPanel, buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
+import { buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
+import { BuildingLensProvider, BuildingStrip } from '@/components/templates/BuildingLens';
+import { buildingsOf } from '@/lib/templates/buildingModel';
 import { GatesPanel } from '@/components/templates/GatesPanel';
 import { CountsPanel } from '@/components/templates/CountsPanel';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
@@ -45,12 +47,11 @@ import { TemplateApiError } from '@/lib/templates/api';
 import { forgetPlace, placeKey, readPlace, writePlace } from '@/lib/templates/lastPlace';
 
 type Sel = { systemId: string | null; nodeId: string | null };
-type Section = 'overview' | 'buildings' | 'systems' | 'gates' | 'counts' | 'requirements' | 'report' | 'review';
+type Section = 'overview' | 'systems' | 'gates' | 'counts' | 'requirements' | 'report' | 'review';
 
 const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'overview', label: 'Overview', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
   { id: 'systems', label: 'Systems', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
-  { id: 'buildings', label: 'Building Types', icon: 'M3 10.5L12 4l9 6.5V20h-6v-6H9v6H3z' },
   { id: 'gates', label: 'Gates', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
   { id: 'counts', label: 'How Many?', icon: 'M5 12h14M12 5v14M4 4h16v16H4z' },
   { id: 'requirements', label: 'Requirements', icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 12l3 3 5-6' },
@@ -91,6 +92,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const d = useDraft({ companyId, templateId, draftId });
   const [sel, setSel] = useState<Sel>({ systemId: null, nodeId: null });
   const [section, setSection] = useState<Section>('systems');
+  // The building Systems shows (owner 2026-11-06, mockup HHfBh3wvLanc1CG4UcNxaU): null = the home itself.
+  const [building, setBuilding] = useState<string | null>(null);
   const [ctab, setCtab] = useState<ComponentTab>('overview');
   const [typePick, setTypePick] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<'edit' | 'ledrix'>('edit');
@@ -168,8 +171,10 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
 
   const select = useCallback((s: Sel) => { setSel(s); setMode('edit'); }, []);
   const go = useCallback((s: string, to?: Sel, tab?: ComponentTab) => {
+    // 'buildings' (the old Building Types tab, 2026-11-06): Systems, with the first building selected in the strip.
+    if (s === 'buildings') { setSection('systems'); setBuilding(tree ? buildingsOf(tree)[0]?.id ?? null : null); return; }
     setSection(s as Section); if (to) select(to); if (tab) setCtab(tab);
-  }, [select]);
+  }, [select, tree]);
   const issues = useMemo(() => (tree ? validateTemplate(tree) : []), [tree]);
 
   if (d.loadError) return <div className="mx-auto max-w-3xl px-4 py-8"><ErrorBox message={d.loadError} onRetry={d.reload} />
@@ -249,7 +254,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         <nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">
           {SECTIONS.map(s => {
             const on = section === s.id;
-            const badge = s.id === 'buildings' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
+            const badge = s.id === 'systems' && bIssues.errors.length ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" />
               : s.id === 'requirements' && reqTotal ? <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{reqTotal}</span>
               : s.id === 'review' && (counts.errors || reqs.length) ? <span className="h-2 w-2 rounded-full bg-safety" aria-label="needs attention" /> : null;
             return (
@@ -286,12 +291,6 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               <OverviewSection tree={tree} status={status} issues={issues} onGo={go} onOps={onOps} disabled={!!readOnly} />
             </div>
           )}
-          {section === 'buildings' && (
-            <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6">
-              <BuildingTypesPanel tree={tree} live={m.live?.tree ?? null} onOps={onOps} disabled={!!readOnly}
-                onOpenSystem={id => { select({ systemId: id, nodeId: null }); setSection('systems'); }} />
-            </div>
-          )}
           {section === 'gates' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><GatesPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'counts' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><CountsPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'requirements' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><RequirementsSection tree={tree} onGo={go} /></div>}
@@ -312,6 +311,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                   className={`rounded-md px-3 py-1 text-xs font-semibold ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{v === 'edit' ? 'Edit template' : 'Inspector preview'}</button>)}
               </div>
             </div>
+            {/* BUILDINGS ACROSS THE TOP, like the phone: pick one and Systems shows that building. */}
+            <div className="px-4 pt-3 lg:px-6"><BuildingStrip tree={tree} value={building} onChange={setBuilding} onOps={onOps} disabled={!!readOnly} /></div>
+            <BuildingLensProvider tree={tree} buildingId={building}>
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
                 <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} />
@@ -324,7 +326,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 </div>}
                 <div className={`${mode === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
                   <NodeWorkspace tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} tab={ctab} setTab={setCtab} typeView={selView} reveal={reveal}
-                    onOpenBuildingTypes={() => setSection('buildings')} />
+                    onOpenBuildingTypes={() => setBuilding(buildingsOf(tree)[0]?.id ?? null)} />
                 </div>
                 {ASK_LEDRIX && <div className={`min-h-0 flex-1 ${mode === 'ledrix' ? 'flex flex-col' : 'hidden'}`}>
                   <LedrixPanel core={m.core} change={d.change} selection={sel} onSelect={select} author={me} readOnly={readOnly}
@@ -336,6 +338,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 <CompletionCard tree={tree} nodeId={sel.nodeId} />
               </aside>
             </div>
+            </BuildingLensProvider>
           </div>
         </main>
       </div>

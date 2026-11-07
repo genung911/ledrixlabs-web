@@ -60,7 +60,8 @@ export function Modal({ open, title, onClose, children, footer, wide }: {
 }
 
 /** A "⋯" menu. Disabled items stay visible with the reason, so a missing action is never a mystery. */
-export function Menu({ items, label: aria = 'More actions' }: { items: Array<{ label: string; onSelect: () => void; disabled?: string | false; danger?: boolean }>; label?: string }) {
+export function Menu({ items, label: aria = 'More actions', trigger }: { items: Array<{ label: string; onSelect: () => void; disabled?: string | false; danger?: boolean }>; label?: string;
+  /** What the button shows instead of ⋯ (the building strip's "+ Building", 2026-11-06). */ trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -72,8 +73,8 @@ export function Menu({ items, label: aria = 'More actions' }: { items: Array<{ l
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button aria-label={aria} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)} className={btn.icon}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+      <button aria-label={aria} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)} className={trigger ? 'shrink-0 rounded-lg border border-dashed border-hairline px-3 py-1.5 text-xs font-semibold text-muted hover:text-ink' : btn.icon}>
+        {trigger ?? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-30 mt-1 w-60 rounded-xl border border-hairline bg-surface py-1 shadow-lg">

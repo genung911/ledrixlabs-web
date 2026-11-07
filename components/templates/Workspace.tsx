@@ -15,6 +15,7 @@ import { RuleEditor } from './RuleEditor';
 import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
+import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
@@ -40,6 +41,8 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const sk = `${sel.systemId ?? ''}|${sel.nodeId ?? ''}`;
   // A switch turned ON with nothing behind it yet opens its empty tab for this item (it is "on" once something is added).
   const [opened, setOpened] = useState<Record<string, { details?: boolean; reqs?: boolean }>>({});
+  // The building selected in the strip (2026-11-06): the panel's switch says whether this part is in THAT building.
+  const lens = useBuildingLens();
   // "Move to…" (owner 2026-11-05, mockup XtoreixMRS7sZ4YyKMTUqp): the ⋯ menu on a group's and an item's title.
   const [moving, setMoving] = useState<string | null>(null);
   const moveMenu = (id: string) => (
@@ -69,7 +72,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       <Shell scrollKey={sk} reveal={reveal} kind="System" title={system.label} onRename={v => onOps(ops.rename(system.id, v))} renameDisabled={disabled}
         tips={{ value: system.description ?? '', what: 'system', onCommit: v => onOps(ops.describe(system.id, v)) }}
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
-        action={<IncludedSwitch on={isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(includeOps(tree, system.id, v))} />}>
+        action={<IncludedSwitch on={lens ? lens.isIn(system.id) : isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(lens ? lens.set(system.id, v) : includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
       </Shell>
     );
@@ -86,7 +89,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       <Shell scrollKey={sk} reveal={reveal} kind="Group" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
         tips={{ value: node.description ?? '', what: 'group', onCommit: v => onOps(ops.describe(node.id, v)) }}
         menu={moveMenu(node.id)}
-        action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
+        action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />}>
         <GroupDetails tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} />
         {moveDialog}
       </Shell>
@@ -120,7 +123,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
       menu={moveMenu(node.id)}
-      action={<IncludedSwitch on label={node.label} disabled={disabled} onChange={v => { if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
+      action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}
       tabs={visible.map(t => (
         <button key={t} role="tab" aria-selected={cur === t} onClick={() => setTab(t)}
           className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold ${cur === t ? 'border-accent text-ink' : 'border-transparent text-body hover:text-ink'}`}>

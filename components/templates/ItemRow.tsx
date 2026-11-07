@@ -10,6 +10,7 @@ import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { includeOps, itemSummary, ops } from '@/lib/templates/editorModel';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { Menu } from './ui';
+import { useBuildingLens } from './BuildingLens';
 
 const LOCKED = 'The draft can’t change right now.';
 
@@ -17,6 +18,7 @@ export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: 
   tree: InspectionTemplate; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; onOpen: (id: string) => void;
   selected: string | null; disabled: boolean; tag?: React.ReactNode;
 }) {
+  const lens = useBuildingLens();
   const [renaming, setRenaming] = useState(false);
   const [v, setV] = useState(node.label);
   const [moving, setMoving] = useState(false);
@@ -42,7 +44,8 @@ export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: 
         <Menu label={`More for ${node.label}`} items={[
           { label: 'Rename', disabled: disabled && LOCKED, onSelect: () => { setV(node.label); cancelled.current = false; setRenaming(true); } },
           { label: 'Move to…', disabled: (disabled && LOCKED) || moveBlockFor(tree, node.id) || false, onSelect: () => setMoving(true) },
-          { label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(includeOps(tree, node.id, false)); } },
+          // With a building selected in the strip (2026-11-06), Switch off takes it out of THAT building only.
+          { label: 'Switch off', disabled: disabled && LOCKED, onSelect: () => { onOps(lens ? lens.set(node.id, false) : includeOps(tree, node.id, false)); } },
         ]} />
       )}
       {moving && <MoveToDialog tree={tree} nodeId={node.id} onOps={onOps} onClose={() => setMoving(false)} onMoved={() => {}} />}
