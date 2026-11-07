@@ -1248,6 +1248,13 @@ const RULES = {
       && /<header className="flex items-start gap-3 px-4 pt-3">\s*\{onBack && <button type="button" aria-label=\{`Back to \$\{onBack\.label\}`\}[^>]*onClick=\{onBack\.go\}/.test(ws)
       && !/Close item|onClose=\{close\}|M6 6l12 12M18 6L6 18/.test(ws) ? [] : ['components/templates/Workspace.tsx'];
   },
+  'building types: no Customize step — Ledrix\'s starting types (limited to this template\'s systems) are editable as shown, and the first change writes the template\'s own list': all => {
+    // Owner 2026-11-06: "Why do I have to click customize? Isn't that why I'm in here".
+    const bt = strip(all['components/templates/BuildingTypes.tsx'] ?? '');
+    return /const types = useMemo\(\(\) => \(own \? structureTypesOf\(tree\)\.types : seedStructureTypes\(tree\)\), \[tree, own\]\);/.test(bt)
+      && !/Customize building types/.test(bt) && !/disabled=\{disabled \|\| !own\}/.test(bt) && !/\{own && <div className="border-t border-hairline p-2">/.test(bt)
+      && /const update = \(id: string, patch: Partial<StructureTypeDef>\) => commit\(types\.map\(/.test(bt) ? [] : ['components/templates/BuildingTypes.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1446,6 +1453,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['building types: no Customize step — Ledrix\'s starting types (limited to this template\'s systems) are editable as shown, and the first change writes the template\'s own list', rep('components/templates/BuildingTypes.tsx', 'const types = useMemo(() => (own ? structureTypesOf(tree).types : seedStructureTypes(tree)), [tree, own]);', 'const types = useMemo(() => structureTypesOf(tree).types, [tree]);'), 'the first change starts from Ledrix\'s full list, not this template\'s'],
+  ['building types: no Customize step — Ledrix\'s starting types (limited to this template\'s systems) are editable as shown, and the first change writes the template\'s own list', rep('components/templates/BuildingTypes.tsx', '<input value={name} disabled={disabled}', '<input value={name} disabled={disabled || !own}'), 'the name is locked until Customize again'],
   ['back: every panel has a back arrow at the top left, beside its icon, going up ONE level (item → its group → the system; a type-chip system\'s item → the system); no X to close', rep('components/templates/Workspace.tsx', "const up = !typeView && loc.parent && loc.parent.id !== system.id && loc.parent.kind !== 'component' ? loc.parent : null;", "const up = null;"), 'back always jumps to the system'],
   ['back: every panel has a back arrow at the top left, beside its icon, going up ONE level (item → its group → the system; a type-chip system\'s item → the system); no X to close', rep('components/templates/Workspace.tsx', '{onBack && <button type="button"', '{false && <button type="button"'), 'no back arrow'],
   ['menu: the left menu is systems only (count, reorder, off), with no search box — items, groups and type sections live in the work area; the add button adds a system; the save / publish note is a hover note', rep('components/templates/Tree.tsx', '  const shown = tree.systems;', "  const [q, setQ] = useState(''); const shown = tree.systems; const box = <input placeholder=\"Search systems\" onChange={e => setQ(e.target.value)} />;"), 'the search box comes back'],

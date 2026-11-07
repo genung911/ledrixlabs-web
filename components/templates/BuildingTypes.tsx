@@ -9,7 +9,8 @@
 // structureTypes.validateStructureTypes) on every op and again at publish. Nothing here writes anywhere else.
 //
 // SYSTEMS ARE REFERENCES: ticking Electrical doesn't copy it. A Shop's Electrical is the template's Electrical, edited
-// once in Systems & items. A template without its own list uses Ledrix's defaults until someone chooses to customize.
+// once in Systems & items. A template without its own list shows Ledrix's defaults (limited to its systems), editable
+// directly: the first change gives the template its own list (2026-11-06, no Customize step).
 import { useEffect, useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
@@ -94,7 +95,10 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
   onOpenSystem: (systemId: string) => void;
 }) {
   const own = hasOwnStructureTypes(tree);
-  const types = useMemo(() => structureTypesOf(tree).types, [tree]);
+  // NO "CUSTOMIZE" STEP (owner 2026-11-06: "Why do I have to click customize? Isn't that why I'm in here"): until the
+  // template has its own list, the page shows Ledrix's defaults limited to this template's systems (seedStructureTypes),
+  // and the FIRST change writes that list with the change in it — one op, as Customize used to plus the edit.
+  const types = useMemo(() => (own ? structureTypesOf(tree).types : seedStructureTypes(tree)), [tree, own]);
   const liveTypes = useMemo(() => (hasOwnStructureTypes(live) ? structureTypesOf(live).types : null), [live]);
   const infos = useMemo(() => tree.systems.map(s => infoOf(tree, s)), [tree]);
   const issues = useMemo(() => validateStructureTypes(tree), [tree]);
@@ -129,7 +133,7 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
       <section aria-label="Building types" className="flex min-h-0 flex-col rounded-xl border border-hairline bg-surface">
         <header className="border-b border-hairline px-3 py-2.5">
           <h2 className="text-sm font-semibold text-ink">Building types</h2>
-          <p className="text-[11px] text-muted">{own ? 'What inspectors can add to an inspection' : 'Ledrix’s defaults — not customized'}</p>
+          <p className="text-[11px] text-muted">{own ? 'What inspectors can add to an inspection' : 'Ledrix’s starting types — change any of them'}</p>
         </header>
         <ul className="min-h-0 flex-1 overflow-y-auto py-1">
           <li>
@@ -159,20 +163,16 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
             );
           })}
         </ul>
-        {own && <div className="border-t border-hairline p-2"><button className={btn.secondary + ' w-full py-1.5'} disabled={disabled} onClick={addType}>+ Add building type</button></div>}
+        <div className="border-t border-hairline p-2"><button className={btn.secondary + ' w-full py-1.5'} disabled={disabled} onClick={addType}>+ Add building type</button></div>
         <p className="border-t border-hairline px-3 py-2 text-[11px] text-muted">Inspectors can still name something else on site; it starts with no systems.</p>
       </section>
 
       {/* ── the selected type ── */}
       <section className="flex min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface xl:min-h-0">
         {!own && (
-          <div className="border-b border-hairline px-5 py-4">
-            <Banner title="This template uses Ledrix’s default building types."
-              actions={<button className={btn.primary} disabled={disabled} onClick={() => { if (commit(seedStructureTypes(tree))) setSelId('main'); }}>Customize building types</button>}>
-              Inspections from it offer Detached Shop, ADU, Guest House, Detached Garage and Outbuilding with Ledrix’s starting systems.
-              Customize to choose your own — you start from these, limited to the systems this template has.
-            </Banner>
-          </div>
+          <p className="border-b border-hairline px-5 py-3 text-xs text-muted">
+            These are Ledrix’s starting building types, limited to the systems this template has. Change anything and this template keeps its own list.
+          </p>
         )}
         {selId === 'main' ? (
           <div className="space-y-4 overflow-y-auto px-5 py-5">
@@ -191,7 +191,7 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
           <>
             <div className="flex items-start gap-3 border-b border-hairline px-5 py-4">
               <div className="relative">
-                <button aria-label="Choose icon" disabled={disabled || !own} onClick={() => setIconPicker(v => !v)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-hairline bg-ground text-ink hover:border-accent disabled:hover:border-hairline"><BIcon name={sel.icon} size={24} /></button>
+                <button aria-label="Choose icon" disabled={disabled} onClick={() => setIconPicker(v => !v)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-hairline bg-ground text-ink hover:border-accent disabled:hover:border-hairline"><BIcon name={sel.icon} size={24} /></button>
                 {iconPicker && (
                   <div className="absolute left-0 top-12 z-30 grid w-56 grid-cols-5 gap-1 rounded-xl border border-hairline bg-surface p-2 shadow-lg">
                     {STRUCTURE_TYPE_ICONS.map(k => (
@@ -202,12 +202,12 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <input value={name} disabled={disabled || !own} onChange={e => setName(e.target.value)} onBlur={saveName}
+                <input value={name} disabled={disabled} onChange={e => setName(e.target.value)} onBlur={saveName}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setName(sel.name); }}
                   placeholder="Name, e.g. Pool House" aria-label="Building type name" className={`${field} text-base font-semibold`} />
                 <p className="mt-1 text-xs text-muted">{!name.trim() ? 'A building type needs a name — the last one is kept until you type one.' : `${sel.systems.length} of ${tree.systems.length} template systems · inspectors see this name in Add building`}</p>
               </div>
-              {own && <Menu label={`More for ${sel.name}`} items={[{ label: 'Remove building type', danger: true, disabled: disabled ? 'Read only' : false, onSelect: () => setDialog({ remove: sel.id }) }]} />}
+              <Menu label={`More for ${sel.name}`} items={[{ label: 'Remove building type', danger: true, disabled: disabled ? 'Read only' : false, onSelect: () => setDialog({ remove: sel.id }) }]} />
             </div>
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
@@ -218,10 +218,10 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <p className={label + ' mb-0'}>Systems in a {sel.name}</p>
-                  {own && <span className="flex gap-1.5">
+                  <span className="flex gap-1.5">
                     <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => update(sel.id, { systems: tree.systems.map(s => s.id) })}>Select all</button>
                     <button className={btn.ghost + ' text-xs'} disabled={disabled} onClick={() => update(sel.id, { systems: [] })}>Clear</button>
-                  </span>}
+                  </span>
                 </div>
                 {sel.systems.length === 0 && (
                   <div className="mb-3 rounded-xl border border-dashed border-hairline px-4 py-5 text-center text-sm text-muted">
@@ -236,9 +236,9 @@ export function BuildingTypesPanel({ tree, live, onOps, disabled, onOpenSystem }
                     return (
                       <li key={i.node.id} className={on ? 'bg-accent/[0.06]' : ''}>
                         <div className="flex items-center gap-3 px-3 py-2.5">
-                          <input type="checkbox" checked={on} disabled={disabled || !own} onChange={() => toggle(i.node.id)} aria-label={`${displayLabel(i.node.label)} in ${sel.name}`} className="h-4 w-4 accent-[rgb(33,123,232)]" />
+                          <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(i.node.id)} aria-label={`${displayLabel(i.node.label)} in ${sel.name}`} className="h-4 w-4 accent-[rgb(33,123,232)]" />
                           <SIcon name={i.node.icon} size={18} className={on ? 'text-ink' : 'text-muted'} />
-                          <button className="min-w-0 flex-1 text-left" disabled={disabled || !own} onClick={() => toggle(i.node.id)}>
+                          <button className="min-w-0 flex-1 text-left" disabled={disabled} onClick={() => toggle(i.node.id)}>
                             <span className={`block text-sm ${on ? 'font-semibold text-ink' : 'text-body'}`}>{displayLabel(i.node.label)}</span>
                             <span className="block text-[11px] text-muted">{i.items} items · {i.assessed} assessed for condition · {i.specs} with spec fields</span>
                           </button>
