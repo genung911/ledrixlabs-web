@@ -321,11 +321,12 @@ const NAV_RULES = {
     if (!/setEditable\(mayEditServices\(/.test(s.services)) bad.push('Services no longer checks who may edit');
     return bad;
   },
-  'template: four steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview': s => {
+  'template: three steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview': s => {
     const t = s.tpl, bad = [];
     const labels = [...t.matchAll(/\{ id: '[a-z]+', label: '([^']+)', icon:/g)].map(m => m[1]);
     // 2026-11-06 (owner, guided builder W8UhcgEhYqmY2ZBQpgbKbx): four steps; Overview is the summary, not a step.
-    if (labels.join(' · ') !== 'What you inspect · Limitations · Report · Review & Publish') bad.push(labels.join(' · '));
+    // 2026-11-07 (owner, mockup FSTfPJUMmjGDVFqiqneD6o): three — Limitations moved into each system's screen.
+    if (labels.join(' · ') !== 'What you inspect · Report · Review & Publish') bad.push(labels.join(' · '));
     if (!/onClick=\{\(\) => setSection\('overview'\)\}/.test(t)) bad.push('Overview is not reachable');
     if (!/Next: \{next\.label\} ›/.test(t) || !/‹ Back: \{prev\.label\}/.test(t)) bad.push('no Back / Next');
     if (!/<nav aria-label="Template sections" className="-mb-3 mt-2 flex min-w-0 flex-1 gap-1 overflow-x-auto">/.test(t)) bad.push('sections are not a scrolling tab row');   // 2026-11-06: shares its row with Edit / Preview
@@ -351,8 +352,8 @@ const NAV_MUT = [
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'tabs', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true"],
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'team', "<CompanyTabs />", "<div />"],
   ['old URLs: each company page keeps its route, and refuses as before', 'payments', "if (!owner) return <Page><CompanyTabs /><ErrorBox", "if (false) return <Page><CompanyTabs /><ErrorBox"],
-  ['template: four steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'What you inspect',", "{ id: 'systems', label: 'Systems',"],
-  ['template: four steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
+  ['template: three steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'What you inspect',", "{ id: 'systems', label: 'Systems',"],
+  ['template: three steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
 ];
 for (const [rule, f, from, to] of NAV_MUT) {
   const applies = NAV_SRC[f].split(from).length === 2;

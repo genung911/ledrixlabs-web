@@ -5,13 +5,14 @@
 // hover, and the systems that are switched off. Items, groups, type sections, special homes and what is switched off
 // inside a system are all in the work area. No search (removed 2026-11-06, owner). It reads the draft and writes only
 // through `onOps` (reorder, add a system).
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { isCovered, ops } from '@/lib/templates/editorModel';
 import { Arrow } from './EditorParts';
 import { btn, field } from './ui';
 import { useBuildingLens } from './BuildingLens';
+import { limitCounts } from '@/lib/templates/limitationModel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 
@@ -34,6 +35,8 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const shown = tree.systems;
+  // The limitations count beside each system (owner 2026-11-07: "have a count next to it").
+  const limits = useMemo(() => limitCounts(tree), [tree]);
   const offSystems = tree.trimmedSystems ?? [];
   const addSystem = () => {
     const v = newName.trim(); if (!v) return;
@@ -56,7 +59,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
                   <span className="shrink-0 text-muted"><Dot kind="system" /></span><span className="truncate">{s.label}</span>
                 </button>
                 {!covered && <span title="Not covered when an inspection starts" className="text-[10px] font-semibold uppercase text-muted">off</span>}
-                <span className="font-mono text-[10px] text-muted group-hover/sys:hidden" title="Items">{itemCount(s)}</span>
+                <span className="whitespace-nowrap font-mono text-[10px] text-muted group-hover/sys:hidden" title={limits.get(s.id) ? `${itemCount(s)} items · ${limits.get(s.id)} limitations` : 'Items'}>{itemCount(s)}{limits.get(s.id) ? <> · {limits.get(s.id)} limit{limits.get(s.id) === 1 ? '' : 's'}</> : null}</span>
                 <div className="hidden flex-col group-hover/sys:flex focus-within:flex">
                   <button aria-label={`Move ${s.label} up`} disabled={disabled || i === 0} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i - 1))}><Arrow dir="up" /></button>
                   <button aria-label={`Move ${s.label} down`} disabled={disabled || i === shown.length - 1} className="text-muted hover:text-ink disabled:opacity-20" onClick={() => onOps(ops.move(s.id, null, i + 1))}><Arrow dir="down" /></button>

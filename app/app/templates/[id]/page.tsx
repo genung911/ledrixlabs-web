@@ -31,7 +31,7 @@ import { PhonePreview } from '@/components/templates/PhonePreview';
 import { buildingTypeChanges, buildingTypeIssues } from '@/components/templates/BuildingTypes';
 import { BuildingLensProvider, BuildingPicker } from '@/components/templates/BuildingLens';
 import { buildingsOf } from '@/lib/templates/buildingModel';
-import { GatesPanel } from '@/components/templates/GatesPanel';
+import { LimitationsList } from '@/components/templates/GatesPanel';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
@@ -46,20 +46,21 @@ import { TemplateApiError } from '@/lib/templates/api';
 import { forgetPlace, placeKey, readPlace, writePlace } from '@/lib/templates/lastPlace';
 
 type Sel = { systemId: string | null; nodeId: string | null };
-type Section = 'overview' | 'systems' | 'gates' | 'report' | 'review';
+type Section = 'overview' | 'systems' | 'report' | 'review';
 
 // A GUIDED BUILDER (owner 2026-11-06, mockup https://claude.ai/artifact/W8UhcgEhYqmY2ZBQpgbKbx, "That all sounds and looks
 // good" → "Build and push"): four numbered steps with Back / Next, every one still clickable. Overview is not a step —
 // it's the summary a published template opens on. How Many? left the builder (the phone keeps Ledrix's count questions);
 // the requirements list is part of Review & Publish (each item's own Requirements tab is where they're set).
+// THREE STEPS (owner 2026-11-07, mockup FSTfPJUMmjGDVFqiqneD6o, "Approved" → "Build and push"): Limitations left the
+// steps — each system's screen lists its own, under the groups; Review & Publish lists them all once.
 const SECTIONS: Array<{ id: Section; label: string; icon: string }> = [
   { id: 'systems', label: 'What you inspect', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5' },
-  { id: 'gates', label: 'Limitations', icon: 'M4 20V9l8-5 8 5v11M9 20v-6h6v6M4 13h16' },
   { id: 'report', label: 'Report', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7' },
   { id: 'review', label: 'Review & Publish', icon: 'M4 12l16-8-6 16-3-7-7-1z' },
 ];
 /** An old place or link to a section that left the steps. */
-const sectionOf = (s: string): Section => (s === 'requirements' ? 'review' : s === 'counts' ? 'systems' : (['overview', 'systems', 'gates', 'report', 'review'].includes(s) ? s as Section : 'systems'));
+const sectionOf = (s: string): Section => (s === 'requirements' ? 'review' : s === 'counts' || s === 'gates' ? 'systems' : (['overview', 'systems', 'report', 'review'].includes(s) ? s as Section : 'systems'));
 
 /** Ask Ledrix (the template assistant) is HIDDEN, not deleted (owner 2026-11-05: "hide both" — the tab and, with only one
  *  tab left, the Editor label). Ledrix's suggested parts in each type's list cover "what am I missing?" with no model
@@ -313,7 +314,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               {/* The summary, not a step (2026-11-06): Edit goes to step 1. */}
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <button className={btn.primary} onClick={() => setSection('systems')}>Edit this template ›</button>
-                <span className="text-xs text-muted">Four steps: What you inspect · Limitations · Report · Review &amp; Publish.</span>
+                <span className="text-xs text-muted">Three steps: What you inspect · Report · Review &amp; Publish.</span>
               </div>
               <section aria-label="Template version" className="mb-4 rounded-xl border border-hairline bg-surface px-4 py-3 text-xs">
                 <p className="font-semibold uppercase tracking-wide text-muted">Template version</p>
@@ -325,7 +326,6 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               <OverviewSection tree={tree} status={status} issues={issues} onGo={go} onOps={onOps} disabled={!!readOnly} />
             </div>
           )}
-          {section === 'gates' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><GatesPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'report' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'review' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
@@ -335,6 +335,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 onSave={() => d.flush()} onDiscard={() => setDialog('discard')} onPublish={() => setDialog('publish')} onGo={go} fixes={fixes} onOps={onOps} />
               {/* The requirements list (owner 2026-11-06: no Requirements tab — each item's Requirements tab sets them). */}
               <div className="mt-6"><RequirementsSection tree={tree} onGo={go} /></div>
+              {/* Every limitation once (2026-11-07); each is set on its system's screen. */}
+              <div className="mt-6"><LimitationsList tree={tree} onOpen={sid => { go('systems', { systemId: sid, nodeId: null }); setTimeout(() => document.getElementById('limitations')?.scrollIntoView({ block: 'start' }), 80); }} /></div>
             </div>
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}
@@ -368,7 +370,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
             </div>
             </BuildingLensProvider>
           </div>
-          {/* BACK / NEXT (2026-11-06): a convenience through the four steps, never a gate. */}
+          {/* BACK / NEXT (2026-11-06): a convenience through the steps, never a gate. */}
           {(() => {
             const i = SECTIONS.findIndex(x => x.id === section);
             if (i < 0) return null;

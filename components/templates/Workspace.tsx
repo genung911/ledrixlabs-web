@@ -15,6 +15,7 @@ import { RuleEditor } from './RuleEditor';
 import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
+import { SystemLimitations } from './GatesPanel';
 import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
 
@@ -74,6 +75,8 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
         sub={isCovered(tree, system) ? ON_SUB : OFF_SUB}
         action={<IncludedSwitch on={lens ? lens.isIn(system.id) : isCovered(tree, system)} label={system.label} disabled={disabled} onChange={v => onOps(lens ? lens.set(system.id, v) : includeOps(tree, system.id, v))} />}>
         <ItemsPanel tree={tree} system={system} sel={sel} onSelect={onSelect} onOps={onOps} onOpen={open} disabled={disabled} typeView={typeView} />
+        {/* LIMITATIONS, under the groups (owner 2026-11-07, mockup FSTfPJUMmjGDVFqiqneD6o): the step moved into the system. */}
+        <SystemLimitations tree={tree} system={system} onOps={onOps} disabled={disabled} />
       </Shell>
     );
   }
