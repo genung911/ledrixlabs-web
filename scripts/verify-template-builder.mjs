@@ -836,6 +836,16 @@ async function runTypes(files) {
           && JSON.stringify(AM.advisoryOps([])) === JSON.stringify([{ op: 'setTemplateField', field: 'advisories', value: null }])
           && ok.ok && JSON.stringify((d.tree?.advisories ?? []).map(a => a.id)) === JSON.stringify(list.map(a => a.id))
           && !refused.ok && JSON.stringify(d.tree?.advisories ?? null) === before);
+        // "Should Ledrix suggest advisories from the home's details?" (owner 2026-11-06, mockup A5vbGSBfvHNfPL4F2Fm5fu):
+        // one yes/no on the template; the rules read as sentences; every preset starts on Ledrix's own rule (Radon: every home).
+        const no = step(AM.suggestOps(false), 9102), noVal = d.tree?.suggestAdvisories;
+        const yes = step(AM.suggestOps(true), 9103), yesGone = d.tree?.suggestAdvisories === undefined;
+        r('advisories: one yes/no ("suggest from the home\'s details?") is stored as suggestAdvisories false, Yes removes it; each rule reads as a sentence; every preset starts on Ledrix\'s own rule (Radon: every home)',
+          no.ok && noVal === false && yes.ok && yesGone
+          && AM.ruleSentence({ kind: 'before', a: 1980 }) === 'Homes built before 1980' && AM.ruleSentence({ kind: 'between', a: 1965, b: 1973 }) === 'Homes built 1965–1973'
+          && AM.ruleSentence({ kind: 'every' }) === 'Every home' && AM.ruleSentence({ kind: 'from', a: 2005 }) === 'Homes built in 2005 or later'
+          && pre.every(a => JSON.stringify(AM.ruleOf(a)) === JSON.stringify(AM.ruleOf(RA.LEDRIX_ADVISORIES.find(x => x.id === a.id))))
+          && AM.ruleOf(pre.find(a => a.id === 'radon')).kind === 'every');
       }
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
@@ -1204,11 +1214,18 @@ const RULES = {
   },
   'advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps': all => {
     const cp = strip(all['app/app/templates/create/page.tsx'] ?? ''), se = strip(all['components/templates/Sections.tsx'] ?? ''), pg = strip(all['app/app/templates/[id]/page.tsx'] ?? '');
-    return /<AdvisoriesEditor value=\{advisories\} onChange=\{setAdvisories\} \/>/.test(cp) && /useState<Advisory\[\]>\(\(\) => presetAdvisories\(\)\)/.test(cp)
+    return /<AdvisoriesEditor value=\{advisories\} onChange=\{setAdvisories\} suggest=\{suggestAdv\} onSuggest=\{setSuggestAdv\} \/>/.test(cp)
+      && /if \(suggestAdv\) delete tree\.suggestAdvisories; else tree\.suggestAdvisories = false;/.test(cp) && /useState<Advisory\[\]>\(\(\) => presetAdvisories\(\)\)/.test(cp)
       && /if \(advisories\.length\) tree\.advisories = JSON\.parse\(JSON\.stringify\(advisories\)\); else delete tree\.advisories;/.test(cp)
-      && /<AdvisoriesEditor value=\{advisories\} onChange=\{l => \{ onOps\(advisoryOps\(l\)\); \}\} disabled=\{disabled\} \/>/.test(se)
+      && /<AdvisoriesEditor value=\{advisories\} onChange=\{l => \{ onOps\(advisoryOps\(l\)\); \}\} suggest=\{tree\.suggestAdvisories !== false\}\s*onSuggest=\{on => \{ onOps\(suggestOps\(on\)\); \}\} disabled=\{disabled\} \/>/.test(se)
       && !/They are set by Ledrix and can’t be edited here/.test(se) && /<ReportSection tree=\{tree\} onGo=\{go\} onOps=\{onOps\} disabled=\{!!readOnly\} \/>/.test(pg)
       ? [] : ['components/templates/AdvisoriesEditor.tsx'];
+  },
+  'advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width': all => {
+    const ae = strip(all['components/templates/AdvisoriesEditor.tsx'] ?? '');
+    return /\{suggest && <>\{ruleSentence\(r\)\} · <button/.test(ae) && /\{suggest && isOpen\(a\.id, 'rule'\) && \(/.test(ae)
+      && /\{suggest && picked && r\.kind !== 'never' && \(\s*<ModeToggle/.test(ae) && /<Toggle on=\{suggest\} label="Suggest advisories from the home’s details"/.test(ae)
+      && /const inline = field\.replace\(\/\\bw-full\\b\\s\*\/, ''\);/.test(ae) && !/className=\{`\$\{field\}[^`]*text-xs`\}/.test(ae) ? [] : ['components/templates/AdvisoriesEditor.tsx'];
   },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
@@ -1406,6 +1423,10 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', 'if (suggestAdv) delete tree.suggestAdvisories; else tree.suggestAdvisories = false;', ''), 'the answer never reaches the draft'],
+  ['advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width', rep('components/templates/AdvisoriesEditor.tsx', '{suggest && picked && r.kind !== \'never\' && (', '{picked && r.kind !== \'never\' && ('), 'No still shows Suggest / Always add'],
+  ['advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width', rep('components/templates/AdvisoriesEditor.tsx', '{suggest && isOpen(a.id, \'rule\') && (', '{isOpen(a.id, \'rule\') && ('), 'No still opens the rule'],
+  ['advisories: with No, the picker hides each rule and Suggest / Always add; with Yes a rule shows as its sentence and the picker opens only on Change; the rule controls are not full width', rep('components/templates/AdvisoriesEditor.tsx', 'aria-label={`When ${label} applies`} className={`${inline} px-2 py-1 text-xs`}', 'aria-label={`When ${label} applies`} className={`${field} px-2 py-1 text-xs`}'), 'the rule box is full width again'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', '      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;\n', ''), 'the picks never reach the draft'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('components/templates/Sections.tsx', 'onChange={l => { onOps(advisoryOps(l)); }}', 'onChange={() => {}}'), 'the builder\'s picker writes nothing'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/[id]/page.tsx', '<ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} />', '<ReportSection tree={tree} onGo={go} onOps={() => false} disabled={!!readOnly} />'), 'the page never passes the edits'],
@@ -1511,6 +1532,8 @@ const EXEC_MUT = [
   { name: 'a range keeps only its start', file: 'advisoryModel.ts', from: "case 'between': return yearOk(r.a) && yearOk(r.b) && r.a <= r.b ? put({ yearFrom: r.a, yearThrough: r.b }", to: "case 'between': return yearOk(r.a) && yearOk(r.b) && r.a <= r.b ? put({ yearFrom: r.a }", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
   { name: 'the preset forgets modes', file: 'advisoryModel.ts', from: "({ ...clone(a), mode: mode.get(a.id)! })", to: "({ ...clone(a) })", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
   { name: 'your own reuses a Ledrix id', file: 'advisoryModel.ts', from: "const taken = new Set([...list.map(a => a.id), ...LEDRIX_ADVISORIES.map(a => a.id)]);", to: "const taken = new Set<string>();", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
+  { name: 'Yes stores true instead of removing it', file: 'advisoryModel.ts', from: "value: on ? null : false", to: "value: on", check: 'advisories: one yes/no ("suggest from the home\'s details?") is stored as suggestAdvisories false, Yes removes it; each rule reads as a sentence; every preset starts on Ledrix\'s own rule (Radon: every home)', run: runTypes },
+  { name: 'the preset starts radon on Never', file: 'advisoryModel.ts', from: "({ ...clone(a), mode: mode.get(a.id)! })", to: "({ ...clone(a), suggestWhen: a.id === 'radon' ? undefined : a.suggestWhen, mode: mode.get(a.id)! })", check: 'advisories: one yes/no ("suggest from the home\'s details?") is stored as suggestAdvisories false, Yes removes it; each rule reads as a sentence; every preset starts on Ledrix\'s own rule (Radon: every home)', run: runTypes },
   { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },

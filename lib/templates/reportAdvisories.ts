@@ -236,17 +236,21 @@ export const LEDRIX_ADVISORIES: Advisory[] = [
 
 /** The catalog in force: a company's own list when it has authored one, else the Ledrix
  *  baseline. Same fallback shape as every other piece of template content. */
-export function advisoryCatalog(companyList?: Advisory[] | null): Advisory[] {
-  return companyList?.length ? companyList : LEDRIX_ADVISORIES;
+export function advisoryCatalog(companyList?: Advisory[] | null, suggest = true): Advisory[] {
+  const list = companyList?.length ? companyList : LEDRIX_ADVISORIES;
+  // "Should Ledrix suggest advisories to your inspector from the home's details?" — No (owner 2026-11-06, mockup
+  // A5vbGSBfvHNfPL4F2Fm5fu): the list is only offered. Without its rule an advisory is never suggested, never added on
+  // its own, and prints its plain wording — so every reader below follows the answer with no second path.
+  return suggest ? list : list.map(({ suggestWhen: _w, suggestWhy: _y, ...a }) => a);
 }
 
 /** Selected ids → printable text. Unknown ids are dropped rather than guessed — a retired
  *  advisory should vanish, not print half a sentence. */
 export function selectedAdvisories(
-  ids: string[] | undefined, ctx: AdvisoryContext, companyList?: Advisory[] | null,
+  ids: string[] | undefined, ctx: AdvisoryContext, companyList?: Advisory[] | null, suggest = true,
 ): Array<{ label: string; text: string }> {
-  const want = new Set(effectiveAdvisoryIds(ids, ctx, companyList));
-  return advisoryCatalog(companyList).filter(a => want.has(a.id)).map(a => {
+  const want = new Set(effectiveAdvisoryIds(ids, ctx, companyList, suggest));
+  return advisoryCatalog(companyList, suggest).filter(a => want.has(a.id)).map(a => {
     const why = matchAdvisory(a, ctx);
     const body = why && a.textWhenMatched ? a.textWhenMatched : a.text;
     return { label: a.label.toUpperCase(), text: fill(body, ctx) };
@@ -260,11 +264,11 @@ export function selectedAdvisories(
 // removes it, and an untick sticks. Ids never start with "-" (validated), and an unknown id prints nothing.
 export const OFF_PREFIX = '-';
 /** The advisory ids this job carries, in catalog order. */
-export function effectiveAdvisoryIds(stored: string[] | undefined, ctx: AdvisoryContext, companyList?: Advisory[] | null): string[] {
+export function effectiveAdvisoryIds(stored: string[] | undefined, ctx: AdvisoryContext, companyList?: Advisory[] | null, suggest = true): string[] {
   const xs = stored ?? [];
   const off = new Set(xs.filter(x => x.startsWith(OFF_PREFIX)).map(x => x.slice(OFF_PREFIX.length)));
   const picked = new Set(xs.filter(x => !x.startsWith(OFF_PREFIX)));
-  return advisoryCatalog(companyList)
+  return advisoryCatalog(companyList, suggest)
     .filter(a => !off.has(a.id) && (picked.has(a.id) || (a.mode === 'always' && !!matchAdvisory(a, ctx))))
     .map(a => a.id);
 }
@@ -289,9 +293,9 @@ export const CREATE_PRESET: ReadonlyArray<{ id: string; mode: 'suggest' | 'alway
 ];
 
 /** Which ones Ledrix would suggest for this house, and why. A suggestion is never a selection. */
-export function suggestedAdvisories(ctx: AdvisoryContext, companyList?: Advisory[] | null): Record<string, string> {
+export function suggestedAdvisories(ctx: AdvisoryContext, companyList?: Advisory[] | null, suggest = true): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const a of advisoryCatalog(companyList)) { const why = matchAdvisory(a, ctx); if (why) out[a.id] = why; }
+  for (const a of advisoryCatalog(companyList, suggest)) { const why = matchAdvisory(a, ctx); if (why) out[a.id] = why; }
   return out;
 }
 

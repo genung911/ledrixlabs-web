@@ -177,6 +177,9 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   // 2026-11-06 (owner, mockup NH8eoefNScGrsemCdofANd): the company now authors these (reportAdvisories.Advisory), so each
   // entry is checked here — the website's editor and an AI proposal are held to the same shape.
   advisories: { check: checkAdvisories, class: 'policy', why: 'report advisories are disclosures' },
+  // 2026-11-06 (owner, mockup A5vbGSBfvHNfPL4F2Fm5fu): "Should Ledrix suggest advisories to your inspector from the home's
+  // details?" false = No (the list is only offered); absent = Yes.
+  suggestAdvisories: { check: bool, class: 'policy', why: 'whether advisories are suggested or added from the home\'s details' },
   // 2026-10-24: the building types (templates/structureTypes.ts) — validated as a whole by templateValidate
   structureTypes: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'which systems each kind of building starts with' },
   // Phase A (2026-10-25): the pinned Ledrix default requirement set, and company overrides of it (validated as a whole).

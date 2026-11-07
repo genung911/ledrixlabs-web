@@ -19,6 +19,21 @@ const UTIL: Record<'water' | 'sewer' | 'gas', { key: keyof AdvisorySuggestWhen; 
   gas: { key: 'gasSupply', values: ['propane'], why: 'propane' },
 };
 
+/** The rule as the row says it ("Homes built before 1980") — the editor shows this, and the picker only on "Change"
+ *  (owner 2026-11-06, mockup A5vbGSBfvHNfPL4F2Fm5fu: "they don't need to try and figure out a bunch of edge case scenarios"). */
+export function ruleSentence(r: Rule): string {
+  switch (r.kind) {
+    case 'every': return 'Every home';
+    case 'before': return `Homes built before ${r.a}`;
+    case 'from': return `Homes built in ${r.a} or later`;
+    case 'between': return `Homes built ${r.a}–${r.b}`;
+    case 'water': return 'When the water source is a well';
+    case 'sewer': return 'When the sewer is septic';
+    case 'gas': return 'When the gas is propane';
+    default: return 'Picked by the inspector';
+  }
+}
+
 /** The rule an advisory carries, read back for the editor. */
 export function ruleOf(a: Advisory): Rule {
   const w = a.suggestWhen;
@@ -88,6 +103,10 @@ export function newAdvisory(list: readonly Advisory[], name: string, kind: Advis
   if (!name.trim() || !text.trim()) return null;
   return withRule({ id: slugFor(name, list), label: name.trim(), kind, text: text.trim(), mode }, rule);
 }
+
+/** "Should Ledrix suggest advisories to your inspector from the home's details?" — Yes removes the field (the default),
+ *  No stores false. */
+export const suggestOps = (on: boolean): TemplateOp[] => [{ op: 'setTemplateField', field: 'suggestAdvisories', value: on ? null : false }];
 
 /** The Template Builder's one write: the whole list (none → the field removed, so reports use Ledrix's list). */
 export const advisoryOps = (list: readonly Advisory[]): TemplateOp[] => [{ op: 'setTemplateField', field: 'advisories', value: list.length ? list.map(clone) : null }];

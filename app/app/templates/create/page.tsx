@@ -52,6 +52,7 @@ export default function CreateTemplatePage() {
   const [kindChoice, setKindChoice] = useState<Omit<KindChoice, 'propertyTypes'>>(EMPTY_KIND_CHOICE);
   const [busy, setBusy] = useState(false);
   const [advisories, setAdvisories] = useState<Advisory[]>(() => presetAdvisories());
+  const [suggestAdv, setSuggestAdv] = useState(true);   // "Should Ledrix suggest advisories from the home's details?"
   const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -114,6 +115,7 @@ export default function CreateTemplatePage() {
       const tree = built.tree;
       // The company's report advisories, picked on step 1 — the new draft's own list (none picked → Ledrix's list).
       if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;
+      if (suggestAdv) delete tree.suggestAdvisories; else tree.suggestAdvisories = false;
       const draft = await startNewTemplateDraft(access.companyId!, { name: name.trim(), base: chosen.base, tree });
       router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`);
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
@@ -178,8 +180,8 @@ export default function CreateTemplatePage() {
           </Panel>
           {/* Report advisories (owner 2026-11-06, mockup NH8eoefNScGrsemCdofANd, "looks great"): Ledrix's examples to pick,
               each with when it applies and Suggest / Always add; the list goes on the new draft as its `advisories`. */}
-          <Panel title="Report advisories" sub="What your reports recommend or disclose beyond the inspection — sewer scope, asbestos, lead paint, radon. Pick yours and set when each applies.">
-            <AdvisoriesEditor value={advisories} onChange={setAdvisories} />
+          <Panel title="Report advisories" sub="What your reports recommend or disclose beyond the inspection — sewer scope, asbestos, lead paint, radon. Tick the ones your company uses.">
+            <AdvisoriesEditor value={advisories} onChange={setAdvisories} suggest={suggestAdv} onSuggest={setSuggestAdv} />
           </Panel>
           <Panel title="Anything else your company requires (notes)" sub="Written in your words, for things that aren’t a report sentence. Ledrix doesn’t check templates against it.">
             <textarea className={field + ' min-h-[80px]'} maxLength={2000} value={ctx.notes} onChange={e => setCtx({ ...ctx, notes: e.target.value })}

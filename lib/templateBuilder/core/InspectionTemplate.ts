@@ -91,6 +91,8 @@ export type InspectionTemplate = {
   ruleDefinitions?: import('./templateRules').RuleDefinitions;
   offeringModel?: 1;
   advisories?: unknown[];
+  /** "Should Ledrix suggest advisories to your inspector from the home's details?" (owner 2026-11-06). false = No. Mirrors the app. */
+  suggestAdvisories?: boolean;
   /** Company building types (app 2026-10-24, templates/structureTypes.ts). On a snapshot: captured at creation. */
   structureTypes?: import('./structureTypes').StructureTypeDef[];
   /** Inspection snapshots only (app 2026-10-24): the buildings added during the inspection. Never on a company template. */

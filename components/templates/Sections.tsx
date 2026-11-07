@@ -6,7 +6,7 @@
 // advisories picker — each passed in by the page, every edit an op through `onOps`.
 import { useMemo } from 'react';
 import { AdvisoriesEditor } from './AdvisoriesEditor';
-import { advisoryOps } from '@/lib/templates/advisoryModel';
+import { advisoryOps, suggestOps } from '@/lib/templates/advisoryModel';
 import type { Advisory } from '@/lib/templates/reportAdvisories';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
@@ -206,7 +206,8 @@ export function ReportSection({ tree, onGo, onOps, disabled }: { tree: Inspectio
       {/* Editable since 2026-11-06 (owner, mockup NH8eoefNScGrsemCdofANd): the same picker as "Create a template". */}
       <Card title="Report advisories">
         {!advisories.length && <p className="mb-2 text-xs text-muted">This template has no list of its own, so inspectors are offered all of Ledrix’s advisories as suggestions. Picking any makes this template’s own list.</p>}
-        <AdvisoriesEditor value={advisories} onChange={l => { onOps(advisoryOps(l)); }} disabled={disabled} />
+        <AdvisoriesEditor value={advisories} onChange={l => { onOps(advisoryOps(l)); }} suggest={tree.suggestAdvisories !== false}
+          onSuggest={on => { onOps(suggestOps(on)); }} disabled={disabled} />
       </Card>
     </div>
   );
