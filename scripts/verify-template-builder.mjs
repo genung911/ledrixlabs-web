@@ -764,8 +764,9 @@ async function runTypes(files) {
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
       const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
-      r('materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)',
-        !!surf && surf.questions.length === 0 && surf.materials.map(n => n.label).join('|') === 'Floors|Walls / Ceilings'
+      r('materials: Interior floors, walls and countertops are materials questions, one card per answer (2026-11-07); a group with none lists its items that record a choice first (Attic insulation)',
+        !!surf && surf.questions.map(x => `${x.node.label}:${x.rows.length}:${x.rows[x.rows.length - 1].value}>${x.rows[x.rows.length - 1].card?.label}`).join('|') === 'Floors:10:Other>Other Flooring|Walls / Ceilings:6:Other>Other Walls'
+        && surf.questions.every(x => x.rows.every(r => r.card)) && surf.materials.length === 0
         && !surf.every.some(n => (n.attributes ?? []).length) && !!ins && ins.materials.some(n => n.label === 'Insulation'));
       // Interior (owner 2026-11-06, mockup SqNS9bXgLH8HwppCXtwBPY, "approved with recommendations"): one card per surface
       // (Wall Material merged into Walls / Ceilings), the kitchen pieces in their own group, the answer lists fixed.
@@ -776,7 +777,7 @@ async function runTypes(files) {
         globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: lab(surf?.every), kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
         r('interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings; Trim moved to Doors & Windows), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card',
           I.map(g => g.node.label).join('|') === 'Walls, Ceilings & Floors|Countertops & Cabinets|Doors & Windows|Stairs & Railings|Ventilation'
-          && !!surf && surf.every.length === 0 &&   /* Trim moved to Doors & Windows (2026-11-07) */ lab(kc?.materials) === 'Countertops' && lab(kc?.every) === 'Backsplash|Cabinets'
+          && !!surf && surf.every.length === 0 &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
           && !!vent && vent.every.length === 0 && !wm);
         // The answer lists themselves are the app's verify:interior-surfaces (pack, Ledrix Default, 4-Point; byte copies here).
       }
@@ -1600,7 +1601,7 @@ const EXEC_MUT = [
   { name: 'an answer bringing two items counts as a material', file: 'materialLayout.ts', from: "if (per.some(r => r.cards.length > 1)) continue;", to: "", check: 'materials: in a typed system (Electrical), the wiring-type section is a materials question drawn as rows; Service Entrance (an answer brings two items) is a type, not a material', run: runTypes },
   { name: 'adding a material leaves Other showing for it', file: 'materialLayout.ts', from: "const narrowed = !q.typed ||", to: "const narrowed = true ||", check: 'materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set', run: runTypes },
   { name: 'removing a material leaves its card on', file: 'materialLayout.ts', from: "...(card ? ops.setAside(card.id) : [])", to: "", check: 'materials: removing a material takes the answer out and switches its card off (restorable) — one change set', run: runTypes },
-  { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: a group with no materials question lists its items that record a choice first (Interior flooring, wall, countertop; Attic insulation)', run: runTypes },
+  { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: Interior floors, walls and countertops are materials questions, one card per answer (2026-11-07); a group with none lists its items that record a choice first (Attic insulation)', run: runTypes },
   { name: 'Interior\'s every-home lists carry the surface cards too', file: 'materialLayout.ts', from: "const every = rest.filter(n => !materials.includes(n));", to: "const every = rest;", check: 'interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings; Trim moved to Doors & Windows), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card', run: runTypes },
   { name: 'a unit can be moved', file: 'moveModel.ts', from: "if (unit) return unit.id === n.id", to: "if (false) return unit.id === n.id", check: 'move: units, a group holding one, a link and a count copy cannot move — and say why; an ordinary item can', run: runTypes },
   { name: 'a copied system is offered as a destination', file: 'moveModel.ts', from: "return (tree.systems ?? []).filter(s => !isCopy(s.id)).map(s => {", to: "return (tree.systems ?? []).map(s => {", check: 'move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay', run: runTypes },

@@ -4649,6 +4649,145 @@
          ]
         }
        ],
+       "condition": false
+      },
+      {
+       "id": "flr_hardwood",
+       "label": "Hardwood",
+       "kind": "component",
+       "keywords": [
+        "hardwood floor",
+        "hardwood flooring",
+        "wood floor",
+        "cupping",
+        "floor gaps"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_engineered",
+       "label": "Engineered Hardwood",
+       "kind": "component",
+       "keywords": [
+        "engineered hardwood",
+        "engineered wood floor"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_lvp",
+       "label": "LVP / Vinyl Plank",
+       "kind": "component",
+       "keywords": [
+        "lvp",
+        "luxury vinyl plank",
+        "vinyl plank",
+        "lvp flooring"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_laminate",
+       "label": "Laminate",
+       "kind": "component",
+       "keywords": [
+        "laminate floor",
+        "laminate flooring",
+        "swollen laminate"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_tile",
+       "label": "Ceramic / Porcelain Tile",
+       "kind": "component",
+       "keywords": [
+        "tile floor",
+        "ceramic tile",
+        "porcelain tile",
+        "cracked tile",
+        "grout"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_carpet",
+       "label": "Carpet",
+       "kind": "component",
+       "keywords": [
+        "carpet",
+        "carpet stain",
+        "stained carpet",
+        "carpet seam"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_concrete",
+       "label": "Concrete Floors",
+       "kind": "component",
+       "keywords": [
+        "concrete floor",
+        "stained concrete",
+        "polished concrete"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_stone",
+       "label": "Natural Stone Floors",
+       "kind": "component",
+       "keywords": [
+        "stone floor",
+        "slate floor",
+        "travertine",
+        "marble floor"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_sheet",
+       "label": "Sheet Vinyl",
+       "kind": "component",
+       "keywords": [
+        "sheet vinyl",
+        "linoleum",
+        "vinyl sheet flooring"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "flr_other",
+       "label": "Other Flooring",
+       "kind": "component",
+       "keywords": [],
        "condition": true,
        "limitations": [
         "Not Inspected"
@@ -4695,6 +4834,88 @@
          ]
         }
        ],
+       "condition": false
+      },
+      {
+       "id": "wall_drywall",
+       "label": "Drywall",
+       "kind": "component",
+       "keywords": [
+        "drywall",
+        "sheetrock",
+        "nail pops",
+        "drywall crack",
+        "tape joint"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "wall_plaster",
+       "label": "Plaster",
+       "kind": "component",
+       "keywords": [
+        "plaster wall",
+        "plaster ceiling",
+        "plaster crack",
+        "lath"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "wall_paneling",
+       "label": "Paneling",
+       "kind": "component",
+       "keywords": [
+        "paneling",
+        "wood paneling",
+        "wall panels"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "wall_wood",
+       "label": "Wood Walls",
+       "kind": "component",
+       "keywords": [
+        "wood walls",
+        "shiplap",
+        "tongue and groove",
+        "wood ceiling"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "wall_tile",
+       "label": "Tile Walls",
+       "kind": "component",
+       "keywords": [
+        "wall tile",
+        "tile surround",
+        "shower surround",
+        "tub surround"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "wall_other",
+       "label": "Other Walls",
+       "kind": "component",
+       "keywords": [],
        "condition": true,
        "limitations": [
         "Not Inspected"
@@ -4740,6 +4961,94 @@
          ]
         }
        ],
+       "condition": false
+      },
+      {
+       "id": "ctr_granite",
+       "label": "Granite",
+       "kind": "component",
+       "keywords": [
+        "granite countertop",
+        "granite counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_quartz",
+       "label": "Quartz",
+       "kind": "component",
+       "keywords": [
+        "quartz countertop",
+        "quartz counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_laminate",
+       "label": "Laminate Countertops",
+       "kind": "component",
+       "keywords": [
+        "laminate countertop",
+        "formica",
+        "laminate counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_butcher",
+       "label": "Butcher Block",
+       "kind": "component",
+       "keywords": [
+        "butcher block",
+        "wood countertop"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_marble",
+       "label": "Marble",
+       "kind": "component",
+       "keywords": [
+        "marble countertop",
+        "marble counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_tile",
+       "label": "Tile Countertops",
+       "kind": "component",
+       "keywords": [
+        "tile countertop",
+        "tile counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_solid",
+       "label": "Solid Surface",
+       "kind": "component",
+       "keywords": [
+        "solid surface",
+        "corian"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_concrete",
+       "label": "Concrete Countertops",
+       "kind": "component",
+       "keywords": [
+        "concrete countertop",
+        "concrete counter"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ctr_other",
+       "label": "Other Countertops",
+       "kind": "component",
+       "keywords": [],
        "condition": true
       },
       {
@@ -4796,17 +5105,139 @@
        "attributes": [
         {
          "id": "spec",
-         "label": "Type",
+         "label": "Frame Material",
          "values": [
-          "Double-Pane Vinyl",
-          "Double-Pane Wood",
-          "Double-Pane Aluminum",
-          "Triple-Pane",
+          "Vinyl",
+          "Wood",
+          "Aluminum",
+          "Fiberglass",
+          "Clad Wood",
           "Storm Windows"
          ]
         }
        ],
-       "condition": true
+       "condition": false
+      },
+      {
+       "id": "win_vinyl",
+       "label": "Vinyl Windows",
+       "kind": "component",
+       "keywords": [
+        "vinyl window",
+        "vinyl windows",
+        "vinyl frame",
+        "vinyl sash"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_wood",
+       "label": "Wood Windows",
+       "kind": "component",
+       "keywords": [
+        "wood window",
+        "wood windows",
+        "wood sash",
+        "window rot",
+        "rotted sill"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_aluminum",
+       "label": "Aluminum Windows",
+       "kind": "component",
+       "keywords": [
+        "aluminum window",
+        "aluminum windows",
+        "aluminum frame"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_fiberglass",
+       "label": "Fiberglass Windows",
+       "kind": "component",
+       "keywords": [
+        "fiberglass window",
+        "fiberglass windows"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_clad",
+       "label": "Clad Wood Windows",
+       "kind": "component",
+       "keywords": [
+        "clad window",
+        "clad wood window",
+        "aluminum clad",
+        "vinyl clad"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_storm",
+       "label": "Storm Windows",
+       "kind": "component",
+       "keywords": [
+        "storm window",
+        "storm windows"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_other",
+       "label": "Other Windows",
+       "kind": "component",
+       "keywords": [],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_glazing",
+       "label": "Window Glazing",
+       "kind": "component",
+       "keywords": [
+        "single pane",
+        "double pane",
+        "triple pane",
+        "dual pane",
+        "insulated glass",
+        "glazing"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Glazing",
+         "values": [
+          "Single-Pane",
+          "Double-Pane",
+          "Triple-Pane"
+         ]
+        }
+       ],
+       "condition": false
       },
       {
        "id": "int_windows",
@@ -4861,11 +5292,92 @@
           "Steel",
           "Fiberglass",
           "Solid Wood",
-          "Glass / French"
+          "Glass / French",
+          "Sliding Glass"
          ]
         }
        ],
-       "condition": true
+       "condition": false
+      },
+      {
+       "id": "door_steel",
+       "label": "Steel Doors",
+       "kind": "component",
+       "keywords": [
+        "steel door",
+        "metal door",
+        "steel entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_fiberglass",
+       "label": "Fiberglass Doors",
+       "kind": "component",
+       "keywords": [
+        "fiberglass door",
+        "fiberglass entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_wood",
+       "label": "Solid Wood Doors",
+       "kind": "component",
+       "keywords": [
+        "wood door",
+        "solid wood door",
+        "wood entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_french",
+       "label": "Glass / French Doors",
+       "kind": "component",
+       "keywords": [
+        "french door",
+        "french doors",
+        "glass door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_sliding",
+       "label": "Sliding Glass Doors",
+       "kind": "component",
+       "keywords": [
+        "sliding glass door",
+        "slider",
+        "patio door",
+        "sliding door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_other",
+       "label": "Other Doors",
+       "kind": "component",
+       "keywords": [],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
       },
       {
        "id": "ext_weatherstrip",
