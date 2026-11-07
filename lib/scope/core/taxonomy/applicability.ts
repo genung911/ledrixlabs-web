@@ -186,10 +186,17 @@ export function specHolds(value: string, includes: readonly string[]): boolean {
   return false;
 }
 
+/** ── "NOT PRESENT" IS AN ABSENCE, NEVER A MATERIAL (owner 2026-11-07, mockup XD8fbDLbZVqmAtxocSNNqK) ──────────────
+ *  What's here's None button records this answer: the house has none. It is an answer, so every rule reads it (an
+ *  item waiting on a type finds none) and the report prints it as the field's one line. It is NOT something the
+ *  inspector typed under Other, so an `unlisted` predicate — the Other card — never holds for it. */
+export const NOT_PRESENT = 'Not present';
+const isAbsence = (entry: string) => norm(entry) === norm(NOT_PRESENT);
+
 /** The entries of a stored multi-value (SPEC_DELIM ', ') that contain none of `claimed` — what an
- *  `unlisted` predicate is about. Same substring rule as specHolds, applied per entry. */
+ *  `unlisted` predicate is about. Same substring rule as specHolds, applied per entry. Not present is never one. */
 export function unlistedEntries(value: string | null | undefined, claimed: readonly string[]): string[] {
-  return String(value ?? '').split(',').map(v => v.trim()).filter(v => v && !specHolds(v, claimed));
+  return String(value ?? '').split(',').map(v => v.trim()).filter(v => v && !isAbsence(v) && !specHolds(v, claimed));
 }
 
 /** Does one spec predicate hold for an answered value? `includes`, or — when authored — `unlisted`. */
@@ -201,7 +208,7 @@ export function specPredicateHolds(value: string, p: { includes?: readonly strin
     const entries = String(value ?? '').split(',').map(norm).filter(Boolean);
     const inc = (p.includes ?? []).map(norm);
     if (entries.some(e => inc.includes(e))) return true;
-    if (Array.isArray(p.unlisted)) { const opts = p.unlisted.map(norm); return entries.some(e => !opts.includes(e)); }
+    if (Array.isArray(p.unlisted)) { const opts = p.unlisted.map(norm); return entries.some(e => !isAbsence(e) && !opts.includes(e)); }
     return false;
   }
   if (Array.isArray(p.unlisted)) return unlistedEntries(value, p.unlisted).length > 0;
