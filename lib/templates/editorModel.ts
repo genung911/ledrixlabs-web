@@ -312,7 +312,7 @@ export const ops = {
 };
 
 /** Ledrix's default coverage when a template switches no system on (ledrix-app inspectionOffering.ts). */
-export const DEFAULT_COVERED = ['safety', 'roofing', 'attic', 'exterior', 'doors_windows', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling'];
+export const DEFAULT_COVERED = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling'];
 
 /** Is this system covered when an inspection starts? The app's rule, exactly (offeringForNewSnapshot). */
 export function isCovered(tree: InspectionTemplate, sys: TemplateNode): boolean {

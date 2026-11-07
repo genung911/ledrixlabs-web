@@ -4501,7 +4501,7 @@
               "label": "Window Type",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "ext_windows"
               }
             },
@@ -4510,7 +4510,7 @@
               "label": "Door Material",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "ext_doors"
               }
             },
@@ -4519,7 +4519,7 @@
               "label": "Weatherstripping",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "ext_weatherstrip"
               }
             },
@@ -4528,7 +4528,7 @@
               "label": "Garage Door Auto-Reverse / Photo-Eyes",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "ext_garage_door"
               }
             },
@@ -4537,7 +4537,7 @@
               "label": "Garage Vehicle Door",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "gar_door"
               }
             },
@@ -4546,7 +4546,7 @@
               "label": "Garage Door Opener",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "gar_opener"
               }
             },
@@ -4555,7 +4555,7 @@
               "label": "Garage Door Springs & Cables",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "gar_springs"
               }
             },
@@ -4564,7 +4564,7 @@
               "label": "Garage Door Hardware",
               "kind": "component",
               "pointsTo": {
-                "systemId": "doors_windows",
+                "systemId": "interior",
                 "nodeId": "garage_gar_door_hardware"
               }
             }
@@ -4920,344 +4920,6 @@
       "walkZone": "exterior",
       "walkZones": [
         "exterior"
-      ]
-    },
-    {
-      "id": "doors_windows",
-      "label": "DOORS & WINDOWS",
-      "kind": "system",
-      "icon": "window-closed-variant",
-      "defaultActive": true,
-      "children": [
-        {
-          "id": "doors_windows__windows",
-          "label": "Windows",
-          "kind": "subsystem",
-          "children": [
-            {
-              "id": "ext_windows",
-              "label": "Window Type",
-              "kind": "component",
-              "keywords": [
-                "single pane",
-                "double pane",
-                "triple pane",
-                "aluminum window",
-                "vinyl window",
-                "wood window"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Type",
-                  "values": [
-                    "Double-Pane Vinyl",
-                    "Double-Pane Wood",
-                    "Double-Pane Aluminum",
-                    "Triple-Pane",
-                    "Storm Windows"
-                  ]
-                }
-              ],
-              "condition": true,
-              "walkZone": "exterior",
-              "walkZones": [
-                "exterior"
-              ]
-            },
-            {
-              "id": "int_windows",
-              "label": "Window Operation",
-              "kind": "component",
-              "keywords": [
-                "window operation",
-                "window stuck",
-                "sash",
-                "failed seal",
-                "fogged window",
-                "broken window"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Sampled"
-              ],
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ]
-            },
-            {
-              "id": "int_egress",
-              "label": "Egress",
-              "kind": "component",
-              "keywords": [
-                "egress",
-                "egress window",
-                "bedroom egress",
-                "emergency escape",
-                "window well",
-                "sleeping room"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Verified"
-              ],
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ]
-            }
-          ],
-          "trimmed": []
-        },
-        {
-          "id": "doors_windows__exterior_doors",
-          "label": "Exterior Doors",
-          "kind": "subsystem",
-          "children": [
-            {
-              "id": "ext_doors",
-              "label": "Door Material",
-              "kind": "component",
-              "keywords": [
-                "entry door",
-                "exterior door",
-                "garage door",
-                "steel door",
-                "fiberglass door"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Material",
-                  "values": [
-                    "Steel",
-                    "Fiberglass",
-                    "Solid Wood",
-                    "Glass / French"
-                  ]
-                }
-              ],
-              "condition": true,
-              "walkZone": "exterior",
-              "walkZones": [
-                "exterior"
-              ]
-            },
-            {
-              "id": "ext_weatherstrip",
-              "label": "Weatherstripping",
-              "kind": "component",
-              "keywords": [
-                "weatherstrip",
-                "weatherstripping",
-                "door seal",
-                "threshold",
-                "gap at door",
-                "daylight at door"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "walkZone": "exterior",
-              "walkZones": [
-                "exterior"
-              ]
-            }
-          ],
-          "trimmed": []
-        },
-        {
-          "id": "doors_windows__interior_doors",
-          "label": "Interior Doors",
-          "kind": "subsystem",
-          "children": [
-            {
-              "id": "int_doors",
-              "label": "Interior Doors",
-              "kind": "component",
-              "keywords": [
-                "interior door",
-                "bedroom door",
-                "closet door",
-                "door latch",
-                "rubbing door",
-                "hollow core"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Tested"
-              ],
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ]
-            },
-            {
-              "id": "int_trim",
-              "label": "Trim / Doors Finish",
-              "kind": "component",
-              "keywords": [
-                "baseboard",
-                "casing",
-                "trim interior",
-                "crown molding",
-                "damaged trim"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ]
-            }
-          ],
-          "trimmed": []
-        },
-        {
-          "id": "doors_windows__garage_doors",
-          "label": "Garage Doors",
-          "kind": "subsystem",
-          "children": [
-            {
-              "id": "gar_door",
-              "label": "Garage Vehicle Door",
-              "kind": "component",
-              "keywords": [
-                "garage door",
-                "overhead door",
-                "sectional door",
-                "roll-up door",
-                "tilt-up door",
-                "bay door"
-              ],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Vehicle Door",
-                  "values": [
-                    "Sectional — Insulated",
-                    "Sectional — Non-Insulated",
-                    "Roll-Up",
-                    "Tilt-Up",
-                    "Wood",
-                    "Steel"
-                  ]
-                }
-              ],
-              "condition": true,
-              "walkZone": "exterior",
-              "walkZones": [
-                "garage",
-                "exterior"
-              ]
-            },
-            {
-              "id": "gar_opener",
-              "label": "Garage Door Opener",
-              "kind": "component",
-              "keywords": [
-                "garage door opener",
-                "opener",
-                "liftmaster",
-                "chamberlain",
-                "genie",
-                "belt drive",
-                "chain drive"
-              ],
-              "condition": true,
-              "limitations": [
-                "Not Tested"
-              ],
-              "walkZone": "garage",
-              "walkZones": [
-                "garage"
-              ]
-            },
-            {
-              "id": "ext_garage_door",
-              "label": "Garage Door Auto-Reverse / Photo-Eyes",
-              "kind": "component",
-              "keywords": [
-                "garage door opener",
-                "auto reverse",
-                "auto-reverse",
-                "photo eye",
-                "photoelectric",
-                "safety reverse",
-                "photo-eyes",
-                "safety sensor",
-                "reverse on contact"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Garage Door Auto-Reverse / Photo-Eyes",
-                  "values": [
-                    "Photo-Eyes Only",
-                    "Mechanical Reverse Only",
-                    "Auto-Reverse Only"
-                  ]
-                }
-              ],
-              "condition": true,
-              "limitations": [
-                "Not Tested"
-              ],
-              "walkZone": "garage",
-              "walkZones": [
-                "garage",
-                "exterior"
-              ]
-            },
-            {
-              "id": "gar_springs",
-              "label": "Garage Door Springs & Cables",
-              "kind": "component",
-              "keywords": [
-                "torsion spring",
-                "extension spring",
-                "garage cable",
-                "frayed cable",
-                "broken spring"
-              ],
-              "condition": true,
-              "limitations": [
-                "Not Visible"
-              ],
-              "walkZone": "garage",
-              "walkZones": [
-                "garage"
-              ]
-            },
-            {
-              "id": "garage_gar_door_hardware",
-              "label": "Garage Door Hardware",
-              "kind": "component",
-              "keywords": [],
-              "condition": true,
-              "walkZone": "garage",
-              "walkZones": [
-                "garage",
-                "exterior"
-              ]
-            }
-          ],
-          "trimmed": []
-        }
-      ],
-      "trimmed": [],
-      "locationAxis": "room",
-      "walkZone": "exterior",
-      "walkZones": [
-        "exterior",
-        "interior",
-        "garage"
       ]
     },
     {
@@ -5859,40 +5521,293 @@
           "kind": "subsystem",
           "children": [
             {
-              "id": "interior__link_int_doors",
-              "label": "Interior Doors",
+              "id": "ext_windows",
+              "label": "Window Type",
               "kind": "component",
-              "pointsTo": {
-                "systemId": "doors_windows",
-                "nodeId": "int_doors"
-              }
+              "keywords": [
+                "single pane",
+                "double pane",
+                "triple pane",
+                "aluminum window",
+                "vinyl window",
+                "wood window"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Type",
+                  "values": [
+                    "Double-Pane Vinyl",
+                    "Double-Pane Wood",
+                    "Double-Pane Aluminum",
+                    "Triple-Pane",
+                    "Storm Windows"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
             },
             {
-              "id": "interior__link_int_trim",
-              "label": "Trim / Doors Finish",
-              "kind": "component",
-              "pointsTo": {
-                "systemId": "doors_windows",
-                "nodeId": "int_trim"
-              }
-            },
-            {
-              "id": "interior__link_int_windows",
+              "id": "int_windows",
               "label": "Window Operation",
               "kind": "component",
-              "pointsTo": {
-                "systemId": "doors_windows",
-                "nodeId": "int_windows"
-              }
+              "keywords": [
+                "window operation",
+                "window stuck",
+                "sash",
+                "failed seal",
+                "fogged window",
+                "broken window"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Sampled"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
             },
             {
-              "id": "interior__link_int_egress",
+              "id": "int_egress",
               "label": "Egress",
               "kind": "component",
-              "pointsTo": {
-                "systemId": "doors_windows",
-                "nodeId": "int_egress"
-              }
+              "keywords": [
+                "egress",
+                "egress window",
+                "bedroom egress",
+                "emergency escape",
+                "window well",
+                "sleeping room"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Verified"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "ext_doors",
+              "label": "Door Material",
+              "kind": "component",
+              "keywords": [
+                "entry door",
+                "exterior door",
+                "garage door",
+                "steel door",
+                "fiberglass door"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Material",
+                  "values": [
+                    "Steel",
+                    "Fiberglass",
+                    "Solid Wood",
+                    "Glass / French"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            },
+            {
+              "id": "ext_weatherstrip",
+              "label": "Weatherstripping",
+              "kind": "component",
+              "keywords": [
+                "weatherstrip",
+                "weatherstripping",
+                "door seal",
+                "threshold",
+                "gap at door",
+                "daylight at door"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            },
+            {
+              "id": "int_doors",
+              "label": "Interior Doors",
+              "kind": "component",
+              "keywords": [
+                "interior door",
+                "bedroom door",
+                "closet door",
+                "door latch",
+                "rubbing door",
+                "hollow core"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "int_trim",
+              "label": "Trim / Doors Finish",
+              "kind": "component",
+              "keywords": [
+                "baseboard",
+                "casing",
+                "trim interior",
+                "crown molding",
+                "damaged trim"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ]
+            },
+            {
+              "id": "gar_door",
+              "label": "Garage Vehicle Door",
+              "kind": "component",
+              "keywords": [
+                "garage door",
+                "overhead door",
+                "sectional door",
+                "roll-up door",
+                "tilt-up door",
+                "bay door"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Vehicle Door",
+                  "values": [
+                    "Sectional — Insulated",
+                    "Sectional — Non-Insulated",
+                    "Roll-Up",
+                    "Tilt-Up",
+                    "Wood",
+                    "Steel"
+                  ]
+                }
+              ],
+              "condition": true,
+              "walkZone": "exterior",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
+            },
+            {
+              "id": "gar_opener",
+              "label": "Garage Door Opener",
+              "kind": "component",
+              "keywords": [
+                "garage door opener",
+                "opener",
+                "liftmaster",
+                "chamberlain",
+                "genie",
+                "belt drive",
+                "chain drive"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "ext_garage_door",
+              "label": "Garage Door Auto-Reverse / Photo-Eyes",
+              "kind": "component",
+              "keywords": [
+                "garage door opener",
+                "auto reverse",
+                "auto-reverse",
+                "photo eye",
+                "photoelectric",
+                "safety reverse",
+                "photo-eyes",
+                "safety sensor",
+                "reverse on contact"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Garage Door Auto-Reverse / Photo-Eyes",
+                  "values": [
+                    "Photo-Eyes Only",
+                    "Mechanical Reverse Only",
+                    "Auto-Reverse Only"
+                  ]
+                }
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Tested"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
+            },
+            {
+              "id": "gar_springs",
+              "label": "Garage Door Springs & Cables",
+              "kind": "component",
+              "keywords": [
+                "torsion spring",
+                "extension spring",
+                "garage cable",
+                "frayed cable",
+                "broken spring"
+              ],
+              "condition": true,
+              "limitations": [
+                "Not Visible"
+              ],
+              "walkZone": "garage",
+              "walkZones": [
+                "garage"
+              ]
+            },
+            {
+              "id": "garage_gar_door_hardware",
+              "label": "Garage Door Hardware",
+              "kind": "component",
+              "keywords": [],
+              "condition": true,
+              "walkZone": "garage",
+              "walkZones": [
+                "garage",
+                "exterior"
+              ]
             }
           ],
           "trimmed": []

@@ -47,14 +47,17 @@ export const STRUCTURE_TYPE_ICONS: readonly string[] = [
 // unit gets the main house's core systems plus Kitchen / Laundry / Bathroom; a utility building a lean structural
 // set; an Outbuilding starts empty. `RESIDENTIAL` is canonicalSystems.DEFAULT_ACTIVE_SYSTEMS + the three rooms —
 // verify:structure-types holds the two equal. Ids a template does not have are inert (Scope lists template systems).
-const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'doors_windows', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling', 'kitchen', 'laundry', 'primary_bathroom'];
-// Doors & Windows (2026-11-07) holds the garage doors, so a detached garage or shop includes it.
-const UTILITY = ['roofing', 'exterior', 'doors_windows', 'electrical', 'foundation'];
+const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling', 'kitchen', 'laundry', 'primary_bathroom'];
+// Windows, doors and garage doors live in Interior › Doors & Windows (owner 2026-11-07), so a detached garage or shop
+// includes Interior with everything off but what Exterior › Openings held before — its building keeps its garage door.
+const UTILITY = ['roofing', 'exterior', 'interior', 'electrical', 'foundation'];
+const UTILITY_OFF = ['interior__walls_ceilings_floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
+  'int_windows', 'int_egress', 'int_doors', 'int_trim'];
 export const LEDRIX_DEFAULT_STRUCTURE_TYPES: readonly StructureTypeDef[] = [
-  { id: 'ledrix_shop',        name: 'Detached Shop',   kind: 'shop',        icon: 'warehouse',            systems: UTILITY },
+  { id: 'ledrix_shop',        name: 'Detached Shop',   kind: 'shop',        icon: 'warehouse',            systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_adu',         name: 'ADU',             kind: 'adu',         icon: 'home-group',           systems: RESIDENTIAL },
   { id: 'ledrix_guest_house', name: 'Guest House',     kind: 'guest_house', icon: 'home-variant-outline', systems: RESIDENTIAL },
-  { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY },
+  { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_outbuilding', name: 'Outbuilding',     kind: 'outbuilding', icon: 'home-outline',         systems: [] },
 ];
 
