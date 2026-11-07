@@ -321,10 +321,11 @@ const NAV_RULES = {
     if (!/setEditable\(mayEditServices\(/.test(s.services)) bad.push('Services no longer checks who may edit');
     return bad;
   },
-  'template: eight tabs in order, publish controls in the header, version box on Overview': s => {
+  'template: seven tabs in order, publish controls in the header, version box on Overview': s => {
     const t = s.tpl, bad = [];
     const labels = [...t.matchAll(/\{ id: '[a-z]+', label: '([^']+)', icon:/g)].map(m => m[1]);
-    if (labels.join(' · ') !== 'Overview · Systems · Building Types · Gates · How Many? · Requirements · Report Content · Review & Publish') bad.push(labels.join(' · '));
+    // 2026-11-06 (owner): Building Types left the rail — buildings are the strip across the top of Systems.
+    if (labels.join(' · ') !== 'Overview · Systems · Gates · How Many? · Requirements · Report Content · Review & Publish') bad.push(labels.join(' · '));
     if (!/<nav aria-label="Template sections" className="-mb-3 mt-2 flex gap-1 overflow-x-auto">/.test(t)) bad.push('sections are not a scrolling tab row');
     const header = t.slice(t.indexOf('{/* top bar */}'), t.indexOf('<nav aria-label="Template sections"'));
     if (!/>Publish<\/button>/.test(header) || !/>Save draft<\/button>/.test(header) || !/>Discard draft<\/button>/.test(header)) bad.push('publish controls left the header');
@@ -348,8 +349,8 @@ const NAV_MUT = [
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'tabs', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true"],
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'team', "<CompanyTabs />", "<div />"],
   ['old URLs: each company page keeps its route, and refuses as before', 'payments', "if (!owner) return <Page><CompanyTabs /><ErrorBox", "if (false) return <Page><CompanyTabs /><ErrorBox"],
-  ['template: eight tabs in order, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'Systems',", "{ id: 'systems', label: 'Systems & Components',"],
-  ['template: eight tabs in order, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
+  ['template: seven tabs in order, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'Systems',", "{ id: 'systems', label: 'Systems & Components',"],
+  ['template: seven tabs in order, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
 ];
 for (const [rule, f, from, to] of NAV_MUT) {
   const applies = NAV_SRC[f].split(from).length === 2;
