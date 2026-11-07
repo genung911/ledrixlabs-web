@@ -1127,15 +1127,16 @@ const RULES = {
     if (!/offRows\.map\(/.test(parts)) bad.push('Items panel: off rows not shown');
     return bad;
   },
-  'item: no tabs — its rows (Limitations · Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': all => {
+  'item: no tabs — its rows (Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': all => {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), page = strip(all[EDIT] ?? '');
     // Owner 2026-11-07 (mockup CgiHJ5LqFQb4hAFSrAr3ox): one screen shape at every level. Before: one Item tab (2026-11-06).
-    const at = ws.indexOf('<AboutRows>\n          <LimitationsRow tree={tree} part={node}');
+    // 2026-11-07 (mockup D55cNLEk1gM9B4cHbTtD1q): the item's limitations moved inside Condition; Condition is its first row.
+    const at = ws.indexOf('<AboutRows>\n          <FacetRow title="Condition"');
     const rows = at < 0 ? '' : ws.slice(at, ws.indexOf('</AboutRows>', at));
-    return ['Condition', 'Details', 'Requirements', 'Applies when'].every((t, i, a) => rows.indexOf(`<FacetRow title="${t}"`) > (i ? rows.indexOf(`<FacetRow title="${a[i - 1]}"`) : 0))
+    return at >= 0 && ['Condition', 'Details', 'Requirements', 'Applies when'].every((t, i, a) => rows.indexOf(`<FacetRow title="${t}"`) > (i ? rows.indexOf(`<FacetRow title="${a[i - 1]}"`) : -1))
       && ['condition', 'details', 'requirements', 'applicability'].every(t => new RegExp(`if \\(tab === '${t}'\\) return facet\\('${t}',`).test(ws))
-      && /if \(tab === 'limitations'\) return limitsScreen\(node,/.test(ws)
-      && /onBack=\{\{ label: node\.label, go: \(\) => setTab\('overview'\) \}\}/.test(ws)
+      && /if \(tab === 'limitations'\) return facet\('limitations', <ItemLimitations /.test(ws)
+      && /onBack=\{back === 'overview' \? \{ label: node\.label, go: \(\) => setTab\('overview'\) \}/.test(ws)
       && /ops\.switchDetails\(node, on\)/.test(ws) && /ops\.switchRequirements\(node, on\)/.test(ws)
       && /Nothing to record — inspectors won’t see this item\./.test(ws) && !/ReportTab|const visible: ComponentTab/.test(ws)
       && /const select = useCallback\(\(s: Sel\) => \{ setSel\(s\); setMode\('edit'\); setCtab\('overview'\); \}, \[\]\);/.test(page) ? [] : ['components/templates/Workspace.tsx'];
@@ -1246,7 +1247,7 @@ const RULES = {
     return !/layout\.every\.filter\(canStartLimited\)/.test(tb)
       && /if \(!layout \|\| !canStartLimited\(node\) \|\| !layout\.every\.some\(n => n\.id === node\.id\)\) return null;/.test(tb)
       && /<OperatesSwitch node=\{node\} field=\{layout\.question\.field\} value="\*"/.test(tb)
-      && /if \(tab === 'limitations'\) return limitsScreen\(node, `\$\{path\} › \$\{node\.label\}`, <EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws)
+      && /if \(tab === 'limitations'\) return facet\('limitations', <ItemLimitations tree=\{tree\} part=\{node\}[^\n]*\n\s*policy=\{<EveryTypeOperates tree=\{tree\} system=\{system\} node=\{node\}/.test(ws)
       && /\{own\.filter\(canStartLimited\)\.map\(n => \(\s*<OperatesSwitch key=\{n\.id\} node=\{n\} field=\{layout\.question\.field\} value=\{pick\}/.test(tb)
       && /onChange=\{v => \{ onOps\(ops\.operates\(node, f, value, v\)\); \}\}/.test(tb)
       && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
@@ -1488,7 +1489,7 @@ const MUT = {
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': rep('components/templates/RuleEditor.tsx', 'onSave(next)', 'onSave({ any: conds })'),
   'editor: a system’s Included switch sits on its title line and writes through coverByDefault (the app’s rule)': rep('components/templates/Workspace.tsx', 'onChange={v => onOps(lens ? lens.set(system.id, v) : includeOps(tree, system.id, v))} />}', 'onChange={() => undefined} />}'),
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
-  'item: no tabs — its rows (Limitations · Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': rep('components/templates/Workspace.tsx', "if (tab === 'details') return facet('details',", "if (tab === 'nope') return facet('details',"),
+  'item: no tabs — its rows (Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': rep('components/templates/Workspace.tsx', "if (tab === 'details') return facet('details',", "if (tab === 'nope') return facet('details',"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
@@ -1529,7 +1530,7 @@ const MUT3 = [
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', '      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;\n', ''), 'the picks never reach the draft'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('components/templates/Sections.tsx', 'onChange={l => { onOps(advisoryOps(l)); }}', 'onChange={() => {}}'), 'the builder\'s picker writes nothing'],
   ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/[id]/page.tsx', '<ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} />', '<ReportSection tree={tree} onGo={go} onOps={() => false} disabled={!!readOnly} />'), 'the page never passes the edits'],
-  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/Workspace.tsx', ', <EveryTypeOperates tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />);', ');'), 'the TPR switch is not on its item\'s Limitations'],
+  ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/Workspace.tsx', 'policy={<EveryTypeOperates tree={tree} system={system} node={node}', 'x={<EveryTypeOperates tree={tree} system={system} node={node}'), 'the TPR switch is not on its item\'s Limitations'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[...layout.every, ...own].filter(canStartLimited).map(n => ('), 'the TPR switch is back at the top of the system'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],

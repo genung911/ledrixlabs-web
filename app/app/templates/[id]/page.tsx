@@ -337,7 +337,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               {/* The requirements list (owner 2026-11-06: no Requirements tab — each item's Requirements tab sets them). */}
               <div className="mt-6"><RequirementsSection tree={tree} onGo={go} /></div>
               {/* Every limitation once (2026-11-07); each is set on its system's screen. */}
-              <div className="mt-6"><LimitationsList tree={tree} onOpen={sid => go('systems', { systemId: sid, nodeId: null }, 'limitations')} /></div>
+              <div className="mt-6"><LimitationsList tree={tree} onOpen={(sid, util) => go('systems', { systemId: sid, nodeId: null }, util ? 'utilities' : 'limitations')} /></div>
             </div>
           )}
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}
@@ -347,7 +347,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
                 {/* THE BUILDING, at the top of the column it acts on (2026-11-06): its systems list is right under it. */}
                 <div className="mb-2"><BuildingPicker tree={tree} value={building} onChange={setBuilding} onOps={onOps} disabled={!!readOnly} /></div>
-                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} />
+                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} utilitiesOn={ctab === 'utilities'} onOpenUtilities={() => { setMode('edit'); setCtab('utilities'); }} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
                 {ASK_LEDRIX && <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">

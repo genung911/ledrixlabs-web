@@ -12,7 +12,7 @@ import { isCovered, ops } from '@/lib/templates/editorModel';
 import { Arrow } from './EditorParts';
 import { btn, field } from './ui';
 import { useBuildingLens } from './BuildingLens';
-import { limitCounts } from '@/lib/templates/limitationModel';
+import { limitCounts, utilityCount } from '@/lib/templates/limitationModel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 
@@ -26,8 +26,10 @@ export function itemCount(n: TemplateNode): number {
 }
 
 
-export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
+export function SystemTree({ tree, sel, onSelect, onOps, disabled, onOpenUtilities, utilitiesOn }: {
   tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: (o: TemplateOp[]) => boolean; disabled: boolean;
+  /** UTILITIES (owner 2026-11-07, mockup D55cNLEk1gM9B4cHbTtD1q): Water, Gas and Power, set once, from the top of the list. */
+  onOpenUtilities: () => void; utilitiesOn: boolean;
 }) {
   // No search box (owner 2026-11-06: "can you remove the search bar, I don't think it is needed") — the systems list is
   // short, and a system opens group first.
@@ -37,6 +39,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
   const shown = tree.systems;
   // The limitations count beside each system (owner 2026-11-07: "have a count next to it").
   const limits = useMemo(() => limitCounts(tree), [tree]);
+  const utilities = useMemo(() => utilityCount(tree), [tree]);
   const offSystems = tree.trimmedSystems ?? [];
   const addSystem = () => {
     const v = newName.trim(); if (!v) return;
@@ -47,8 +50,16 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled }: {
   return (
     <section aria-label="Systems" className="flex min-h-0 flex-col rounded-xl border border-hairline bg-surface">
       <ul className="min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
+        <li className="mb-1 border-b border-hairline pb-1">
+          <button onClick={onOpenUtilities} aria-current={utilitiesOn ? 'true' : undefined}
+            className={`flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2 pr-2 text-left text-sm ${utilitiesOn ? 'bg-accent/15 font-semibold text-accent-ink' : 'font-medium text-ink hover:bg-ink/5'}`}>
+            <span className="shrink-0 text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M13 3L5 14h6l-1 7 8-11h-6z" /></svg></span>
+            <span className="min-w-0 flex-1 truncate">Utilities</span>
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted" title="Water, Gas and Power">{utilities ? <>{utilities} limit{utilities === 1 ? '' : 's'}</> : null}</span>
+          </button>
+        </li>
         {shown.map((s, i) => {
-          const on = sel.systemId === s.id;
+          const on = sel.systemId === s.id && !utilitiesOn;
           // A building selected in the strip (2026-11-06): its systems are the ones it has.
           const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);
           return (

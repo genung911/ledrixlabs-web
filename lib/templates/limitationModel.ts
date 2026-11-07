@@ -53,12 +53,14 @@ export const gatesOfSystem = (gates: readonly Gate[], systems: readonly Template
   return gates.filter(g => systemsOfGate(g, systems, idx).includes(systemId));
 };
 
-/** The number next to a system in the list: the situations that change its checklist. */
+/** The number next to a system in the list: the ACCESS situations that change its checklist. Utilities are counted
+ *  once, on the Utilities row (2026-11-07, limitations back in Condition). */
 export function limitCounts(tree: InspectionTemplate): Map<string, number> {
   const systems = tree.systems ?? [];
   const idx = systemIndex(systems);
   const out = new Map<string, number>();
   for (const g of templateGates(tree)) {
+    if (g.utility) continue;
     const n = limitRows(g).filter(r => r.limits).length;
     if (!n) continue;
     for (const s of systemsOfGate(g, systems, idx)) out.set(s, (out.get(s) ?? 0) + n);
@@ -99,20 +101,35 @@ export const gatesOfPart = (gates: readonly Gate[], systems: readonly TemplateNo
   return gates.filter(g => gateReachesPart(g, partId, parents));
 };
 
-/** The Limitations row's count and one line: the situations that change this part's checklist, plus an item's own
- *  reasons. "None · tap to add" when there are none. */
+/** The Limitations row's count and one line: the ACCESS situations that change this part's checklist, plus an item's
+ *  own reasons (utilities live in Utilities). "None · tap to add" when there are none. */
 export function partLimitSummary(gates: readonly Gate[], systems: readonly TemplateNode[], part: TemplateNode): { count: number; line: string } {
-  const reach = gatesOfPart(gates, systems, part.id);
+  const reach = gatesOfPart(gates, systems, part.id).filter(g => !g.utility);
   const said: string[] = [];
   let count = 0;
   for (const g of reach) {
     const rows = limitRows(g).filter(r => r.limits);
     count += rows.length;
-    if (g.utility) { if (rows.length) said.push(`${g.label} off`); }
-    else said.push(...rows.flatMap(r => r.reasons.map(x => sayReason(x.value))));
+    said.push(...rows.flatMap(r => r.reasons.map(x => sayReason(x.value))));
   }
   const own = part.kind === 'component' ? (part.limitations ?? []) : [];
   count += own.length;
   const line = [...own, ...said].filter((x, i, a) => a.indexOf(x) === i);
   return { count, line: line.length ? line.join(', ') : 'None · tap to add' };
 }
+
+// ── LIMITATIONS BACK IN CONDITION (owner 2026-11-07: "I think a majority probably live inside the condition section …
+// We may still need a few areas like roof, attic and crawlspace for accessibility and then of course the utility ones" →
+// mockup https://claude.ai/artifact/D55cNLEk1gM9B4cHbTtD1q → "Approved on both. Build and push"). An item's limitations
+// are its own reasons, set inside Condition. A system keeps a Limitations row only when an ACCESS situation reaches it
+// (roof method, attic, crawlspace, panel cover, or one the company added); groups have none. The utilities are set once,
+// in Utilities at the top of the systems list.
+
+/** The access (non-utility) situations that reach a part. */
+export const accessGatesOfPart = (gates: readonly Gate[], systems: readonly TemplateNode[], partId: string): Gate[] =>
+  gatesOfPart(gates, systems, partId).filter(g => !g.utility);
+/** The template's utilities (Water / Gas / Power), as new inspections run them. */
+export const utilityGates = (tree: InspectionTemplate): Gate[] => templateGates(tree).filter(g => !!g.utility);
+/** The count on the Utilities row: the utility rows that skip items. */
+export const utilityCount = (tree: InspectionTemplate): number =>
+  utilityGates(tree).reduce((n, g) => n + limitRows(g).filter(r => r.limits).length, 0);
