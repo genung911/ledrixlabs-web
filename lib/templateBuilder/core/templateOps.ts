@@ -83,6 +83,39 @@ function checkShortcuts(v: unknown): string | null {
   return null;
 }
 
+/** A company's report advisories (reportAdvisories.Advisory). Ids are slugs that never start with "-" (the job's
+ *  stored list uses "-<id>" for one taken off), unique; wording non-empty; a rule only of known keys with whole years,
+ *  a range the right way round; mode suggest | always. */
+function checkAdvisories(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  if (v.length > 50) return 'at most 50 advisories';
+  const ids = new Set<string>();
+  const year = (y: unknown) => y === undefined || (Number.isInteger(y) && (y as number) >= 1600 && (y as number) <= 2200);
+  for (const a of v) {
+    if (!obj(a)) return 'each advisory must be an object';
+    const e = onlyKeys(a, ['id', 'label', 'kind', 'text', 'textWhenMatched', 'suggestWhen', 'suggestWhy', 'mode'])
+      ?? (typeof a.id === 'string' && /^[a-z0-9][a-z0-9_]{0,59}$/.test(a.id) ? null : 'advisory id must be a lowercase slug')
+      ?? (ids.has(a.id as string) ? `two advisories share the id "${a.id}"` : null)
+      ?? (nonEmpty(a.label) && 'advisory label must be non-empty text') ?? oneOf('recommendation', 'limitation')(a.kind)
+      ?? (nonEmpty(a.text) && 'advisory text must be non-empty text') ?? (String(a.text).length > 2000 ? 'advisory text is too long' : null)
+      ?? (a.textWhenMatched !== undefined ? str(a.textWhenMatched) : null) ?? (a.suggestWhy !== undefined ? str(a.suggestWhy) : null)
+      ?? (a.mode !== undefined ? oneOf('suggest', 'always')(a.mode) : null);
+    if (e) return e;
+    ids.add(a.id as string);
+    if (a.suggestWhen !== undefined) {
+      const w = a.suggestWhen;
+      if (!obj(w)) return 'suggestWhen must be an object';
+      const we = onlyKeys(w, ['yearBefore', 'yearFrom', 'yearThrough', 'waterSource', 'sewerType', 'gasSupply', 'always'])
+        ?? ([w.yearBefore, w.yearFrom, w.yearThrough].every(year) ? null : 'years must be whole years 1600–2200')
+        ?? (typeof w.yearFrom === 'number' && typeof w.yearThrough === 'number' && w.yearFrom > w.yearThrough ? 'a range must start before it ends' : null)
+        ?? (['waterSource', 'sewerType', 'gasSupply'].map(k => (w[k] === undefined ? null : strList(w[k]))).find(Boolean) ?? null)
+        ?? (w.always !== undefined && typeof w.always !== 'boolean' ? 'always must be true or false' : null);
+      if (we) return `"${a.label}": ${we}`;
+    }
+  }
+  return null;
+}
+
 /** Fields `setNodeField` may write. Everything else on a node is structural (id, kind, children, pockets,
  *  instanceOf), owned by its own op (attributes, pointsTo), snapshot-only (inScope), or deprecated (options,
  *  facet, limitationOptions — "never write them", S4). */
@@ -141,7 +174,9 @@ export const ATTR_FIELDS: Record<string, FieldSpec> = {
 
 export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   name:       { check: nonEmpty, class: 'content', why: 'template name' },
-  advisories: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'report advisories are disclosures' },
+  // 2026-11-06 (owner, mockup NH8eoefNScGrsemCdofANd): the company now authors these (reportAdvisories.Advisory), so each
+  // entry is checked here — the website's editor and an AI proposal are held to the same shape.
+  advisories: { check: checkAdvisories, class: 'policy', why: 'report advisories are disclosures' },
   // 2026-10-24: the building types (templates/structureTypes.ts) — validated as a whole by templateValidate
   structureTypes: { check: (v) => (Array.isArray(v) ? null : 'must be a list'), class: 'policy', why: 'which systems each kind of building starts with' },
   // Phase A (2026-10-25): the pinned Ledrix default requirement set, and company overrides of it (validated as a whole).

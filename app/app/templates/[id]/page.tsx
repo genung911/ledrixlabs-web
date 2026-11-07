@@ -290,7 +290,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
           {section === 'gates' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><GatesPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'counts' && <div className="flex min-h-0 flex-1 flex-col px-4 py-4 lg:px-6"><CountsPanel tree={tree} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'requirements' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><RequirementsSection tree={tree} onGo={go} /></div>}
-          {section === 'report' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><ReportSection tree={tree} onGo={go} /></div>}
+          {section === 'report' && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6"><ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} /></div>}
           {section === 'review' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
               <ReviewSection tree={tree} status={status} issues={issues} buildingErrors={bIssues.errors.map(i => i.message)} buildingWarnings={bIssues.warnings.map(i => i.message)}

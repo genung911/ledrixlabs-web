@@ -14,6 +14,9 @@ import { PropertyTypePicker } from '@/components/templates/PropertyTypes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AdvisoriesEditor } from '@/components/templates/AdvisoriesEditor';
+import { presetAdvisories } from '@/lib/templates/advisoryModel';
+import type { Advisory } from '@/lib/templates/reportAdvisories';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { Banner, Pill, btn, field, label } from '@/components/templates/ui';
@@ -48,6 +51,7 @@ export default function CreateTemplatePage() {
   const [props, setProps] = useState<PropertyTypeId[] | null>(null);   // null = not touched: the starting point's own
   const [kindChoice, setKindChoice] = useState<Omit<KindChoice, 'propertyTypes'>>(EMPTY_KIND_CHOICE);
   const [busy, setBusy] = useState(false);
+  const [advisories, setAdvisories] = useState<Advisory[]>(() => presetAdvisories());
   const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -108,6 +112,8 @@ export default function CreateTemplatePage() {
       const built = d.ledrixDefault ? buildStarterTree(chosen.kind, forked, d.ledrixDefault, { ...kindChoice, propertyTypes: picked }) : { ok: true as const, tree: forked };
       if (!built.ok) { setProblem(built.error); setBusy(false); return; }
       const tree = built.tree;
+      // The company's report advisories, picked on step 1 — the new draft's own list (none picked → Ledrix's list).
+      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;
       const draft = await startNewTemplateDraft(access.companyId!, { name: name.trim(), base: chosen.base, tree });
       router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`);
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
@@ -170,9 +176,14 @@ export default function CreateTemplatePage() {
               ))}
             </div>
           </Panel>
-          <Panel title="Company-specific requirements (optional)" sub="Anything your company always requires — written in your words. Ledrix doesn’t check templates against it.">
+          {/* Report advisories (owner 2026-11-06, mockup NH8eoefNScGrsemCdofANd, "looks great"): Ledrix's examples to pick,
+              each with when it applies and Suggest / Always add; the list goes on the new draft as its `advisories`. */}
+          <Panel title="Report advisories" sub="What your reports recommend or disclose beyond the inspection — sewer scope, asbestos, lead paint, radon. Pick yours and set when each applies.">
+            <AdvisoriesEditor value={advisories} onChange={setAdvisories} />
+          </Panel>
+          <Panel title="Anything else your company requires (notes)" sub="Written in your words, for things that aren’t a report sentence. Ledrix doesn’t check templates against it.">
             <textarea className={field + ' min-h-[80px]'} maxLength={2000} value={ctx.notes} onChange={e => setCtx({ ...ctx, notes: e.target.value })}
-              aria-label="Company-specific requirements" placeholder="e.g. Every report includes a sewer-scope recommendation for homes built before 1980." />
+              aria-label="Anything else your company requires" placeholder="e.g. Two inspectors on every home over 4,000 sq ft." />
           </Panel>
           <div className="flex items-center justify-between">
             <button className={btn.secondary} onClick={() => setStep(0)}>Back</button>

@@ -2,8 +2,12 @@
 
 // The template-level sections of the editor: Overview, Requirements, Report Content and Review & Publish. Each one
 // reads the draft (and the live template, for what changed) and shows only what the data actually says — no invented
-// metrics. The only actions are navigation and the existing save / discard / publish, passed in by the page.
+// metrics. The actions are navigation, the existing save / discard / publish, and (2026-11-06) Report Content's
+// advisories picker — each passed in by the page, every edit an op through `onOps`.
 import { useMemo } from 'react';
+import { AdvisoriesEditor } from './AdvisoriesEditor';
+import { advisoryOps } from '@/lib/templates/advisoryModel';
+import type { Advisory } from '@/lib/templates/reportAdvisories';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { structureTypesOf } from '@/lib/templateBuilder/core/structureTypes';
 import type { Issue } from '@/lib/templateBuilder/core/templateValidate';
@@ -167,8 +171,8 @@ export function RequirementsSection({ tree, onGo }: { tree: InspectionTemplate; 
 
 // ── Report Content ─────────────────────────────────────────────────────────────────────────────────────────
 
-export function ReportSection({ tree, onGo }: { tree: InspectionTemplate; onGo: (section: string, sel?: Sel) => void }) {
-  const advisories = Array.isArray(tree.advisories) ? tree.advisories : [];
+export function ReportSection({ tree, onGo, onOps, disabled }: { tree: InspectionTemplate; onGo: (section: string, sel?: Sel) => void; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const advisories = (Array.isArray(tree.advisories) ? tree.advisories : []) as Advisory[];
   const rows = useMemo(() => tree.systems.map(s => {
     const items = flatItems(s).map(r => r.node).filter(n => n.kind === 'component');
     const assessed = items.filter(n => assessesCondition(n)).length;
@@ -199,10 +203,10 @@ export function ReportSection({ tree, onGo }: { tree: InspectionTemplate; onGo: 
           </table>
         </div>
       </Card>
+      {/* Editable since 2026-11-06 (owner, mockup NH8eoefNScGrsemCdofANd): the same picker as "Create a template". */}
       <Card title="Report advisories">
-        {advisories.length
-          ? <p>This template carries {advisories.length} advisor{advisories.length === 1 ? 'y' : 'ies'} (standard report disclosures). They are set by Ledrix and can’t be edited here.</p>
-          : <p className="text-muted">No template advisories. Reports use the app’s standard disclosures.</p>}
+        {!advisories.length && <p className="mb-2 text-xs text-muted">This template has no list of its own, so inspectors are offered all of Ledrix’s advisories as suggestions. Picking any makes this template’s own list.</p>}
+        <AdvisoriesEditor value={advisories} onChange={l => { onOps(advisoryOps(l)); }} disabled={disabled} />
       </Card>
     </div>
   );

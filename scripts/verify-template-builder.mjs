@@ -102,7 +102,7 @@ if (!existsSync(join(APP, 'src/core/templates'))) {
 // ── 2. Executed ───────────────────────────────────────────────────────────────────────────────────────────
 // The builder modules, copied to a temp dir with explicit .ts import specifiers so Node can strip and load them.
 const BUILDER = ['access', 'draftStore', 'session', 'edit'];
-const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel', 'startingPoints', 'publishFixes'];
+const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'catalogModel', 'startingPoints', 'publishFixes', 'advisoryModel', 'reportAdvisories'];
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
@@ -812,6 +812,31 @@ async function runTypes(files) {
           && off.length === 1 && off[0].value.length === 1 && off[0].value[0].value === '*' && /tpr valve & discharge was not operated/i.test(off[0].value[0].sentence)
           && !whL.typed.concat(whL.every).some(n => n.id !== 'plumb_wh_tpr' && (n.startsLimited ?? []).some(e => e.value === '*')));
       }
+      // Report advisories (owner 2026-11-06, mockup NH8eoefNScGrsemCdofANd, "looks great"): picked with a rule and a mode.
+      {
+        const AM = await import(pathToFileURL(join(dir, 'advisoryModel.ts')).href);
+        const RA = await import(pathToFileURL(join(dir, 'reportAdvisories.ts')).href);
+        const pre = AM.presetAdvisories();
+        const sewer = pre.find(a => a.id === 'sewer');
+        const rt = r0 => JSON.stringify(AM.ruleOf(AM.withRule(sewer, r0))) === JSON.stringify(r0);
+        const between = AM.withRule(sewer, { kind: 'between', a: 1965, b: 1973 });
+        const own = AM.newAdvisory(pre, 'Sewer', 'recommendation', 'Scope it.', { kind: 'from', a: 2005 }, 'always');
+        const list = [...AM.pick(pre, RA.LEDRIX_ADVISORIES.find(a => a.id === 'mold'), true), own];
+        const ok = step(AM.advisoryOps(list), 9100);
+        const badList = [...list, { ...own, id: '-bad' }];
+        const before = JSON.stringify(d.tree?.advisories ?? null);
+        const refused = step(AM.advisoryOps(badList), 9101);
+        r('advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused',
+          pre.map(a => `${a.id}:${a.mode}`).join('|') === 'radon:always|sewer:always|well_water:suggest|septic:suggest|asbestos:suggest|lead_paint:suggest'
+          && [{ kind: 'before', a: 1980 }, { kind: 'between', a: 1965, b: 1973 }, { kind: 'from', a: 2005 }, { kind: 'every' }, { kind: 'water' }, { kind: 'sewer' }, { kind: 'gas' }, { kind: 'never' }].every(rt)
+          && between.suggestWhen.yearFrom === 1965 && between.suggestWhen.yearThrough === 1973 && between.suggestWhen.yearBefore === undefined
+          && AM.withRule(sewer, { kind: 'before', a: 1980 }).suggestWhy === RA.LEDRIX_ADVISORIES.find(a => a.id === 'sewer').suggestWhy
+          && !!own && own.id !== 'sewer' && !RA.LEDRIX_ADVISORIES.some(a => a.id === own.id) && AM.newAdvisory(pre, 'X', 'limitation', '  ', { kind: 'every' }, 'suggest') === null
+          && AM.editorRows(list).length === RA.LEDRIX_ADVISORIES.length + 1 && AM.pick(list, own, false).length === list.length - 1
+          && JSON.stringify(AM.advisoryOps([])) === JSON.stringify([{ op: 'setTemplateField', field: 'advisories', value: null }])
+          && ok.ok && JSON.stringify((d.tree?.advisories ?? []).map(a => a.id)) === JSON.stringify(list.map(a => a.id))
+          && !refused.ok && JSON.stringify(d.tree?.advisories ?? null) === before);
+      }
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
@@ -1177,6 +1202,14 @@ const RULES = {
       && /onBlur=\{\(\) => \{ if \(!text\.trim\(\)\) \{ setText\(entry\.sentence\); return; \} onOps\(ops\.startsSentence\(node, f, value, text\)\); \}\}/.test(tb)
       && /const on = !entry;/.test(tb) && !/'startsLimited'/.test(tb) ? [] : ['components/templates/TypeBuilder.tsx'];
   },
+  'advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps': all => {
+    const cp = strip(all['app/app/templates/create/page.tsx'] ?? ''), se = strip(all['components/templates/Sections.tsx'] ?? ''), pg = strip(all['app/app/templates/[id]/page.tsx'] ?? '');
+    return /<AdvisoriesEditor value=\{advisories\} onChange=\{setAdvisories\} \/>/.test(cp) && /useState<Advisory\[\]>\(\(\) => presetAdvisories\(\)\)/.test(cp)
+      && /if \(advisories\.length\) tree\.advisories = JSON\.parse\(JSON\.stringify\(advisories\)\); else delete tree\.advisories;/.test(cp)
+      && /<AdvisoriesEditor value=\{advisories\} onChange=\{l => \{ onOps\(advisoryOps\(l\)\); \}\} disabled=\{disabled\} \/>/.test(se)
+      && !/They are set by Ledrix and can’t be edited here/.test(se) && /<ReportSection tree=\{tree\} onGo=\{go\} onOps=\{onOps\} disabled=\{!!readOnly\} \/>/.test(pg)
+      ? [] : ['components/templates/AdvisoriesEditor.tsx'];
+  },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
     return (w.match(/menu=\{moveMenu\(node\.id\)\}/g) ?? []).length === 2 && (w.match(/\{moveDialog\}/g) ?? []).length === 2
@@ -1373,6 +1406,9 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/create/page.tsx', '      if (advisories.length) tree.advisories = JSON.parse(JSON.stringify(advisories)); else delete tree.advisories;\n', ''), 'the picks never reach the draft'],
+  ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('components/templates/Sections.tsx', 'onChange={l => { onOps(advisoryOps(l)); }}', 'onChange={() => {}}'), 'the builder\'s picker writes nothing'],
+  ['advisories: Create a template shows the picker and puts the picked list on the new draft; the Template Builder\'s Report section edits it through advisoryOps', rep('app/app/templates/[id]/page.tsx', '<ReportSection tree={tree} onGo={go} onOps={onOps} disabled={!!readOnly} />', '<ReportSection tree={tree} onGo={go} onOps={() => false} disabled={!!readOnly} />'), 'the page never passes the edits'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{layout.every.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the every-type switch (TPR) is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', '{own.filter(canStartLimited).map(n => (', '{[].filter(canStartLimited).map(n => ('), 'the switch is not drawn'],
   ['fireplace: each type chip draws its We operate it switch from canStartLimited, writing only through ops.operates and ops.startsSentence', rep('components/templates/TypeBuilder.tsx', 'onChange={v => { onOps(ops.operates(node, f, value, v)); }}', 'onChange={v => { onOps(ops.operates(node, f, value, !v)); }}'), 'the switch writes the opposite'],
@@ -1472,6 +1508,9 @@ const EXEC_MUT = [
   { name: 'an item with no Not Operated reason gets the switch', file: 'editorModel.ts', from: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true && !!startsLimitedReason(n);', to: 'export const canStartLimited = (n: TemplateNode): boolean => n.condition === true;', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'a blank sentence is saved', file: 'editorModel.ts', from: 'if (!t || !cur.some(', to: 'if (!cur.some(', check: 'fireplace: Operation shows a "We operate it" switch per type — Off adds that answer\'s entry (reason Not Operated, a sentence), On removes it, one op each; the sentence edit refuses blank', run: runTypes },
   { name: 'the every-type sentence names the type, not the item', file: 'editorModel.ts', from: "value === '*' ? `The ${itemLabel.toLowerCase()} was not operated during the inspection.`", to: "value === '*' ? `The * was not operated during the inspection.`", check: 'water heater: TPR has ONE "We operate the TPR valve" switch for every type (value *), Ledrix starts it Off; switching it On removes the entry, Off writes a sentence naming the item', run: runTypes },
+  { name: 'a range keeps only its start', file: 'advisoryModel.ts', from: "case 'between': return yearOk(r.a) && yearOk(r.b) && r.a <= r.b ? put({ yearFrom: r.a, yearThrough: r.b }", to: "case 'between': return yearOk(r.a) && yearOk(r.b) && r.a <= r.b ? put({ yearFrom: r.a }", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
+  { name: 'the preset forgets modes', file: 'advisoryModel.ts', from: "({ ...clone(a), mode: mode.get(a.id)! })", to: "({ ...clone(a) })", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
+  { name: 'your own reuses a Ledrix id', file: 'advisoryModel.ts', from: "const taken = new Set([...list.map(a => a.id), ...LEDRIX_ADVISORIES.map(a => a.id)]);", to: "const taken = new Set<string>();", check: 'advisories: the create preset (in Ledrix\'s order) is radon + sewer Always add and well, septic, asbestos, lead paint Suggest; rules round-trip (before, between, in or after, every, utility, never); your own gets a fresh id; the list is ONE setTemplateField that the builder accepts, and a bad one is refused', run: runTypes },
   { name: 'clearing a rule keeps hide-until-answered', file: 'editorModel.ts', from: "const wu = rule === null ? null : whenUnknown;", to: "const wu = whenUnknown;", check: 'applicability: removing the rule removes "hide until answered" with it', run: runDesktop },
   { name: 'propose replaces a reviewed proposal', file: 'session.ts', from: "if (draft.pending && draft.pending.entries.some(e => e.status !== 'proposed')) {", to: 'if (false) {', check: 'propose: never replaces a proposal that holds a decision', run: runExecuted },
   { name: 'an unreadable draft is replaced by a fresh one', file: 'draftStore.ts', from: "try { parsed = JSON.parse(raw); } catch { throw new DraftStoreError('The saved draft could not be read.'); }", to: 'try { parsed = JSON.parse(raw); } catch { return null; }', check: 'an unreadable saved draft is an error and is left in place, never silently replaced', run: runExecuted },
