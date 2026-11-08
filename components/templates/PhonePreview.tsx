@@ -315,8 +315,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         {groups.map(g => (
           <div key={g.id} className="pv-group">
             <div className="pv-ghead" data-pv-id={g.id !== sysId ? g.id : undefined}><span>{g.label.toUpperCase()}</span><em>+ Item</em></div>
+            {/* Items as tiles, three across (app ScopeWorkspace, 2026-11-08). */}
+            <div className="pv-tiles pv-itiles">
             {g.items.map(st => {
-              const q = stepStat(st); const c = toneOf(q);
+              const q = stepStat(st);
               const n = index.byId[st.key]?.node;
               const ax = n ? axesOf(n) : null;
               const vals = ax ? ax.attributes.map(a => (picks[pickKey(st.key, a.id)] ?? []).join(', ')).filter(Boolean) : [];
@@ -324,15 +326,16 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 : cond[st.key] === 'ok' ? 'Satisfactory' : q.total && q.met >= q.total ? 'Complete' : q.met ? 'Incomplete'
                 : st.kind === 'description' ? 'Not set' : 'Not started';
               return (
-                <button key={st.key} type="button" data-pv-id={st.key} className={`pv-item${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
+                <button key={st.key} type="button" data-pv-id={st.key} className={`pv-tile pv-itile${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
                   aria-label={`${st.label}, ${v}. Start guided coverage here`}>
-                  <i className="pv-dot" style={{ background: q.met || q.finding || q.limited ? c : '#2a333a' }} />
-                  <span className="pv-itx"><b>{st.label}</b>{n && previewNeeds(n) ? <small className="pv-needs">Needs {previewNeeds(n)}  ·  <u>Take photo</u></small> : null}</span>
-                  <span className="pv-iv" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
-                  <Glyph d={G.chevR} size={14} color="#4a5a60" />
+                  <span className="pv-tl">{st.label}</span>
+                  <span className="pv-iv2" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
+                  <small className="pv-ix">{n && previewNeeds(n) ? `Needs ${previewNeeds(n)}` : ''}</small>
+                  <span className="pv-lights" aria-hidden="true"><i className={q.finding ? 'r' : ''} /><i className={q.limited ? 'a' : ''} /><i className={q.total > 0 && q.met >= q.total ? 'g' : ''} /></span>
                 </button>
               );
             })}
+            </div>
           </div>
         ))}
       </>
@@ -709,6 +712,10 @@ const CSS_TEXT = `
 .ldx-pv .pv-group{margin-top:14px}
 .ldx-pv .pv-ghead{display:flex;justify-content:space-between;align-items:center;padding:0 3px 5px;border-bottom:1px solid #1b2429;color:#8a959c;font-size:9.5px;font-weight:900;letter-spacing:1.3px}
 .ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
+.ldx-pv .pv-itiles{margin-top:8px}
+.ldx-pv .pv-itile{height:100px;min-height:0;gap:3px;cursor:pointer;font:inherit}
+.ldx-pv .pv-iv2{font-size:10px;font-weight:600;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-ix{color:#f0a020;font-size:9px;font-weight:700;min-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-item{display:flex;align-items:center;gap:8px;width:100%;min-height:50px;padding:8px 3px;border-bottom:1px solid #131c22}
 .ldx-pv .pv-dot{width:8px;height:8px;border-radius:4px;flex:none}
 .ldx-pv .pv-itx{flex:1;min-width:0;display:flex;flex-direction:column}
