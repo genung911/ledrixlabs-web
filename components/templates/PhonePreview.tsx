@@ -8,7 +8,7 @@
 //
 // Modeled on the app (ledrix-app, read-only), screen by screen:
 //   · header ................ src/app/ScopeScreen.tsx (chrome: back, blue dot + address, sub lines, menu)
-//   · landing ............... src/components/inspect/CoverageGrid.tsx (building row, CHECKPOINTS ADDRESSED card,
+//   · landing ............... src/components/inspect/CoverageGrid.tsx (building row, "n of m checkpoints" under it,
 //                              three-across system tiles with the red / amber / green lights, dashed Add system)
 //   · a system's page ....... src/components/systems/ScopeWorkspace.tsx — since 2026-10-24 the system's ITEM LIST:
 //                              one row per Guided Coverage step, grouped by component group (kind, name, status,
@@ -266,14 +266,11 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // ── screens ──
   const landing = () => {
     const tot = systems.reduce((a, s) => { const p = progressOfSystem(s); a.met += p.met; a.total += p.total; return a; }, { met: 0, total: 0 });
-    const pct = tot.total ? Math.round((tot.met / tot.total) * 100) : 0;
     return (
       <>
         <div className="pv-bldg"><b>MAIN STRUCTURE <Glyph d={G.chevD} size={12} /></b></div>
-        <div className="pv-cov">
-          <div className="pv-cl"><span className="pv-capS">CHECKPOINTS ADDRESSED</span><span className="pv-bar6"><i style={{ width: `${pct}%` }} /></span></div>
-          <span className="pv-n">{tot.met}<small>/{tot.total}</small></span>
-        </div>
+        {/* The count as metadata under the building (app 2026-11-08 — the card moved to Finalize). */}
+        <div className="pv-bmeta">{tot.met} of {tot.total} checkpoint{tot.total === 1 ? '' : 's'}</div>
         {systems.length === 0 ? <p className="pv-empty">No system starts in scope. Inspectors would add each one with Add system.</p> : null}
         <div className="pv-tiles">
           {systems.map(sys => {
@@ -619,6 +616,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-tabs div.on{color:#EAF1FB;font-weight:800}
 .ldx-pv .pv-bldg{display:flex;justify-content:center;min-height:30px;align-items:center}
 .ldx-pv .pv-bldg b{color:#e8ecef;font-size:11.5px;font-weight:800;letter-spacing:1.6px;display:inline-flex;gap:4px;align-items:center}
+.ldx-pv .pv-bmeta{text-align:center;color:#8a959c;font-size:11px;font-weight:600;margin-top:-2px;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-cov{display:flex;align-items:center;gap:10px;margin-top:6px;padding:12px 13px;border-radius:14px;background:#11171b;border:1px solid #222b30}
 .ldx-pv .pv-cl{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .ldx-pv .pv-capS{color:#8a959c;font-size:9.5px;font-weight:800;letter-spacing:1.2px}
