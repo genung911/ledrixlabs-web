@@ -105,6 +105,31 @@
        ]
       },
       {
+       "id": "hvac_furnace_eff",
+       "label": "Furnace Efficiency",
+       "kind": "component",
+       "keywords": [
+        "furnace efficiency",
+        "afue",
+        "80 percent furnace",
+        "90 percent furnace",
+        "high efficiency furnace",
+        "condensing furnace"
+       ],
+       "attributes": [
+        {
+         "id": "efficiency",
+         "label": "Efficiency",
+         "values": [
+          "80% (Standard)",
+          "90%+ (High Efficiency)",
+          "Not determined"
+         ]
+        }
+       ],
+       "condition": false
+      },
+      {
        "id": "hvac_backup_heat",
        "label": "Backup Heat",
        "kind": "component",
@@ -159,6 +184,27 @@
          ]
         }
        ],
+       "condition": true
+      },
+      {
+       "id": "hvac_furnace_condensate",
+       "label": "Furnace Condensate Drain",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
+       "id": "hvac_furnace_pvc_vent",
+       "label": "Intake / Exhaust Pipes (PVC)",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
+       "id": "hvac_furnace_draft_hood",
+       "label": "Draft Hood / Vent Connector",
+       "kind": "component",
+       "keywords": [],
        "condition": true
       },
       {

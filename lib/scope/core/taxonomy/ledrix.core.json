@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.07.4",
+  "packVersion": "2026.11.07.5",
   "revision": 276,
   "locale": "en-US",
   "severityVocabulary": [
@@ -69,10 +69,10 @@
               "label": "Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "15\u201320 years old",
-                "20\u201325 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
                 "Over 25 years old",
                 "Not determined"
               ]
@@ -148,6 +148,43 @@
             }
           ],
           "typeRow": true
+        },
+        {
+          "id": "hvac_furnace_eff",
+          "label": "Furnace Efficiency",
+          "keywords": [
+            "furnace efficiency",
+            "afue",
+            "80 percent furnace",
+            "90 percent furnace",
+            "high efficiency furnace",
+            "condensing furnace"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "efficiency",
+              "label": "Efficiency",
+              "values": [
+                "80% (Standard)",
+                "90%+ (High Efficiency)",
+                "Not determined"
+              ]
+            }
+          ],
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Gas Furnace",
+                "Propane",
+                "Oil Furnace"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "hvac_backup_heat",
@@ -267,7 +304,7 @@
               "label": "Type",
               "values": [
                 "Standard 1\"",
-                "Media Filter (4\u20135\")",
+                "Media Filter (4–5\")",
                 "HEPA",
                 "Electronic Air Cleaner",
                 "UV Filter"
@@ -362,6 +399,66 @@
           ]
         },
         {
+          "id": "hvac_furnace_condensate",
+          "label": "Furnace Condensate Drain",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "layout": "row",
+          "requires": [
+            {
+              "specNodeId": "hvac_furnace_eff",
+              "includes": [
+                "90%+ (High Efficiency)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "efficiency"
+            }
+          ]
+        },
+        {
+          "id": "hvac_furnace_pvc_vent",
+          "label": "Intake / Exhaust Pipes (PVC)",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "layout": "row",
+          "requires": [
+            {
+              "specNodeId": "hvac_furnace_eff",
+              "includes": [
+                "90%+ (High Efficiency)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "efficiency"
+            }
+          ]
+        },
+        {
+          "id": "hvac_furnace_draft_hood",
+          "label": "Draft Hood / Vent Connector",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "layout": "row",
+          "requires": [
+            {
+              "specNodeId": "hvac_furnace_eff",
+              "includes": [
+                "80% (Standard)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "efficiency"
+            }
+          ]
+        },
+        {
           "id": "hvac_dataplate",
           "label": "Data Plate (Make/Model)",
           "keywords": [
@@ -425,7 +522,7 @@
               "id": "spec",
               "label": "Heat Exchanger",
               "values": [
-                "Visible \u2014 No Defects",
+                "Visible — No Defects",
                 "Partially Visible"
               ]
             }
@@ -1011,12 +1108,16 @@
             "hvac_type_boiler",
             "hvac_type_minisplit",
             "hvac_type_radiant",
+            "hvac_furnace_eff",
             "hvac_backup_heat",
             "hvac_dataplate",
             "hvac_burner",
             "hvac_heat_exchanger",
             "hvac_combustion_air",
             "hvac_flue",
+            "hvac_furnace_condensate",
+            "hvac_furnace_pvc_vent",
+            "hvac_furnace_draft_hood",
             "hvac_cabinet",
             "hvac_temp_rise",
             "hvac_furnace"
@@ -1032,7 +1133,7 @@
         },
         {
           "id": "heating__boiler_electric_radiant",
-          "name": "Boiler \u00b7 Electric \u00b7 Radiant",
+          "name": "Boiler · Electric · Radiant",
           "nodeIds": [
             "hvac_boiler_expansion",
             "hvac_boiler_relief",
@@ -1125,10 +1226,10 @@
               "label": "Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "15\u201320 years old",
-                "20\u201325 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
                 "Over 25 years old",
                 "Not determined"
               ]
@@ -2363,8 +2464,8 @@
               "id": "spec",
               "label": "Main Shutoff Location",
               "values": [
-                "Ball Valve \u2014 Basement",
-                "Ball Valve \u2014 Utility",
+                "Ball Valve — Basement",
+                "Ball Valve — Utility",
                 "Gate Valve",
                 "Curb Stop Only"
               ]
@@ -3190,7 +3291,7 @@
         },
         {
           "id": "plumbing__drain_waste_vent",
-          "name": "Drain \u00b7 Waste \u00b7 Vent",
+          "name": "Drain · Waste · Vent",
           "nodeIds": [
             "plumb_drain",
             "plumb_dwv_pvc",
@@ -3225,7 +3326,7 @@
         },
         {
           "id": "plumbing__fuel_gas",
-          "name": "Fuel \u00b7 Gas",
+          "name": "Fuel · Gas",
           "nodeIds": [
             "plumb_gas",
             "plumb_gas_shutoff"
@@ -3289,13 +3390,13 @@
               "id": "type",
               "label": "Type & Fuel",
               "values": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Electric",
-                "Tank \u2014 Oil",
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane",
-                "Tankless \u2014 Electric",
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane",
+                "Tankless — Electric",
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ]
@@ -3351,9 +3452,9 @@
               "label": "Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "Over 15 years old \u2014 budget replacement",
+                "5–10 years old",
+                "10–15 years old",
+                "Over 15 years old — budget replacement",
                 "Not determined"
               ]
             }
@@ -3362,7 +3463,7 @@
         },
         {
           "id": "wh_t_tank_gas",
-          "label": "Tank \u2014 Natural Gas",
+          "label": "Tank — Natural Gas",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3375,7 +3476,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas"
+                "Tank — Natural Gas"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3385,7 +3486,7 @@
         },
         {
           "id": "wh_t_tank_propane",
-          "label": "Tank \u2014 Propane",
+          "label": "Tank — Propane",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3398,7 +3499,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Propane"
+                "Tank — Propane"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3408,7 +3509,7 @@
         },
         {
           "id": "wh_t_tank_electric",
-          "label": "Tank \u2014 Electric",
+          "label": "Tank — Electric",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3421,7 +3522,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Electric"
+                "Tank — Electric"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3431,7 +3532,7 @@
         },
         {
           "id": "wh_t_tank_oil",
-          "label": "Tank \u2014 Oil",
+          "label": "Tank — Oil",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3444,7 +3545,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Oil"
+                "Tank — Oil"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3454,7 +3555,7 @@
         },
         {
           "id": "wh_t_tankless_gas",
-          "label": "Tankless \u2014 Natural Gas",
+          "label": "Tankless — Natural Gas",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3467,7 +3568,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tankless \u2014 Natural Gas"
+                "Tankless — Natural Gas"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3477,7 +3578,7 @@
         },
         {
           "id": "wh_t_tankless_propane",
-          "label": "Tankless \u2014 Propane",
+          "label": "Tankless — Propane",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3490,7 +3591,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tankless \u2014 Propane"
+                "Tankless — Propane"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3500,7 +3601,7 @@
         },
         {
           "id": "wh_t_tankless_electric",
-          "label": "Tankless \u2014 Electric",
+          "label": "Tankless — Electric",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -3513,7 +3614,7 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tankless \u2014 Electric"
+                "Tankless — Electric"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3627,10 +3728,10 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Electric",
-                "Tank \u2014 Oil",
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
@@ -3701,10 +3802,10 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Electric",
-                "Tank \u2014 Oil",
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
@@ -3734,10 +3835,10 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Electric",
-                "Tank \u2014 Oil",
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
@@ -3773,10 +3874,10 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane"
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3800,11 +3901,11 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Oil",
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane"
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3832,11 +3933,11 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Oil",
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane"
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -3859,9 +3960,9 @@
             {
               "specNodeId": "plumb_wh_type::type",
               "includes": [
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane",
-                "Tankless \u2014 Electric"
+                "Tankless — Natural Gas",
+                "Tankless — Propane",
+                "Tankless — Electric"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -4220,7 +4321,7 @@
               "label": "Overcurrent Protection",
               "values": [
                 "Circuit Breakers",
-                "Fuses \u2014 Edison / Type S",
+                "Fuses — Edison / Type S",
                 "Cartridge Fuses"
               ]
             },
@@ -4298,7 +4399,7 @@
             {
               "specNodeId": "elec_panel::protection",
               "includes": [
-                "Fuses \u2014 Edison / Type S",
+                "Fuses — Edison / Type S",
                 "Cartridge Fuses"
               ],
               "exact": true,
@@ -5013,10 +5114,10 @@
               "label": "Estimated Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "15\u201320 years old",
-                "20\u201325 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
                 "Over 25 years old",
                 "Not determined"
               ]
@@ -5487,7 +5588,7 @@
               "label": "Downspout Extensions / Discharge",
               "values": [
                 "Splash Blocks Only",
-                "Underground \u2014 Verify Daylight"
+                "Underground — Verify Daylight"
               ]
             }
           ],
@@ -5991,8 +6092,8 @@
               "id": "spec",
               "label": "Foundation Vents / Louvers",
               "values": [
-                "Passive Vents \u2014 Adequate",
-                "Sealed \u2014 Conditioned Crawl"
+                "Passive Vents — Adequate",
+                "Sealed — Conditioned Crawl"
               ]
             }
           ],
@@ -6040,7 +6141,7 @@
         },
         {
           "id": "found_cs_ins_type",
-          "label": "Crawl Insulation \u2014 Type",
+          "label": "Crawl Insulation — Type",
           "keywords": [
             "crawl insulation",
             "batt insulation crawl",
@@ -6058,7 +6159,7 @@
           "attributes": [
             {
               "id": "spec",
-              "label": "Crawl Insulation \u2014 Type",
+              "label": "Crawl Insulation — Type",
               "values": [
                 "Fiberglass Batt (Floor)",
                 "Rigid / Spray Foam (Walls)",
@@ -6081,7 +6182,7 @@
         },
         {
           "id": "found_cs_ins_cov",
-          "label": "Crawl Insulation \u2014 Coverage",
+          "label": "Crawl Insulation — Coverage",
           "keywords": [
             "insulation coverage crawl",
             "gaps insulation",
@@ -6117,7 +6218,7 @@
           "origin": "core",
           "condition": true,
           "limitations": [
-            "Present \u2014 Not Tested"
+            "Present — Not Tested"
           ],
           "dependsOnSpec": {
             "nodeId": "found_type::type",
@@ -6144,7 +6245,7 @@
           "origin": "core",
           "condition": true,
           "limitations": [
-            "Present \u2014 Not Tested"
+            "Present — Not Tested"
           ],
           "dependsOnSpec": {
             "nodeId": "found_type::type",
@@ -6176,7 +6277,7 @@
           "origin": "core",
           "condition": true,
           "limitations": [
-            "Finished \u2014 Concealed"
+            "Finished — Concealed"
           ],
           "dependsOnSpec": {
             "nodeId": "found_type::type",
@@ -7344,9 +7445,9 @@
               "label": "Est. R-Value",
               "values": [
                 "< R-19 (Upgrade)",
-                "R-19\u2013R-30",
-                "R-30\u2013R-38",
-                "R-38\u2013R-49",
+                "R-19–R-30",
+                "R-30–R-38",
+                "R-38–R-49",
                 "> R-49"
               ]
             }
@@ -7456,7 +7557,7 @@
           "origin": "core",
           "condition": true,
           "limitations": [
-            "Present \u2014 Not Tested"
+            "Present — Not Tested"
           ]
         },
         {
@@ -8983,8 +9084,8 @@
               "id": "spec",
               "label": "Vehicle Door",
               "values": [
-                "Sectional \u2014 Insulated",
-                "Sectional \u2014 Non-Insulated",
+                "Sectional — Insulated",
+                "Sectional — Non-Insulated",
                 "Roll-Up",
                 "Tilt-Up",
                 "Wood",
@@ -9400,8 +9501,8 @@
               "id": "spec",
               "label": "Fireplace Type",
               "values": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set",
                 "Pellet Stove",
@@ -9414,7 +9515,7 @@
         },
         {
           "id": "fp_t_wood_masonry",
-          "label": "Wood Burning \u2014 Masonry",
+          "label": "Wood Burning — Masonry",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -9427,7 +9528,7 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry"
+                "Wood Burning — Masonry"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable",
@@ -9438,7 +9539,7 @@
         },
         {
           "id": "fp_t_wood_prefab",
-          "label": "Wood Burning \u2014 Prefab",
+          "label": "Wood Burning — Prefab",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
@@ -9451,7 +9552,7 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Prefab"
+                "Wood Burning — Prefab"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable",
@@ -9594,8 +9695,8 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set"
               ],
@@ -9629,8 +9730,8 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set",
                 "Pellet Stove",
@@ -9643,13 +9744,13 @@
           "startsLimited": [
             {
               "field": "fp_type::spec",
-              "value": "Wood Burning \u2014 Masonry",
+              "value": "Wood Burning — Masonry",
               "reason": "Not Operated",
               "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
             },
             {
               "field": "fp_type::spec",
-              "value": "Wood Burning \u2014 Prefab",
+              "value": "Wood Burning — Prefab",
               "reason": "Not Operated",
               "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
             },
@@ -9692,8 +9793,8 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set",
                 "Pellet Stove",
@@ -9735,8 +9836,8 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set"
               ],
@@ -9765,8 +9866,8 @@
             {
               "specNodeId": "fp_type",
               "includes": [
-                "Wood Burning \u2014 Masonry",
-                "Wood Burning \u2014 Prefab",
+                "Wood Burning — Masonry",
+                "Wood Burning — Prefab",
                 "Gas Insert",
                 "Gas Log Set",
                 "Pellet Stove",
@@ -9825,7 +9926,7 @@
               "label": "Gas Venting",
               "values": [
                 "Direct Vent (Sealed)",
-                "B-Vent \u2014 Proper Draft"
+                "B-Vent — Proper Draft"
               ]
             }
           ],
@@ -9939,8 +10040,8 @@
               "label": "Last Known Service",
               "values": [
                 "Serviced within 1 year",
-                "Serviced 1\u20133 years ago",
-                "Serviced 3\u20135 years ago"
+                "Serviced 1–3 years ago",
+                "Serviced 3–5 years ago"
               ]
             }
           ],
@@ -10756,7 +10857,7 @@
           "effect": "remove"
         },
         {
-          "value": "Off \u2014 vacant",
+          "value": "Off — vacant",
           "effect": "remove"
         }
       ]
@@ -10850,7 +10951,7 @@
           "effect": "remove"
         },
         {
-          "value": "Off \u2014 vacant",
+          "value": "Off — vacant",
           "effect": "remove"
         }
       ]
@@ -10964,7 +11065,7 @@
           "effect": "remove"
         },
         {
-          "value": "Off \u2014 vacant",
+          "value": "Off — vacant",
           "effect": "remove"
         }
       ]

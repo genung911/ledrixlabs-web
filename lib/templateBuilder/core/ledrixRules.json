@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.07.4",
+ "packVersion": "2026.11.07.5",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -35,6 +35,19 @@
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_furnace_eff": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Gas Furnace",
+      "Propane",
+      "Oil Furnace"
+     ],
+     "exact": true
     }
    ]
   },
@@ -80,6 +93,45 @@
       "oil furnace",
       "boiler"
      ]
+    }
+   ]
+  },
+  "hvac_furnace_condensate": {
+   "requires": [
+    {
+     "specNodeId": "hvac_furnace_eff",
+     "includes": [
+      "90%+ (High Efficiency)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "efficiency"
+    }
+   ]
+  },
+  "hvac_furnace_pvc_vent": {
+   "requires": [
+    {
+     "specNodeId": "hvac_furnace_eff",
+     "includes": [
+      "90%+ (High Efficiency)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "efficiency"
+    }
+   ]
+  },
+  "hvac_furnace_draft_hood": {
+   "requires": [
+    {
+     "specNodeId": "hvac_furnace_eff",
+     "includes": [
+      "80% (Standard)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "efficiency"
     }
    ]
   },

@@ -65,10 +65,10 @@
                   "label": "Age",
                   "values": [
                     "Under 5 years old",
-                    "5\u201310 years old",
-                    "10\u201315 years old",
-                    "15\u201320 years old",
-                    "20\u201325 years old",
+                    "5–10 years old",
+                    "10–15 years old",
+                    "15–20 years old",
+                    "20–25 years old",
                     "Over 25 years old",
                     "Not determined"
                   ]
@@ -108,6 +108,25 @@
               "limitations": [
                 "Not Operated"
               ]
+            },
+            {
+              "id": "hvac_furnace_eff",
+              "label": "Furnace Efficiency",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "efficiency",
+                  "label": "Efficiency",
+                  "values": [
+                    "80% (Standard)",
+                    "90%+ (High Efficiency)",
+                    "Not determined"
+                  ]
+                }
+              ],
+              "condition": false
             },
             {
               "id": "hvac_backup_heat",
@@ -169,6 +188,30 @@
               "condition": true
             },
             {
+              "id": "hvac_furnace_condensate",
+              "label": "Furnace Condensate Drain",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "hvac_furnace_pvc_vent",
+              "label": "Intake / Exhaust Pipes (PVC)",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "hvac_furnace_draft_hood",
+              "label": "Draft Hood / Vent Connector",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
               "id": "hvac_dataplate",
               "label": "Data Plate (Make/Model)",
               "kind": "component",
@@ -221,7 +264,7 @@
                   "id": "spec",
                   "label": "Heat Exchanger",
                   "values": [
-                    "Visible \u2014 No Defects",
+                    "Visible — No Defects",
                     "Partially Visible"
                   ]
                 }
@@ -377,7 +420,7 @@
                   "label": "Type",
                   "values": [
                     "Standard 1\"",
-                    "Media Filter (4\u20135\")",
+                    "Media Filter (4–5\")",
                     "HEPA",
                     "Electronic Air Cleaner",
                     "UV Filter"
@@ -416,7 +459,7 @@
         },
         {
           "id": "heating__boiler_electric_radiant",
-          "label": "Boiler \u00b7 Electric \u00b7 Radiant",
+          "label": "Boiler · Electric · Radiant",
           "kind": "subsystem",
           "children": [
             {
@@ -735,10 +778,10 @@
               "label": "Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "15\u201320 years old",
-                "20\u201325 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
                 "Over 25 years old",
                 "Not determined"
               ]
@@ -1491,8 +1534,8 @@
                   "id": "spec",
                   "label": "Main Shutoff Location",
                   "values": [
-                    "Ball Valve \u2014 Basement",
-                    "Ball Valve \u2014 Utility",
+                    "Ball Valve — Basement",
+                    "Ball Valve — Utility",
                     "Gate Valve",
                     "Curb Stop Only"
                   ]
@@ -1547,7 +1590,7 @@
         },
         {
           "id": "plumbing__drain_waste_vent",
-          "label": "Drain \u00b7 Waste \u00b7 Vent",
+          "label": "Drain · Waste · Vent",
           "kind": "subsystem",
           "children": [
             {
@@ -2003,7 +2046,7 @@
         },
         {
           "id": "plumbing__fuel_gas",
-          "label": "Fuel \u00b7 Gas",
+          "label": "Fuel · Gas",
           "kind": "subsystem",
           "children": [
             {
@@ -2155,13 +2198,13 @@
               "id": "type",
               "label": "Type & Fuel",
               "values": [
-                "Tank \u2014 Natural Gas",
-                "Tank \u2014 Propane",
-                "Tank \u2014 Electric",
-                "Tank \u2014 Oil",
-                "Tankless \u2014 Natural Gas",
-                "Tankless \u2014 Propane",
-                "Tankless \u2014 Electric",
+                "Tank — Natural Gas",
+                "Tank — Propane",
+                "Tank — Electric",
+                "Tank — Oil",
+                "Tankless — Natural Gas",
+                "Tankless — Propane",
+                "Tankless — Electric",
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ]
@@ -2212,9 +2255,9 @@
               "label": "Age",
               "values": [
                 "Under 5 years old",
-                "5\u201310 years old",
-                "10\u201315 years old",
-                "Over 15 years old \u2014 budget replacement",
+                "5–10 years old",
+                "10–15 years old",
+                "Over 15 years old — budget replacement",
                 "Not determined"
               ]
             }
@@ -2223,7 +2266,7 @@
         },
         {
           "id": "wh_t_tank_gas",
-          "label": "Tank \u2014 Natural Gas",
+          "label": "Tank — Natural Gas",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2234,7 +2277,7 @@
         },
         {
           "id": "wh_t_tank_propane",
-          "label": "Tank \u2014 Propane",
+          "label": "Tank — Propane",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2245,7 +2288,7 @@
         },
         {
           "id": "wh_t_tank_electric",
-          "label": "Tank \u2014 Electric",
+          "label": "Tank — Electric",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2256,7 +2299,7 @@
         },
         {
           "id": "wh_t_tank_oil",
-          "label": "Tank \u2014 Oil",
+          "label": "Tank — Oil",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2267,7 +2310,7 @@
         },
         {
           "id": "wh_t_tankless_gas",
-          "label": "Tankless \u2014 Natural Gas",
+          "label": "Tankless — Natural Gas",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2278,7 +2321,7 @@
         },
         {
           "id": "wh_t_tankless_propane",
-          "label": "Tankless \u2014 Propane",
+          "label": "Tankless — Propane",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2289,7 +2332,7 @@
         },
         {
           "id": "wh_t_tankless_electric",
-          "label": "Tankless \u2014 Electric",
+          "label": "Tankless — Electric",
           "kind": "component",
           "keywords": [],
           "trimmed": [],
@@ -2792,7 +2835,7 @@
                   "label": "Overcurrent Protection",
                   "values": [
                     "Circuit Breakers",
-                    "Fuses \u2014 Edison / Type S",
+                    "Fuses — Edison / Type S",
                     "Cartridge Fuses"
                   ]
                 },
@@ -3381,10 +3424,10 @@
                   "label": "Estimated Age",
                   "values": [
                     "Under 5 years old",
-                    "5\u201310 years old",
-                    "10\u201315 years old",
-                    "15\u201320 years old",
-                    "20\u201325 years old",
+                    "5–10 years old",
+                    "10–15 years old",
+                    "15–20 years old",
+                    "20–25 years old",
                     "Over 25 years old",
                     "Not determined"
                   ]
@@ -3743,7 +3786,7 @@
                   "label": "Downspout Extensions / Discharge",
                   "values": [
                     "Splash Blocks Only",
-                    "Underground \u2014 Verify Daylight"
+                    "Underground — Verify Daylight"
                   ]
                 }
               ],
@@ -4065,8 +4108,8 @@
                   "id": "spec",
                   "label": "Foundation Vents / Louvers",
                   "values": [
-                    "Passive Vents \u2014 Adequate",
-                    "Sealed \u2014 Conditioned Crawl"
+                    "Passive Vents — Adequate",
+                    "Sealed — Conditioned Crawl"
                   ]
                 }
               ],
@@ -4106,7 +4149,7 @@
             },
             {
               "id": "found_cs_ins_type",
-              "label": "Crawl Insulation \u2014 Type",
+              "label": "Crawl Insulation — Type",
               "kind": "component",
               "keywords": [
                 "crawl insulation",
@@ -4124,7 +4167,7 @@
               "attributes": [
                 {
                   "id": "spec",
-                  "label": "Crawl Insulation \u2014 Type",
+                  "label": "Crawl Insulation — Type",
                   "values": [
                     "Fiberglass Batt (Floor)",
                     "Rigid / Spray Foam (Walls)",
@@ -4143,7 +4186,7 @@
             },
             {
               "id": "found_cs_ins_cov",
-              "label": "Crawl Insulation \u2014 Coverage",
+              "label": "Crawl Insulation — Coverage",
               "kind": "component",
               "keywords": [
                 "insulation coverage crawl",
@@ -4175,7 +4218,7 @@
               "trimmed": [],
               "condition": true,
               "limitations": [
-                "Present \u2014 Not Tested"
+                "Present — Not Tested"
               ],
               "dependsOnSpec": {
                 "nodeId": "found_type::type",
@@ -4209,7 +4252,7 @@
               "trimmed": [],
               "condition": true,
               "limitations": [
-                "Present \u2014 Not Tested"
+                "Present — Not Tested"
               ],
               "dependsOnSpec": {
                 "nodeId": "found_type::type",
@@ -4237,7 +4280,7 @@
               "trimmed": [],
               "condition": true,
               "limitations": [
-                "Finished \u2014 Concealed"
+                "Finished — Concealed"
               ],
               "dependsOnSpec": {
                 "nodeId": "found_type::type",
@@ -5239,9 +5282,9 @@
                   "label": "Est. R-Value",
                   "values": [
                     "< R-19 (Upgrade)",
-                    "R-19\u2013R-30",
-                    "R-30\u2013R-38",
-                    "R-38\u2013R-49",
+                    "R-19–R-30",
+                    "R-30–R-38",
+                    "R-38–R-49",
                     "> R-49"
                   ]
                 }
@@ -5359,7 +5402,7 @@
               "trimmed": [],
               "condition": true,
               "limitations": [
-                "Present \u2014 Not Tested"
+                "Present — Not Tested"
               ]
             },
             {
@@ -6451,8 +6494,8 @@
                   "id": "spec",
                   "label": "Vehicle Door",
                   "values": [
-                    "Sectional \u2014 Insulated",
-                    "Sectional \u2014 Non-Insulated",
+                    "Sectional — Insulated",
+                    "Sectional — Non-Insulated",
                     "Roll-Up",
                     "Tilt-Up",
                     "Wood",
@@ -6726,8 +6769,8 @@
                   "id": "spec",
                   "label": "Fireplace Type",
                   "values": [
-                    "Wood Burning \u2014 Masonry",
-                    "Wood Burning \u2014 Prefab",
+                    "Wood Burning — Masonry",
+                    "Wood Burning — Prefab",
                     "Gas Insert",
                     "Gas Log Set",
                     "Pellet Stove",
@@ -6740,7 +6783,7 @@
             },
             {
               "id": "fp_t_wood_masonry",
-              "label": "Wood Burning \u2014 Masonry",
+              "label": "Wood Burning — Masonry",
               "kind": "component",
               "keywords": [],
               "trimmed": [],
@@ -6751,7 +6794,7 @@
             },
             {
               "id": "fp_t_wood_prefab",
-              "label": "Wood Burning \u2014 Prefab",
+              "label": "Wood Burning — Prefab",
               "kind": "component",
               "keywords": [],
               "trimmed": [],
@@ -6861,13 +6904,13 @@
               "startsLimited": [
                 {
                   "field": "fp_type::spec",
-                  "value": "Wood Burning \u2014 Masonry",
+                  "value": "Wood Burning — Masonry",
                   "reason": "Not Operated",
                   "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
                 },
                 {
                   "field": "fp_type::spec",
-                  "value": "Wood Burning \u2014 Prefab",
+                  "value": "Wood Burning — Prefab",
                   "reason": "Not Operated",
                   "sentence": "The wood-burning fireplace was not fired during the inspection. The firebox, damper and visible flue were inspected visually."
                 },
@@ -6997,7 +7040,7 @@
                   "label": "Gas Venting",
                   "values": [
                     "Direct Vent (Sealed)",
-                    "B-Vent \u2014 Proper Draft"
+                    "B-Vent — Proper Draft"
                   ]
                 }
               ],
@@ -7094,8 +7137,8 @@
                   "label": "Last Known Service",
                   "values": [
                     "Serviced within 1 year",
-                    "Serviced 1\u20133 years ago",
-                    "Serviced 3\u20135 years ago"
+                    "Serviced 1–3 years ago",
+                    "Serviced 3–5 years ago"
                   ]
                 }
               ],
