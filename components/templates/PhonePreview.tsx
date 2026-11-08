@@ -132,6 +132,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [sheet, setSheet] = useState<Sheet>(null);
   const [adding, setAdding] = useState<{ key: string; text: string } | null>(null);
   const [hl, setHl] = useState<string | null>(null);
+  // ALREADY KNOWN items opened with "Change" (app ScopeWorkspace, 2026-11-08).
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const hlTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -300,6 +302,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const mine = steps.filter(st => st.systemId === sysId);
     const p = progressOfSystem(sys);
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
+    const isKnown = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
+      return st.kind === 'description' && isDone(st) && !q.finding && !q.limited && !(n && previewNeeds(n)); };
+    const knownValue = (st: GuidedStep) => st.rowIds.flatMap(id => { const r = index.byId[id]?.node; return r ? axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []) : []; }).join(', ') || 'Set';
     const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
     const single = groups.length <= 1;
@@ -343,7 +348,29 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         ) : (
           <div className="pv-group">
             <div className="pv-ghead" data-pv-id={active.id !== sysId ? active.id : undefined}><span>{active.label.toUpperCase()}</span><em>+ Item</em></div>
-            {active.items.map(st => {
+            {/* ALREADY KNOWN (app 2026-11-08): a complete description item with nothing else to say folds to one row —
+                its answer and Change; Change opens its cards in place, Done folds it back. Condition items never fold. */}
+            {(() => {
+              const known = active.items.filter(isKnown);
+              if (!known.length) return null;
+              return (
+                <div className="pv-known">
+                  <div className="pv-knownh">✓ ALREADY KNOWN · {known.length}</div>
+                  {known.map(st => opened[st.key] ? (
+                    <div key={st.key} data-pv-id={st.key}>
+                      <div className="pv-knownr"><span>{st.label}</span><button type="button" onClick={() => setOpened(o => ({ ...o, [st.key]: false }))}>Done</button></div>
+                      {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r) : null; })}
+                    </div>
+                  ) : (
+                    <button key={st.key} type="button" data-pv-id={st.key} className="pv-knownr" onClick={() => setOpened(o => ({ ...o, [st.key]: true }))}
+                      aria-label={`${st.label}: ${knownValue(st)}. Change`}>
+                      <span>{st.label}</span><b>{knownValue(st)}</b><em>Change</em>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+            {active.items.filter(st => !isKnown(st)).map(st => {
               const n = index.byId[st.key]?.node;
               return (
                 <div key={st.key} data-pv-id={st.key} className={hl === st.key ? 'pv-hit' : undefined}>
@@ -736,6 +763,11 @@ const CSS_TEXT = `
 @keyframes pv-gpulse{0%,100%{border-color:rgba(47,140,232,.33);box-shadow:0 0 0 0 rgba(47,140,232,0)}50%{border-color:rgba(47,140,232,.9);box-shadow:0 0 0 2px rgba(47,140,232,.14)}}
 @media (prefers-reduced-motion: reduce){.ldx-pv .pv-gbar{animation:none}}
 .ldx-pv .pv-group{margin-top:14px}
+.ldx-pv .pv-known{margin-top:8px;border:1px solid #24313B;border-radius:10px;overflow:hidden;background:#11171b}
+.ldx-pv .pv-knownh{padding:6px 9px;background:#0e1714;color:#7fe0a8;font-size:9px;font-weight:800;letter-spacing:1.2px}
+.ldx-pv .pv-knownr{display:flex;align-items:center;gap:8px;width:100%;padding:8px 9px;border:0;border-top:1px solid #24313B;background:transparent;color:#8a959c;font-size:11px;text-align:left}
+.ldx-pv .pv-knownr b{flex:1;min-width:0;color:#e6ebee;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldx-pv .pv-knownr em,.ldx-pv .pv-knownr button{font-style:normal;color:#8fc0f2;font-weight:800;font-size:10.5px;background:none;border:0;margin-left:auto}
 .ldx-pv .pv-ghead{display:flex;justify-content:space-between;align-items:center;padding:0 3px 5px;border-bottom:1px solid #1b2429;color:#8a959c;font-size:9.5px;font-weight:900;letter-spacing:1.3px}
 .ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
 .ldx-pv .pv-itiles{margin-top:8px}
