@@ -214,9 +214,13 @@
       },
       {
        "id": "hvac_furnace_pvc_vent",
-       "label": "Intake / Exhaust Pipes (PVC)",
+       "label": "Combustion Air Intake (PVC)",
        "kind": "component",
-       "keywords": [],
+       "keywords": [
+        "intake pipe",
+        "pvc intake",
+        "air intake pipe"
+       ],
        "condition": true
       },
       {
