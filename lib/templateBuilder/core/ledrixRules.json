@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.07.5",
+ "packVersion": "2026.11.07.6",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -2618,7 +2618,56 @@
    "field": "hvac_heating::fuel_source",
    "map": {
     "Propane": "Propane Furnace"
+   },
+   "prefix": {
+    "field": "hvac_furnace_eff",
+    "onlyFor": [
+     "Gas Furnace",
+     "Propane",
+     "Oil Furnace"
+    ],
+    "map": {
+     "90%+ (High Efficiency)": "90%",
+     "80% (Standard)": "80%"
+    }
    }
   }
+ },
+ "offered": {
+  "hvac_flue|spec": [
+   {
+    "specNodeId": "hvac_furnace_eff",
+    "equals": "90%+ (High Efficiency)",
+    "values": [
+     "PVC (High-Eff)",
+     "Direct Vent (Sealed)"
+    ]
+   },
+   {
+    "specNodeId": "hvac_furnace_eff",
+    "equals": "80% (Standard)",
+    "values": [
+     "Metal B-Vent",
+     "Masonry Chimney",
+     "Single-Wall (Verify)"
+    ]
+   }
+  ],
+  "hvac_combustion_air|spec": [
+   {
+    "specNodeId": "hvac_furnace_eff",
+    "equals": "90%+ (High Efficiency)",
+    "values": [
+     "Direct Vent (Sealed)"
+    ]
+   },
+   {
+    "specNodeId": "hvac_furnace_eff",
+    "equals": "80% (Standard)",
+    "values": [
+     "High-Low Vents"
+    ]
+   }
+  ]
  }
 }

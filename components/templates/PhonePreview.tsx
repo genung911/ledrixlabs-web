@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
 import {
   crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
@@ -433,7 +433,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         {ax.condition ? <div className="pv-sec"><div className="pv-cap">CONDITION</div>{conditionRow(n)}</div> : null}
         {ax.attributes.map((a, i) => (
           <div key={a.id} className={`pv-sec${ax.condition || i > 0 ? ' div' : ''}`}>
-            {optionGrid(n, pickKey(n.id, a.id), named ? a.label.toUpperCase() : 'MATERIAL / TYPE', a.values, !!a.multi, named ? `Add ${a.label.toLowerCase()}` : 'Add a material')}
+            {optionGrid(n, pickKey(n.id, a.id), named ? a.label.toUpperCase() : 'MATERIAL / TYPE', previewOffered(n, a.id, a.values, picks), !!a.multi, named ? `Add ${a.label.toLowerCase()}` : 'Add a material')}
           </div>
         ))}
         {ax.method.length ? (

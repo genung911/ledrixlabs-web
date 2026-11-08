@@ -181,6 +181,25 @@
           "Direct Vent (Sealed)",
           "Masonry Chimney",
           "Single-Wall (Verify)"
+         ],
+         "offeredWhen": [
+          {
+           "specNodeId": "hvac_furnace_eff",
+           "equals": "90%+ (High Efficiency)",
+           "values": [
+            "PVC (High-Eff)",
+            "Direct Vent (Sealed)"
+           ]
+          },
+          {
+           "specNodeId": "hvac_furnace_eff",
+           "equals": "80% (Standard)",
+           "values": [
+            "Metal B-Vent",
+            "Masonry Chimney",
+            "Single-Wall (Verify)"
+           ]
+          }
          ]
         }
        ],
@@ -287,6 +306,22 @@
          "values": [
           "High-Low Vents",
           "Direct Vent (Sealed)"
+         ],
+         "offeredWhen": [
+          {
+           "specNodeId": "hvac_furnace_eff",
+           "equals": "90%+ (High Efficiency)",
+           "values": [
+            "Direct Vent (Sealed)"
+           ]
+          },
+          {
+           "specNodeId": "hvac_furnace_eff",
+           "equals": "80% (Standard)",
+           "values": [
+            "High-Low Vents"
+           ]
+          }
          ]
         }
        ],

@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.07.5",
+  "packVersion": "2026.11.07.6",
   "revision": 276,
   "locale": "en-US",
   "severityVocabulary": [
@@ -382,6 +382,25 @@
                 "Direct Vent (Sealed)",
                 "Masonry Chimney",
                 "Single-Wall (Verify)"
+              ],
+              "offeredWhen": [
+                {
+                  "specNodeId": "hvac_furnace_eff",
+                  "equals": "90%+ (High Efficiency)",
+                  "values": [
+                    "PVC (High-Eff)",
+                    "Direct Vent (Sealed)"
+                  ]
+                },
+                {
+                  "specNodeId": "hvac_furnace_eff",
+                  "equals": "80% (Standard)",
+                  "values": [
+                    "Metal B-Vent",
+                    "Masonry Chimney",
+                    "Single-Wall (Verify)"
+                  ]
+                }
               ]
             }
           ],
@@ -563,6 +582,22 @@
               "values": [
                 "High-Low Vents",
                 "Direct Vent (Sealed)"
+              ],
+              "offeredWhen": [
+                {
+                  "specNodeId": "hvac_furnace_eff",
+                  "equals": "90%+ (High Efficiency)",
+                  "values": [
+                    "Direct Vent (Sealed)"
+                  ]
+                },
+                {
+                  "specNodeId": "hvac_furnace_eff",
+                  "equals": "80% (Standard)",
+                  "values": [
+                    "High-Low Vents"
+                  ]
+                }
               ]
             }
           ],
@@ -701,6 +736,18 @@
             "field": "hvac_heating::fuel_source",
             "map": {
               "Propane": "Propane Furnace"
+            },
+            "prefix": {
+              "field": "hvac_furnace_eff",
+              "onlyFor": [
+                "Gas Furnace",
+                "Propane",
+                "Oil Furnace"
+              ],
+              "map": {
+                "90%+ (High Efficiency)": "90%",
+                "80% (Standard)": "80%"
+              }
             }
           }
         },

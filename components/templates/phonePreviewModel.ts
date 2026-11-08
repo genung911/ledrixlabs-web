@@ -10,6 +10,7 @@ import { DEFAULT_COVERED, isCovered, recordsNothingHere } from '@/lib/templates/
 import { captureRuleDefinitions, frozenRuleNode, type PackRules, type RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
 import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/core/applicability';
 import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
+import { offeredValues, titleFromType, type OfferRule, type TypeTitle } from '@/lib/templateBuilder/core/answerShapes';
 import { guidedSteps, type GuidedStep } from '@/lib/templateBuilder/core/guidedOrder';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
@@ -216,17 +217,30 @@ export const pickKey = (nodeId: string, attrId: string) => nodeId + '::' + attrI
 export const METHOD_ATTR = '__method';
 
 /** ledrix-app src/components/systems/ScopeRowList.tsx — `rowTitle`: a row the pack titles by its picked type
- *  (`typeTitle`: the Furnace reads "Gas Furnace", "Heat Pump", "Propane Furnace"). One picked value titles it; none or
- *  several keep the item's own name. Display only. The titles come from the generated ledrixRules.json. */
-const TYPE_TITLES = ((LEDRIX_RULES as { typeTitles?: Record<string, { field: string; map?: Record<string, string> }> }).typeTitles ?? {});
+ *  (`typeTitle`: the Furnace reads "Gas Furnace", "Heat Pump", "Propane Furnace"), with the class prefix ("90% Gas
+ *  Furnace", 2026-11-07). One picked value titles it; none or several keep the item's own name. Display only. The titles
+ *  come from the generated ledrixRules.json; the rule is the app's own answerShapes.ts (a byte-identical copy). */
+const TYPE_TITLES = ((LEDRIX_RULES as { typeTitles?: Record<string, TypeTitle> }).typeTitles ?? {});
+/** A stored answer in the preview's picks: `host::field`, or a bare id = that item's (first) field. */
+const pickedAnswer = (picks: Picks) => (key: string): string | null => {
+  const hit = key.includes('::') ? picks[key] : Object.entries(picks).find(([k]) => k.startsWith(`${key}::`))?.[1];
+  return hit && hit.length ? hit.join(', ') : null;
+};
 export function previewRowTitle(n: TemplateNode, picks: Picks): string {
   const tt = TYPE_TITLES[n.id];
   if (!tt || typeof tt.field !== 'string') return n.label;
   const [host, attr] = tt.field.split('::');
   if (!host || !attr) return n.label;
   const v = picks[pickKey(host, attr)] ?? [];
-  if (v.length !== 1) return n.label;
-  return tt.map && typeof tt.map[v[0]] === 'string' ? tt.map[v[0]] : v[0];
+  return titleFromType(tt, n.label, v.length === 1 ? v[0] : null, pickedAnswer(picks));
+}
+
+/** ledrix-app src/components/systems/SpecChipRow.tsx — useSpecField's `typeOptions`: a field whose pack attribute
+ *  carries `offeredWhen` offers only the choices that fit another answer (a 90%+ furnace's venting: PVC or Direct
+ *  Vent). A picked choice always stays. Same rule (answerShapes.offeredValues), the preview's picks as the answers. */
+const OFFERED = ((LEDRIX_RULES as { offered?: Record<string, OfferRule[]> }).offered ?? {});
+export function previewOffered(n: TemplateNode, attrId: string, values: readonly string[], picks: Picks): string[] {
+  return offeredValues(values, picks[pickKey(n.id, attrId)] ?? [], OFFERED[`${n.id}|${attrId}`], pickedAnswer(picks));
 }
 
 export function leafProgress(n: TemplateNode, picks: Picks, cond: Record<string, CondPick>, readings: Record<string, string>) {
