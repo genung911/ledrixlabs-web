@@ -40,7 +40,7 @@ export type PreviewSelection = { systemId: string | null; nodeId: string | null 
 
 // The app's screens (2026-10-24): the Coverage grid, a system's item list, a guided step, and the system-boundary
 // card that Next / Back stops on between two systems — a state of the walk, never a step.
-type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string } | { kind: 'step'; key: string }
+type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string; group?: string } | { kind: 'step'; key: string }
   | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' };
 type Sheet = { kind: 'limit' | 'finding'; nodeId: string } | null;
 
@@ -227,7 +227,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (sheet) { setSheet(null); return; }
     if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: st.systemId } : { kind: 'landing' }); }
     else if (screen.kind === 'cross') go({ kind: 'step', key: screen.from });
-    else if (screen.kind === 'system') go({ kind: 'landing' });
+    else if (screen.kind === 'system') go(screen.group ? { kind: 'system', systemId: screen.systemId } : { kind: 'landing' });
   };
   const reset = () => {
     setPicks({}); setTyped({}); setCond({}); setLimReason({}); setFinding({}); setReadings({});
@@ -292,52 +292,68 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   };
 
   // ── A SYSTEM'S PAGE: ITS ITEMS (ScopeWorkspace, 2026-10-24) ──
-  const systemPage = (sysId: string) => {
+  // ── A SYSTEM'S PAGE: ITS GROUPS AS TILES; A GROUP OPENS ITS CARDS (app ScopeWorkspace, 2026-11-08) ──
+  // Several groups → one tile per group; a one-group system opens straight on its cards. A group's page stacks each
+  // item's cards (the same leafCard a guided step draws).
+  const systemPage = (sysId: string, openGroup?: string) => {
     const sys = index.allSystems[sysId]; if (!sys) return null;
     const mine = steps.filter(st => st.systemId === sysId);
     const p = progressOfSystem(sys);
-    const done = mine.filter(st => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; }).length;
+    const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
     const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
-    const start = () => { if (!mine.length) return; openStep(mine[resumeIndex(mine, stepDone, 0)]); };
+    const single = groups.length <= 1;
+    const active = single ? groups[0] : groups.find(g => g.id === openGroup);
+    const inGroup = !single && !!active;
+    const items = active ? active.items : mine;
+    const done = items.filter(isDone).length;
+    const pool = inGroup ? items : mine;
+    const start = () => { if (!pool.length) return; openStep(pool[resumeIndex(pool, stepDone, 0)]); };
+    const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
-        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
+        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE{inGroup ? ` · ${displayLabel(sys.label).toUpperCase()}` : ''}</div>
         <div className="pv-sysrow">
-          <button type="button" className="pv-iconbtn" onClick={back} aria-label="Back to all systems"><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
-          <span className="pv-big1">{displayLabel(sys.label)}</span>
-          <span className="pv-c">{p.met}<small> / {p.total}</small></span>
-          <button type="button" className="pv-guidechip" onClick={start} aria-label={`Guided coverage through ${displayLabel(sys.label)}`}>▶ GUIDED</button>
+          <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${displayLabel(sys.label)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
+          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : displayLabel(sys.label)}</span>
+          <span className="pv-c">{met}<small> / {total}</small></span>
+          <button type="button" className="pv-guidechip" onClick={start} aria-label={`Guided coverage through ${inGroup ? active!.label : displayLabel(sys.label)}`}>▶ GUIDED</button>
         </div>
-        <div className="pv-bar3"><i style={{ width: `${p.total ? Math.round((p.met / p.total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
-        <div className="pv-syssub">{mine.length} item{mine.length === 1 ? '' : 's'} · {done} complete · tap an item to start there</div>
+        <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
+        <div className="pv-syssub">{!active
+          ? `${groups.length} groups · ${groups.filter(g => g.items.every(isDone)).length} complete · tap a group to open it`
+          : `${items.length} item${items.length === 1 ? '' : 's'} · ${done} complete`}</div>
         {!mine.length ? <p className="pv-empty">Nothing in scope for this category yet.</p> : null}
-        {groups.map(g => (
-          <div key={g.id} className="pv-group">
-            <div className="pv-ghead" data-pv-id={g.id !== sysId ? g.id : undefined}><span>{g.label.toUpperCase()}</span><em>+ Item</em></div>
-            {/* Items as tiles, three across (app ScopeWorkspace, 2026-11-08). */}
-            <div className="pv-tiles pv-itiles">
-            {g.items.map(st => {
-              const q = stepStat(st);
-              const n = index.byId[st.key]?.node;
-              const ax = n ? axesOf(n) : null;
-              const vals = ax ? ax.attributes.map(a => (picks[pickKey(st.key, a.id)] ?? []).join(', ')).filter(Boolean) : [];
-              const v = q.finding ? 'Finding' : q.limited ? 'Limitation' : vals.length ? vals.join(', ')
-                : cond[st.key] === 'ok' ? 'Satisfactory' : q.total && q.met >= q.total ? 'Complete' : q.met ? 'Incomplete'
-                : st.kind === 'description' ? 'Not set' : 'Not started';
+        {!active ? (
+          <div className="pv-tiles">
+            {groups.map(g => {
+              const qs = g.items.map(stepStat);
+              const d = g.items.filter(isDone).length;
+              const all = g.items.length > 0 && d === g.items.length;
               return (
-                <button key={st.key} type="button" data-pv-id={st.key} className={`pv-tile pv-itile${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
-                  aria-label={`${st.label}, ${v}. Start guided coverage here`}>
-                  <span className="pv-tl">{st.label}</span>
-                  <span className="pv-iv2" style={{ color: q.finding ? '#ff8a8a' : q.limited ? '#f0a020' : vals.length || q.met >= q.total && q.total ? '#c9d6de' : '#5f7378' }}>{v}</span>
-                  <small className="pv-ix">{n && previewNeeds(n) ? `Needs ${previewNeeds(n)}` : ''}</small>
-                  <span className="pv-lights" aria-hidden="true"><i className={q.finding ? 'r' : ''} /><i className={q.limited ? 'a' : ''} /><i className={q.total > 0 && q.met >= q.total ? 'g' : ''} /></span>
+                <button key={g.id} type="button" data-pv-id={g.id !== sysId ? g.id : undefined} className={`pv-tile pv-itile${hl === g.id ? ' pv-hit' : ''}`}
+                  onClick={() => go({ kind: 'system', systemId: sysId, group: g.id })} aria-label={`${g.label}, ${d} of ${g.items.length} complete. Open its checklist`}>
+                  <span className="pv-tl">{displayLabel(g.label)}</span>
+                  <span className="pv-iv2" style={{ color: '#8a959c' }}>{d} of {g.items.length}</span>
+                  <span className="pv-lights" aria-hidden="true"><i className={qs.some(q => q.finding) ? 'r' : ''} /><i className={qs.some(q => q.limited) ? 'a' : ''} /><i className={all ? 'g' : ''} /></span>
                 </button>
               );
             })}
-            </div>
           </div>
-        ))}
+        ) : (
+          <div className="pv-group">
+            <div className="pv-ghead" data-pv-id={active.id !== sysId ? active.id : undefined}><span>{active.label.toUpperCase()}</span><em>+ Item</em></div>
+            {active.items.map(st => {
+              const n = index.byId[st.key]?.node;
+              return (
+                <div key={st.key} data-pv-id={st.key} className={hl === st.key ? 'pv-hit' : undefined}>
+                  {n && previewNeeds(n) ? <small className="pv-needs">{st.label} — Needs {previewNeeds(n)}  ·  <u>Take photo</u></small> : null}
+                  {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r) : null; })}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </>
     );
   };
@@ -558,7 +574,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
 
   let body: JSX.Element | null;
   if (screen.kind === 'landing') body = landing();
-  else if (screen.kind === 'system') body = systemPage(screen.systemId);
+  else if (screen.kind === 'system') body = systemPage(screen.systemId, screen.group);
   else if (screen.kind === 'step') body = stepPage(screen.key);
   else body = crossPage(screen.from, screen.to, screen.dir);
 
