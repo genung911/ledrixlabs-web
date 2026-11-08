@@ -308,7 +308,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const items = active ? active.items : mine;
     const done = items.filter(isDone).length;
     const pool = inGroup ? items : mine;
-    const start = () => { if (!pool.length) return; openStep(pool[resumeIndex(pool, stepDone, 0)]); };
+    const nextUp = pool.length ? pool[resumeIndex(pool, stepDone, 0)] : null;
+    const start = () => { if (nextUp) openStep(nextUp); };
     const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
@@ -317,7 +318,6 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${displayLabel(sys.label)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
           <span className="pv-big1">{inGroup ? displayLabel(active!.label) : displayLabel(sys.label)}</span>
           <span className="pv-c">{met}<small> / {total}</small></span>
-          <button type="button" className="pv-guidechip" onClick={start} aria-label={`Guided coverage through ${inGroup ? active!.label : displayLabel(sys.label)}`}>▶ GUIDED</button>
         </div>
         <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-syssub">{!active
@@ -354,6 +354,13 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             })}
           </div>
         )}
+        {/* No GUIDED chip in the header (owner 2026-11-08): the thin bar, as above the app's rail, with its slow pulse. */}
+        {nextUp ? (
+          <button type="button" className="pv-gbar" onClick={start}
+            aria-label={`Guided coverage, picking up at ${nextUp.label}`}>
+            <span className="pv-gplay">▶</span><b>Guided coverage</b><small>picks up at {nextUp.label}</small><span aria-hidden="true">›</span>
+          </button>
+        ) : null}
       </>
     );
   };
@@ -724,7 +731,10 @@ const CSS_TEXT = `
 .ldx-pv .pv-foot{color:#5f6d78;font-size:10.5px;line-height:1.5;padding:10px 20px 0;margin:0}
 .ldx-pv .pv-toast{position:absolute;left:12px;right:12px;bottom:84px;z-index:6;background:rgba(14,24,34,.96);border:1px solid rgba(47,74,98,.5);border-radius:12px;padding:10px 12px;color:#eef3f5;font-size:11.5px;font-weight:600;text-align:center}
 .ldx-pv .pv-big1{flex:1;min-width:0;color:#eef3f5;font-size:22px;font-weight:800;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ldx-pv .pv-guidechip{border:1px solid rgba(47,140,232,.4);border-radius:999px;padding:4px 8px;color:#2F8CE8;font-size:9.5px;font-weight:900;letter-spacing:.7px;white-space:nowrap}
+.ldx-pv .pv-gbar{display:flex;align-items:center;gap:7px;width:100%;margin-top:12px;height:32px;padding:0 10px;border-radius:9px;background:#0d1620;border:1px solid rgba(47,140,232,.33);color:#4a5a60;font-size:11px;text-align:left;animation:pv-gpulse 2.8s ease-in-out infinite}
+.ldx-pv .pv-gbar b{color:#cfe2f8;font-weight:700;white-space:nowrap}.ldx-pv .pv-gbar small{flex:1;min-width:0;color:#7f9197;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ldx-pv .pv-gplay{color:#2F8CE8;font-size:10px}
+@keyframes pv-gpulse{0%,100%{border-color:rgba(47,140,232,.33);box-shadow:0 0 0 0 rgba(47,140,232,0)}50%{border-color:rgba(47,140,232,.9);box-shadow:0 0 0 2px rgba(47,140,232,.14)}}
+@media (prefers-reduced-motion: reduce){.ldx-pv .pv-gbar{animation:none}}
 .ldx-pv .pv-group{margin-top:14px}
 .ldx-pv .pv-ghead{display:flex;justify-content:space-between;align-items:center;padding:0 3px 5px;border-bottom:1px solid #1b2429;color:#8a959c;font-size:9.5px;font-weight:900;letter-spacing:1.3px}
 .ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
