@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  previewDetailsKeys, previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  previewDescribe, previewDetailsKeys, previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
 import {
   crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
@@ -129,6 +129,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // DESCRIBED IN DETAILS (app 2026-11-08): the spec fields Details asks — a description step made only of them leaves the
   // walk and folds into one line on its system page; on a card they show as one line, not a grid.
   const detailsKeys = useMemo(() => previewDetailsKeys(tree, rules), [tree, rules]);
+  const describeBy = useMemo(() => previewDescribe(tree, rules, picks), [tree, rules, picks]);
   const describedStep = (st: GuidedStep): { set: boolean } | null => {
     if (st.kind !== 'description') return null;
     const rows = st.rowIds.map(id => index.byId[id]?.node).filter(Boolean) as TemplateNode[];
@@ -297,6 +298,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 onClick={() => openSystem(sys)} aria-label={`${sys.label}, ${p.met} of ${p.total}`}>
                 <Icon name={sys.icon ?? 'shape-outline'} size={24} />
                 <span className="pv-tl">{sys.label}</span>
+                {describeBy[sys.id]?.left ? <span className="pv-iv2" style={{ color: '#9cc4f2' }}>✦ {describeBy[sys.id].left} to describe</span> : null}
                 <span className="pv-lights" aria-hidden="true"><i className={p.finding ? 'r' : ''} /><i className={p.limited ? 'a' : ''} /><i className={done ? 'g' : ''} /></span>
               </button>
             );
@@ -315,7 +317,11 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const sys = index.allSystems[sysId]; if (!sys) return null;
     const mine = allSteps.filter(st => st.systemId === sysId);
     const shots = shotsFor(sysId);
-    const photosOpen = shots.length > 0 && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
+    // Photos & details (app 2026-11-08): shots or questions give the tile; its line is what is still needed.
+    const dsc = describeBy[sysId] ?? { left: 0, total: 0 };
+    const hasTile = shots.length > 0 || dsc.total > 0;
+    const tileMeta = dsc.left ? `✦ ${dsc.left} still needed` : dsc.total ? '✓ Described' : `${shots.length} · start here`;
+    const photosOpen = hasTile && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
     const p = progressOfSystem(sys);
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
     const isDescribed = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
@@ -349,22 +355,22 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             and suggests the Details answers to confirm; here it lists the shots this draft asks for. */}
         {photosOpen ? (
           <div className="pv-group">
-            <div className="pv-ghead"><span>PHOTOS · {shots.length}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
+            <div className="pv-ghead"><span>PHOTOS & DETAILS · {shots.length} SHOTS{dsc.total ? ` · ${dsc.left} STILL NEEDED` : ''}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
             <div className="pv-shots">
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>
-            <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm.</div>
+            <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm; whatever they don't settle is listed under Still needed.</div>
           </div>
         ) : null}
-        {!photosOpen && active && groups.length <= 1 && shots.length ? (
-          <button type="button" className="pv-photobar" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))}>Photos<em>{shots.length} · start here ›</em></button>
+        {!photosOpen && active && groups.length <= 1 && hasTile ? (
+          <button type="button" className="pv-photobar" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))}>Photos & details<em>{tileMeta} ›</em></button>
         ) : null}
         {photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            {shots.length ? (
-              <button type="button" className="pv-tile pv-itile pv-phototile" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos, ${shots.length} shots. Open`}>
-                <span className="pv-tl">Photos</span>
-                <span className="pv-iv2">{shots.length} · start here</span>
+            {hasTile ? (
+              <button type="button" className="pv-tile pv-itile pv-phototile" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos and details, ${tileMeta}. Open`}>
+                <span className="pv-tl">Photos & details</span>
+                <span className="pv-iv2">{tileMeta}</span>
               </button>
             ) : null}
             {groups.map(g => {

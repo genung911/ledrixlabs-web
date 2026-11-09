@@ -12,7 +12,7 @@ import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/co
 import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
 import { offeredValues, titleFromType, type OfferRule, type TypeTitle } from '@/lib/templateBuilder/core/answerShapes';
 import { guidedSteps, type GuidedStep } from '@/lib/templateBuilder/core/guidedOrder';
-import { whatsHereQuestions, questionKey } from '@/lib/scope/core/taxonomy/whatsHere';
+import { whatsHereQuestions, questionKey, followUpApplies } from '@/lib/scope/core/taxonomy/whatsHere';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
  *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
@@ -364,4 +364,18 @@ export function detailsKeysFor(tree: InspectionTemplate): Set<string> {
   let k = DETAILS_CACHE.get(tree);
   if (!k) { k = previewDetailsKeys(tree, rulesFor(tree)); DETAILS_CACHE.set(tree, k); }
   return k;
+}
+
+/** WHAT EACH SYSTEM STILL HAS TO DESCRIBE (app whatsHereProgress.detailsBySystem, 2026-11-08): per system, its questions
+ *  that apply to the answers tapped here, and how many have none — Coverage's "✦ n to describe", the tile's "still needed". */
+export function previewDescribe(tree: InspectionTemplate, rules: RuleDefinitions, picks: Picks): Record<string, { left: number; total: number }> {
+  const qs = whatsHereQuestions({ ...tree, ruleDefinitions: rules } as never, PACK_FACTS as never) as any[];
+  const valueOf = (q: any) => (picks[pickKey(q.node.id, q.attrId)] ?? []).join(', ') || undefined;
+  const out: Record<string, { left: number; total: number }> = {};
+  for (const q of qs.filter(x => followUpApplies(x, qs, valueOf))) {
+    const r = (out[q.systemId] ??= { left: 0, total: 0 });
+    r.total++;
+    if (!valueOf(q)) r.left++;
+  }
+  return out;
 }

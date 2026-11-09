@@ -172,43 +172,11 @@ export function followUpApplies<Q extends WhatsHereQuestion>(q: Q, all: readonly
   });
 }
 
-// ── DONE AND NONE (owner 2026-11-07, mockup https://claude.ai/artifact/XD8fbDLbZVqmAtxocSNNqK → "approved") ─────────
-// "Can we get a done button and a none button … when the inspector is done, it moves to the bottom or if they hit none
-// it moves to another section even farther below … still visible in case they are needed. This way … only relevant /
-// needed answers are at the top." Report: "not present is good" — one line per None.
-//
-//   open         still to answer (the top, in section order)
-//   done         the inspector tapped Done on an answered card → folded into one row under Done
-//   notPresent   the answer IS "Not present" (None) → the last section. Read from the ANSWER, never from a mark: it
-//                syncs with the answer, every rule reads it (applicability.NOT_PRESENT — never an Other material), and
-//                the report prints it as that field's one line.
-// Done is only a mark on this page (the phone keeps it per inspection, state/whatsHereMarks): Inspect already follows
-// the answer, so Done changes nothing but where the card sits. A Done mark on a card with no answer (cleared elsewhere)
-// is not honoured — the card is open again.
+// ── NONE: NOT PRESENT ───────────────────────────────────────────────────────────────────────────────────────────
+// A question answered "None" holds NOT_PRESENT (applicability — never an Other material; every rule reads it, the report
+// prints it as that field's one line). The page's Done marks and its open / done / not-present lists went with the page
+// (2026-11-08: Details lives in each system's Photos & details tile, which folds answered questions itself).
 export { NOT_PRESENT };
 
-/** A question’s id on this page (never a spec key — `|`, not `::`): the field it answers. */
+/** A question's id (never a spec key — `|`, not `::`): the field it answers. */
 export const questionKey = (q: Pick<WhatsHereQuestion, 'node' | 'attrId'>): string => `${q.node.id}|${q.attrId}`;
-
-/** The picked entries of a stored value (SPEC_DELIM ', '). */
-export const entriesOf = (value: string | null | undefined): string[] => String(value ?? '').split(',').map(v => v.trim()).filter(Boolean);
-
-/** None: the whole answer is Not present. A Not present beside a real pick is a pick (the card is answered). */
-export const isNotPresent = (value: string | null | undefined): boolean => {
-  const e = entriesOf(value);
-  return e.length === 1 && e[0].toLowerCase() === NOT_PRESENT.toLowerCase();
-};
-
-export type WhatsHereState = 'open' | 'done' | 'notPresent';
-export function stateOf(value: string | null | undefined, marked: boolean): WhatsHereState {
-  if (isNotPresent(value)) return 'notPresent';
-  return marked && entriesOf(value).length > 0 ? 'done' : 'open';
-}
-
-/** The page's three lists, each in the questions' own order (section, then template) — a card brought back returns to
- *  its own place, never to the top. */
-export function partitionQuestions<Q extends WhatsHereQuestion>(qs: readonly Q[], valueOf: (q: Q) => string | null | undefined, done: ReadonlySet<string>) {
-  const out = { open: [] as Q[], done: [] as Q[], notPresent: [] as Q[] };
-  for (const q of qs) out[stateOf(valueOf(q), done.has(questionKey(q)))].push(q);
-  return out;
-}
