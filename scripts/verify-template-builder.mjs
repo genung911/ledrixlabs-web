@@ -772,7 +772,7 @@ async function runTypes(files) {
       r('materials: Plumbing Supply is its materials question, each answer with the ONE card the phone shows for it, the typed answer\'s card, then what every home gets',
         !TL.typeLayoutOf(fresh, fsys('plumbing'), fdefs) && sup?.questions.length === 1 && q.rows.length === 6
         && q.rows.every(x => x.card && PM.itemApplies(fdefs, x.card.id, k => (k === q.field || k === q.node.id ? x.value : undefined)))
-        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff Location|Functional Flow|Water Pressure'
+        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure'   /* 2026-11-09: valve + location split */
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
       const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
@@ -892,23 +892,43 @@ async function runTypes(files) {
       // Electrical, group by group (owner 2026-11-06, mockup NC6nHJ1mUGuv2ikCUfU3Cc, "approved mock up"): Service Entrance
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
+      const CTS_find = (t, id) => { let hit = null; const w = (n) => { if (hit || !n) return; if (n.id === id) hit = n; (n.children ?? []).forEach(w); }; (t.systems ?? []).forEach(w); return hit; };
       const EG = mat('electrical'), svc = grp(EG, 'Service'), pnl = grp(EG, 'Panel'), bw = grp(EG, 'Branch Wiring'), dev = grp(EG, 'Devices & Protection');
       const typedIds = fresh.systems.filter(x => TL.typeLayoutOf(fresh, x, fdefs)).map(x => x.id).sort().join('|');
-      r('electrical: no type chips (Service Entrance decides 3 of 27 items); Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
-        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|water_heater');
+      // THE THIRD-OF-THE-SYSTEM RULE needs a question that brings SEVERAL items yet decides few. Since the 2026-11-09 split
+      // (Overhead → the drop; the mast follows Attachment) no default question does, so the witness is made in memory: a
+      // second service-drop copy, so Overhead brings two items — still 3 of ~28, under a third → no chips.
+      const wit = clone(fresh); const wEl = wit.systems.find(x => x.id === 'electrical');
+      { const walkC = (n) => { const i = (n.children ?? []).findIndex(c => c.id === 'elec_svc_drop'); if (i >= 0) { n.children.splice(i + 1, 0, { ...clone(n.children[i]), id: 'elec_svc_drop~i2' }); return true; } return (n.children ?? []).some(walkC); }; walkC(wEl); }
+      r('electrical: no type chips — a question that brings several items but decides under a third of the system stays a group list; Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
+        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|water_heater'
+        && !!CTS_find(wit, 'elec_svc_drop~i2') && !TL.typeLayoutOf(wit, wEl, PM.rulesFor(wit)));
       const row = (b, v) => ids(b?.rows.find(x => x.value === v)?.cards);
       const se = svc?.brought.find(b => b.label === 'Service Entrance');
-      r('electrical: Service records Size, Entrance and Main Disconnect; Service Entrance brings the drop and mast for Overhead and Service Mast, the lateral for Underground; Meter Base is every home',
-        ids(svc?.materials) === 'elec_service|elec_entrance|elec_main' && svc?.brought.length === 1
-        && row(se, 'Overhead') === 'elec_svc_drop|elec_svc_mast' && row(se, 'Service Mast') === 'elec_svc_drop|elec_svc_mast' && row(se, 'Underground (Lateral)') === 'elec_svc_lateral'
-        && ids(svc?.every) === 'elec_meter');
+      // 2026-11-09 (app template pass, owner "Splits ok"): Service Entrance is Overhead / Underground — a materials question
+      // whose answers bring the drop and the lateral — and its Attachment brings the mast for Service Mast.
+      const seq = svc?.questions.find(x => x.field === 'elec_entrance::spec');
+      const witM = clone(fresh);
+      { const walkM = (n) => { const i = (n.children ?? []).findIndex(c => c.id === 'elec_svc_mast'); if (i >= 0) { n.children.splice(i + 1, 0, { ...clone(n.children[i]), id: 'elec_svc_mast~i2' }); return true; } return (n.children ?? []).some(walkM); }; walkM(witM.systems.find(x => x.id === 'electrical')); }
+      const att = svc?.brought.find(b => b.label === 'Service Entrance › Attachment');
+      r('electrical: Service Entrance is its question — Overhead brings the drop, Underground the lateral; Attachment brings the mast for Service Mast; the rest is every home',
+        !!seq && seq.rows.length === 2 && ids(seq.rows.find(x => x.value === 'Overhead')?.card ? [seq.rows.find(x => x.value === 'Overhead').card] : []) === 'elec_svc_drop'
+        && ids(seq.rows.find(x => x.value === 'Underground')?.card ? [seq.rows.find(x => x.value === 'Underground').card] : []) === 'elec_svc_lateral'
+        && row(att, 'Service Mast') === 'elec_svc_mast' && row(att, 'Direct to House') === ''
+        && ids(svc?.every) === 'elec_service|elec_meter|elec_main'
+        // an answer brings EVERY item that follows it — witnessed in memory with a second mast copy
+        && row(grp(ML.materialLayoutOf(witM, witM.systems.find(x => x.id === 'electrical'), PM.rulesFor(witM)), 'Service')?.brought.find(b => b.label === 'Service Entrance › Attachment'), 'Service Mast') === 'elec_svc_mast|elec_svc_mast~i2');
       const oc = pnl?.brought.find(b => b.label === 'Panel › Overcurrent Protection');
       r('electrical: Fuses / Fuse Holders is brought by the fuse answers of Overcurrent Protection — never "every home"; breakers bring nothing extra',
         !!oc && row(oc, 'Circuit Breakers') === '' && row(oc, 'Fuses — Edison / Type S') === 'elec_fuses' && row(oc, 'Cartridge Fuses') === 'elec_fuses'
-        && !pnl.every.some(n => n.id === 'elec_fuses') && ids(pnl.every) === 'elec_deadfront|elec_breakers' && ids(pnl.materials) === 'elec_panel|elec_bonding|gar_subpanel');
+        && !pnl.every.some(n => n.id === 'elec_fuses') && ids(pnl.every) === 'elec_deadfront|elec_breakers' && ids(pnl.materials) === 'elec_panel|elec_bonding'
+        // 2026-11-09 (panels as units): the Sub-Panel row is retired; a panel's Role brings the sub-only check
+        && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Sub-Panel') === 'elec_sub_separation' && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Main') === '');
       const wq = bw?.questions[0];
       r('electrical: Branch Wiring is its wiring-type materials rows (one card each, Other for typed) then every home; Devices records GFCI / AFCI',
-        !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 6 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
+        // 2026-11-09: Type is the conductor (4, each its card) and Method how it is run (Conduit / Armored bring theirs)
+        !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 4 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
+        && bw.questions[1]?.field === 'elec_wiring::method' && bw.questions[1].rows.filter(x => x.card).map(x => x.card.id).join('|') === 'elec_wir_conduit|elec_wir_mc'
         && ids(bw.every) === 'kit_circuits|laundry_dryer' && !bw.brought.length
         && ids(dev?.materials) === 'elec_grounding' && ids(dev?.every) === 'elec_receptacles|int_lighting|elec_ext_lighting');
       // A list where one material question decides most of the system is still not a type (several(k)): Plumbing's Supply alone.
@@ -1650,7 +1670,7 @@ const EXEC_MUT = [
   { name: 'a starting point claims coverage', file: 'startingPoints.ts', from: "const coverage = { state: 'not_evaluated' as const,", to: "const coverage = { state: 'covered' as const,", check: 'create: requirements coverage is NOT EVALUATED on every starting point, whatever the company declared', run: runDesktop },
   { name: 'Ledrix Default is recommended without a matching service', file: 'startingPoints.ts', from: "reasons: svc.has('home') ? ['Built for general home inspections, a service you selected.'] : [],", to: "reasons: ['Aligned with the standards you follow.'],", check: 'create: no recommendation when Ledrix knows nothing that points to one', run: runDesktop },
   { name: 'forking mutates the source', file: 'startingPoints.ts', from: "return { ...JSON.parse(JSON.stringify(tree)), id: 'custom', name };", to: "return Object.assign(tree, { id: 'custom', name });", check: 'create: a starting tree is copied — the source is never changed, and the copy is the company’s own (id custom, its name)', run: runDesktop },
-  { name: 'an answer bringing two items counts as a material', file: 'materialLayout.ts', from: "if (per.some(r => r.cards.length > 1)) continue;", to: "", check: 'materials: in a typed system (Electrical), the wiring-type section is a materials question drawn as rows; Service Entrance (an answer brings two items) is a type, not a material', run: runTypes },
+  { name: 'an answer bringing two items counts as a material', file: 'materialLayout.ts', from: "if (per.some(r => r.cards.length > 1)) continue;", to: "", check: 'electrical: Service Entrance is its question — Overhead brings the drop, Underground the lateral; Attachment brings the mast for Service Mast; the rest is every home', run: runTypes },   /* retargeted 2026-11-09: its old check was gone */
   { name: 'adding a material leaves Other showing for it', file: 'materialLayout.ts', from: "const narrowed = !q.typed ||", to: "const narrowed = true ||", check: 'materials: "+ Add material" adds the answer and its card ("Brass Supply Piping"), shown only when Brass is ticked, and "Other" stays for typed answers only — one change set', run: runTypes },
   { name: 'removing a material leaves its card on', file: 'materialLayout.ts', from: "...(card ? ops.setAside(card.id) : [])", to: "", check: 'materials: removing a material takes the answer out and switches its card off (restorable) — one change set', run: runTypes },
   { name: 'Interior lists its condition items first', file: 'materialLayout.ts', from: "const materials = qs.length ? [] : rest.filter(n => (n.attributes ?? []).length > 0);", to: "const materials = [];", check: 'materials: Interior floors, walls and countertops are materials questions, one card per answer (2026-11-07); a group with none lists its items that record a choice first (Attic insulation)', run: runTypes },
@@ -1711,9 +1731,9 @@ const EXEC_MUT = [
   { name: 'a special-home checkpoint is called Every', file: 'typeLayout.ts', from: "    if (specialIds.has(baseOf(n.id))) { special.push(n); continue; }", to: "", check: 'types: a special-home checkpoint (Manufactured-Home Listed Furnace) is in its own "Special homes" section, never "Every"', run: runTypes },
   { name: 'the type layout ignores the rules', file: 'typeLayout.ts', from: "  return collapseToActive(resolveApplicability(node as never, { specValue: () => value }).state);", to: "  return true;", check: 'types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', run: runTypes },
   { name: 'a material list is laid out by type', file: 'typeLayout.ts', from: "if (c > best && several(k))", to: "if (c > best)", check: 'types: a material question that decides most of a system is still a material list, not type chips (Plumbing Supply on its own)', run: runTypes },
-  { name: 'chips for a question that decides a few items', file: 'typeLayout.ts', from: "if (best * 3 < items.length) return null;", to: "", check: 'electrical: no type chips (Service Entrance decides 3 of 27 items); Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs', run: runTypes },
+  { name: 'chips for a question that decides a few items', file: 'typeLayout.ts', from: "if (best * 3 < items.length) return null;", to: "", check: 'electrical: no type chips — a question that brings several items but decides under a third of the system stays a group list; Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs', run: runTypes },
   { name: 'Brought by is dropped (fuses back under every home)', file: 'materialLayout.ts', from: "if (!k) continue;", to: "if (k || !k) continue;", check: 'electrical: Fuses / Fuse Holders is brought by the fuse answers of Overcurrent Protection — never "every home"; breakers bring nothing extra', run: runTypes },
-  { name: 'an answer brings only its first item', file: 'materialLayout.ts', from: "{ r.cards.push(n); any = true; }", to: "{ if (!r.cards.length) r.cards.push(n); any = true; }", check: 'electrical: Service records Size, Entrance and Main Disconnect; Service Entrance brings the drop and mast for Overhead and Service Mast, the lateral for Underground; Meter Base is every home', run: runTypes },
+  { name: 'an answer brings only its first item', file: 'materialLayout.ts', from: "{ r.cards.push(n); any = true; }", to: "{ if (!r.cards.length) r.cards.push(n); any = true; }", check: 'electrical: Service Entrance is its question — Overhead brings the drop, Underground the lateral; Attachment brings the mast for Service Mast; the rest is every home', run: runTypes },
   { name: 'count copies are not collapsed', file: 'typeLayout.ts', from: "    if (g.items.length < 2) { typed.push(...g.items); continue; }", to: "    { typed.push(...g.items); continue; }", check: 'types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only', run: runTypes },
   { name: 'the copies row edits only the first copy', file: 'typeLayout.ts', from: "  return group.items.flatMap(edit);", to: "  return group.items.slice(0, 1).flatMap(edit);", check: 'types: editing the copies row changes every copy at once, as ONE change set (one undo)', run: runTypes },
   { name: "the grid widens past Ledrix's rule", file: 'typeLayout.ts', from: "    if (outside.length) return { ok: false,", to: "    if (false) return { ok: false,", check: "types: a type Ledrix's rule excludes cannot be ticked, and no item can be left with no type (refused, nothing written)", run: runTypes },
@@ -1729,12 +1749,19 @@ const EXEC_MUT = [
   { name: 'a duplicate group name makes a second group', file: 'moveModel.ts', from: "!name.trim() || newGroupClash(tree, systemId, name)) return [];", to: "!name.trim()) return [];", check: 'move: a name the system already has as a group is that group (no duplicate); a group, a copied system or a blank name makes nothing', run: runTypes },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
+// The checks each run really reports, unmutated — what a mutation's `check` must be one of.
+const baseNames = new Map();
 for (const m of EXEC_MUT) {
   const files = sourceFiles();
   if (files[m.file].split(m.from).length !== 2) { ok(`mutation anchor found once: ${m.name}`, false); continue; }
   files[m.file] = files[m.file].replace(m.from, () => m.to);
   const res = await m.run(files);
-  ok(`mutation caught: ${m.name}`, res[m.check] !== true, JSON.stringify(Object.entries(res).filter(([, v]) => !v).map(([k]) => k)));
+  // A mutation must name a check this guard really has (2026-11-09: a renamed check made `res[m.check] !== true` pass on
+  // undefined, so two mutations had tested nothing). Absent from `res` still counts when the mutation stopped the run
+  // before that check reported — but only for a check that exists.
+  if (!baseNames.has(m.run)) baseNames.set(m.run, new Set(Object.keys(await m.run(sourceFiles()))));
+  const named = baseNames.get(m.run).has(m.check);
+  ok(`mutation caught: ${m.name}`, named && res[m.check] !== true, named ? JSON.stringify(Object.entries(res).filter(([, v]) => !v).map(([k]) => k)) : `no check named "${m.check}"`);
 }
 
 console.log(fail ? `\n✗ verify-template-builder: ${fail} failed, ${pass} passed` : `\n✓ verify-template-builder: ${pass} passed, 0 failed`);

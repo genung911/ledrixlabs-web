@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.09.2",
-  "revision": 278,
+  "packVersion": "2026.11.09.3",
+  "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -4237,13 +4237,12 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_entrance",
+              "specNodeId": "elec_entrance::spec",
               "includes": [
                 "Overhead"
               ],
               "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
+              "whenUnanswered": "not_applicable"
             }
           ],
           "layout": "row"
@@ -4302,14 +4301,13 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_entrance",
+              "specNodeId": "elec_entrance::spec",
               "includes": [
                 "Underground",
                 "Underground (Lateral)"
               ],
               "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
+              "whenUnanswered": "not_applicable"
             }
           ],
           "layout": "row"

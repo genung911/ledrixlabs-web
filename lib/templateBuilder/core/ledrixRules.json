@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.09.2",
+ "packVersion": "2026.11.09.3",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -1308,13 +1308,12 @@
   "elec_svc_drop": {
    "requires": [
     {
-     "specNodeId": "elec_entrance",
+     "specNodeId": "elec_entrance::spec",
      "includes": [
       "Overhead"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -1333,14 +1332,13 @@
   "elec_svc_lateral": {
    "requires": [
     {
-     "specNodeId": "elec_entrance",
+     "specNodeId": "elec_entrance::spec",
      "includes": [
       "Underground",
       "Underground (Lateral)"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
