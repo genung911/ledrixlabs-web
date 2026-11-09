@@ -45,8 +45,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
 
   // Two ACTIVE items with one id is an error: every record keyed by that id would belong to both. One active and
   // one set aside is a warning — harmless until someone restores it (applyOp refuses that restore). The shipped
-  // default carries three of these (attic_moisture / attic_pests / attic_wiring, active under Conditions and set
-  // aside under Concerns), which is why this is not an error.
+  // default carries these (attic_moisture / attic_pests active under Conditions and set aside under Concerns; since
+  // 2026-11-09 attic_wiring is set aside in both — "it can be added also in by company"), which is why this is not an error.
   const activeSeen = new Set<string>();
   for (const w of nodes) {
     if (w.active) {

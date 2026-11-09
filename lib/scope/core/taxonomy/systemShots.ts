@@ -9,7 +9,8 @@
 // return and supply readings; "drain can go with furnace since it's on that side anyway", the indoor coil is the
 // company's call, the thermostat stays in Heating), Attic, Fireplace and Interior (owner's sets 2026-11-09: attic view,
 // decking, insulation depth, access, bath fan duct · fireplace view, firebox / glass front, controls with the lower cover
-// off, chimney or vent · room views, kitchen, bathrooms, stairs, windows). Appliances is still a first draft.
+// off, chimney or vent · room views, kitchen, bathrooms, stairs, windows), Appliances (owner 2026-11-09: range & hood,
+// appliance tags — optional — and the dryer hookup, "a normal shot we try to take").
 // `cooling:indoor` (the retired coil & drain shot) is not reused.
 //
 // PURE — no React, no store, no network. The service (services/systemPhotos.ts) takes the photo, calls the model and
@@ -42,6 +43,9 @@ export type Shot = {
    *  the blank tile populates again, but says next bathroom"). Each photo is its own square, named `base n` until the
    *  inspector renames it (the name is the photo's room); `next` is the empty square that follows. */
   repeat?: { base: string; next: string };
+  /** A shot the inspector takes when they want it (owner 2026-11-09: appliance "ID tags make those optional"). It never
+   *  counts as missing: the tile's "N shots · M taken" counts only the others. */
+  optional?: true;
 };
 
 /** Systems by template base id. A system with no entry has no Photos tile. */
@@ -115,8 +119,9 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'chimney', label: 'Chimney or vent on the roof', hint: 'The chimney or vent cap where it leaves the roof or wall.' },
   ],
   appliances: [
-    { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it.' },
-    { id: 'dryer', label: 'Dryer hookup', hint: 'The dryer outlet or gas line behind the dryer.' },
+    { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it — the burners or glass top, and the hood\'s filter or vent.' },
+    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true },
+    { id: 'dryer', label: 'Dryer hookup', hint: 'Behind the dryer: the outlet (240V) or the gas line and its shutoff, and where the vent leaves.' },
   ],
 };
 

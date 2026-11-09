@@ -5603,7 +5603,9 @@
               "limitations": [
                 "Not Visible"
               ]
-            },
+            }
+          ],
+          "trimmed": [
             {
               "id": "attic_wiring",
               "label": "Wiring / Junction Boxes",
@@ -5682,23 +5684,6 @@
               "options": [
                 "No Evidence",
                 "Old Droppings (Monitor)",
-                "Not Visible (Limitation)"
-              ]
-            },
-            {
-              "id": "attic_wiring",
-              "label": "Wiring / Junction Boxes",
-              "kind": "component",
-              "keywords": [
-                "junction box attic",
-                "open splice attic",
-                "wiring attic",
-                "open junction",
-                "knob and tube attic",
-                "buried splice"
-              ],
-              "options": [
-                "Boxed & Covered",
                 "Not Visible (Limitation)"
               ]
             }
