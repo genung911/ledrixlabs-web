@@ -31,6 +31,10 @@ export type Shot = {
   plate?: string;
   /** The shot shows an instrument's display: the reading slot (measurementPoints.json) it may propose. */
   reading?: { system: string; point: string };
+  /** A shot a house has SEVERAL of (owner 2026-11-08: "a way to add another bathroom and label them… when one is taken,
+   *  the blank tile populates again, but says next bathroom"). Each photo is its own square, named `base n` until the
+   *  inspector renames it (the name is the photo's room); `next` is the empty square that follows. */
+  repeat?: { base: string; next: string };
 };
 
 /** Systems by template base id. A system with no entry has no Photos tile. */
@@ -54,8 +58,8 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   electrical: [
     { id: 'service', label: 'Service drop & meter', hint: 'Where the wires reach the house, the meter, and the conduit or mast.' },
-    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.' },
-    { id: 'panel_open', label: 'Panel, cover off', hint: 'The wiring with the cover off, wide enough to show the room.' },
+    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.', repeat: { base: 'Panel', next: 'Next panel' } },
+    { id: 'panel_open', label: 'Panel, cover off', hint: 'The wiring with the cover off, wide enough to show the room.', repeat: { base: 'Panel, cover off', next: 'Next panel, cover off' } },
     { id: 'grounding', label: 'Grounding electrode', hint: 'The ground rod clamp, or the clamp on the water pipe.' },
   ],
   plumbing: [
@@ -65,13 +69,14 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'gas_meter', label: 'Gas meter & piping', hint: 'The meter and the pipe or connector leaving it.' },
   ],
   roofing: [
-    { id: 'roof', label: 'Roof', hint: 'Each roof plane you can, from the ladder, the ground or a drone.' },
+    { id: 'roof', label: 'Roof plane', hint: 'A roof plane, from the ladder, the ground or a drone.', repeat: { base: 'Roof plane', next: 'Next roof plane' } },
     { id: 'roof_edge', label: 'Roof edge at an eave', hint: 'Close on the edge: the layers of shingle and the drip edge.' },
     { id: 'gutters', label: 'Gutter & downspout', hint: 'A gutter run and where a downspout comes down.' },
   ],
   exterior: [
     { id: 'front', label: 'Front of the house', hint: 'The whole front: siding, walkway, porch, windows.' },
     { id: 'back', label: 'Back of the house', hint: 'The whole back, with the deck or patio.' },
+    { id: 'side', label: 'Side of the house', hint: 'A whole side, from the ground.', repeat: { base: 'Side', next: 'Next side' } },
     { id: 'siding_close', label: 'Siding up close', hint: 'A cut end or bottom edge of the siding — it tells the material apart.' },
   ],
   foundation: [
@@ -86,8 +91,8 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   interior: [
     { id: 'kitchen', label: 'Kitchen', hint: 'Wide: counters, floor, cabinets, the window.' },
-    { id: 'bathroom', label: 'A bathroom', hint: 'Wide: the tub or shower, the floor, the fan.' },
-    { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.' },
+    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' } },
+    { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' } },
   ],
   fireplace: [
     { id: 'firebox', label: 'Firebox', hint: 'The firebox and its surround, doors open if there are doors.' },
@@ -119,6 +124,8 @@ export type ShotContext = {
   items: readonly ShotItem[];
   /** The reading slot this shot carries, with the units it may be in. */
   reading?: { point: string; label: string; units: readonly string[] } | null;
+  /** What the inspector named this photo (a repeating shot's room: "Hall bath"), if anything. */
+  place?: string | null;
 };
 
 export const MAX_NOTICED = 2;
@@ -140,7 +147,7 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     'Return JSON: {"answers":[{"key":"…","value":"…"}],"cant_tell":[{"key":"…","need":"…"}],' +
     '"noticed":[{"node":"…","finding":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null}';
   const user =
-    `Photo: "${ctx.shot.label}" for ${ctx.systemLabel}. ${ctx.shot.hint}\n\n` +
+    `Photo: "${ctx.shot.label}" for ${ctx.systemLabel}${ctx.place ? ` — the inspector named it "${ctx.place}"` : ''}. ${ctx.shot.hint}\n\n` +
     `Questions for ${ctx.systemLabel}:\n${own.length ? own.map(q).join('\n') : '(none open)'}\n` +
     (other.length ? `\nOther systems' questions — answer only if this photo plainly shows them:\n${other.map(q).join('\n')}\n` : '') +
     (ctx.items.length ? `\nItems and their quick findings (for "noticed"):\n${ctx.items.map(i => `- ${i.nodeId} — ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
