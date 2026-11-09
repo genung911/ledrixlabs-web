@@ -175,6 +175,8 @@ export type ShotQuestion = { key: string; system: string; label: string; choices
  *  for the living room's hardwood. Insulation is here for the attic (blown fill on the floor, foam on the kneewalls). */
 export const COLLECTING_FIELDS: ReadonlySet<string> = new Set([
   'int_flooring|spec', 'int_walls|spec', 'kit_counter|spec', 'attic_instype|type', 'ext_siding|spec',
+  // A house with two returns has two filter sizes (owner's test 2026-11-09: 20x20x1 and 14x14x1).
+  'hvac_filter|size',
 ]);
 /** A condition item of the shot's system and its own quick findings (findingIntents with a controlled id). */
 export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[];
@@ -210,13 +212,14 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     ? ` (a house has several — one answer for EACH one this photo shows${x.collects.have.length ? `; already recorded: ${x.collects.have.map(h => JSON.stringify(h)).join(', ')} — answer only others` : ''})`
     : '');
   const q = (x: ShotQuestion) => x.dimensions
-    ? `- ${x.key} — ${x.label}: the size printed on it, as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
+    ? `- ${x.key} — ${x.label}${gather(x)}: the size printed on it — often along the frame, sideways or upside down — as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
     : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
     '1. For each question, answer ONLY with one of its listed choices, copied exactly, and only when the photo shows it ' +
-    'plainly — printed text (a data plate, a pipe stamp, a label) or an unmistakable look. Otherwise leave it out, or put it ' +
+    'plainly — printed text (a data plate, a pipe stamp, a label; read it in any orientation, sideways or upside down) or an ' +
+    'unmistakable look. Otherwise leave it out, or put it ' +
     'in cant_tell with the photo that WOULD settle it (under 60 characters).\n' +
     '2. Never answer an age from how something looks. Only from a printed date.\n' +
     '3. "noticed": at most ' + MAX_NOTICED + ' problems that are CLEARLY visible, each one of the listed quick findings for ' +
