@@ -866,6 +866,49 @@
           "kind": "component",
           "keywords": [],
           "trimmed": [],
+          "attributes": [
+            {
+              "id": "refrigerant",
+              "label": "Refrigerant",
+              "values": [
+                "R-22",
+                "R-410A",
+                "R-32",
+                "R-454B"
+              ],
+              "optional": true
+            },
+            {
+              "id": "size",
+              "label": "Size",
+              "values": [
+                "1.5 Tons",
+                "2 Tons",
+                "2.5 Tons",
+                "3 Tons",
+                "3.5 Tons",
+                "4 Tons",
+                "5 Tons"
+              ],
+              "optional": true
+            },
+            {
+              "id": "max_breaker",
+              "label": "Max Breaker (Plate)",
+              "values": [
+                "15 A",
+                "20 A",
+                "25 A",
+                "30 A",
+                "35 A",
+                "40 A",
+                "45 A",
+                "50 A",
+                "60 A"
+              ],
+              "optional": true
+            }
+          ],
           "condition": true
         },
         {
@@ -939,6 +982,16 @@
                 "Within Sight",
                 "Remote"
               ]
+            },
+            {
+              "id": "type",
+              "label": "Disconnect Type",
+              "values": [
+                "Non-Fused",
+                "Fused",
+                "Breaker"
+              ],
+              "optional": true
             }
           ],
           "condition": true,

@@ -5,7 +5,10 @@
 // entry as well when it's right there on the photos. I should just be approving and adding findings and limitations or
 // the obscure details/info." Mockup https://claude.ai/artifact/FQKuft3zPAjVMUVU55DNEq → "this was my original vision",
 // then "build it all". Shot lists come from the owner's own photo test (Heating, Electrical, Water Heater ×2 houses;
-// Roofing, Exterior, Plumbing, Crawlspace ×1); Attic, Cooling, Interior, Fireplace and Appliances are first drafts.
+// Roofing, Exterior, Plumbing, Crawlspace ×1) and Cooling (owner's typical set 2026-11-09: outdoor unit, plate, disconnect,
+// return and supply readings; "drain can go with furnace since it's on that side anyway", the indoor coil is the
+// company's call, the thermostat stays in Heating). Attic, Interior, Fireplace and Appliances are first drafts.
+// `cooling:indoor` (the retired coil & drain shot) is not reused.
 //
 // PURE — no React, no store, no network. The service (services/systemPhotos.ts) takes the photo, calls the model and
 // writes; everything that decides WHAT the model may answer, and whether an answer is allowed, lives here so a guard can
@@ -21,6 +24,7 @@
 // every photo already taken under it.
 
 import { formatSizeEntry, parseSizeEntry } from './filterSize';
+import { specPredicateHolds } from './applicability';
 export type Shot = {
   /** Permanent role within its system. Never rename. */
   id: string;
@@ -44,12 +48,15 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'furnace_wide', label: 'Furnace wide', hint: 'The whole unit, with the pipes leaving it and the ductwork attached.' },
     { id: 'plate', label: 'Data plate', hint: 'The rating label, close enough to read every line.', plate: 'Furnace / heating unit' },
     { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.' },
+    { id: 'condensate', label: 'Condensate drain', hint: 'Where the condensate line leaves the coil or furnace: the pipe, a pump if there is one, and where it runs.' },
     { id: 'thermostat', label: 'Thermostat', hint: 'The thermostat on the wall, face on.' },
   ],
   cooling: [
     { id: 'condenser_wide', label: 'Outdoor unit', hint: 'The whole condenser or heat pump, with its disconnect if it is in view.' },
     { id: 'plate', label: 'Data plate', hint: 'The outdoor unit\'s rating label, close enough to read.', plate: 'AC condenser / heat pump' },
-    { id: 'indoor', label: 'Indoor coil & drain', hint: 'The coil cabinet or air handler, with the condensate line leaving it.' },
+    { id: 'disconnect', label: 'Disconnect, cover open', hint: 'The disconnect at the outdoor unit with its cover open: the switch, any fuses or breaker, and its label.' },
+    { id: 'return_air', label: 'Return air reading', hint: 'The thermometer\'s display at the return grille, with the system running in cooling.', reading: { system: 'cooling', point: 'return_air' } },
+    { id: 'supply_air', label: 'Supply register reading', hint: 'The thermometer\'s display at a supply register, with the system running in cooling.', reading: { system: 'cooling', point: 'supply_register' } },
   ],
   water_heater: [
     { id: 'wh_wide', label: 'Water heater wide', hint: 'Top to floor, with what surrounds it: pan, expansion tank, straps.' },
@@ -115,7 +122,11 @@ export const shotRole = (systemId: string, shotId: string) => `${baseOf(systemId
 /** An open Details question offered to the read: `node|attr`, its words, its authored choices. */
 /** `dimensions` (Filter › Size): any size read off the photo is a proposal, in the stored "20x20x1" form — not only the
  *  listed common sizes. */
-export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean };
+/** `when` (2026-11-09): a FOLLOW-UP asked in the same read as the question it waits on — Refrigerant waits on the AC
+ *  type, and the outdoor unit and its plate are read before anyone confirms that. Its answer is kept only when THIS read
+ *  answers each parent so that the follow-up's own predicate holds (the one predicate rule, specPredicateHolds). */
+export type ShotCondition = { key: string; includes?: readonly string[]; unlisted?: readonly string[]; exact?: true };
+export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean; when?: readonly ShotCondition[] };
 /** A condition item of the shot's system and its own quick findings (findingIntents with a controlled id). */
 export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[] };
 export type ShotContext = {
@@ -136,9 +147,12 @@ export const MAX_NOTICED = 2;
 export function buildShotPrompt(ctx: ShotContext): { system: string; user: string } {
   const own = ctx.questions.filter(q => q.system === ctx.systemId);
   const other = ctx.questions.filter(q => q.system !== ctx.systemId);
+  const cond = (x: ShotQuestion) => (x.when?.length
+    ? ` (only if you answer ${x.when.map(w => `${w.key} as ${(w.includes ?? []).map(c => JSON.stringify(c)).join(' or ')}`).join(' and ')})`
+    : '');
   const q = (x: ShotQuestion) => x.dimensions
     ? `- ${x.key} — ${x.label}: the size printed on it, as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
-    : `- ${x.key} — ${x.label}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
+    : `- ${x.key} — ${x.label}${cond(x)}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
@@ -183,10 +197,14 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
     seen.add(q.key);
     answers.push({ key: q.key, value: hit });
   }
+  // A same-read follow-up stands only on this read's own answer to what it waits on.
+  const got = new Map(answers.map(a => [a.key, a.value]));
+  const stands = (q: ShotQuestion | undefined) => !!q && (q.when ?? []).every(w => { const v = got.get(w.key); return !!v && specPredicateHolds(v, w); });
+  for (let i = answers.length - 1; i >= 0; i--) if (!stands(byKey.get(answers[i].key))) { seen.delete(answers[i].key); answers.splice(i, 1); }
   const cantTell: ShotRead['cantTell'] = [];
   for (const c of Array.isArray(raw?.cant_tell) ? raw.cant_tell : []) {
     const q = byKey.get(String(c?.key ?? ''));
-    if (!q || q.system !== ctx.systemId || seen.has(q.key) || cantTell.some(x => x.key === q.key)) continue;
+    if (!q || q.system !== ctx.systemId || seen.has(q.key) || !stands(q) || cantTell.some(x => x.key === q.key)) continue;
     const need = String(c?.need ?? '').trim().slice(0, 80);
     cantTell.push({ key: q.key, need });
   }

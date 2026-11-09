@@ -165,11 +165,32 @@ function isParent(o: WhatsHereQuestion, f: WhatsHereQuestion, p: SpecPredicate):
  *  same predicate rule Scope applies. An unanswered parent asks nothing yet. */
 export function followUpApplies<Q extends WhatsHereQuestion>(q: Q, all: readonly Q[], valueOf: (q: Q) => string | null | undefined): boolean {
   if (!q.followUp) return true;
-  return q.followUp.predicates.every(p => {
-    const parent = all.find(o => isParent(o, q, p));
+  return followUpParents(q, all).every(({ predicate, parent }) => {
     const v = String((parent ? valueOf(parent) : '') ?? '').trim();
-    return !!v && specPredicateHolds(v, p);
+    return !!v && specPredicateHolds(v, predicate);
   });
+}
+
+/** A PHOTO READ's view of a follow-up (2026-11-09, systemPhotos): asked plainly once it applies; asked in the SAME read
+ *  when each answer it still waits on is either an earlier photo's open proposal that holds its predicate, or a parent
+ *  question this read also asks (`when` — the read must answer that parent so the predicate holds, systemShots); else
+ *  not asked (null). A confirmed value always wins over a proposal. */
+export function followUpInRead<Q extends WhatsHereQuestion>(q: Q, all: readonly Q[], valueOf: (q: Q) => string | null | undefined,
+  proposed: (q: Q) => string | undefined, asked: (q: Q) => boolean): { when: { parent: Q; predicate: SpecPredicate }[] } | null {
+  if (followUpApplies(q, all, valueOf)) return { when: [] };
+  const when: { parent: Q; predicate: SpecPredicate }[] = [];
+  for (const { predicate, parent } of followUpParents(q, all)) {
+    const v = String((parent ? valueOf(parent) : '') ?? '').trim() || (parent ? proposed(parent) ?? '' : '');
+    if (v) { if (!specPredicateHolds(v, predicate)) return null; continue; }
+    if (!parent || !asked(parent)) return null;
+    when.push({ parent, predicate });
+  }
+  return { when };
+}
+
+/** Each answer a follow-up waits on, with the question on this page that holds it (none → undefined). */
+export function followUpParents<Q extends WhatsHereQuestion>(q: Q, all: readonly Q[]): { predicate: SpecPredicate; parent: Q | undefined }[] {
+  return (q.followUp?.predicates ?? []).map(p => ({ predicate: p, parent: all.find(o => isParent(o, q, p)) }));
 }
 
 // ── NONE: NOT PRESENT ───────────────────────────────────────────────────────────────────────────────────────────
