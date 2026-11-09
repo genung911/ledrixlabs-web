@@ -5,7 +5,7 @@
   "src/components/inspect/InspectTabBar.tsx": "ba3b7990c3380243c95ec3c2b0ed8e015978c405a6857333c14ef1e34d851edc",
   "src/components/systems/ScopeWorkspace.tsx": "e05fd1321b55ffdd555d2dfc0732b826413b7f4a06627f359f44d87b1703a1f6",
   "src/components/systems/GuidedStep.tsx": "d52a0651ec0e913c1056dd7c8c8a2181529249ab2f8832185542c2a0381d2130",
-  "src/components/systems/ScopeRowList.tsx": "53f539b3e947686223b8ad1316c710796f2d832feee842af7ff444e3c1d1ea1f",
+  "src/components/systems/ScopeRowList.tsx": "646bcaa4c2505acefe4b24993bbc8a106023cb6de1dd15f12ad05fb4157164b8",
   "src/core/taxonomy/guidedRows.ts": "67e2f3ed9c5243325010b2f74756e58f56eb912f06cd65492f87ed044a0714dc"
  }
 }
