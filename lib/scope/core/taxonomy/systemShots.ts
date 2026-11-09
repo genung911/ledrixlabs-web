@@ -127,6 +127,33 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
 
 const baseOf = (id: string) => String(id).split('~')[0];
 export const shotsFor = (systemId: string): readonly Shot[] => SYSTEM_SHOTS[baseOf(systemId)] ?? [];
+
+// ── A SECTION'S OWN PHOTOS (owner 2026-11-09, mockup 4Xkqk9mTKEPu7dJd5Wf8ZA approved) ─────────────────────────────────
+// "I'd be going inside there, and I'd start taking my general photos throughout there, and all those would be stored inside
+// that attic section, and Ledrix would pull all that kind of general information." A general photo has the role
+// `${system}:general` — never a square — and is read like a shot. It is not counted in "N shots · M taken".
+export const GENERAL_SHOT_ID = 'general';
+export const generalShot = (systemLabel: string): Shot => ({
+  id: GENERAL_SHOT_ID, label: `${systemLabel} photo`,
+  hint: 'A photo taken in this section — read for this section, and for anything else it plainly shows.',
+});
+/** The shot a role names: a listed shot, or the section's general photo. */
+export const shotOf = (systemId: string, shotId: string, systemLabel = 'Section'): Shot | undefined =>
+  shotsFor(systemId).find(s => s.id === shotId) ?? (shotId === GENERAL_SHOT_ID && SYSTEM_SHOTS[baseOf(systemId)] ? generalShot(systemLabel) : undefined);
+/** Every role a photo holds — its own and the others it was used for (one photo can fill several shots). */
+export const rolesOf = (e: { shot?: string; alsoShots?: readonly string[] } | null | undefined): string[] =>
+  [...(e?.shot ? [e.shot] : []), ...(e?.alsoShots ?? [])];
+
+// ── ANOTHER TRADE'S ITEMS A SPACE'S PHOTOS MAY SHOW (owner 2026-11-09) ──────────────────────────────────────────────────
+// "It goes in electrical. That's how a homeowner would think about it… It's an electrician repair." A photo taken in the
+// attic may notice one of THESE items' quick findings too, and the finding files under that item's own system, observed in
+// the space. Closed lists, so the read stays closed: `x_*` is every condition card whose id starts `x_`.
+export const CROSS_TRADE: Readonly<Record<string, readonly string[]>> = {
+  attic: ['elec_wir_*', 'hvac_distribution', 'hvac_flue', 'plumb_vent', 'plumb_wh_flue', 'roof_sheath'],
+  foundation: ['elec_wir_*', 'plumb_sup_*', 'plumb_dwv_*', 'plumb_gas', 'hvac_distribution'],
+};
+export const crossTradeMatch = (systemId: string, nodeId: string): boolean =>
+  (CROSS_TRADE[baseOf(systemId)] ?? []).some(p => (p.endsWith('*') ? baseOf(nodeId).startsWith(p.slice(0, -1)) : baseOf(nodeId) === p));
 /** The photo's role, stored on the evidence item: `heating:plate`. */
 export const shotRole = (systemId: string, shotId: string) => `${baseOf(systemId)}:${shotId}`;
 
@@ -150,7 +177,9 @@ export const COLLECTING_FIELDS: ReadonlySet<string> = new Set([
   'int_flooring|spec', 'int_walls|spec', 'kit_counter|spec', 'attic_instype|type', 'ext_siding|spec',
 ]);
 /** A condition item of the shot's system and its own quick findings (findingIntents with a controlled id). */
-export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[] };
+export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[];
+  /** Another trade's item (CROSS_TRADE): the system it files under. */
+  systemId?: string; systemLabel?: string };
 export type ShotContext = {
   systemLabel: string;
   shot: Shot;
@@ -158,6 +187,8 @@ export type ShotContext = {
   questions: readonly ShotQuestion[];
   systemId: string;
   items: readonly ShotItem[];
+  /** Another trade's items this space's photo may show (CROSS_TRADE) — noticed only when plainly visible. */
+  otherItems?: readonly ShotItem[];
   /** The reading slot this shot carries, with the units it may be in. */
   reading?: { point: string; label: string; units: readonly string[] } | null;
   /** What the inspector named this photo (a repeating shot's room: "Hall bath"), if anything. */
@@ -195,6 +226,7 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     `Questions for ${ctx.systemLabel}:\n${own.length ? own.map(q).join('\n') : '(none open)'}\n` +
     (other.length ? `\nOther systems' questions — answer only if this photo plainly shows them:\n${other.map(q).join('\n')}\n` : '') +
     (ctx.items.length ? `\nItems and their quick findings (for "noticed"):\n${ctx.items.map(i => `- ${i.nodeId} — ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
+    (ctx.otherItems?.length ? `\nOther trades' items this space can show (for "noticed" too, only if plainly visible):\n${ctx.otherItems.map(i => `- ${i.nodeId} — ${i.systemLabel ?? ''} › ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
     (ctx.reading ? `\nReading slot: ${ctx.reading.label}, in ${ctx.reading.units.join(' or ')}.\n` : '');
   return { system, user };
 }
@@ -202,7 +234,7 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
 export type ShotRead = {
   answers: { key: string; value: string }[];
   cantTell: { key: string; need: string }[];
-  noticed: { nodeId: string; intentId: string; intentLabel: string; note: string }[];
+  noticed: { nodeId: string; intentId: string; intentLabel: string; note: string; systemId?: string }[];
   reading: { point: string; value: number; unit: string } | null;
 };
 
@@ -241,11 +273,11 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
   const noticed: ShotRead['noticed'] = [];
   for (const n of Array.isArray(raw?.noticed) ? raw.noticed : []) {
     if (noticed.length >= MAX_NOTICED) break;
-    const item = ctx.items.find(i => i.nodeId === String(n?.node ?? ''));
+    const item = ctx.items.find(i => i.nodeId === String(n?.node ?? '')) ?? ctx.otherItems?.find(i => i.nodeId === String(n?.node ?? ''));
     const intent = item?.intents.find(t => t.id === String(n?.finding ?? '') || norm(t.label) === norm(n?.finding));
     const note = String(n?.note ?? '').trim().slice(0, 160);
     if (!item || !intent || !note || noticed.some(x => x.nodeId === item.nodeId && x.intentId === intent.id)) continue;
-    noticed.push({ nodeId: item.nodeId, intentId: intent.id, intentLabel: intent.label, note });
+    noticed.push({ nodeId: item.nodeId, intentId: intent.id, intentLabel: intent.label, note, ...(item.systemId ? { systemId: item.systemId } : {}) });
   }
   let reading: ShotRead['reading'] = null;
   const rv = raw?.reading;
