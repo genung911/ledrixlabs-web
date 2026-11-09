@@ -401,6 +401,45 @@
               "condition": true
             },
             {
+              "id": "hvac_ducts",
+              "label": "Ductwork",
+              "kind": "component",
+              "keywords": [
+                "flex duct",
+                "flexible duct",
+                "sheet metal duct",
+                "duct board",
+                "duct insulation",
+                "duct wrap",
+                "ductwork"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "type",
+                  "label": "Duct Type",
+                  "values": [
+                    "Flexible",
+                    "Sheet Metal",
+                    "Duct Board"
+                  ],
+                  "optional": true
+                },
+                {
+                  "id": "insulation",
+                  "label": "Duct Insulation",
+                  "values": [
+                    "Uninsulated",
+                    "R-4.2",
+                    "R-6",
+                    "R-8"
+                  ],
+                  "optional": true
+                }
+              ],
+              "condition": false
+            },
+            {
               "id": "hvac_filter",
               "label": "Filter",
               "kind": "component",
@@ -5437,31 +5476,6 @@
               "limitations": [
                 "Not Visible"
               ]
-            },
-            {
-              "id": "attic_vapor",
-              "label": "Vapor Barrier",
-              "kind": "component",
-              "keywords": [
-                "vapor barrier",
-                "vapor retarder",
-                "poly sheeting",
-                "kraft facing"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Coverage",
-                  "values": [
-                    "None",
-                    "Partial",
-                    "Full",
-                    "Ground Cover (Crawlspace)"
-                  ]
-                }
-              ],
-              "condition": true
             }
           ],
           "trimmed": []
@@ -6898,6 +6912,7 @@
                     "Wood Burning — Masonry",
                     "Wood Burning — Prefab",
                     "Gas Insert",
+                    "Gas — Direct Vent (Sealed)",
                     "Gas Log Set",
                     "Pellet Stove",
                     "Electric",
@@ -6932,6 +6947,17 @@
             {
               "id": "fp_t_gas_insert",
               "label": "Gas Insert",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Operated"
+              ]
+            },
+            {
+              "id": "fp_t_gas_dv",
+              "label": "Gas — Direct Vent (Sealed)",
               "kind": "component",
               "keywords": [],
               "trimmed": [],
@@ -7216,7 +7242,8 @@
                   "label": "Gas Logs",
                   "values": [
                     "Vented Set",
-                    "Vent-Free (Verify Code)"
+                    "Vent-Free (Verify Code)",
+                    "Sealed Unit (Factory Logs)"
                   ]
                 }
               ],
@@ -7247,33 +7274,6 @@
           "kind": "subsystem",
           "children": [
             {
-              "id": "fp_service",
-              "label": "Last Known Service",
-              "kind": "component",
-              "keywords": [
-                "chimney sweep",
-                "last cleaned",
-                "annual service",
-                "chimney service"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Last Known Service",
-                  "values": [
-                    "Serviced within 1 year",
-                    "Serviced 1–3 years ago",
-                    "Serviced 3–5 years ago"
-                  ]
-                }
-              ],
-              "condition": true,
-              "limitations": [
-                "Not Determined"
-              ]
-            },
-            {
               "id": "fp_creosote",
               "label": "Creosote / Buildup",
               "kind": "component",
@@ -7289,29 +7289,6 @@
               "limitations": [
                 "Not Visible"
               ]
-            },
-            {
-              "id": "fp_co_prox",
-              "label": "CO Detector Proximity",
-              "kind": "component",
-              "keywords": [
-                "carbon monoxide fireplace",
-                "co detector near fireplace",
-                "co alarm proximity",
-                "co same level"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "CO Detector Proximity",
-                  "values": [
-                    "CO Detector on Same Level",
-                    "CO Within Required Proximity"
-                  ]
-                }
-              ],
-              "condition": true
             }
           ],
           "trimmed": []

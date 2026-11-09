@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.09.4",
+ "packVersion": "2026.11.09.5",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -58,6 +58,17 @@
      "includes": [
       "heat pump",
       "mini-split"
+     ]
+    }
+   ]
+  },
+  "hvac_ducts": {
+   "requires": [
+    {
+     "specNodeId": "hvac_distribution",
+     "includes": [
+      "forced air",
+      "fan coil"
      ]
     }
    ]
@@ -2437,6 +2448,19 @@
     }
    ]
   },
+  "fp_t_gas_dv": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [
+      "Gas — Direct Vent (Sealed)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
   "fp_t_gas_logs": {
    "requires": [
     {
@@ -2487,6 +2511,32 @@
       "Gas Log Set"
      ],
      "exact": true
+    },
+    {
+     "specNodeId": "fp_chimney",
+     "includes": [
+      "Masonry Brick",
+      "Masonry Stone",
+      "Prefab Metal"
+     ],
+     "exact": true,
+     "unlisted": [
+      "Masonry Brick",
+      "Masonry Stone",
+      "Prefab Metal",
+      "Direct Vent (Sealed)"
+     ]
+    },
+    {
+     "specNodeId": "fp_gas_vent",
+     "includes": [
+      "B-Vent — Proper Draft"
+     ],
+     "exact": true,
+     "unlisted": [
+      "Direct Vent (Sealed)",
+      "B-Vent — Proper Draft"
+     ]
     }
    ]
   },
@@ -2498,6 +2548,7 @@
       "Wood Burning — Masonry",
       "Wood Burning — Prefab",
       "Gas Insert",
+      "Gas — Direct Vent (Sealed)",
       "Gas Log Set",
       "Pellet Stove",
       "Electric"
@@ -2515,6 +2566,7 @@
       "Wood Burning — Masonry",
       "Wood Burning — Prefab",
       "Gas Insert",
+      "Gas — Direct Vent (Sealed)",
       "Gas Log Set",
       "Pellet Stove",
       "Decorative Only"
@@ -2534,6 +2586,32 @@
       "Gas Log Set"
      ],
      "exact": true
+    },
+    {
+     "specNodeId": "fp_chimney",
+     "includes": [
+      "Masonry Brick",
+      "Masonry Stone",
+      "Prefab Metal"
+     ],
+     "exact": true,
+     "unlisted": [
+      "Masonry Brick",
+      "Masonry Stone",
+      "Prefab Metal",
+      "Direct Vent (Sealed)"
+     ]
+    },
+    {
+     "specNodeId": "fp_gas_vent",
+     "includes": [
+      "B-Vent — Proper Draft"
+     ],
+     "exact": true,
+     "unlisted": [
+      "Direct Vent (Sealed)",
+      "B-Vent — Proper Draft"
+     ]
     }
    ]
   },
@@ -2545,6 +2623,7 @@
       "Wood Burning — Masonry",
       "Wood Burning — Prefab",
       "Gas Insert",
+      "Gas — Direct Vent (Sealed)",
       "Gas Log Set",
       "Pellet Stove",
       "Decorative Only"
@@ -2613,16 +2692,6 @@
     "nodeId": "fp_type",
     "includes": [
      "wood",
-     "pellet"
-    ]
-   }
-  },
-  "fp_co_prox": {
-   "dependsOnSpec": {
-    "nodeId": "fp_type",
-    "includes": [
-     "wood",
-     "gas",
      "pellet"
     ]
    }
@@ -2699,8 +2768,6 @@
   "found_cs_vent",
   "ext_garage_door",
   "fp_gas_vent",
-  "fp_service",
-  "fp_co_prox",
   "elec_smoke"
  ],
  "typeRows": [
@@ -2725,6 +2792,7 @@
   "fp_t_wood_masonry",
   "fp_t_wood_prefab",
   "fp_t_gas_insert",
+  "fp_t_gas_dv",
   "fp_t_gas_logs",
   "fp_t_pellet",
   "fp_t_electric"

@@ -7,7 +7,9 @@
 // then "build it all". Shot lists come from the owner's own photo test (Heating, Electrical, Water Heater ×2 houses;
 // Roofing, Exterior, Plumbing, Crawlspace ×1) and Cooling (owner's typical set 2026-11-09: outdoor unit, plate, disconnect,
 // return and supply readings; "drain can go with furnace since it's on that side anyway", the indoor coil is the
-// company's call, the thermostat stays in Heating). Attic, Interior, Fireplace and Appliances are first drafts.
+// company's call, the thermostat stays in Heating), Attic, Fireplace and Interior (owner's sets 2026-11-09: attic view,
+// decking, insulation depth, access, bath fan duct · fireplace view, firebox / glass front, controls with the lower cover
+// off, chimney or vent · room views, kitchen, bathrooms, stairs, windows). Appliances is still a first draft.
 // `cooling:indoor` (the retired coil & drain shot) is not reused.
 //
 // PURE — no React, no store, no network. The service (services/systemPhotos.ts) takes the photo, calls the model and
@@ -93,18 +95,24 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'insulation', label: 'Under-floor insulation', hint: 'The insulation between the floor joists.' },
   ],
   attic: [
-    { id: 'attic_wide', label: 'Attic from the hatch', hint: 'Wide: framing, sheathing, insulation, vents.' },
+    { id: 'attic_wide', label: 'Attic view', hint: 'Wide, from the hatch or inside: framing, sheathing, insulation, vents and any ductwork.', repeat: { base: 'Attic view', next: 'Next view' } },
+    { id: 'decking', label: 'Decking close-up', hint: 'Close on the roof sheathing between the rafters: the APA stamp if one shows, or a sheet edge.' },
     { id: 'insulation_depth', label: 'Insulation depth', hint: 'A ruler standing in the insulation.' },
     { id: 'attic_access', label: 'Attic access', hint: 'The hatch or pull-down stair.' },
+    { id: 'fan_duct', label: 'Bath fan duct', hint: 'A bath or kitchen fan duct, and where it ends: the roof, the soffit, or loose in the attic.' },
   ],
   interior: [
-    { id: 'kitchen', label: 'Kitchen', hint: 'Wide: counters, floor, cabinets, the window.' },
-    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' } },
+    { id: 'room_view', label: 'Room view', hint: 'Wide, from a doorway: the floor, walls, ceiling and windows.', repeat: { base: 'Room', next: 'Next room' } },
+    { id: 'kitchen', label: 'Kitchen', hint: 'Close enough to read the counter surface, with the floor, cabinets and window.' },
+    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the counter, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' } },
+    { id: 'stairs', label: 'Stairs & railings', hint: 'The stair from the bottom: treads, the handrail, and the guard or balusters.' },
     { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' } },
   ],
   fireplace: [
-    { id: 'firebox', label: 'Firebox', hint: 'The firebox and its surround, doors open if there are doors.' },
-    { id: 'chimney', label: 'Chimney from outside', hint: 'The chimney or vent where it leaves the roof.' },
+    { id: 'fp_wide', label: 'Fireplace view', hint: 'The whole fireplace and its surround, with the hearth in front.' },
+    { id: 'firebox', label: 'Firebox / glass front', hint: 'Close on the firebox: through the glass on a sealed unit, doors open on an open one.' },
+    { id: 'controls', label: 'Controls, lower cover off', hint: 'With the lower louver off: the gas valve, the controls and the rating label behind it.' },
+    { id: 'chimney', label: 'Chimney or vent on the roof', hint: 'The chimney or vent cap where it leaves the roof or wall.' },
   ],
   appliances: [
     { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it.' },
@@ -126,7 +134,16 @@ export const shotRole = (systemId: string, shotId: string) => `${baseOf(systemId
  *  type, and the outdoor unit and its plate are read before anyone confirms that. Its answer is kept only when THIS read
  *  answers each parent so that the follow-up's own predicate holds (the one predicate rule, specPredicateHolds). */
 export type ShotCondition = { key: string; includes?: readonly string[]; unlisted?: readonly string[]; exact?: true };
-export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean; when?: readonly ShotCondition[] };
+/** `collects` (2026-11-09): a WHOLE-HOUSE field one house holds several values of — carpet in the bedrooms, tile in the
+ *  bath, hardwood in the living room. It stays asked after its first answer; `have` is what it already holds (confirmed,
+ *  or proposed by an earlier photo), and the read may only ADD a value not in it, one answer per value. */
+export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean; when?: readonly ShotCondition[]; collects?: { have: readonly string[] } };
+
+/** The whole-house fields (`node|attr`). Owner 2026-11-09, on the interior set: one bedroom photo must not close Floors
+ *  for the living room's hardwood. Insulation is here for the attic (blown fill on the floor, foam on the kneewalls). */
+export const COLLECTING_FIELDS: ReadonlySet<string> = new Set([
+  'int_flooring|spec', 'int_walls|spec', 'kit_counter|spec', 'attic_instype|type', 'ext_siding|spec',
+]);
 /** A condition item of the shot's system and its own quick findings (findingIntents with a controlled id). */
 export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[] };
 export type ShotContext = {
@@ -150,9 +167,12 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
   const cond = (x: ShotQuestion) => (x.when?.length
     ? ` (only if you answer ${x.when.map(w => `${w.key} as ${(w.includes ?? []).map(c => JSON.stringify(c)).join(' or ')}`).join(' and ')})`
     : '');
+  const gather = (x: ShotQuestion) => (x.collects
+    ? ` (a house has several — one answer for EACH one this photo shows${x.collects.have.length ? `; already recorded: ${x.collects.have.map(h => JSON.stringify(h)).join(', ')} — answer only others` : ''})`
+    : '');
   const q = (x: ShotQuestion) => x.dimensions
     ? `- ${x.key} — ${x.label}: the size printed on it, as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
-    : `- ${x.key} — ${x.label}${cond(x)}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
+    : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
@@ -188,23 +208,28 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
   const byKey = new Map(ctx.questions.map(q => [q.key, q]));
   const answers: ShotRead['answers'] = [];
   const seen = new Set<string>();
+  const slot = (q: ShotQuestion, v: string) => (q.collects ? `${q.key}=${norm(v)}` : q.key);
   for (const a of Array.isArray(raw?.answers) ? raw.answers : []) {
     const q = byKey.get(String(a?.key ?? ''));
-    if (!q || seen.has(q.key)) continue;
+    if (!q) continue;
     const size = q.dimensions ? parseSizeEntry(String(a?.value ?? '')) : null;
     const hit = size ? formatSizeEntry(size) : q.choices.find(c => norm(c) === norm(a?.value));
     if (!hit) continue;   // never a value the template does not offer (a size field takes any real size)
-    seen.add(q.key);
+    // One answer per question — or, on a whole-house field, one per value it does not already hold.
+    if (seen.has(slot(q, hit)) || q.collects?.have.some(h => norm(h) === norm(hit))) continue;
+    seen.add(slot(q, hit));
     answers.push({ key: q.key, value: hit });
   }
-  // A same-read follow-up stands only on this read's own answer to what it waits on.
-  const got = new Map(answers.map(a => [a.key, a.value]));
+  // A same-read follow-up stands only on this read's own answer to what it waits on (a whole-house field's values together).
+  const got = new Map<string, string>();
+  for (const a of answers) got.set(a.key, got.has(a.key) ? `${got.get(a.key)}, ${a.value}` : a.value);
   const stands = (q: ShotQuestion | undefined) => !!q && (q.when ?? []).every(w => { const v = got.get(w.key); return !!v && specPredicateHolds(v, w); });
-  for (let i = answers.length - 1; i >= 0; i--) if (!stands(byKey.get(answers[i].key))) { seen.delete(answers[i].key); answers.splice(i, 1); }
+  for (let i = answers.length - 1; i >= 0; i--) if (!stands(byKey.get(answers[i].key))) answers.splice(i, 1);
+  const answeredKeys = new Set(answers.map(a => a.key));
   const cantTell: ShotRead['cantTell'] = [];
   for (const c of Array.isArray(raw?.cant_tell) ? raw.cant_tell : []) {
     const q = byKey.get(String(c?.key ?? ''));
-    if (!q || q.system !== ctx.systemId || seen.has(q.key) || !stands(q) || cantTell.some(x => x.key === q.key)) continue;
+    if (!q || q.system !== ctx.systemId || answeredKeys.has(q.key) || q.collects?.have.length || !stands(q) || cantTell.some(x => x.key === q.key)) continue;
     const need = String(c?.need ?? '').trim().slice(0, 80);
     cantTell.push({ key: q.key, need });
   }
