@@ -1061,9 +1061,10 @@ async function runTypes(files) {
     // choices (the furnace flue, the water heater's capacity, the panel's brand), never a look-to-answer item.
     const dk = PM.previewDetailsKeys(clone(DEFAULT_TREE), PM.rulesFor(clone(DEFAULT_TREE)));
     const askIn = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json')).askIn ?? [];
-    r('details: the preview asks what the phone’s Details asks — the checklist answers and every spec with choices, never the nine look-to-answer items',
+    // 2026-11-09 (app e2ae85ff): Last Known Service and CO Detector Proximity left Fireplace — seven remain.
+    r('details: the preview asks what the phone’s Details asks — the checklist answers and every spec with choices, never the seven look-to-answer items',
       ['hvac_heating|fuel_source', 'hvac_flue|spec', 'plumb_wh_type|capacity', 'elec_panel|brand', 'int_flooring|spec'].every(k => dk.has(k))
-      && askIn.length === 9 && ![...dk].some(k => askIn.includes(k.split('|')[0])));
+      && askIn.length === 7 && ![...dk].some(k => askIn.includes(k.split('|')[0])));
   } catch (e) {
     r(`types scenario completed (${e?.message})`, false);
   }
