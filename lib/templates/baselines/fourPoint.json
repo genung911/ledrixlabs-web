@@ -309,7 +309,8 @@
          "label": "Combustion Air",
          "values": [
           "High-Low Vents",
-          "Direct Vent (Sealed)"
+          "Direct Vent (Sealed)",
+          "From Ventilated Attic / Space"
          ],
          "offeredWhen": [
           {
@@ -2298,7 +2299,8 @@
         "Single-Wall Metal",
         "PVC / CPVC",
         "Stainless (AL29-4C)",
-        "Masonry Chimney / Liner"
+        "Masonry Chimney / Liner",
+        "Flexible Connector"
        ]
       }
      ],
@@ -2439,6 +2441,7 @@
          "label": "Service Size",
          "values": [
           "100 Amp",
+          "125 Amp",
           "150 Amp",
           "200 Amp",
           "320 / 400 Amp"
@@ -3688,6 +3691,18 @@
         "cut joist",
         "notched joist",
         "sagging joist"
+       ],
+       "attributes": [
+        {
+         "id": "framing",
+         "label": "Floor Framing",
+         "values": [
+          "Dimensional Lumber Joists",
+          "Engineered I-Joists",
+          "Open-Web Floor Trusses",
+          "Post & Beam"
+         ]
+        }
        ],
        "condition": true,
        "limitations": [

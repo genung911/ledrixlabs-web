@@ -35,6 +35,7 @@ import {
 } from '@/lib/templateBuilder/core/guidedOrder';
 import { previewNeeds } from '@/lib/templates/requirementModel';
 import { displayLabel } from './systemLabel';
+import { shotsFor } from '@/lib/scope/core/taxonomy/systemShots';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
 
@@ -312,7 +313,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // item's cards (the same leafCard a guided step draws).
   const systemPage = (sysId: string, openGroup?: string) => {
     const sys = index.allSystems[sysId]; if (!sys) return null;
-    const mine = allSteps.filter(st => st.systemId === sysId);   // the page lists every item; the walk passes the described ones by
+    const mine = allSteps.filter(st => st.systemId === sysId);
+    const shots = shotsFor(sysId);
+    const photosOpen = shots.length > 0 && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
     const p = progressOfSystem(sys);
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
     const isDescribed = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
@@ -342,8 +345,28 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           ? `${groups.length} groups · ${groups.filter(g => g.items.every(isDone)).length} complete · tap a group to open it`
           : `${items.length} item${items.length === 1 ? '' : 's'} · ${done} complete`}</div>
         {!mine.length ? <p className="pv-empty">Nothing in scope for this category yet.</p> : null}
-        {!active ? (
+        {/* THE PHOTOS TILE (app ScopeWorkspace, 2026-11-08): the system's named shots first — on the phone Ledrix reads them
+            and suggests the Details answers to confirm; here it lists the shots this draft asks for. */}
+        {photosOpen ? (
+          <div className="pv-group">
+            <div className="pv-ghead"><span>PHOTOS · {shots.length}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
+            <div className="pv-shots">
+              {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
+            </div>
+            <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm.</div>
+          </div>
+        ) : null}
+        {!photosOpen && active && groups.length <= 1 && shots.length ? (
+          <button type="button" className="pv-photobar" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))}>Photos<em>{shots.length} · start here ›</em></button>
+        ) : null}
+        {photosOpen ? null : !active ? (
           <div className="pv-tiles">
+            {shots.length ? (
+              <button type="button" className="pv-tile pv-itile pv-phototile" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos, ${shots.length} shots. Open`}>
+                <span className="pv-tl">Photos</span>
+                <span className="pv-iv2">{shots.length} · start here</span>
+              </button>
+            ) : null}
             {groups.map(g => {
               const qs = g.items.map(stepStat);
               const d = g.items.filter(isDone).length;
@@ -817,6 +840,14 @@ const CSS_TEXT = `
 .ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
 .ldx-pv .pv-itiles{margin-top:8px}
 .ldx-pv .pv-itile{height:100px;min-height:0;gap:3px;cursor:pointer;font:inherit}
+.ldx-pv .pv-phototile{border-color:rgba(33,123,232,0.55);background:rgba(33,123,232,0.12)}
+.ldx-pv .pv-phototile .pv-iv2{color:#9cc4f2}
+.ldx-pv .pv-photobar{display:flex;align-items:center;gap:8px;width:100%;margin:8px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(33,123,232,0.45);background:rgba(33,123,232,0.12);color:#e6ebee;font:inherit;font-weight:700;font-size:12px;text-align:left}
+.ldx-pv .pv-photobar em{margin-left:auto;font-style:normal;color:#9cc4f2;font-size:11px}
+.ldx-pv .pv-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.ldx-pv .pv-shot{border:1px dashed rgba(33,123,232,0.45);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:3px;min-height:72px}
+.ldx-pv .pv-shot b{font-size:10.5px;color:#e6ebee}
+.ldx-pv .pv-shot span{font-size:9px;color:#8a959c;line-height:1.3}
 .ldx-pv .pv-iv2{font-size:10px;font-weight:600;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-ix{color:#f0a020;font-size:9px;font-weight:700;min-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-item{display:flex;align-items:center;gap:8px;width:100%;min-height:50px;padding:8px 3px;border-bottom:1px solid #131c22}
