@@ -447,9 +447,9 @@
           "20x20x1",
           "14x25x1",
           "16x25x4",
-          "20x25x4",
-          "Custom / Other"
-         ]
+          "20x25x4"
+         ],
+         "input": "dimensions"
         },
         {
          "id": "location",
@@ -1416,7 +1416,7 @@
       },
       {
        "id": "plumb_main",
-       "label": "Main Shutoff Location",
+       "label": "Main Shutoff",
        "kind": "component",
        "keywords": [
         "main shutoff",
@@ -1427,13 +1427,24 @@
        "attributes": [
         {
          "id": "spec",
-         "label": "Main Shutoff Location",
+         "label": "Valve",
          "values": [
-          "Ball Valve — Basement",
-          "Ball Valve — Utility",
+          "Ball Valve",
           "Gate Valve",
           "Curb Stop Only"
          ]
+        },
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Basement",
+          "Utility Room",
+          "Garage",
+          "Crawlspace",
+          "Exterior"
+         ],
+         "optional": true
         }
        ],
        "condition": true,
@@ -2083,6 +2094,16 @@
        "optional": true
       },
       {
+       "id": "enclosure",
+       "label": "Enclosure",
+       "values": [
+        "Open",
+        "Closet",
+        "Alcove"
+       ],
+       "optional": true
+      },
+      {
        "id": "location",
        "label": "Location",
        "freeText": true,
@@ -2090,7 +2111,6 @@
         "Garage",
         "Basement",
         "Utility Room",
-        "Closet",
         "Laundry Room",
         "Attic",
         "Crawlspace",
@@ -2284,7 +2304,7 @@
        "id": "spec",
        "label": "Vent Type",
        "values": [
-        "Atmospheric / Draft Hood",
+        "Atmospheric (Draft Hood)",
         "Power Vent",
         "Direct Vent (Sealed)",
         "Power Direct Vent",
@@ -2473,9 +2493,18 @@
          "label": "Service Entrance",
          "values": [
           "Overhead",
-          "Underground (Lateral)",
-          "Service Mast"
+          "Underground"
          ]
+        },
+        {
+         "id": "attachment",
+         "label": "Attachment",
+         "values": [
+          "Service Mast",
+          "Conduit Riser",
+          "Direct to House"
+         ],
+         "optional": true
         }
        ],
        "condition": true,
@@ -2622,6 +2651,27 @@
          ]
         },
         {
+         "id": "role",
+         "label": "Role",
+         "values": [
+          "Main",
+          "Meter-Main",
+          "Distribution (Main-Lug)",
+          "Sub-Panel"
+         ]
+        },
+        {
+         "id": "fed_from",
+         "label": "Fed From",
+         "values": [
+          "Service / Meter",
+          "Panel #1",
+          "Panel #2",
+          "Panel #3"
+         ],
+         "optional": true
+        },
+        {
          "id": "location",
          "label": "Location",
          "values": [
@@ -2714,35 +2764,21 @@
        ]
       },
       {
-       "id": "gar_subpanel",
-       "label": "Sub-Panel",
+       "id": "elec_sub_separation",
+       "label": "Neutrals & Grounds Separated",
        "kind": "component",
        "keywords": [
-        "sub panel",
-        "subpanel",
-        "sub-panel",
-        "secondary panel",
-        "garage subpanel",
-        "sub panel garage",
-        "garage panel",
-        "detached panel"
+        "neutral ground separation",
+        "bonded neutral",
+        "sub panel neutral",
+        "floating neutral",
+        "feeder ground",
+        "four wire feeder"
        ],
-       "attributes": [
-        {
-         "id": "location",
-         "label": "Location",
-         "values": [
-          "Garage",
-          "Basement",
-          "Exterior",
-          "Detached Structure"
-         ],
-         "freeText": true,
-         "optional": true,
-         "emptyLabel": "Unknown"
-        }
-       ],
-       "condition": true
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
       }
      ]
     },
@@ -2772,14 +2808,12 @@
        "attributes": [
         {
          "id": "type",
-         "label": "Type",
+         "label": "Conductor",
          "values": [
-          "Copper NM-B (Romex)",
-          "Copper in Conduit",
-          "Aluminum Branch Circuit",
-          "Knob & Tube",
+          "Copper",
+          "Aluminum",
           "Cloth-Sheathed (Ungrounded)",
-          "Armored / MC (BX)"
+          "Knob & Tube"
          ]
         },
         {
@@ -2788,7 +2822,7 @@
          "values": [
           "NM-B (Romex)",
           "Conduit (EMT)",
-          "MC / BX Cable"
+          "Armored (BX / MC)"
          ]
         }
        ],
@@ -2796,7 +2830,7 @@
       },
       {
        "id": "elec_wir_nm",
-       "label": "Copper NM-B Wiring",
+       "label": "Copper Wiring",
        "kind": "component",
        "keywords": [
         "romex wiring",
@@ -2811,7 +2845,7 @@
       },
       {
        "id": "elec_wir_conduit",
-       "label": "Copper in Conduit",
+       "label": "Conduit (EMT)",
        "kind": "component",
        "keywords": [
         "emt conduit",
@@ -2871,7 +2905,7 @@
       },
       {
        "id": "elec_wir_mc",
-       "label": "Armored / MC (BX) Cable",
+       "label": "Armored (BX / MC) Cable",
        "kind": "component",
        "keywords": [
         "armored cable",
@@ -4096,7 +4130,8 @@
           "Wood",
           "Stucco",
           "Brick",
-          "Stone",
+          "Natural Stone",
+          "Manufactured Stone Veneer",
           "Aluminum",
           "Metal Panel",
           "Engineered Wood (LP)",
@@ -4214,14 +4249,30 @@
        ]
       },
       {
-       "id": "ext_sid_stone",
-       "label": "Stone Veneer",
+       "id": "ext_sid_natstone",
+       "label": "Natural Stone",
        "kind": "component",
        "keywords": [
-        "stone veneer",
+        "natural stone",
+        "fieldstone",
+        "stone masonry",
+        "stone wall"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "ext_sid_stone",
+       "label": "Manufactured Stone Veneer",
+       "kind": "component",
+       "keywords": [
         "manufactured stone",
         "cultured stone",
-        "stone siding"
+        "stone veneer",
+        "adhered stone",
+        "weep screed"
        ],
        "condition": true,
        "limitations": [

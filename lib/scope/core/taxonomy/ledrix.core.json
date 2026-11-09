@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.08.4",
-  "revision": 276,
+  "packVersion": "2026.11.09.2",
+  "revision": 278,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -320,9 +320,9 @@
                 "20x20x1",
                 "14x25x1",
                 "16x25x4",
-                "20x25x4",
-                "Custom / Other"
-              ]
+                "20x25x4"
+              ],
+              "input": "dimensions"
             },
             {
               "id": "location",
@@ -2503,7 +2503,7 @@
         },
         {
           "id": "plumb_main",
-          "label": "Main Shutoff Location",
+          "label": "Main Shutoff",
           "keywords": [
             "main shutoff",
             "main valve",
@@ -2515,13 +2515,24 @@
           "attributes": [
             {
               "id": "spec",
-              "label": "Main Shutoff Location",
+              "label": "Valve",
               "values": [
-                "Ball Valve — Basement",
-                "Ball Valve — Utility",
+                "Ball Valve",
                 "Gate Valve",
                 "Curb Stop Only"
               ]
+            },
+            {
+              "id": "location",
+              "label": "Location",
+              "values": [
+                "Basement",
+                "Utility Room",
+                "Garage",
+                "Crawlspace",
+                "Exterior"
+              ],
+              "optional": true
             }
           ],
           "condition": true,
@@ -3468,6 +3479,16 @@
               "optional": true
             },
             {
+              "id": "enclosure",
+              "label": "Enclosure",
+              "values": [
+                "Open",
+                "Closet",
+                "Alcove"
+              ],
+              "optional": true
+            },
+            {
               "id": "location",
               "label": "Location",
               "freeText": true,
@@ -3475,7 +3496,6 @@
                 "Garage",
                 "Basement",
                 "Utility Room",
-                "Closet",
                 "Laundry Room",
                 "Attic",
                 "Crawlspace",
@@ -3818,7 +3838,7 @@
               "id": "spec",
               "label": "Vent Type",
               "values": [
-                "Atmospheric / Draft Hood",
+                "Atmospheric (Draft Hood)",
                 "Power Vent",
                 "Direct Vent (Sealed)",
                 "Power Direct Vent",
@@ -4171,9 +4191,18 @@
               "label": "Service Entrance",
               "values": [
                 "Overhead",
-                "Underground (Lateral)",
-                "Service Mast"
+                "Underground"
               ]
+            },
+            {
+              "id": "attachment",
+              "label": "Attachment",
+              "values": [
+                "Service Mast",
+                "Conduit Riser",
+                "Direct to House"
+              ],
+              "optional": true
             }
           ],
           "condition": true,
@@ -4210,8 +4239,7 @@
             {
               "specNodeId": "elec_entrance",
               "includes": [
-                "Overhead",
-                "Service Mast"
+                "Overhead"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable",
@@ -4242,14 +4270,12 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_entrance",
+              "specNodeId": "elec_entrance::attachment",
               "includes": [
-                "Overhead",
                 "Service Mast"
               ],
               "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
+              "whenUnanswered": "not_applicable"
             }
           ],
           "layout": "row"
@@ -4278,6 +4304,7 @@
             {
               "specNodeId": "elec_entrance",
               "includes": [
+                "Underground",
                 "Underground (Lateral)"
               ],
               "exact": true,
@@ -4382,6 +4409,27 @@
               ]
             },
             {
+              "id": "role",
+              "label": "Role",
+              "values": [
+                "Main",
+                "Meter-Main",
+                "Distribution (Main-Lug)",
+                "Sub-Panel"
+              ]
+            },
+            {
+              "id": "fed_from",
+              "label": "Fed From",
+              "values": [
+                "Service / Meter",
+                "Panel #1",
+                "Panel #2",
+                "Panel #3"
+              ],
+              "optional": true
+            },
+            {
               "id": "location",
               "label": "Location",
               "values": [
@@ -4398,7 +4446,9 @@
             "exterior"
           ],
           "establishesAs": "elec_panel",
-          "unitLabel": "Electrical Panel"
+          "unitLabel": "Electrical Panel",
+          "instanceScope": "group",
+          "countLabel": "panels"
         },
         {
           "id": "elec_deadfront",
@@ -4517,14 +4567,12 @@
           "attributes": [
             {
               "id": "type",
-              "label": "Type",
+              "label": "Conductor",
               "values": [
-                "Copper NM-B (Romex)",
-                "Copper in Conduit",
-                "Aluminum Branch Circuit",
-                "Knob & Tube",
+                "Copper",
+                "Aluminum",
                 "Cloth-Sheathed (Ungrounded)",
-                "Armored / MC (BX)"
+                "Knob & Tube"
               ]
             },
             {
@@ -4533,7 +4581,7 @@
               "values": [
                 "NM-B (Romex)",
                 "Conduit (EMT)",
-                "MC / BX Cable"
+                "Armored (BX / MC)"
               ]
             }
           ],
@@ -4541,7 +4589,7 @@
         },
         {
           "id": "elec_wir_nm",
-          "label": "Copper NM-B Wiring",
+          "label": "Copper Wiring",
           "keywords": [
             "romex wiring",
             "nm-b cable",
@@ -4558,7 +4606,7 @@
             {
               "specNodeId": "elec_wiring::type",
               "includes": [
-                "Copper NM-B (Romex)"
+                "Copper"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -4567,7 +4615,7 @@
         },
         {
           "id": "elec_wir_conduit",
-          "label": "Copper in Conduit",
+          "label": "Conduit (EMT)",
           "keywords": [
             "emt conduit",
             "wiring in conduit",
@@ -4581,9 +4629,9 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_wiring::type",
+              "specNodeId": "elec_wiring::method",
               "includes": [
-                "Copper in Conduit"
+                "Conduit (EMT)"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -4610,7 +4658,7 @@
             {
               "specNodeId": "elec_wiring::type",
               "includes": [
-                "Aluminum Branch Circuit"
+                "Aluminum"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -4671,7 +4719,7 @@
         },
         {
           "id": "elec_wir_mc",
-          "label": "Armored / MC (BX) Cable",
+          "label": "Armored (BX / MC) Cable",
           "keywords": [
             "armored cable",
             "bx cable",
@@ -4686,9 +4734,9 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_wiring::type",
+              "specNodeId": "elec_wiring::method",
               "includes": [
-                "Armored / MC (BX)"
+                "Armored (BX / MC)"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -4712,12 +4760,10 @@
               "exact": true,
               "whenUnanswered": "not_applicable",
               "unlisted": [
-                "Copper NM-B (Romex)",
-                "Copper in Conduit",
-                "Aluminum Branch Circuit",
-                "Knob & Tube",
+                "Copper",
+                "Aluminum",
                 "Cloth-Sheathed (Ungrounded)",
-                "Armored / MC (BX)"
+                "Knob & Tube"
               ]
             }
           ]
@@ -4924,38 +4970,33 @@
           "condition": true
         },
         {
-          "id": "gar_subpanel",
-          "label": "Sub-Panel",
+          "id": "elec_sub_separation",
+          "label": "Neutrals & Grounds Separated",
           "keywords": [
-            "sub panel",
-            "subpanel",
-            "sub-panel",
-            "secondary panel",
-            "garage subpanel",
-            "sub panel garage",
-            "garage panel",
-            "detached panel"
+            "neutral ground separation",
+            "bonded neutral",
+            "sub panel neutral",
+            "floating neutral",
+            "feeder ground",
+            "four wire feeder"
           ],
           "kind": "spec",
           "origin": "core",
           "condition": true,
-          "establishesAs": "elec_subpanel",
-          "attributes": [
-            {
-              "id": "location",
-              "label": "Location",
-              "values": [
-                "Garage",
-                "Basement",
-                "Exterior",
-                "Detached Structure"
-              ],
-              "freeText": true,
-              "optional": true,
-              "emptyLabel": "Unknown"
-            }
+          "limitations": [
+            "Not Visible"
           ],
-          "unitLabel": "Sub-Panel"
+          "requires": [
+            {
+              "specNodeId": "elec_panel::role",
+              "includes": [
+                "Sub-Panel",
+                "Distribution (Main-Lug)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ]
         },
         {
           "id": "elec_subpanel",
@@ -5046,7 +5087,7 @@
             "elec_breakers",
             "elec_fuses",
             "elec_bonding",
-            "gar_subpanel"
+            "elec_sub_separation"
           ]
         },
         {
@@ -6569,7 +6610,8 @@
                 "Wood",
                 "Stucco",
                 "Brick",
-                "Stone",
+                "Natural Stone",
+                "Manufactured Stone Veneer",
                 "Aluminum",
                 "Metal Panel",
                 "Engineered Wood (LP)",
@@ -6774,13 +6816,13 @@
           ]
         },
         {
-          "id": "ext_sid_stone",
-          "label": "Stone Veneer",
+          "id": "ext_sid_natstone",
+          "label": "Natural Stone",
           "keywords": [
-            "stone veneer",
-            "manufactured stone",
-            "cultured stone",
-            "stone siding"
+            "natural stone",
+            "fieldstone",
+            "stone masonry",
+            "stone wall"
           ],
           "kind": "spec",
           "origin": "core",
@@ -6792,7 +6834,36 @@
             {
               "specNodeId": "ext_siding",
               "includes": [
-                "Stone",
+                "Natural Stone",
+                "Stone"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ext_sid_stone",
+          "label": "Manufactured Stone Veneer",
+          "keywords": [
+            "manufactured stone",
+            "cultured stone",
+            "stone veneer",
+            "adhered stone",
+            "weep screed"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_siding",
+              "includes": [
+                "Manufactured Stone Veneer",
                 "Stone Veneer"
               ],
               "exact": true,
@@ -6851,7 +6922,8 @@
                 "Wood",
                 "Stucco",
                 "Brick",
-                "Stone",
+                "Natural Stone",
+                "Manufactured Stone Veneer",
                 "Aluminum",
                 "Metal Panel",
                 "Engineered Wood (LP)",
@@ -7352,6 +7424,7 @@
             "ext_sid_stucco",
             "ext_sid_eifs",
             "ext_sid_brick",
+            "ext_sid_natstone",
             "ext_sid_stone",
             "ext_sid_metal",
             "ext_sid_other",
@@ -11217,6 +11290,19 @@
         "hvac_cooling",
         "hvac_ms_heads"
       ]
+    },
+    {
+      "id": "panels",
+      "label": "Electrical panels",
+      "kind": "units",
+      "node": "elec_panel",
+      "asks": true,
+      "question": "How many panels?",
+      "unitName": "Panel",
+      "noun": "panels",
+      "min": 1,
+      "max": 6,
+      "plateSuggest": false
     }
   ]
 }

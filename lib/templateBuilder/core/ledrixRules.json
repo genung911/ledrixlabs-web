@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.08.4",
+ "packVersion": "2026.11.09.2",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -1310,8 +1310,7 @@
     {
      "specNodeId": "elec_entrance",
      "includes": [
-      "Overhead",
-      "Service Mast"
+      "Overhead"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable",
@@ -1322,14 +1321,12 @@
   "elec_svc_mast": {
    "requires": [
     {
-     "specNodeId": "elec_entrance",
+     "specNodeId": "elec_entrance::attachment",
      "includes": [
-      "Overhead",
       "Service Mast"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -1338,6 +1335,7 @@
     {
      "specNodeId": "elec_entrance",
      "includes": [
+      "Underground",
       "Underground (Lateral)"
      ],
      "exact": true,
@@ -1364,7 +1362,7 @@
     {
      "specNodeId": "elec_wiring::type",
      "includes": [
-      "Copper NM-B (Romex)"
+      "Copper"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -1374,9 +1372,9 @@
   "elec_wir_conduit": {
    "requires": [
     {
-     "specNodeId": "elec_wiring::type",
+     "specNodeId": "elec_wiring::method",
      "includes": [
-      "Copper in Conduit"
+      "Conduit (EMT)"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -1388,7 +1386,7 @@
     {
      "specNodeId": "elec_wiring::type",
      "includes": [
-      "Aluminum Branch Circuit"
+      "Aluminum"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -1422,9 +1420,9 @@
   "elec_wir_mc": {
    "requires": [
     {
-     "specNodeId": "elec_wiring::type",
+     "specNodeId": "elec_wiring::method",
      "includes": [
-      "Armored / MC (BX)"
+      "Armored (BX / MC)"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -1439,13 +1437,24 @@
      "exact": true,
      "whenUnanswered": "not_applicable",
      "unlisted": [
-      "Copper NM-B (Romex)",
-      "Copper in Conduit",
-      "Aluminum Branch Circuit",
-      "Knob & Tube",
+      "Copper",
+      "Aluminum",
       "Cloth-Sheathed (Ungrounded)",
-      "Armored / MC (BX)"
+      "Knob & Tube"
      ]
+    }
+   ]
+  },
+  "elec_sub_separation": {
+   "requires": [
+    {
+     "specNodeId": "elec_panel::role",
+     "includes": [
+      "Sub-Panel",
+      "Distribution (Main-Lug)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
     }
    ]
   },
@@ -1778,12 +1787,26 @@
     }
    ]
   },
+  "ext_sid_natstone": {
+   "requires": [
+    {
+     "specNodeId": "ext_siding",
+     "includes": [
+      "Natural Stone",
+      "Stone"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
   "ext_sid_stone": {
    "requires": [
     {
      "specNodeId": "ext_siding",
      "includes": [
-      "Stone",
+      "Manufactured Stone Veneer",
       "Stone Veneer"
      ],
      "exact": true,
@@ -1819,7 +1842,8 @@
       "Wood",
       "Stucco",
       "Brick",
-      "Stone",
+      "Natural Stone",
+      "Manufactured Stone Veneer",
       "Aluminum",
       "Metal Panel",
       "Engineered Wood (LP)",

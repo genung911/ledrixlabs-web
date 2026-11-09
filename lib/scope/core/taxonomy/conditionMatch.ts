@@ -110,6 +110,10 @@ export type ComponentAttribute = {
    *  than one attribute — so values recorded while it was the only one do not move (A5-7: the AC's
    *  "AC System Type" when Cooling gained its Age field). Authored, never inferred. */
   legacyBareKey?: boolean;
+  /** How the answer is entered when it is not a tile grid. `dimensions` (owner 2026-11-08, Filter › Size): wheels for
+   *  width × height × depth plus a quantity, stored as "20x20x1" / "20x20x1 × 2" (filterSize.ts). `values` stay the
+   *  common sizes (what a photo read and a spoken answer may match). */
+  input?: 'dimensions';
 };
 
 export type ComponentAxes = {

@@ -20,6 +20,7 @@
 // SHOT IDS ARE PERMANENT. `${systemBaseId}:${shot.id}` is the photo's ROLE (photoSlots.ts rule): renaming one orphans
 // every photo already taken under it.
 
+import { formatSizeEntry, parseSizeEntry } from './filterSize';
 export type Shot = {
   /** Permanent role within its system. Never rename. */
   id: string;
@@ -112,7 +113,9 @@ export const shotRole = (systemId: string, shotId: string) => `${baseOf(systemId
 // ── THE READ ────────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** An open Details question offered to the read: `node|attr`, its words, its authored choices. */
-export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[] };
+/** `dimensions` (Filter › Size): any size read off the photo is a proposal, in the stored "20x20x1" form — not only the
+ *  listed common sizes. */
+export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean };
 /** A condition item of the shot's system and its own quick findings (findingIntents with a controlled id). */
 export type ShotItem = { nodeId: string; label: string; intents: readonly { id: string; label: string }[] };
 export type ShotContext = {
@@ -133,7 +136,9 @@ export const MAX_NOTICED = 2;
 export function buildShotPrompt(ctx: ShotContext): { system: string; user: string } {
   const own = ctx.questions.filter(q => q.system === ctx.systemId);
   const other = ctx.questions.filter(q => q.system !== ctx.systemId);
-  const q = (x: ShotQuestion) => `- ${x.key} — ${x.label}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
+  const q = (x: ShotQuestion) => x.dimensions
+    ? `- ${x.key} — ${x.label}: the size printed on it, as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
+    : `- ${x.key} — ${x.label}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
@@ -172,8 +177,9 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
   for (const a of Array.isArray(raw?.answers) ? raw.answers : []) {
     const q = byKey.get(String(a?.key ?? ''));
     if (!q || seen.has(q.key)) continue;
-    const hit = q.choices.find(c => norm(c) === norm(a?.value));
-    if (!hit) continue;   // never a value the template does not offer
+    const size = q.dimensions ? parseSizeEntry(String(a?.value ?? '')) : null;
+    const hit = size ? formatSizeEntry(size) : q.choices.find(c => norm(c) === norm(a?.value));
+    if (!hit) continue;   // never a value the template does not offer (a size field takes any real size)
     seen.add(q.key);
     answers.push({ key: q.key, value: hit });
   }
