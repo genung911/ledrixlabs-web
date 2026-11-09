@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.08.1",
+  "packVersion": "2026.11.08.2",
   "revision": 276,
   "locale": "en-US",
   "severityVocabulary": [
@@ -550,6 +550,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Visible"
@@ -4752,6 +4753,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Tested"
@@ -5643,6 +5645,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "walkZone": "exterior",
           "walkZones": [
@@ -6148,6 +6151,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "dependsOnSpec": {
             "nodeId": "found_type::type",
@@ -9202,6 +9206,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Tested"
@@ -9981,6 +9986,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Tested"
@@ -10096,6 +10102,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Determined"
@@ -10154,6 +10161,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true
         },
         {
@@ -10288,6 +10296,7 @@
               ]
             }
           ],
+          "askIn": "inspect",
           "condition": true,
           "limitations": [
             "Not Tested"

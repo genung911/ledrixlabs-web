@@ -13,3 +13,10 @@ export type TemplateNode = {
   // inScope, …); the copied rules read them by name.
   [field: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
+
+/** The template as whatsHere.ts reads it (2026-11-08, the phone preview's Described-in-Details): its systems, and the
+ *  frozen rule set an inspection captured (`ruleDefinitions`) when there is one. */
+export type InspectionTemplate = {
+  systems?: TemplateNode[];
+  [field: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+};

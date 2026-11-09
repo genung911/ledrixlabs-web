@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  previewDetailsKeys, previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
 import {
   crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
@@ -124,7 +124,19 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (id: string) => itemApplies(rules, id, sv);
   }, [rules, index, picks, typed]);
   // THE WALK — the app's step list for this draft and these answers (guidedOrder, the app's own module).
-  const steps = useMemo(() => previewSteps(systems, applies), [systems, applies]);
+  const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);
+  // DESCRIBED IN DETAILS (app 2026-11-08): the spec fields Details asks — a description step made only of them leaves the
+  // walk and folds into one line on its system page; on a card they show as one line, not a grid.
+  const detailsKeys = useMemo(() => previewDetailsKeys(tree, rules), [tree, rules]);
+  const describedStep = (st: GuidedStep): { set: boolean } | null => {
+    if (st.kind !== 'description') return null;
+    const rows = st.rowIds.map(id => index.byId[id]?.node).filter(Boolean) as TemplateNode[];
+    if (rows.some(n => axesOf(n).attributes.some(a => !(a.values ?? []).length))) return null;
+    const fields = rows.flatMap(n => axesOf(n).attributes.map(a => ({ n, a })));
+    if (!fields.length || !fields.every(x => detailsKeys.has(`${x.n.id}|${x.a.id}`))) return null;
+    return { set: fields.every(x => (picks[pickKey(x.n.id, x.a.id)] ?? []).length > 0) };
+  };
+  const steps = useMemo(() => allSteps.filter(st => !describedStep(st)), [allSteps, detailsKeys, index]);   // eslint-disable-line react-hooks/exhaustive-deps
   const prevSteps = useRef<GuidedStep[]>([]);
   const [limReason, setLimReason] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState<Record<string, string>>({});
@@ -132,7 +144,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [sheet, setSheet] = useState<Sheet>(null);
   const [adding, setAdding] = useState<{ key: string; text: string } | null>(null);
   const [hl, setHl] = useState<string | null>(null);
-  // ALREADY KNOWN items opened with "Change" (app ScopeWorkspace, 2026-11-08).
+  // DESCRIBED IN DETAILS: a group's list (`list:<group>`), items opened in it with "Change", and cards whose Details
+  // grids were opened with Change (`spec:<node>`) — app ScopeWorkspace / ScopeRowList, 2026-11-08.
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -299,11 +312,11 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // item's cards (the same leafCard a guided step draws).
   const systemPage = (sysId: string, openGroup?: string) => {
     const sys = index.allSystems[sysId]; if (!sys) return null;
-    const mine = steps.filter(st => st.systemId === sysId);
+    const mine = allSteps.filter(st => st.systemId === sysId);   // the page lists every item; the walk passes the described ones by
     const p = progressOfSystem(sys);
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
-    const isKnown = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
-      return st.kind === 'description' && isDone(st) && !q.finding && !q.limited && !(n && previewNeeds(n)); };
+    const isDescribed = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
+      return !!describedStep(st) && !q.finding && !q.limited && !(n && previewNeeds(n)); };
     const knownValue = (st: GuidedStep) => st.rowIds.flatMap(id => { const r = index.byId[id]?.node; return r ? axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []) : []; }).join(', ') || 'Set';
     const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
@@ -348,29 +361,37 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         ) : (
           <div className="pv-group">
             <div className="pv-ghead" data-pv-id={active.id !== sysId ? active.id : undefined}><span>{active.label.toUpperCase()}</span><em>+ Item</em></div>
-            {/* ALREADY KNOWN (app 2026-11-08): a complete description item with nothing else to say folds to one row —
-                its answer and Change; Change opens its cards in place, Done folds it back. Condition items never fold. */}
+            {/* DESCRIBED IN DETAILS (app 2026-11-08): an item Details describes whole folds into one line — green when all are
+                described, amber with how many are not; its rows: the answer and Change (cards with their grids open), or
+                "Not described yet · Details". Replaces Already known. */}
             {(() => {
-              const known = active.items.filter(isKnown);
-              if (!known.length) return null;
+              const described = active.items.filter(isDescribed);
+              if (!described.length) return null;
+              const left = described.filter(st => !describedStep(st)!.set).length;
+              const listKey = `list:${active.id}`;
               return (
-                <div className="pv-known">
-                  <div className="pv-knownh">✓ ALREADY KNOWN · {known.length}</div>
-                  {known.map(st => opened[st.key] ? (
+                <div className={`pv-known${left ? ' left' : ''}`}>
+                  <button type="button" className="pv-knownh" onClick={() => setOpened(o => ({ ...o, [listKey]: !o[listKey] }))} aria-expanded={!!opened[listKey]}>
+                    <span>{left ? `DESCRIBED IN DETAILS · ${described.length - left} OF ${described.length} · ${left} NOT YET` : `✓ DESCRIBED IN DETAILS · ${described.length}`}</span>
+                    <em>{opened[listKey] ? 'Hide' : 'View ›'}</em>
+                  </button>
+                  {opened[listKey] ? described.map(st => !describedStep(st)!.set ? (
+                    <div key={st.key} data-pv-id={st.key} className="pv-knownr"><span>{st.label}</span><b className="miss">Not described yet</b><em>Details ›</em></div>
+                  ) : opened[st.key] ? (
                     <div key={st.key} data-pv-id={st.key}>
                       <div className="pv-knownr"><span>{st.label}</span><button type="button" onClick={() => setOpened(o => ({ ...o, [st.key]: false }))}>Done</button></div>
-                      {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r) : null; })}
+                      {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r, true) : null; })}
                     </div>
                   ) : (
                     <button key={st.key} type="button" data-pv-id={st.key} className="pv-knownr" onClick={() => setOpened(o => ({ ...o, [st.key]: true }))}
                       aria-label={`${st.label}: ${knownValue(st)}. Change`}>
                       <span>{st.label}</span><b>{knownValue(st)}</b><em>Change</em>
                     </button>
-                  ))}
+                  )) : null}
                 </div>
               );
             })()}
-            {active.items.filter(st => !isKnown(st)).map(st => {
+            {active.items.filter(st => !isDescribed(st)).map(st => {
               const n = index.byId[st.key]?.node;
               return (
                 <div key={st.key} data-pv-id={st.key} className={hl === st.key ? 'pv-hit' : undefined}>
@@ -452,7 +473,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
   };
 
-  const leafCard = (sysId: string, n: TemplateNode) => {
+  const leafCard = (sysId: string, n: TemplateNode, showSpecs = false) => {
     if (n.pointsTo) {
       const target = index.byId[n.pointsTo.nodeId];
       const tSys = index.allSystems[n.pointsTo.systemId];
@@ -470,6 +491,13 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       );
     }
     const ax = axesOf(n);
+    // DESCRIBED IN DETAILS (app ScopeRowList 2026-11-08): a field Details asks shows no grid — one line, its answer · from
+    // Details · Change (opens the grid), or "Not described yet · Details".
+    const moved = ax.attributes.filter(a => detailsKeys.has(`${n.id}|${a.id}`));
+    const specOpen = showSpecs || !!opened[`spec:${n.id}`];
+    const gridAttrs = ax.attributes.filter(a => specOpen || !moved.includes(a));
+    const movedVals = moved.flatMap(a => picks[pickKey(n.id, a.id)] ?? []);
+    const movedMissing = moved.some(a => !(picks[pickKey(n.id, a.id)] ?? []).length);
     const first = ax.attributes[0];
     const headVal = first ? (picks[pickKey(n.id, first.id)] ?? []).join(', ') : '';
     const named = ax.attributes.length > 1;
@@ -480,8 +508,15 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           {/* Company Tips open from the blue ⓘ on the phone, never as a line under the name (owner 2026-11-05). */}
           <span className="pv-ct">{previewRowTitle(n, picks)}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}</span>
         </button>
+        {moved.length ? (
+          <div className="pv-dline">
+            <span className={movedVals.length ? '' : 'miss'}>{movedVals.length ? <b>{movedVals.join(' · ')}</b> : null}{movedVals.length ? (movedMissing ? ' · more not described yet' : ' · from Details') : 'Not described yet'}</span>
+            {movedMissing ? <em>Details ›</em> : null}
+            {!showSpecs && (movedVals.length || specOpen) ? <button type="button" onClick={() => setOpened(o => ({ ...o, [`spec:${n.id}`]: !o[`spec:${n.id}`] }))}>{specOpen ? 'Done' : 'Change'}</button> : null}
+          </div>
+        ) : null}
         {ax.condition ? <div className="pv-sec"><div className="pv-cap">CONDITION</div>{conditionRow(n)}</div> : null}
-        {ax.attributes.map((a, i) => (
+        {gridAttrs.map((a, i) => (
           <div key={a.id} className={`pv-sec${ax.condition || i > 0 ? ' div' : ''}`}>
             {optionGrid(n, pickKey(n.id, a.id), named ? a.label.toUpperCase() : 'MATERIAL / TYPE', previewOffered(n, a.id, a.values, picks), !!a.multi, named ? `Add ${a.label.toLowerCase()}` : 'Add a material')}
           </div>
@@ -764,7 +799,17 @@ const CSS_TEXT = `
 @media (prefers-reduced-motion: reduce){.ldx-pv .pv-gbar{animation:none}}
 .ldx-pv .pv-group{margin-top:14px}
 .ldx-pv .pv-known{margin-top:8px;border:1px solid #24313B;border-radius:10px;overflow:hidden;background:#11171b}
-.ldx-pv .pv-knownh{padding:6px 9px;background:#0e1714;color:#7fe0a8;font-size:9px;font-weight:800;letter-spacing:1.2px}
+.ldx-pv .pv-knownh{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border:0;background:#0e1714;color:#7fe0a8;font-size:9px;font-weight:800;letter-spacing:1.2px;text-align:left}
+.ldx-pv .pv-knownh span{flex:1;min-width:0}
+.ldx-pv .pv-knownh em{font-style:normal;color:#8fc0f2;letter-spacing:0;font-size:10.5px}
+.ldx-pv .pv-known.left{border-color:#4a3a17}
+.ldx-pv .pv-known.left .pv-knownh{background:#2a1f0b;color:#f5b03c}
+.ldx-pv .pv-knownr b.miss{color:#f5b03c}
+.ldx-pv .pv-dline{display:flex;align-items:center;gap:10px;padding:5px 0 3px;font-size:11px;color:#8a959c}
+.ldx-pv .pv-dline span{flex:1;min-width:0}
+.ldx-pv .pv-dline span.miss{color:#f0a020;font-weight:600}
+.ldx-pv .pv-dline b{color:#e6ebee;font-weight:600}
+.ldx-pv .pv-dline em,.ldx-pv .pv-dline button{font-style:normal;color:#8fc0f2;font-weight:800;font-size:10.5px;background:none;border:0;padding:0}
 .ldx-pv .pv-knownr{display:flex;align-items:center;gap:8px;width:100%;padding:8px 9px;border:0;border-top:1px solid #24313B;background:transparent;color:#8a959c;font-size:11px;text-align:left}
 .ldx-pv .pv-knownr b{flex:1;min-width:0;color:#e6ebee;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-knownr em,.ldx-pv .pv-knownr button{font-style:normal;color:#8fc0f2;font-weight:800;font-size:10.5px;background:none;border:0;margin-left:auto}

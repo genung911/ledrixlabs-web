@@ -110,7 +110,9 @@ const DESKTOP = ['editorModel', 'assistant', 'ruleModel', 'requirementModel', 'c
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), 'tb-'));
   mkdirSync(join(dir, 'core'));
+  mkdirSync(join(dir, 'scope', 'taxonomy'), { recursive: true });
   const alias = s => s
+    .replace(/from '@\/lib\/scope\/core\/taxonomy\/([^']+)'/g, "from './scope/taxonomy/$1'")
     .replace(/from '@\/lib\/templateBuilder\/core\/([^']+)'/g, "from './core/$1'")
     .replace(/from '@\/lib\/(?:templateBuilder|templates)\/([^']+)'/g, "from './$1'");
   const fix = s => alias(s).replace(/from '(\.{1,2}\/[^']+)'/g, (m, p) => (p.endsWith('.ts') ? m : p.endsWith('.json') ? `from '${p}' with { type: 'json' }` : `from '${p}.ts'`));
@@ -132,6 +134,10 @@ const sourceFiles = () => Object.fromEntries([
   ['core/ledrixRules.json', read('lib/templateBuilder/core/ledrixRules.json')],
   // 2026-11-07: the preview offers and titles through the app's answerShapes.ts (a byte-identical copy).
   ['core/answerShapes.ts', read('lib/templateBuilder/core/answerShapes.ts')],
+  // 2026-11-08: the preview's Described-in-Details runs the app's whatsHere.ts (a byte-identical copy) and what it imports.
+  ['scope/taxonomy/whatsHere.ts', read('lib/scope/core/taxonomy/whatsHere.ts')],
+  ['scope/taxonomy/instances.ts', read('lib/scope/core/taxonomy/instances.ts')],
+  ['scope/taxonomy/applicability.ts', read('lib/scope/core/taxonomy/applicability.ts')],
 ]);
 
 const clone = x => JSON.parse(JSON.stringify(x));
@@ -1030,6 +1036,14 @@ async function runTypes(files) {
       titleFor(['Gas Furnace']) === 'Gas Furnace' && titleFor(['Heat Pump']) === 'Heat Pump' && titleFor(['Propane']) === 'Propane Furnace'
       && titleFor(null) === 'Furnace' && titleFor(['Gas Furnace', 'Heat Pump']) === 'Furnace'
       && PM.previewRowTitle({ id: 'hvac_cabinet', label: 'Cabinet / Access', kind: 'component' }, { 'hvac_heating::fuel_source': ['Gas Furnace'] }) === 'Cabinet / Access');
+    // DESCRIBED IN DETAILS (ledrix-app 2026-11-08, owner: "Inspect should be strictly condition checks"): on the real
+    // Ledrix Default, the preview's Details fields are the phone's — the checklist's own questions, every other spec with
+    // choices (the furnace flue, the water heater's capacity, the panel's brand), never a look-to-answer item.
+    const dk = PM.previewDetailsKeys(clone(DEFAULT_TREE), PM.rulesFor(clone(DEFAULT_TREE)));
+    const askIn = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json')).askIn ?? [];
+    r('details: the preview asks what the phone’s Details asks — the checklist answers and every spec with choices, never the nine look-to-answer items',
+      ['hvac_heating|fuel_source', 'hvac_flue|spec', 'plumb_wh_type|capacity', 'elec_panel|brand', 'int_flooring|spec'].every(k => dk.has(k))
+      && askIn.length === 9 && ![...dk].some(k => askIn.includes(k.split('|')[0])));
   } catch (e) {
     r(`types scenario completed (${e?.message})`, false);
   }
@@ -1054,6 +1068,25 @@ const browserFiles = all => Object.entries(all).filter(([f]) => !f.startsWith('a
 const WRITE = /\.(insert|update|upsert|delete)\s*\(\s*[{\[]|\.delete\(\)|\.rpc\s*\(/;
 
 const RULES = {
+  // DESCRIBED IN DETAILS (ledrix-app 2026-11-08, mockup 1JBGc6WjSZSztpkMm3pynL → approved).
+  'details: the preview runs the app’s whatsHere.ts on the rules a new inspection captures, and the pack’s askIn / type rows': all => {
+    const m = strip(all['components/templates/phonePreviewModel.ts'] ?? '');
+    return /return new Set\(whatsHereQuestions\(\{ \.\.\.tree, ruleDefinitions: rules \} as never, PACK_FACTS as never\)\.map\(questionKey\)\);/.test(m)
+      && /k = previewDetailsKeys\(tree, rulesFor\(tree\)\);/.test(m) && /ASK_IN\.has\(id\) \? \{ askIn: 'inspect' \} : \{\}/.test(m)
+      && /TYPE_ROWS\.has\(id\) \? \{ typeRow: true \} : \{\}/.test(m) ? [] : ['components/templates/phonePreviewModel.ts'];
+  },
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and folds into one line on its page': all => {
+    const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
+      && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => !describedStep\(st\)\)/.test(p)
+      && /const mine = allSteps\.filter\(st => st\.systemId === sysId\);/.test(p) && /active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(/.test(p)
+      && /DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
+  },
+  'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': all => {
+    const r = strip(all['components/templates/ItemRow.tsx'] ?? '');
+    return /const inDetails = \(node\.attributes \?\? \[\]\)\.some\(a => detailsKeysFor\(tree\)\.has\(/.test(r) && /const inInspect = !node\.pointsTo && assessesCondition\(node\);/.test(r)
+      && /\{inDetails \? <span[^>]*>Details<\/span> : null\}/.test(r) && /\{inInspect \? <span[^>]*>Condition<\/span> : null\}/.test(r) ? [] : ['components/templates/ItemRow.tsx'];
+  },
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
   'writes: only the three template tables, the company template context and the publish RPC': all => {
     const s = strip(all[API] ?? '');
@@ -1475,6 +1508,9 @@ console.log('mutations');
 const add = (f, x) => s => ({ ...s, [f]: (s[f] ?? '') + x });
 const rep = (f, a, b) => s => ({ ...s, [f]: (s[f] ?? '').replace(a, () => b) });
 const MUT = {
+  'details: the preview runs the app’s whatsHere.ts on the rules a new inspection captures, and the pack’s askIn / type rows': rep('components/templates/phonePreviewModel.ts', "...(ASK_IN.has(id) ? { askIn: 'inspect' } : {})", ''),
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and folds into one line on its page': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
+  'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),

@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.08.1",
+ "packVersion": "2026.11.08.2",
  "nodes": {
   "hvac_type_boiler": {
    "requires": [
@@ -2669,5 +2669,42 @@
     ]
    }
   ]
- }
+ },
+ "askIn": [
+  "hvac_heat_exchanger",
+  "elec_grounding",
+  "roof_discharge",
+  "found_cs_vent",
+  "ext_garage_door",
+  "fp_gas_vent",
+  "fp_service",
+  "fp_co_prox",
+  "elec_smoke"
+ ],
+ "typeRows": [
+  "hvac_type_boiler",
+  "hvac_type_minisplit",
+  "hvac_type_radiant",
+  "ac_type_split",
+  "ac_type_package",
+  "ac_type_heatpump",
+  "ac_type_minisplit",
+  "ac_type_window",
+  "ac_type_evap",
+  "wh_t_tank_gas",
+  "wh_t_tank_propane",
+  "wh_t_tank_electric",
+  "wh_t_tank_oil",
+  "wh_t_tankless_gas",
+  "wh_t_tankless_propane",
+  "wh_t_tankless_electric",
+  "wh_t_heatpump",
+  "wh_t_solar",
+  "fp_t_wood_masonry",
+  "fp_t_wood_prefab",
+  "fp_t_gas_insert",
+  "fp_t_gas_logs",
+  "fp_t_pellet",
+  "fp_t_electric"
+ ]
 }

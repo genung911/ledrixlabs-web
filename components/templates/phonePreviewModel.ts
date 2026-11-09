@@ -12,6 +12,7 @@ import { resolveApplicability, collapseToActive } from '@/lib/templateBuilder/co
 import LEDRIX_RULES from '@/lib/templateBuilder/core/ledrixRules.json';
 import { offeredValues, titleFromType, type OfferRule, type TypeTitle } from '@/lib/templateBuilder/core/answerShapes';
 import { guidedSteps, type GuidedStep } from '@/lib/templateBuilder/core/guidedOrder';
+import { whatsHereQuestions, questionKey } from '@/lib/scope/core/taxonomy/whatsHere';
 
 /** ledrix-app src/core/services/customTemplateService.ts — `LIMITATION_REASONS`, the general reasons the app
  *  appends after a component's own authored reasons in the LIMIT sheet. Copied verbatim (2026-10-19). */
@@ -343,3 +344,24 @@ export function previewSteps(systems: readonly TemplateNode[], applies: (nodeId:
   return guidedSteps(systems, { tilesOf, rowsOf: tile => leavesOf(tile, applies), drawnInside, kindOf });
 }
 
+
+// ── DESCRIBED IN DETAILS (ledrix-app 2026-11-08, owner: "Inspect should be strictly condition checks") ─────────────────
+// The spec fields Pre-Inspect's Details asks for this draft — the app's own whatsHere.ts (a byte-identical copy), on the
+// rules a new inspection would capture (rulesFor) and the pack's askIn / type-row facts (ledrixRules.json). The preview
+// draws those fields as one line on their Inspect card, as the phone does. `node id|attr id`.
+const ASK_IN = new Set(((LEDRIX_RULES as { askIn?: string[] }).askIn) ?? []);
+const TYPE_ROWS = new Set(((LEDRIX_RULES as { typeRows?: string[] }).typeRows) ?? []);
+const PACK_FACTS = [...new Set([...Object.keys(PACK), ...ASK_IN, ...TYPE_ROWS])].map(id => ({
+  id, ...(PACK[id] ?? {}), ...(ASK_IN.has(id) ? { askIn: 'inspect' } : {}), ...(TYPE_ROWS.has(id) ? { typeRow: true } : {}),
+}));
+export function previewDetailsKeys(tree: InspectionTemplate, rules: RuleDefinitions): Set<string> {
+  return new Set(whatsHereQuestions({ ...tree, ruleDefinitions: rules } as never, PACK_FACTS as never).map(questionKey));
+}
+
+/** The same set for the Template Builder's rows (Details / Condition tags), computed once per tree. */
+const DETAILS_CACHE = new WeakMap<InspectionTemplate, Set<string>>();
+export function detailsKeysFor(tree: InspectionTemplate): Set<string> {
+  let k = DETAILS_CACHE.get(tree);
+  if (!k) { k = previewDetailsKeys(tree, rulesFor(tree)); DETAILS_CACHE.set(tree, k); }
+  return k;
+}

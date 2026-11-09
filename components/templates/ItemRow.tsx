@@ -7,7 +7,8 @@
 import { useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
-import { includeOps, itemSummary, ops } from '@/lib/templates/editorModel';
+import { assessesCondition, includeOps, itemSummary, ops } from '@/lib/templates/editorModel';
+import { detailsKeysFor } from './phonePreviewModel';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { Menu } from './ui';
 import { useBuildingLens } from './BuildingLens';
@@ -23,6 +24,11 @@ export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: 
   const [v, setV] = useState(node.label);
   const [moving, setMoving] = useState(false);
   const cancelled = useRef(false);
+  // WHERE IT IS ASKED (owner 2026-11-08, "Pre-Inspect takes care of all details, specs, material types, types; Inspect is
+  // strictly condition"): Details when Pre-Inspect's Details asks one of its specs (the app's own whatsHere.ts), Condition
+  // when Inspect judges it. Flue / Venting is both: its material in Details, its condition in Inspect.
+  const inDetails = (node.attributes ?? []).some(a => detailsKeysFor(tree).has(`${node.id}|${a.id}`));
+  const inInspect = !node.pointsTo && assessesCondition(node);
   const done = () => { setRenaming(false); if (cancelled.current) { cancelled.current = false; return; } const t = v.trim(); if (t && t !== node.label) onOps(ops.rename(node.id, t)); };
   return (
     <li className={`flex items-center gap-2 py-1 pl-3 pr-1 ${selected === node.id ? 'bg-accent/10' : ''}`}>
@@ -39,6 +45,8 @@ export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: 
           <span className="block truncate text-xs text-muted">{itemSummary(node)}</span>
         </button>
       )}
+      {inDetails ? <span className="flex-none rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-accent" title="Asked in Pre-Inspect › Details">Details</span> : null}
+      {inInspect ? <span className="flex-none rounded-full bg-hairline px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-muted" title="Judged in Inspect">Condition</span> : null}
       {tag}
       {node.pointsTo ? <span className="w-8 flex-none" aria-hidden /> : (
         <Menu label={`More for ${node.label}`} items={[
