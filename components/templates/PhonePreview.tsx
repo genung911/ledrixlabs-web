@@ -320,7 +320,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     // Photos & details (app 2026-11-08): shots or questions give the tile; its line is what is still needed.
     const dsc = describeBy[sysId] ?? { left: 0, total: 0 };
     const hasTile = shots.length > 0 || dsc.total > 0;
-    const tileMeta = dsc.left ? `✦ ${dsc.left} still needed` : dsc.total ? '✓ Described' : `${shots.length} · start here`;
+    // app 2026-11-09 ("Shoot a system"): a preview has no photos — the tile says Start here, as the phone does before any photo.
+    const tileMeta = 'Start here';
     const photosOpen = hasTile && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
     const p = progressOfSystem(sys);
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
@@ -355,7 +356,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             and suggests the Details answers to confirm; here it lists the shots this draft asks for. */}
         {photosOpen ? (
           <div className="pv-group">
-            <div className="pv-ghead"><span>PHOTOS & DETAILS · {shots.length} SHOTS{dsc.total ? ` · ${dsc.left} STILL NEEDED` : ''}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
+            <div className="pv-ghead"><span>PHOTOS THAT HELP LEDRIX · {shots.length}{dsc.total ? ` · ${dsc.left} STILL NEEDED` : ''}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
             <div className="pv-shots">
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>

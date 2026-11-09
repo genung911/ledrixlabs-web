@@ -189,6 +189,9 @@ export type ShotContext = {
   items: readonly ShotItem[];
   /** Another trade's items this space's photo may show (CROSS_TRADE) — noticed only when plainly visible. */
   otherItems?: readonly ShotItem[];
+  /** THE HELPFUL SHOTS a section photo may BE (owner 2026-11-09: "Ledrix should place those photos in the proper spot if
+   *  it can, high confidence"). Only on a section photo; the read names one only when the photo plainly IS that shot. */
+  placeable?: readonly { id: string; label: string; hint: string }[];
   /** The reading slot this shot carries, with the units it may be in. */
   reading?: { point: string; label: string; units: readonly string[] } | null;
   /** What the inspector named this photo (a repeating shot's room: "Hall bath"), if anything. */
@@ -219,19 +222,24 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     '3. "noticed": at most ' + MAX_NOTICED + ' problems that are CLEARLY visible, each one of the listed quick findings for ' +
     'one listed item, with a short plain note of what is seen. Most photos have none — return an empty list.\n' +
     '4. "reading": only if a reading slot is listed and an instrument\'s display is legible: the number and unit shown.\n' +
+    '5. "shot": only if helpful shots are listed — the one this photo plainly IS (a legible data plate is the "plate"), ' +
+    'else null. Never a shot it merely shows part of.\n' +
     'Return JSON: {"answers":[{"key":"…","value":"…"}],"cant_tell":[{"key":"…","need":"…"}],' +
-    '"noticed":[{"node":"…","finding":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null}';
+    '"noticed":[{"node":"…","finding":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null,"shot":"…"|null}';
   const user =
     `Photo: "${ctx.shot.label}" for ${ctx.systemLabel}${ctx.place ? ` — the inspector named it "${ctx.place}"` : ''}. ${ctx.shot.hint}\n\n` +
     `Questions for ${ctx.systemLabel}:\n${own.length ? own.map(q).join('\n') : '(none open)'}\n` +
     (other.length ? `\nOther systems' questions — answer only if this photo plainly shows them:\n${other.map(q).join('\n')}\n` : '') +
     (ctx.items.length ? `\nItems and their quick findings (for "noticed"):\n${ctx.items.map(i => `- ${i.nodeId} — ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
     (ctx.otherItems?.length ? `\nOther trades' items this space can show (for "noticed" too, only if plainly visible):\n${ctx.otherItems.map(i => `- ${i.nodeId} — ${i.systemLabel ?? ''} › ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
-    (ctx.reading ? `\nReading slot: ${ctx.reading.label}, in ${ctx.reading.units.join(' or ')}.\n` : '');
+    (ctx.reading ? `\nReading slot: ${ctx.reading.label}, in ${ctx.reading.units.join(' or ')}.\n` : '') +
+    (ctx.placeable?.length ? `\nHelpful shots (for "shot"):\n${ctx.placeable.map(p => `- ${p.id} — ${p.label}: ${p.hint}`).join('\n')}\n` : '');
   return { system, user };
 }
 
 export type ShotRead = {
+  /** The helpful shot this photo plainly is (a section photo only; one of ctx.placeable), else null. */
+  shot?: string | null;
   answers: { key: string; value: string }[];
   cantTell: { key: string; need: string }[];
   noticed: { nodeId: string; intentId: string; intentLabel: string; note: string; systemId?: string }[];
@@ -285,5 +293,38 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
     const unit = ctx.reading.units.find(u => norm(u) === norm(rv.unit) || norm(u).replace('°', '') === norm(rv.unit).replace('°', '').replace('deg', '').trim());
     if (unit) reading = { point: ctx.reading.point, value: Math.round(Number(rv.value) * 10) / 10, unit };
   }
-  return { answers, cantTell, noticed, reading };
+  const placed = String(raw?.shot ?? '').trim();
+  const shot = ctx.placeable?.some(p => p.id === placed) ? placed : null;
+  return { answers, cantTell, noticed, reading, shot };
 }
+
+// ── THE QUICK LOOK (owner 2026-11-09: "do they all need to go through AI or do we have something… to lower the amount")
+// A section photo is first looked at small and cheap: which helpful shot it is, whether it can answer anything still
+// open, whether it shows a problem, or whether it is unusable. Only a photo worth it gets the full read. Closed, like the
+// read: a shot must be one listed; the rest are yes / no.
+export type ShotSort = { shot: string | null; useful: boolean; issue: boolean; unusable: boolean };
+export function buildSortPrompt(ctx: ShotContext): { system: string; user: string } {
+  const own = ctx.questions.filter(q => q.system === ctx.systemId).map(q => q.label);
+  const system =
+    'You sort ONE photo a home inspector took. Answer only what the photo plainly shows; never guess.\n' +
+    'Return JSON: {"shot":"<id>"|null,"useful":true|false,"issue":true|false,"unusable":true|false}\n' +
+    '- shot: the listed helpful shot this photo plainly IS, else null.\n' +
+    '- useful: true if the photo could answer one of the open questions (a material, a type, printed text, a label).\n' +
+    '- issue: true if a defect or safety concern is visible (damage, leak, rust, missing part, open wiring…).\n' +
+    '- unusable: true if it is too blurry or dark to tell anything.';
+  const user =
+    `Section: ${ctx.systemLabel}.\n` +
+    (ctx.placeable?.length ? `Helpful shots:\n${ctx.placeable.map(p => `- ${p.id} — ${p.label}`).join('\n')}\n` : 'Helpful shots: none\n') +
+    `Open questions: ${own.length ? own.join('; ') : 'none'}${ctx.questions.length > own.length ? ' (and other systems\' questions)' : ''}.`;
+  return { system, user };
+}
+export function validateSort(raw: any, ctx: ShotContext): ShotSort {
+  const id = String(raw?.shot ?? '').trim();
+  return {
+    shot: ctx.placeable?.some(p => p.id === id) ? id : null,
+    useful: raw?.useful === true, issue: raw?.issue === true, unusable: raw?.unusable === true,
+  };
+}
+/** Whether a sorted photo gets the full read: it is a helpful shot, can answer something, or shows a problem — never when
+ *  it is unusable (unless it is a helpful shot: the inspector can still see it was found). */
+export const worthFullRead = (s: ShotSort): boolean => !!s.shot || s.issue || (s.useful && !s.unusable);
