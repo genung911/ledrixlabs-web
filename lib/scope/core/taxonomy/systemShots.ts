@@ -347,6 +347,26 @@ export function validateShotRead(raw: any, ctx: ShotContext, g: ReadGuards = {})
   return { answers, cantTell, noticed, reading, shot };
 }
 
+// ── ANSWERS THAT CANNOT BOTH BE TRUE (owner's run on build 759: "it says I have a metal b vent on the furnace even though
+// it said 90%"). A condensing (90%+) furnace vents in PVC; an 80% furnace never does. A proposal that contradicts what the
+// house already has (confirmed, settled or proposed) is held back; two in one read that contradict each other both are —
+// the inspector decides. Closed and short: physics, not opinion.
+export const CONFLICTS: readonly { a: { key: string; values: readonly string[] }; b: { key: string; values: readonly string[] } }[] = [
+  { a: { key: 'hvac_furnace_eff|efficiency', values: ['90%+ (High Efficiency)'] }, b: { key: 'hvac_flue|spec', values: ['Metal B-Vent', 'Masonry Chimney', 'Single-Wall (Verify)'] } },
+  { a: { key: 'hvac_furnace_eff|efficiency', values: ['80% (Standard)'] }, b: { key: 'hvac_flue|spec', values: ['PVC (High-Eff)'] } },
+];
+const clashes = (k1: string, v1: string, k2: string, v2: string) => CONFLICTS.some(c =>
+  (c.a.key === k1 && c.a.values.includes(v1) && c.b.key === k2 && c.b.values.includes(v2))
+  || (c.b.key === k1 && c.b.values.includes(v1) && c.a.key === k2 && c.a.values.includes(v2)));
+/** Drop every answer that clashes with what the house already has (`known`: key → its values) or with another answer of
+ *  the same read. */
+export function dropConflicts<A extends { key: string; value: string }>(answers: readonly A[], known: (key: string) => readonly string[]): A[] {
+  return answers.filter(a =>
+    !CONFLICTS.some(c => [c.a.key, c.b.key].includes(a.key)) || (
+      !CONFLICTS.flatMap(c => [c.a.key, c.b.key]).some(k => k !== a.key && known(k).some(v => clashes(a.key, a.value, k, v)))
+      && !answers.some(o => o !== a && clashes(a.key, a.value, o.key, o.value))));
+}
+
 // ── THE CHECK PASS (the guards) ── a second look at the same photo with what the read proposed: is each one PLAINLY
 // visible? Only a "yes" survives — an answer, a notice or a reading the check does not confirm is dropped.
 export function buildCheckPrompt(read: ShotRead, ctx: ShotContext): { system: string; user: string } | null {
