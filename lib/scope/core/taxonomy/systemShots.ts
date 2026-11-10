@@ -202,6 +202,17 @@ export type ShotContext = {
 
 export const MAX_NOTICED = 2;
 
+/** A quick finding a still photo can show (owner's test 2026-11-09: "Not cooling — low temperature split" noticed on a
+ *  photo of an outdoor unit). An `inoperable` finding — not cooling, a pilot that does not light, an alarm that did not
+ *  sound — is found by running the equipment, never in a photo. */
+export const seenInAPhoto = (intentId: string): boolean => intentId !== 'inoperable';
+/** A notice must say what it sees: a note that only restates the finding's name (or is too short to describe anything)
+ *  is no observation (the same test: both notes were the finding's own title, word for word). */
+export const describesSomething = (note: string, intentLabel: string): boolean => {
+  const n = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return n(note).length >= 12 && n(note) !== n(intentLabel) && !n(intentLabel).includes(n(note));
+};
+
 export function buildShotPrompt(ctx: ShotContext): { system: string; user: string } {
   const own = ctx.questions.filter(q => q.system === ctx.systemId);
   const other = ctx.questions.filter(q => q.system !== ctx.systemId);
@@ -223,7 +234,8 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     'in cant_tell with the photo that WOULD settle it (under 60 characters).\n' +
     '2. Never answer an age from how something looks. Only from a printed date.\n' +
     '3. "noticed": at most ' + MAX_NOTICED + ' problems that are CLEARLY visible, each one of the listed quick findings for ' +
-    'one listed item, with a short plain note of what is seen. Most photos have none — return an empty list.\n' +
+    'one listed item, with a short plain note of WHAT you see and WHERE (not the finding\'s name again). Most photos have ' +
+    'none — return an empty list.\n' +
     '4. "reading": only if a reading slot is listed and an instrument\'s display is legible: the number and unit shown.\n' +
     '5. "shot": only if helpful shots are listed — the one this photo plainly IS (a legible data plate is the "plate"), ' +
     'else null. Never a shot it merely shows part of.\n' +
@@ -287,7 +299,8 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
     const item = ctx.items.find(i => i.nodeId === String(n?.node ?? '')) ?? ctx.otherItems?.find(i => i.nodeId === String(n?.node ?? ''));
     const intent = item?.intents.find(t => t.id === String(n?.finding ?? '') || norm(t.label) === norm(n?.finding));
     const note = String(n?.note ?? '').trim().slice(0, 160);
-    if (!item || !intent || !note || noticed.some(x => x.nodeId === item.nodeId && x.intentId === intent.id)) continue;
+    if (!item || !intent || !note || !seenInAPhoto(intent.id) || !describesSomething(note, intent.label)
+      || noticed.some(x => x.nodeId === item.nodeId && x.intentId === intent.id)) continue;
     noticed.push({ nodeId: item.nodeId, intentId: intent.id, intentLabel: intent.label, note, ...(item.systemId ? { systemId: item.systemId } : {}) });
   }
   let reading: ShotRead['reading'] = null;
@@ -308,6 +321,9 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
 export type ShotSort = { shot: string | null; useful: boolean; issue: boolean; unusable: boolean };
 export function buildSortPrompt(ctx: ShotContext): { system: string; user: string } {
   const own = ctx.questions.filter(q => q.system === ctx.systemId).map(q => q.label);
+  // Other systems' open questions too, by name (owner's test 2026-11-09: an attic ductwork photo taken in Cooling, and a
+  // thermostat photo, were sorted as "nothing new" — their questions live in Heating).
+  const others = ctx.questions.filter(q => q.system !== ctx.systemId).map(q => q.label);
   const system =
     'You sort ONE photo a home inspector took. Answer only what the photo plainly shows; never guess.\n' +
     'Return JSON: {"shot":"<id>"|null,"useful":true|false,"issue":true|false,"unusable":true|false}\n' +
@@ -318,7 +334,8 @@ export function buildSortPrompt(ctx: ShotContext): { system: string; user: strin
   const user =
     `Section: ${ctx.systemLabel}.\n` +
     (ctx.placeable?.length ? `Helpful shots:\n${ctx.placeable.map(p => `- ${p.id} — ${p.label}`).join('\n')}\n` : 'Helpful shots: none\n') +
-    `Open questions: ${own.length ? own.join('; ') : 'none'}${ctx.questions.length > own.length ? ' (and other systems\' questions)' : ''}.`;
+    `Open questions: ${own.length ? own.join('; ') : 'none'}.` +
+    (others.length ? `\nOther systems' open questions (useful too, if the photo plainly shows one): ${others.join('; ')}.` : '');
   return { system, user };
 }
 export function validateSort(raw: any, ctx: ShotContext): ShotSort {
