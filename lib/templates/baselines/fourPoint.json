@@ -2011,6 +2011,39 @@
      ]
     },
     {
+     "id": "plumbing__other",
+     "label": "Other",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "plumb_gas_service",
+       "label": "Gas Service",
+       "kind": "component",
+       "keywords": [
+        "gas service",
+        "gas meter",
+        "natural gas service",
+        "propane tank",
+        "lp tank",
+        "propane service",
+        "no gas"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Gas Service",
+         "values": [
+          "Natural Gas",
+          "Propane",
+          "None"
+         ]
+        }
+       ],
+       "condition": true
+      }
+     ]
+    },
+    {
      "id": "plumbing__fuel_gas",
      "label": "Fuel · Gas",
      "kind": "subsystem",
@@ -6556,124 +6589,172 @@
    "locationAxis": "room",
    "children": [
     {
-     "id": "kit_range",
-     "label": "Range / Cooktop Fuel",
-     "kind": "component",
-     "keywords": [
-      "gas range",
-      "electric range",
-      "induction",
-      "cooktop",
-      "dual fuel",
-      "range",
-      "stove",
-      "burner"
-     ],
-     "attributes": [
+     "id": "appliances__built_in",
+     "label": "Built-In",
+     "kind": "subsystem",
+     "children": [
       {
-       "id": "spec",
+       "id": "kit_range",
        "label": "Range / Cooktop Fuel",
-       "values": [
-        "Gas",
-        "Electric",
-        "Induction",
-        "Dual Fuel"
-       ]
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "kit_fridge",
-     "label": "Refrigerator",
-     "kind": "component",
-     "keywords": [
-      "refrigerator",
-      "fridge",
-      "icebox",
-      "freezer",
-      "built-in fridge"
-     ],
-     "condition": true,
-     "limitations": [
-      "Not Tested"
-     ]
-    },
-    {
-     "id": "kit_oven",
-     "label": "Oven",
-     "kind": "component",
-     "keywords": [
-      "oven",
-      "wall oven",
-      "built-in oven",
-      "bake",
-      "oven heats",
-      "double oven"
-     ],
-     "condition": true,
-     "limitations": [
-      "Not Tested"
-     ]
-    },
-    {
-     "id": "kit_dishwasher",
-     "label": "Dishwasher",
-     "kind": "component",
-     "keywords": [
-      "dishwasher",
-      "air gap",
-      "high loop",
-      "dishwasher leak",
-      "dishwasher drain",
-      "dish washer"
-     ],
-     "condition": true,
-     "limitations": [
-      "Not Tested"
-     ]
-    },
-    {
-     "id": "kit_disposal",
-     "label": "Disposal",
-     "kind": "component",
-     "keywords": [
-      "disposal",
-      "garbage disposal",
-      "food disposer",
-      "disposal leak",
-      "disposal jammed",
-      "insinkerator"
-     ],
-     "condition": true
-    },
-    {
-     "id": "kit_hood",
-     "label": "Microwave / Range Hood",
-     "kind": "component",
-     "keywords": [
-      "microwave",
-      "range hood",
-      "vent hood",
-      "exhaust hood",
-      "recirculating",
-      "vents outside",
-      "hood",
-      "over-range microwave"
-     ],
-     "attributes": [
+       "kind": "component",
+       "keywords": [
+        "gas range",
+        "electric range",
+        "induction",
+        "cooktop",
+        "dual fuel",
+        "propane range",
+        "lp range",
+        "range",
+        "stove",
+        "burner"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Range / Cooktop Fuel",
+         "values": [
+          "Gas",
+          "Propane",
+          "Electric",
+          "Induction",
+          "Dual Fuel"
+         ]
+        }
+       ],
+       "condition": true
+      },
       {
-       "id": "spec",
-       "label": "Microwave / Range Hood",
-       "values": [
-        "Vented Outside",
-        "Recirculating"
+       "id": "kit_fridge",
+       "label": "Refrigerator",
+       "kind": "component",
+       "keywords": [
+        "refrigerator",
+        "fridge",
+        "icebox",
+        "freezer",
+        "built-in fridge"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "kit_oven",
+       "label": "Oven",
+       "kind": "component",
+       "keywords": [
+        "oven",
+        "wall oven",
+        "built-in oven",
+        "bake",
+        "oven heats",
+        "gas oven",
+        "electric oven",
+        "propane oven",
+        "double oven"
+       ],
+       "attributes": [
+        {
+         "id": "fuel",
+         "label": "Oven Fuel",
+         "values": [
+          "Gas",
+          "Propane",
+          "Electric"
+         ]
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "kit_dishwasher",
+       "label": "Dishwasher",
+       "kind": "component",
+       "keywords": [
+        "dishwasher",
+        "air gap",
+        "high loop",
+        "dishwasher leak",
+        "dishwasher drain",
+        "dish washer"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "kit_disposal",
+       "label": "Disposal",
+       "kind": "component",
+       "keywords": [
+        "disposal",
+        "garbage disposal",
+        "food disposer",
+        "disposal leak",
+        "disposal jammed",
+        "insinkerator"
+       ],
+       "condition": true
+      },
+      {
+       "id": "kit_hood",
+       "label": "Range Hood",
+       "kind": "component",
+       "keywords": [
+        "range hood",
+        "vent hood",
+        "exhaust hood",
+        "recirculating",
+        "vents outside",
+        "hood fan",
+        "hood",
+        "microwave",
+        "over-range microwave"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Range Hood",
+         "values": [
+          "Vented Outside",
+          "Recirculating"
+         ]
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
        ]
       }
-     ],
-     "condition": true,
-     "limitations": [
-      "Not Tested"
+     ]
+    },
+    {
+     "id": "appliances__other",
+     "label": "Other",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "kit_microwave",
+       "label": "Microwave",
+       "kind": "component",
+       "keywords": [
+        "microwave",
+        "over-range microwave",
+        "otr microwave",
+        "built-in microwave",
+        "microwave drawer"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      }
      ]
     }
    ]

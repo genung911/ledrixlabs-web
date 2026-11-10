@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.09.5",
+  "packVersion": "2026.11.10.1",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -3132,6 +3132,32 @@
           "requires": [
             {
               "utility": "water"
+            }
+          ]
+        },
+        {
+          "id": "plumb_gas_service",
+          "label": "Gas Service",
+          "keywords": [
+            "gas service",
+            "gas meter",
+            "natural gas service",
+            "propane tank",
+            "lp tank",
+            "propane service",
+            "no gas"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Gas Service",
+              "values": [
+                "Natural Gas",
+                "Propane",
+                "None"
+              ]
             }
           ]
         },
@@ -10639,7 +10665,9 @@
             "electric range",
             "induction",
             "cooktop",
-            "dual fuel"
+            "dual fuel",
+            "propane range",
+            "lp range"
           ],
           "kind": "spec",
           "origin": "core",
@@ -10649,6 +10677,7 @@
               "label": "Range / Cooktop Fuel",
               "values": [
                 "Gas",
+                "Propane",
                 "Electric",
                 "Induction",
                 "Dual Fuel"
@@ -10684,7 +10713,10 @@
             "wall oven",
             "built-in oven",
             "bake",
-            "oven heats"
+            "oven heats",
+            "gas oven",
+            "electric oven",
+            "propane oven"
           ],
           "kind": "spec",
           "origin": "core",
@@ -10692,7 +10724,18 @@
           "limitations": [
             "Not Tested"
           ],
-          "establishesAs": "appl_oven"
+          "establishesAs": "appl_oven",
+          "attributes": [
+            {
+              "id": "fuel",
+              "label": "Oven Fuel",
+              "values": [
+                "Gas",
+                "Propane",
+                "Electric"
+              ]
+            }
+          ]
         },
         {
           "id": "kit_dishwasher",
@@ -10729,25 +10772,26 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "establishesAs": "appl_disposal"
         },
         {
           "id": "kit_hood",
-          "label": "Microwave / Range Hood",
+          "label": "Range Hood",
           "keywords": [
-            "microwave",
             "range hood",
             "vent hood",
             "exhaust hood",
             "recirculating",
-            "vents outside"
+            "vents outside",
+            "hood fan"
           ],
           "kind": "spec",
           "origin": "core",
           "attributes": [
             {
               "id": "spec",
-              "label": "Microwave / Range Hood",
+              "label": "Range Hood",
               "values": [
                 "Vented Outside",
                 "Recirculating"
@@ -10757,7 +10801,26 @@
           "condition": true,
           "limitations": [
             "Not Tested"
-          ]
+          ],
+          "establishesAs": "appl_hood"
+        },
+        {
+          "id": "kit_microwave",
+          "label": "Microwave",
+          "keywords": [
+            "microwave",
+            "over-range microwave",
+            "otr microwave",
+            "built-in microwave",
+            "microwave drawer"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "establishesAs": "appl_microwave"
         },
         {
           "id": "appl_fridge",

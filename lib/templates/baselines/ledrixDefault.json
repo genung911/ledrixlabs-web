@@ -2158,6 +2158,32 @@
           "kind": "subsystem",
           "children": [
             {
+              "id": "plumb_gas_service",
+              "label": "Gas Service",
+              "kind": "component",
+              "keywords": [
+                "gas service",
+                "gas meter",
+                "natural gas service",
+                "propane tank",
+                "lp tank",
+                "propane service",
+                "no gas"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Service",
+                  "values": [
+                    "Natural Gas",
+                    "Propane",
+                    "None"
+                  ]
+                }
+              ]
+            },
+            {
               "id": "plumb_gas",
               "label": "Gas Supply",
               "kind": "component",
@@ -7459,7 +7485,9 @@
             "dual fuel",
             "range",
             "stove",
-            "burner"
+            "burner",
+            "propane range",
+            "lp range"
           ],
           "trimmed": [],
           "attributes": [
@@ -7468,6 +7496,7 @@
               "label": "Range / Cooktop Fuel",
               "values": [
                 "Gas",
+                "Propane",
                 "Electric",
                 "Induction",
                 "Dual Fuel"
@@ -7503,12 +7532,26 @@
             "built-in oven",
             "bake",
             "oven heats",
-            "double oven"
+            "double oven",
+            "gas oven",
+            "electric oven",
+            "propane oven"
           ],
           "trimmed": [],
           "condition": true,
           "limitations": [
             "Not Tested"
+          ],
+          "attributes": [
+            {
+              "id": "fuel",
+              "label": "Oven Fuel",
+              "values": [
+                "Gas",
+                "Propane",
+                "Electric"
+              ]
+            }
           ]
         },
         {
@@ -7546,29 +7589,45 @@
         },
         {
           "id": "kit_hood",
-          "label": "Microwave / Range Hood",
+          "label": "Range Hood",
           "kind": "component",
           "keywords": [
-            "microwave",
             "range hood",
             "vent hood",
             "exhaust hood",
             "recirculating",
             "vents outside",
             "hood",
-            "over-range microwave"
+            "hood fan"
           ],
           "trimmed": [],
           "attributes": [
             {
               "id": "spec",
-              "label": "Microwave / Range Hood",
+              "label": "Range Hood",
               "values": [
                 "Vented Outside",
                 "Recirculating"
               ]
             }
           ],
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ]
+        },
+        {
+          "id": "kit_microwave",
+          "label": "Microwave",
+          "kind": "component",
+          "keywords": [
+            "microwave",
+            "over-range microwave",
+            "otr microwave",
+            "built-in microwave",
+            "microwave drawer"
+          ],
+          "trimmed": [],
           "condition": true,
           "limitations": [
             "Not Tested"
