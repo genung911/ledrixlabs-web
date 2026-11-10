@@ -44,7 +44,12 @@ export function systemShown(tree: InspectionTemplate, sys: TemplateNode): boolea
 }
 
 export function shownSystems(tree: InspectionTemplate): TemplateNode[] {
-  return (tree.systems ?? []).filter(s => systemShown(tree, s));
+  return (tree.systems ?? []).filter(s => !(s as any).space && systemShown(tree, s));
+}
+/** ledrix-app CoverageGrid `spaces` (2026-11-10): the template's SPACES, under the system tiles — places the inspector walks
+ *  with the camera; their items are links to the systems' records, so they add nothing to the count above. */
+export function shownSpaces(tree: InspectionTemplate): TemplateNode[] {
+  return (tree.systems ?? []).filter(s => (s as any).space === true && systemShown(tree, s));
 }
 
 /** ledrix-app ScopeScreen.tsx `tileNodesOf`: a system's cards are its SUBSYSTEMS; a system with none is one card,

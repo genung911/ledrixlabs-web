@@ -16,12 +16,16 @@ import { validateTemplateRequirements } from './requirementsContract';
 
 export type Issue = { code: string; severity: 'error' | 'warning'; nodeId?: string; message: string };
 
-type Walked = { node: TemplateNode; active: boolean; parentId: string | null };
+type Walked = { node: TemplateNode; active: boolean; parentId: string | null; inSpace?: boolean };
 
 function walk(tpl: InspectionTemplate): Walked[] {
   const out: Walked[] = [];
-  const go = (arr: TemplateNode[] | undefined, active: boolean, parentId: string | null) => {
-    for (const n of arr ?? []) { out.push({ node: n, active, parentId }); go(n.children, active, n.id); go(n.trimmed, false, n.id); }
+  // `inSpace`: under a SPACE (2026-11-10) — every item there is a link that simply hides while its record is set aside.
+  const go = (arr: TemplateNode[] | undefined, active: boolean, parentId: string | null, inSpace = false) => {
+    for (const n of arr ?? []) {
+      const sp = inSpace || (parentId === null && n.space === true);
+      out.push({ node: n, active, parentId, ...(sp ? { inSpace: true } : {}) }); go(n.children, active, n.id, sp); go(n.trimmed, false, n.id, sp);
+    }
   };
   go(tpl.systems, true, null); go(tpl.trimmedSystems, false, null);
   return out;
@@ -74,7 +78,7 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
   const attrOf = (field: string) => { const [nid, aid] = field.split('::'); return fieldOn(nid, aid); };
 
   const ruleEdges = new Map<string, string[]>();
-  for (const { node: n, active } of nodes) {
+  for (const { node: n, active, inSpace } of nodes) {
     const x = n as TemplateNode & Record<string, any>;
     if (!String(n.label ?? '').trim()) add('error', 'empty_label', 'An item has no name.', n.id);
 
@@ -150,7 +154,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
       if (!home) add('error', 'link_missing_home', `"${n.label}" links to a record that is not in the template.`, n.id);
       else {
         if (home.node.pointsTo) add('error', 'link_to_link', `"${n.label}" links to another link instead of the record.`, n.id);
-        if (active && !home.active) add('error', 'link_home_set_aside', `"${n.label}" links to "${home.node.label}", which is set aside — restore it or remove the link.`, n.id);
+        // A space's link hides while its record is set aside (a company that turns Foundation off keeps its Garage).
+        if (active && !home.active && !inSpace) add('error', 'link_home_set_aside', `"${n.label}" links to "${home.node.label}", which is set aside — restore it or remove the link.`, n.id);
       }
       if ((n.children ?? []).length || (n.attributes ?? []).length || n.condition !== undefined) add('error', 'link_holds_content', `"${n.label}" is a link; the record it points to holds the fields and assessment.`, n.id);
     }

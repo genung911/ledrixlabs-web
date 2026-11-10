@@ -2158,32 +2158,6 @@
           "kind": "subsystem",
           "children": [
             {
-              "id": "plumb_gas_service",
-              "label": "Gas Service",
-              "kind": "component",
-              "keywords": [
-                "gas service",
-                "gas meter",
-                "natural gas service",
-                "propane tank",
-                "lp tank",
-                "propane service",
-                "no gas"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Gas Service",
-                  "values": [
-                    "Natural Gas",
-                    "Propane",
-                    "None"
-                  ]
-                }
-              ]
-            },
-            {
               "id": "plumb_gas",
               "label": "Gas Supply",
               "kind": "component",
@@ -5216,25 +5190,13 @@
           "kind": "subsystem",
           "children": [
             {
-              "id": "ext_gfci",
+              "id": "exterior__link_elec_grounding",
               "label": "Exterior GFCI",
               "kind": "component",
-              "keywords": [
-                "exterior outlet",
-                "exterior gfci",
-                "outdoor receptacle",
-                "in-use cover",
-                "weatherproof cover"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Tested"
-              ],
-              "walkZone": "exterior",
-              "walkZones": [
-                "exterior"
-              ]
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_grounding"
+              }
             },
             {
               "id": "ext_dryer",
@@ -7635,6 +7597,597 @@
         }
       ],
       "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "space_garage",
+      "label": "GARAGE",
+      "kind": "system",
+      "icon": "garage",
+      "defaultActive": true,
+      "sectionType": "room",
+      "space": true,
+      "trimmed": [],
+      "children": [
+        {
+          "id": "space_garage__electrical",
+          "label": "Electrical",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_garage__link_elec_grounding",
+              "label": "GFCI / AFCI Protection",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_grounding"
+              }
+            },
+            {
+              "id": "space_garage__link_elec_receptacles",
+              "label": "Receptacles / Switches",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_receptacles"
+              }
+            },
+            {
+              "id": "space_garage__link_int_lighting",
+              "label": "Lighting / Fixtures",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "int_lighting"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_garage__door",
+          "label": "Garage Door",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_garage__link_gar_door",
+              "label": "Garage Vehicle Door",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "gar_door"
+              }
+            },
+            {
+              "id": "space_garage__link_gar_opener",
+              "label": "Garage Door Opener",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "gar_opener"
+              }
+            },
+            {
+              "id": "space_garage__link_ext_garage_door",
+              "label": "Garage Door Auto-Reverse / Photo-Eyes",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "ext_garage_door"
+              }
+            },
+            {
+              "id": "space_garage__link_gar_springs",
+              "label": "Garage Door Springs & Cables",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "gar_springs"
+              }
+            },
+            {
+              "id": "space_garage__link_garage_gar_door_hardware",
+              "label": "Garage Door Hardware",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "garage_gar_door_hardware"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_garage__fire",
+          "label": "Fire Separation",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_garage__link_gar_firedoor",
+              "label": "Fire-Rated Door to House",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "safety",
+                "nodeId": "gar_firedoor"
+              }
+            },
+            {
+              "id": "space_garage__link_gar_firewall",
+              "label": "Firewall / Ceiling Separation",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "safety",
+                "nodeId": "gar_firewall"
+              }
+            },
+            {
+              "id": "space_garage__link_gar_penetrations",
+              "label": "Garage Penetrations Sealed",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "safety",
+                "nodeId": "gar_penetrations"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_garage__floor_walls",
+          "label": "Floor & Walls",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_garage__link_gar_floor",
+              "label": "Garage Floor / Slab",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "foundation",
+                "nodeId": "gar_floor"
+              }
+            },
+            {
+              "id": "space_garage__link_gar_drain",
+              "label": "Garage Floor Drain",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "foundation",
+                "nodeId": "gar_drain"
+              }
+            },
+            {
+              "id": "space_garage__link_int_walls",
+              "label": "Walls / Ceilings",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "int_walls"
+              }
+            }
+          ]
+        }
+      ],
+      "walkZone": "garage",
+      "walkZones": [
+        "garage"
+      ]
+    },
+    {
+      "id": "space_kitchen",
+      "label": "KITCHEN",
+      "kind": "system",
+      "icon": "silverware-fork-knife",
+      "defaultActive": true,
+      "sectionType": "room",
+      "space": true,
+      "trimmed": [],
+      "children": [
+        {
+          "id": "space_kitchen__appliances",
+          "label": "Appliances",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_kitchen__link_kit_range",
+              "label": "Range / Cooktop Fuel",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_range"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_oven",
+              "label": "Oven",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_oven"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_fridge",
+              "label": "Refrigerator",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_fridge"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_dishwasher",
+              "label": "Dishwasher",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_dishwasher"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_disposal",
+              "label": "Disposal",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_disposal"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_hood",
+              "label": "Range Hood",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_hood"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_microwave",
+              "label": "Microwave",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "appliances",
+                "nodeId": "kit_microwave"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_kitchen__counters",
+          "label": "Counters & Cabinets",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_kitchen__link_kit_counter",
+              "label": "Countertops",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "kit_counter"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_backsplash",
+              "label": "Backsplash",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "kit_backsplash"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_cabinets",
+              "label": "Cabinets",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "kit_cabinets"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_kitchen__plumbing",
+          "label": "Sink & Plumbing",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_kitchen__link_plumb_sinks",
+              "label": "Sinks / Faucets",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "plumb_sinks"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_supplydrain",
+              "label": "Sink Supply / Drain",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "kit_supplydrain"
+              }
+            },
+            {
+              "id": "space_kitchen__link_kit_leaks",
+              "label": "Fixture Leaks / Water Damage",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "kit_leaks"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_kitchen__electrical",
+          "label": "Electrical",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_kitchen__link_kit_circuits",
+              "label": "Dedicated Circuits",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "kit_circuits"
+              }
+            },
+            {
+              "id": "space_kitchen__link_elec_grounding",
+              "label": "GFCI / AFCI Protection",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_grounding"
+              }
+            },
+            {
+              "id": "space_kitchen__link_elec_receptacles",
+              "label": "Receptacles / Switches",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_receptacles"
+              }
+            }
+          ]
+        }
+      ],
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "space_laundry",
+      "label": "LAUNDRY ROOM",
+      "kind": "system",
+      "icon": "washing-machine",
+      "defaultActive": true,
+      "sectionType": "room",
+      "space": true,
+      "trimmed": [],
+      "children": [
+        {
+          "id": "space_laundry__hookups",
+          "label": "Hookups",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_laundry__link_laundry_washer",
+              "label": "Washer Connections",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "laundry_washer"
+              }
+            },
+            {
+              "id": "space_laundry__link_laundry_drain",
+              "label": "Laundry Drain / Overflow Pan",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "laundry_drain"
+              }
+            },
+            {
+              "id": "space_laundry__link_laundry_dryer",
+              "label": "Dryer Connections",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "laundry_dryer"
+              }
+            },
+            {
+              "id": "space_laundry__link_plumb_gas_shutoff",
+              "label": "Gas Shutoffs",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "plumb_gas_shutoff"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_laundry__venting",
+          "label": "Venting",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_laundry__link_ext_dryer",
+              "label": "Dryer Vent",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "exterior",
+                "nodeId": "ext_dryer"
+              }
+            },
+            {
+              "id": "space_laundry__link_primary_bathroom_exhaust_fan",
+              "label": "Exhaust Fan (Bath / Laundry)",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "primary_bathroom_exhaust_fan"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_laundry__electrical",
+          "label": "Electrical",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_laundry__link_elec_grounding",
+              "label": "GFCI / AFCI Protection",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_grounding"
+              }
+            },
+            {
+              "id": "space_laundry__link_elec_receptacles",
+              "label": "Receptacles / Switches",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_receptacles"
+              }
+            }
+          ]
+        }
+      ],
+      "walkZone": "interior",
+      "walkZones": [
+        "interior"
+      ]
+    },
+    {
+      "id": "space_bathroom",
+      "label": "BATHROOM",
+      "kind": "system",
+      "icon": "shower",
+      "defaultActive": true,
+      "sectionType": "room",
+      "space": true,
+      "trimmed": [],
+      "children": [
+        {
+          "id": "space_bathroom__fixtures",
+          "label": "Fixtures",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_bathroom__link_plumb_sinks",
+              "label": "Sinks / Faucets",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "plumb_sinks"
+              }
+            },
+            {
+              "id": "space_bathroom__link_plumb_toilets",
+              "label": "Toilets",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "plumb_toilets"
+              }
+            },
+            {
+              "id": "space_bathroom__link_plumb_tubshower",
+              "label": "Tubs / Showers",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "plumb_tubshower"
+              }
+            },
+            {
+              "id": "space_bathroom__link_primary_bathroom_shower_head",
+              "label": "Shower Head",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "primary_bathroom_shower_head"
+              }
+            },
+            {
+              "id": "space_bathroom__link_primary_bathroom_toilet_flapper",
+              "label": "Toilet Flapper",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "primary_bathroom_toilet_flapper"
+              }
+            },
+            {
+              "id": "space_bathroom__link_primary_bathroom_drain_traps",
+              "label": "Drain Traps",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "plumbing",
+                "nodeId": "primary_bathroom_drain_traps"
+              }
+            }
+          ]
+        },
+        {
+          "id": "space_bathroom__vent_electrical",
+          "label": "Ventilation & Electrical",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "space_bathroom__link_primary_bathroom_exhaust_fan",
+              "label": "Exhaust Fan (Bath / Laundry)",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "primary_bathroom_exhaust_fan"
+              }
+            },
+            {
+              "id": "space_bathroom__link_elec_grounding",
+              "label": "GFCI / AFCI Protection",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_grounding"
+              }
+            },
+            {
+              "id": "space_bathroom__link_elec_receptacles",
+              "label": "Receptacles / Switches",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "electrical",
+                "nodeId": "elec_receptacles"
+              }
+            }
+          ]
+        }
+      ],
       "walkZone": "interior",
       "walkZones": [
         "interior"

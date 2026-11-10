@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
-  previewDescribe, previewDetailsKeys, previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, sumProgress, tilesOf, type CondPick, type Picks,
+  previewDescribe, previewDetailsKeys, previewOffered, previewRowTitle, previewSpecValue, previewSteps, prunePicks, rulesFor, shownSystems, shownSpaces, sumProgress, tilesOf, type CondPick, type Picks,
 } from './phonePreviewModel';
 import {
   crossesSystem, GUIDED_KIND_LABEL, positionInSystem, reconcileIndex, resumeIndex, stepIndexOf, systemSummary, type GuidedStep,
@@ -98,6 +98,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
 }): JSX.Element {
   const index = useMemo(() => buildIndex(tree), [tree]);
   const systems = useMemo(() => shownSystems(tree), [tree]);
+  const spaces = useMemo(() => shownSpaces(tree), [tree]);
 
   const [screen, setScreen] = useState<Screen>({ kind: 'landing' });
   const [picks, setPicks] = useState<Picks>({});
@@ -305,6 +306,21 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           })}
           <div className="pv-tile pv-add" aria-hidden="true"><Glyph d={G.plain} size={24} /><span className="pv-tl">Add system</span></div>
         </div>
+        {spaces.length ? (
+          <>
+            <div className="pv-bldg" style={{ marginTop: 18 }}><b>SPACES</b></div>
+            <div className="pv-bmeta">Walk with the camera. Shows the systems&apos; items that live there.</div>
+            <div className="pv-tiles">
+              {spaces.map(sp => (
+                <div key={sp.id} data-pv-id={sp.id} className="pv-tile" style={{ background: 'rgba(33,123,232,0.10)', borderColor: 'rgba(33,123,232,0.45)' }}
+                  aria-label={`${sp.label}, space`}>
+                  <Icon name={sp.icon ?? 'door'} size={22} />
+                  <span className="pv-tl">{displayLabel(sp.label)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : null}
       </>
     );
   };

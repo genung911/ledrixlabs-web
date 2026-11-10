@@ -69,6 +69,10 @@ export type TemplateNode = {
   startsLimited?: Array<{ field: string; value: string; reason: string; sentence: string }>;
   freeFormValue?: boolean;
   pointsTo?: { systemId: string; nodeId: string };
+  /** A SPACE (app 2026-11-10): a top-level room section whose items are all links — the app's TemplateNode.space. */
+  space?: true;
+  /** The room a space files captures under (app TemplateNode.room). */
+  room?: string;
   /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */
   requirements?: import('./requirementsContract').RequirementDef[];
   /** Equipment component catalog entry this item or group was picked from (app equipmentCatalog.ts). Provenance only. */

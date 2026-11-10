@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.10.1",
+  "packVersion": "2026.11.10.2",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -3132,32 +3132,6 @@
           "requires": [
             {
               "utility": "water"
-            }
-          ]
-        },
-        {
-          "id": "plumb_gas_service",
-          "label": "Gas Service",
-          "keywords": [
-            "gas service",
-            "gas meter",
-            "natural gas service",
-            "propane tank",
-            "lp tank",
-            "propane service",
-            "no gas"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Gas Service",
-              "values": [
-                "Natural Gas",
-                "Propane",
-                "None"
-              ]
             }
           ]
         },
@@ -7294,27 +7268,6 @@
           "condition": true
         },
         {
-          "id": "ext_gfci",
-          "label": "Exterior GFCI",
-          "keywords": [
-            "exterior outlet",
-            "exterior gfci",
-            "outdoor receptacle",
-            "in-use cover",
-            "weatherproof cover"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Tested"
-          ],
-          "walkZone": "exterior",
-          "walkZones": [
-            "exterior"
-          ]
-        },
-        {
           "id": "ext_dryer",
           "label": "Dryer Vent",
           "keywords": [
@@ -7588,7 +7541,6 @@
           "id": "exterior__penetrations",
           "name": "Penetrations",
           "nodeIds": [
-            "ext_gfci",
             "ext_dryer"
           ]
         },

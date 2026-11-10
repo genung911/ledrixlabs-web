@@ -2011,39 +2011,6 @@
      ]
     },
     {
-     "id": "plumbing__other",
-     "label": "Other",
-     "kind": "subsystem",
-     "children": [
-      {
-       "id": "plumb_gas_service",
-       "label": "Gas Service",
-       "kind": "component",
-       "keywords": [
-        "gas service",
-        "gas meter",
-        "natural gas service",
-        "propane tank",
-        "lp tank",
-        "propane service",
-        "no gas"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Gas Service",
-         "values": [
-          "Natural Gas",
-          "Propane",
-          "None"
-         ]
-        }
-       ],
-       "condition": true
-      }
-     ]
-    },
-    {
      "id": "plumbing__fuel_gas",
      "label": "Fuel · Gas",
      "kind": "subsystem",
@@ -4663,22 +4630,6 @@
      "label": "Penetrations",
      "kind": "subsystem",
      "children": [
-      {
-       "id": "ext_gfci",
-       "label": "Exterior GFCI",
-       "kind": "component",
-       "keywords": [
-        "exterior outlet",
-        "exterior gfci",
-        "outdoor receptacle",
-        "in-use cover",
-        "weatherproof cover"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
-      },
       {
        "id": "ext_dryer",
        "label": "Dryer Vent",

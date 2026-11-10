@@ -134,6 +134,33 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
 };
 
+// ── THE SPACES' SHOTS (owner 2026-11-10, mockup HvfZznRpbbddWgKWQLS174: "Shoot Garage", Laundry's Hookups · Dryer vent ·
+// Washer tag). A space's photo is read against the open questions of every record the space links to; an appliance tag
+// is optional and read as a tag, as in Appliances.
+const SPACE_TAG: Shot = { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door or on the frame — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true };
+Object.assign(SYSTEM_SHOTS, {
+  space_garage: [
+    { id: 'garage_view', label: 'Garage view', hint: 'Wide, from the house door: the floor, the walls and ceiling, and the vehicle door.' },
+    { id: 'opener', label: 'Opener & photo-eyes', hint: 'The opener on the ceiling, and a photo-eye at the bottom of the door track.' },
+    { id: 'house_door', label: 'Door to the house', hint: 'The door into the house, closed: the door, its hinges and a self-closer if it has one.' },
+  ],
+  space_kitchen: [
+    { id: 'kitchen_view', label: 'Kitchen view', hint: 'Wide: the counters, cabinets, range and hood, and the sink.' },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The cabinet open: the supply valves, the drain and trap, the disposal and the dishwasher line.' },
+    SPACE_TAG,
+  ],
+  space_laundry: [
+    { id: 'hookups', label: 'Hookups', hint: 'Behind the washer and dryer: the water valves and drain, and the dryer outlet (240V) or gas line and shutoff.' },
+    { id: 'dryer_vent', label: 'Dryer vent', hint: 'The dryer duct where it leaves the dryer and goes into the wall.' },
+    { ...SPACE_TAG, label: 'Washer / dryer tag' },
+  ],
+  space_bathroom: [
+    { id: 'bath_view', label: 'Bathroom view', hint: 'Wide: the tub or shower, the toilet, the counter and the floor.' },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The vanity open: the supply valves, the drain and trap.' },
+    { id: 'fan', label: 'Exhaust fan', hint: 'The fan in the ceiling, with its grille.', optional: true },
+  ],
+});
+
 const baseOf = (id: string) => String(id).split('~')[0];
 export const shotsFor = (systemId: string): readonly Shot[] => SYSTEM_SHOTS[baseOf(systemId)] ?? [];
 /** A shot whose value is in small print — a plate, a display, a printed size or label. */
