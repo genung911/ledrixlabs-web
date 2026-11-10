@@ -38,7 +38,10 @@ export type Shot = {
   /** Also read the printed label as a DATA PLATE (DataPlateService.ingestDataPlate — make, model, serial, year). */
   plate?: string;
   /** The shot shows an instrument's display: the reading slot (measurementPoints.json) it may propose. */
-  reading?: { system: string; point: string };
+  reading?: { system: string; point: string;
+    /** What else counts as this reading, told to the reader and the checker (owner 2026-11-09, of a thermostat's indoor
+     *  temperature placed as the return-air reading: "I would accept that for a return air reading"). */
+    accepts?: string };
   /** A shot a house has SEVERAL of (owner 2026-11-08: "a way to add another bathroom and label them… when one is taken,
    *  the blank tile populates again, but says next bathroom"). Each photo is its own square, named `base n` until the
    *  inspector renames it (the name is the photo's room); `next` is the empty square that follows. */
@@ -64,7 +67,7 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'condenser_wide', label: 'Outdoor unit', hint: 'The whole condenser or heat pump, with its disconnect if it is in view.' },
     { id: 'plate', label: 'Data plate', hint: 'The outdoor unit\'s rating label, close enough to read.', plate: 'AC condenser / heat pump' },
     { id: 'disconnect', label: 'Disconnect, cover open', hint: 'The disconnect at the outdoor unit with its cover open: the switch, any fuses or breaker, and its label.' },
-    { id: 'return_air', label: 'Return air reading', hint: 'The thermometer\'s display at the return grille, with the system running in cooling.', reading: { system: 'cooling', point: 'return_air' } },
+    { id: 'return_air', label: 'Return air reading', hint: 'The thermometer\'s display at the return grille — or the thermostat\'s indoor temperature — with the system running in cooling.', reading: { system: 'cooling', point: 'return_air', accepts: 'a thermometer at the return grille, or the thermostat\'s indoor temperature display' } },
     { id: 'supply_air', label: 'Supply register reading', hint: 'The thermometer\'s display at a supply register, with the system running in cooling.', reading: { system: 'cooling', point: 'supply_register' } },
   ],
   water_heater: [
@@ -200,7 +203,7 @@ export type ShotContext = {
    *  it can, high confidence"). Only on a section photo; the read names one only when the photo plainly IS that shot. */
   placeable?: readonly { id: string; label: string; hint: string }[];
   /** The reading slot this shot carries, with the units it may be in. */
-  reading?: { point: string; label: string; units: readonly string[] } | null;
+  reading?: { point: string; label: string; units: readonly string[]; accepts?: string } | null;
   /** What the inspector named this photo (a repeating shot's room: "Hall bath"), if anything. */
   place?: string | null;
 };
@@ -267,7 +270,7 @@ export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system:
     (other.length ? `\nOther systems' questions — answer only if this photo plainly shows them:\n${other.map(q).join('\n')}\n` : '') +
     (ctx.items.length ? `\nItems and their quick findings (for "noticed"):\n${ctx.items.map(i => `- ${i.nodeId} — ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
     (ctx.otherItems?.length ? `\nOther trades' items this space can show (for "noticed" too, only if plainly visible):\n${ctx.otherItems.map(i => `- ${i.nodeId} — ${i.systemLabel ?? ''} › ${i.label}: ${i.intents.map(t => `${t.id} (${t.label})`).join(', ')}`).join('\n')}\n` : '') +
-    (ctx.reading ? `\nReading slot: ${ctx.reading.label}, in ${ctx.reading.units.join(' or ')}.\n` : '') +
+    (ctx.reading ? `\nReading slot: ${ctx.reading.label}, in ${ctx.reading.units.join(' or ')}${ctx.reading.accepts ? ` — ${ctx.reading.accepts}` : ''}.\n` : '') +
     (ctx.placeable?.length ? `\nHelpful shots (for "shot"):\n${ctx.placeable.map(p => `- ${p.id} — ${p.label}: ${p.hint}`).join('\n')}\n` : '');
   return { system, user };
 }
@@ -350,7 +353,9 @@ export function buildCheckPrompt(read: ShotRead, ctx: ShotContext): { system: st
   const lines = [
     ...read.answers.map((a, i) => `a${i} — ${ctx.questions.find(q => q.key === a.key)?.label ?? a.key}: "${a.value}"${a.seen ? ` (seen: ${a.seen})` : ''}`),
     ...read.noticed.map((n, i) => `n${i} — a problem: ${n.intentLabel} (${n.note})`),
-    ...(read.reading ? [`r0 — an instrument display reading ${read.reading.value} ${read.reading.unit}`] : []),
+    ...(read.reading ? [`r0 — ${ctx.reading ? `the ${ctx.reading.label} reading` : 'an instrument display reading'}: ${read.reading.value} ${read.reading.unit}${ctx.reading?.accepts ? ` (counts: ${ctx.reading.accepts})` : ''}`] : []),
+    // THE PLACEMENT IS CHECKED TOO (2026-11-09: a placement was the one thing the checker never saw).
+    ...(read.shot ? (() => { const p = ctx.placeable?.find(x => x.id === read.shot); return p ? [`s0 — this photo IS the "${p.label}" shot: ${p.hint}`] : []; })() : []),
   ];
   if (!lines.length) return null;
   return {
@@ -367,6 +372,7 @@ export function applyCheck(read: ShotRead, raw: any): ShotRead {
     answers: read.answers.filter((_, i) => yes(`a${i}`)),
     noticed: read.noticed.filter((_, i) => yes(`n${i}`)),
     reading: read.reading && yes('r0') ? read.reading : null,
+    shot: read.shot && yes('s0') ? read.shot : null,
   };
 }
 
