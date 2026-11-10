@@ -11,7 +11,8 @@
 // decking, insulation depth, access, bath fan duct · fireplace view, firebox / glass front, controls with the lower cover
 // off, chimney or vent · room views, kitchen, bathrooms, stairs, windows), Appliances (owner 2026-11-09: range & hood,
 // appliance tags — optional — and the dryer hookup, "a normal shot we try to take").
-// `cooling:indoor` (the retired coil & drain shot) is not reused.
+// `cooling:indoor` (the retired coil & drain shot) is not reused, nor are `interior:kitchen` and `interior:bathroom`
+// (owner 2026-11-10: "interior kitchen and bathroom can go" — the Kitchen and Bathroom spaces have their own shots).
 //
 // PURE — no React, no store, no network. The service (services/systemPhotos.ts) takes the photo, calls the model and
 // writes; everything that decides WHAT the model may answer, and whether an answer is allowed, lives here so a guard can
@@ -125,8 +126,6 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   interior: [
     { id: 'room_view', label: 'Room view', hint: 'Wide, from a doorway: the floor, walls, ceiling and windows.', repeat: { base: 'Room', next: 'Next room' }, answers: ['int_flooring|spec', 'int_walls|spec', 'ext_windows|spec'], documents: ['int_flooring'] },
-    { id: 'kitchen', label: 'Kitchen', hint: 'Close enough to read the counter surface, with the floor, cabinets and window.', answers: ['kit_counter|spec'] },
-    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the counter, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' }, answers: ['primary_bathroom_exhaust_fan|spec'], documents: ['plumb_tubshower'] },
     { id: 'stairs', label: 'Stairs & railings', hint: 'The stair from the bottom: treads, the handrail, and the guard or balusters.', documents: ['int_stairs'] },
     { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' }, answers: ['win_glazing|spec', 'ext_windows|spec'] },
   ],
