@@ -43,6 +43,9 @@ export type Shot = {
    *  the blank tile populates again, but says next bathroom"). Each photo is its own square, named `base n` until the
    *  inspector renames it (the name is the photo's room); `next` is the empty square that follows. */
   repeat?: { base: string; next: string };
+  /** Small print — a label, a directory, a printed size — read by the strong model (photoReaderSettings.strongShots). A
+   *  plate or reading shot is small print too (smallPrintShot). */
+  smallPrint?: true;
   /** A shot the inspector takes when they want it (owner 2026-11-09: appliance "ID tags make those optional"). It never
    *  counts as missing: the tile's "N shots · M taken" counts only the others. */
   optional?: true;
@@ -53,7 +56,7 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   heating: [
     { id: 'furnace_wide', label: 'Furnace wide', hint: 'The whole unit, with the pipes leaving it and the ductwork attached.' },
     { id: 'plate', label: 'Data plate', hint: 'The rating label, close enough to read every line.', plate: 'Furnace / heating unit' },
-    { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.' },
+    { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.', smallPrint: true },
     { id: 'condensate', label: 'Condensate drain', hint: 'Where the condensate line leaves the coil or furnace: the pipe, a pump if there is one, and where it runs.' },
     { id: 'thermostat', label: 'Thermostat', hint: 'The thermostat on the wall, face on.' },
   ],
@@ -72,7 +75,7 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   electrical: [
     { id: 'service', label: 'Service drop & meter', hint: 'Where the wires reach the house, the meter, and the conduit or mast.' },
-    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.', repeat: { base: 'Panel', next: 'Next panel' } },
+    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.', repeat: { base: 'Panel', next: 'Next panel' }, smallPrint: true },
     { id: 'panel_open', label: 'Panel, cover off', hint: 'The wiring with the cover off, wide enough to show the room.', repeat: { base: 'Panel, cover off', next: 'Next panel, cover off' } },
     { id: 'grounding', label: 'Grounding electrode', hint: 'The ground rod clamp, or the clamp on the water pipe.' },
   ],
@@ -120,13 +123,15 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   appliances: [
     { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it — the burners or glass top, and the hood\'s filter or vent.' },
-    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true },
+    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true },
     { id: 'dryer', label: 'Dryer hookup', hint: 'Behind the dryer: the outlet (240V) or the gas line and its shutoff, and where the vent leaves.' },
   ],
 };
 
 const baseOf = (id: string) => String(id).split('~')[0];
 export const shotsFor = (systemId: string): readonly Shot[] => SYSTEM_SHOTS[baseOf(systemId)] ?? [];
+/** A shot whose value is in small print — a plate, a display, a printed size or label. */
+export const smallPrintShot = (s: Shot | undefined): boolean => !!s && !!(s.plate || s.reading || s.smallPrint);
 
 // ── A SECTION'S OWN PHOTOS (owner 2026-11-09, mockup 4Xkqk9mTKEPu7dJd5Wf8ZA approved) ─────────────────────────────────
 // "I'd be going inside there, and I'd start taking my general photos throughout there, and all those would be stored inside
@@ -305,7 +310,10 @@ export function validateShotRead(raw: any, ctx: ShotContext, g: ReadGuards = {})
   // A same-read follow-up stands only on this read's own answer to what it waits on (a whole-house field's values together).
   const got = new Map<string, string>();
   for (const a of answers) got.set(a.key, got.has(a.key) ? `${got.get(a.key)}, ${a.value}` : a.value);
-  const stands = (q: ShotQuestion | undefined) => !!q && (q.when ?? []).every(w => { const v = got.get(w.key); return !!v && specPredicateHolds(v, w); });
+  // UNANSWERED IS IGNORED (2026-11-09, the owner's guarded runs: both filter sizes dropped because the filter photo could
+  // not also say "forced air", and the furnace photos had not finished reading). A follow-up falls only when THIS read
+  // answers its parent with a value that rules it out — the applicability engine's own Rule 2.
+  const stands = (q: ShotQuestion | undefined) => !!q && (q.when ?? []).every(w => { const v = got.get(w.key); return !v || specPredicateHolds(v, w); });
   for (let i = answers.length - 1; i >= 0; i--) if (!stands(byKey.get(answers[i].key))) answers.splice(i, 1);
   const answeredKeys = new Set(answers.map(a => a.key));
   const cantTell: ShotRead['cantTell'] = [];
