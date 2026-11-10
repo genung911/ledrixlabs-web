@@ -52,6 +52,9 @@ export type Shot = {
   /** A shot the inspector takes when they want it (owner 2026-11-09: appliance "ID tags make those optional"). It never
    *  counts as missing: the tile's "N shots · M taken" counts only the others. */
   optional?: true;
+  /** Also read as an APPLIANCE TAG (applianceTags — which appliance, make, model, serial, year → one pending proposal on
+   *  that appliance's item; confirmed, it joins the house record). Owner 2026-11-09, Appliances part 3. */
+  tag?: true;
 };
 
 /** Systems by template base id. A system with no entry has no Photos tile. */
@@ -126,7 +129,7 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   ],
   appliances: [
     { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it — the burners or glass top, and the hood\'s filter or vent.' },
-    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true },
+    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true },
     { id: 'dryer', label: 'Dryer hookup', hint: 'Behind the dryer: the outlet (240V) or the gas line and its shutoff, and where the vent leaves.' },
   ],
 };
