@@ -213,7 +213,18 @@ export const describesSomething = (note: string, intentLabel: string): boolean =
   return n(note).length >= 12 && n(note) !== n(intentLabel) && !n(intentLabel).includes(n(note));
 };
 
-export function buildShotPrompt(ctx: ShotContext): { system: string; user: string } {
+/** THE GUARDS (owner 2026-11-09: "Are we able to prevent those made up answers?… Let's run that test"). Off unless the
+ *  photo reader's `guards` switch is on (services/photoReaderSettings): every answer carries what was SEEN and where, the
+ *  choices come in a shuffled order (gpt-4o-mini gave the first listed size, 16x25x1, on three photos), a check pass keeps
+ *  only what it confirms, and the quick look narrows the questions. */
+export type ReadGuards = { guards?: boolean; rand?: () => number };
+const shuffled = <T,>(xs: readonly T[], rand: () => number): T[] => {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system: string; user: string } {
+  const order = (cs: readonly string[]) => (g.guards ? shuffled(cs, g.rand ?? Math.random) : cs);
   const own = ctx.questions.filter(q => q.system === ctx.systemId);
   const other = ctx.questions.filter(q => q.system !== ctx.systemId);
   const cond = (x: ShotQuestion) => (x.when?.length
@@ -224,7 +235,7 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     : '');
   const q = (x: ShotQuestion) => x.dimensions
     ? `- ${x.key} — ${x.label}${gather(x)}: the size printed on it — often along the frame, sideways or upside down — as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
-    : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${x.choices.map(c => JSON.stringify(c)).join(' | ')}`;
+    : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${order(x.choices).map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
@@ -239,7 +250,11 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
     '4. "reading": only if a reading slot is listed and an instrument\'s display is legible: the number and unit shown.\n' +
     '5. "shot": only if helpful shots are listed — the one this photo plainly IS (a legible data plate is the "plate"), ' +
     'else null. Never a shot it merely shows part of.\n' +
-    'Return JSON: {"answers":[{"key":"…","value":"…"}],"cant_tell":[{"key":"…","need":"…"}],' +
+    (g.guards
+      ? '6. EVERY answer needs "seen": the exact text you read, or what you see and WHERE in the photo (e.g. "20X20X1 printed ' +
+        'on the filter frame, top edge"). No "seen", no answer. The order of the choices means nothing.\n' +
+        'Return JSON: {"answers":[{"key":"…","value":"…","seen":"…"}],"cant_tell":[{"key":"…","need":"…"}],'
+      : 'Return JSON: {"answers":[{"key":"…","value":"…"}],"cant_tell":[{"key":"…","need":"…"}],') +
     '"noticed":[{"node":"…","finding":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null,"shot":"…"|null}';
   const user =
     `Photo: "${ctx.shot.label}" for ${ctx.systemLabel}${ctx.place ? ` — the inspector named it "${ctx.place}"` : ''}. ${ctx.shot.hint}\n\n` +
@@ -255,7 +270,8 @@ export function buildShotPrompt(ctx: ShotContext): { system: string; user: strin
 export type ShotRead = {
   /** The helpful shot this photo plainly is (a section photo only; one of ctx.placeable), else null. */
   shot?: string | null;
-  answers: { key: string; value: string }[];
+  /** `seen` — with the guards, what in the photo shows it and where. */
+  answers: { key: string; value: string; seen?: string }[];
   cantTell: { key: string; need: string }[];
   noticed: { nodeId: string; intentId: string; intentLabel: string; note: string; systemId?: string }[];
   reading: { point: string; value: number; unit: string } | null;
@@ -264,7 +280,12 @@ export type ShotRead = {
 const norm = (s: unknown) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 /** Keep only what the template allows. The model's answer is a proposal; this decides whether it may even be one. */
-export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
+/** Evidence that says something: a few words, and not just the answer again. */
+export const seenSays = (seen: unknown, value: string): boolean => {
+  const n = (x: unknown) => String(x ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return n(seen).length >= 12 && n(seen) !== n(value);
+};
+export function validateShotRead(raw: any, ctx: ShotContext, g: ReadGuards = {}): ShotRead {
   const byKey = new Map(ctx.questions.map(q => [q.key, q]));
   const answers: ShotRead['answers'] = [];
   const seen = new Set<string>();
@@ -275,10 +296,11 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
     const size = q.dimensions ? parseSizeEntry(String(a?.value ?? '')) : null;
     const hit = size ? formatSizeEntry(size) : q.choices.find(c => norm(c) === norm(a?.value));
     if (!hit) continue;   // never a value the template does not offer (a size field takes any real size)
+    if (g.guards && !seenSays(a?.seen, hit)) continue;   // the guards: no evidence, no answer
     // One answer per question — or, on a whole-house field, one per value it does not already hold.
     if (seen.has(slot(q, hit)) || q.collects?.have.some(h => norm(h) === norm(hit))) continue;
     seen.add(slot(q, hit));
-    answers.push({ key: q.key, value: hit });
+    answers.push({ key: q.key, value: hit, ...(g.guards ? { seen: String(a.seen).trim().slice(0, 160) } : {}) });
   }
   // A same-read follow-up stands only on this read's own answer to what it waits on (a whole-house field's values together).
   const got = new Map<string, string>();
@@ -314,12 +336,40 @@ export function validateShotRead(raw: any, ctx: ShotContext): ShotRead {
   return { answers, cantTell, noticed, reading, shot };
 }
 
+// ── THE CHECK PASS (the guards) ── a second look at the same photo with what the read proposed: is each one PLAINLY
+// visible? Only a "yes" survives — an answer, a notice or a reading the check does not confirm is dropped.
+export function buildCheckPrompt(read: ShotRead, ctx: ShotContext): { system: string; user: string } | null {
+  const lines = [
+    ...read.answers.map((a, i) => `a${i} — ${ctx.questions.find(q => q.key === a.key)?.label ?? a.key}: "${a.value}"${a.seen ? ` (seen: ${a.seen})` : ''}`),
+    ...read.noticed.map((n, i) => `n${i} — a problem: ${n.intentLabel} (${n.note})`),
+    ...(read.reading ? [`r0 — an instrument display reading ${read.reading.value} ${read.reading.unit}`] : []),
+  ];
+  if (!lines.length) return null;
+  return {
+    system: 'You check a form someone filled in from ONE photo. For each line, answer true only if the photo PLAINLY shows ' +
+      'it — the printed text is legible, or the thing is unmistakably there. A guess, an assumption or "probably" is false.\n' +
+      'Return JSON: {"<id>": true|false, …} for every id.',
+    user: `Photo: ${ctx.shot.label} (${ctx.systemLabel}).\nLines:\n${lines.join('\n')}`,
+  };
+}
+export function applyCheck(read: ShotRead, raw: any): ShotRead {
+  const yes = (id: string) => raw?.[id] === true;
+  return {
+    ...read,
+    answers: read.answers.filter((_, i) => yes(`a${i}`)),
+    noticed: read.noticed.filter((_, i) => yes(`n${i}`)),
+    reading: read.reading && yes('r0') ? read.reading : null,
+  };
+}
+
 // ── THE QUICK LOOK (owner 2026-11-09: "do they all need to go through AI or do we have something… to lower the amount")
 // A section photo is first looked at small and cheap: which helpful shot it is, whether it can answer anything still
 // open, whether it shows a problem, or whether it is unusable. Only a photo worth it gets the full read. Closed, like the
 // read: a shot must be one listed; the rest are yes / no.
-export type ShotSort = { shot: string | null; useful: boolean; issue: boolean; unusable: boolean };
-export function buildSortPrompt(ctx: ShotContext): { system: string; user: string } {
+export type ShotSort = { shot: string | null; useful: boolean; issue: boolean; unusable: boolean;
+  /** With the guards: the open questions (keys) this photo could plausibly answer — the full read asks only these. */
+  relevant?: string[] };
+export function buildSortPrompt(ctx: ShotContext, g: ReadGuards = {}): { system: string; user: string } {
   const own = ctx.questions.filter(q => q.system === ctx.systemId).map(q => q.label);
   // Other systems' open questions too, by name (owner's test 2026-11-09: an attic ductwork photo taken in Cooling, and a
   // thermostat photo, were sorted as "nothing new" — their questions live in Heating).
@@ -330,12 +380,15 @@ export function buildSortPrompt(ctx: ShotContext): { system: string; user: strin
     '- shot: the listed helpful shot this photo plainly IS, else null.\n' +
     '- useful: true if the photo could answer one of the open questions (a material, a type, printed text, a label).\n' +
     '- issue: true if a defect or safety concern is visible (damage, leak, rust, missing part, open wiring…).\n' +
-    '- unusable: true if it is too blurry or dark to tell anything.';
+    '- unusable: true if it is too blurry or dark to tell anything.' +
+    (g.guards ? '\n- relevant: the keys of the questions this photo could plausibly answer (only listed keys; [] if none).' : '');
   const user =
     `Section: ${ctx.systemLabel}.\n` +
     (ctx.placeable?.length ? `Helpful shots:\n${ctx.placeable.map(p => `- ${p.id} — ${p.label}`).join('\n')}\n` : 'Helpful shots: none\n') +
-    `Open questions: ${own.length ? own.join('; ') : 'none'}.` +
-    (others.length ? `\nOther systems' open questions (useful too, if the photo plainly shows one): ${others.join('; ')}.` : '');
+    (g.guards
+      ? `Open questions (key — question):\n${ctx.questions.map(q => `- ${q.key} — ${q.label}`).join('\n') || '(none)'}`
+      : `Open questions: ${own.length ? own.join('; ') : 'none'}.` +
+        (others.length ? `\nOther systems' open questions (useful too, if the photo plainly shows one): ${others.join('; ')}.` : ''));
   return { system, user };
 }
 export function validateSort(raw: any, ctx: ShotContext): ShotSort {
@@ -343,7 +396,16 @@ export function validateSort(raw: any, ctx: ShotContext): ShotSort {
   return {
     shot: ctx.placeable?.some(p => p.id === id) ? id : null,
     useful: raw?.useful === true, issue: raw?.issue === true, unusable: raw?.unusable === true,
+    ...(Array.isArray(raw?.relevant) ? { relevant: raw.relevant.map(String).filter((k: string) => ctx.questions.some(q => q.key === k)) } : {}),
   };
+}
+/** The full read's questions, narrowed to what the quick look picked — with each follow-up's parent, so its condition can
+ *  stand. No pick at all keeps every question (the narrowing never empties a read the look found worth doing). */
+export function narrowQuestions(ctx: ShotContext, relevant: readonly string[] | undefined): ShotContext {
+  if (!relevant?.length) return ctx;
+  const keep = new Set(relevant);
+  for (const q of ctx.questions) if (keep.has(q.key)) for (const w of q.when ?? []) keep.add(w.key);
+  return { ...ctx, questions: ctx.questions.filter(q => keep.has(q.key)) };
 }
 /** Whether a sorted photo gets the full read: it is a helpful shot, can answer something, or shows a problem — never when
  *  it is unusable (unless it is a helpful shot: the inspector can still see it was found). */
