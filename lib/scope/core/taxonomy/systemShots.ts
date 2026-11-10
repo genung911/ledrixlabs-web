@@ -55,114 +55,171 @@ export type Shot = {
   /** Also read as an APPLIANCE TAG (applianceTags — which appliance, make, model, serial, year → one pending proposal on
    *  that appliance's item; confirmed, it joins the house record). Owner 2026-11-09, Appliances part 3. */
   tag?: true;
+  /** THE CHECKLIST FIELDS IT ANSWERS (owner 2026-11-10: "follow checklist items", mockup QPJSux3ww7zjTPrJDeg8NA): Details
+   *  keys `node|attr`. The shot is asked only while one of them is open on this inspection — in its checklist, applying
+   *  to this house, unanswered — and drops away once they are answered. */
+  answers?: readonly string[];
+  /** THE CHECKLIST ITEMS IT DOCUMENTS, for a shot no Details field covers (a data plate's equipment record, a reading,
+   *  an appliance tag, a fan duct): asked while one of these items is on this inspection's checklist, until taken. */
+  documents?: readonly string[];
+  /** A gas-side shot: not asked when the property panel's Gas supply says the house has none. */
+  gas?: true;
 };
 
 /** Systems by template base id. A system with no entry has no Photos tile. */
 export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   heating: [
-    { id: 'furnace_wide', label: 'Furnace wide', hint: 'The whole unit, with the pipes leaving it and the ductwork attached.' },
-    { id: 'plate', label: 'Data plate', hint: 'The rating label, close enough to read every line.', plate: 'Furnace / heating unit' },
-    { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.', smallPrint: true },
-    { id: 'condensate', label: 'Condensate drain', hint: 'Where the condensate line leaves the coil or furnace: the pipe, a pump if there is one, and where it runs.' },
-    { id: 'thermostat', label: 'Thermostat', hint: 'The thermostat on the wall, face on.' },
+    { id: 'furnace_wide', label: 'Furnace wide', hint: 'The whole unit, with the pipes leaving it and the ductwork attached.', answers: ['hvac_heating|fuel_source', 'hvac_flue|spec', 'hvac_combustion_air|spec', 'hvac_ducts|type', 'hvac_ducts|insulation'] },
+    { id: 'plate', label: 'Data plate', hint: 'The rating label, close enough to read every line.', plate: 'Furnace / heating unit', answers: ['hvac_heating_age|system_age', 'hvac_furnace_eff|efficiency'], documents: ['hvac_heating'] },
+    { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.', smallPrint: true, answers: ['hvac_filter|type', 'hvac_filter|size', 'hvac_filter|location'] },
+    { id: 'condensate', label: 'Condensate drain', hint: 'Where the condensate line leaves the coil or furnace: the pipe, a pump if there is one, and where it runs.', answers: ['hvac_condensate|spec'] },
+    { id: 'thermostat', label: 'Thermostat', hint: 'The thermostat on the wall, face on.', answers: ['hvac_thermostat|spec'] },
   ],
   cooling: [
-    { id: 'condenser_wide', label: 'Outdoor unit', hint: 'The whole condenser or heat pump, with its disconnect if it is in view.' },
-    { id: 'plate', label: 'Data plate', hint: 'The outdoor unit\'s rating label, close enough to read.', plate: 'AC condenser / heat pump' },
-    { id: 'disconnect', label: 'Disconnect, cover open', hint: 'The disconnect at the outdoor unit with its cover open: the switch, any fuses or breaker, and its label.' },
-    { id: 'return_air', label: 'Return air reading', hint: 'The thermometer\'s display at the return grille — or the thermostat\'s indoor temperature — with the system running in cooling.', reading: { system: 'cooling', point: 'return_air', accepts: 'a thermometer at the return grille, or the thermostat\'s indoor temperature display' } },
-    { id: 'supply_air', label: 'Supply register reading', hint: 'The thermometer\'s display at a supply register, with the system running in cooling.', reading: { system: 'cooling', point: 'supply_register' } },
+    { id: 'condenser_wide', label: 'Outdoor unit', hint: 'The whole condenser or heat pump, with its disconnect if it is in view.', answers: ['hvac_cooling|spec'] },
+    { id: 'plate', label: 'Data plate', hint: 'The outdoor unit\'s rating label, close enough to read.', plate: 'AC condenser / heat pump', answers: ['hvac_cooling_age|age', 'hvac_condenser|refrigerant', 'hvac_condenser|size', 'hvac_condenser|max_breaker'], documents: ['hvac_cooling'] },
+    { id: 'disconnect', label: 'Disconnect, cover open', hint: 'The disconnect at the outdoor unit with its cover open: the switch, any fuses or breaker, and its label.', answers: ['hvac_disconnect|spec', 'hvac_disconnect|type'] },
+    { id: 'return_air', label: 'Return air reading', hint: 'The thermometer\'s display at the return grille — or the thermostat\'s indoor temperature — with the system running in cooling.', reading: { system: 'cooling', point: 'return_air', accepts: 'a thermometer at the return grille, or the thermostat\'s indoor temperature display' }, documents: ['hvac_cooling'] },
+    { id: 'supply_air', label: 'Supply register reading', hint: 'The thermometer\'s display at a supply register, with the system running in cooling.', reading: { system: 'cooling', point: 'supply_register' }, documents: ['hvac_cooling'] },
   ],
   water_heater: [
-    { id: 'wh_wide', label: 'Water heater wide', hint: 'Top to floor, with what surrounds it: pan, expansion tank, straps.' },
-    { id: 'plate', label: 'Data plate', hint: 'The rating label: fuel, gallons, BTU and the date.', plate: 'Water heater' },
-    { id: 'vent_top', label: 'Vent at the top', hint: 'Close on the vent where it leaves the unit — the stamp on the pipe if there is one.' },
-    { id: 'hot_water', label: 'Hot water reading', hint: 'The thermometer\'s display at a faucet, hot side, after it has run.', reading: { system: 'water_heater', point: 'hot_water_temp' } },
+    { id: 'wh_wide', label: 'Water heater wide', hint: 'Top to floor, with what surrounds it: pan, expansion tank, straps.', answers: ['plumb_wh_type|type', 'plumb_wh_type|enclosure', 'plumb_wh_type|location'] },
+    { id: 'plate', label: 'Data plate', hint: 'The rating label: fuel, gallons, BTU and the date.', plate: 'Water heater', answers: ['plumb_wh_type|capacity', 'plumb_wh_type_age|age_est'], documents: ['plumb_wh_type'] },
+    { id: 'vent_top', label: 'Vent at the top', hint: 'Close on the vent where it leaves the unit — the stamp on the pipe if there is one.', answers: ['plumb_wh_flue|spec', 'plumb_wh_flue|material'] },
+    { id: 'hot_water', label: 'Hot water reading', hint: 'The thermometer\'s display at a faucet, hot side, after it has run.', reading: { system: 'water_heater', point: 'hot_water_temp' }, documents: ['plumb_wh_type'] },
   ],
   electrical: [
-    { id: 'service', label: 'Service drop & meter', hint: 'Where the wires reach the house, the meter, and the conduit or mast.' },
-    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.', repeat: { base: 'Panel', next: 'Next panel' }, smallPrint: true },
-    { id: 'panel_open', label: 'Panel, cover off', hint: 'The wiring with the cover off, wide enough to show the room.', repeat: { base: 'Panel, cover off', next: 'Next panel, cover off' } },
-    { id: 'grounding', label: 'Grounding electrode', hint: 'The ground rod clamp, or the clamp on the water pipe.' },
+    { id: 'service', label: 'Service drop & meter', hint: 'Where the wires reach the house, the meter, and the conduit or mast.', answers: ['elec_service|spec', 'elec_entrance|spec', 'elec_entrance|attachment'] },
+    { id: 'panel_label', label: 'Panel, door open', hint: 'The panel with its door open: the label and the circuit directory.', repeat: { base: 'Panel', next: 'Next panel' }, smallPrint: true, answers: ['elec_panel|brand', 'elec_panel|protection', 'elec_panel|role', 'elec_panel|fed_from', 'elec_panel|location', 'elec_main|spec'], documents: ['elec_panel'] },
+    { id: 'panel_open', label: 'Panel, cover off', hint: 'The wiring with the cover off, wide enough to show the room.', repeat: { base: 'Panel, cover off', next: 'Next panel, cover off' }, answers: ['elec_wiring|type', 'elec_wiring|method', 'elec_bonding|spec'], documents: ['elec_panel'] },
+    { id: 'grounding', label: 'Grounding electrode', hint: 'The ground rod clamp, or the clamp on the water pipe.', answers: ['elec_grounding|spec'] },
   ],
   plumbing: [
-    { id: 'under_sink', label: 'Under the kitchen sink', hint: 'The supply lines and the drain, with the cabinet doors open.' },
-    { id: 'main_shutoff', label: 'Main shutoff', hint: 'The main water valve and the pipe it sits on.' },
-    { id: 'drain_line', label: 'A drain line', hint: 'Where the printed markings show (ABS, PVC, cast iron).' },
-    { id: 'gas_meter', label: 'Gas meter & piping', hint: 'The meter and the pipe or connector leaving it.' },
+    { id: 'under_sink', label: 'Under the kitchen sink', hint: 'The supply lines and the drain, with the cabinet doors open.', answers: ['plumb_supply|spec', 'plumb_drain|spec'] },
+    { id: 'main_shutoff', label: 'Main shutoff', hint: 'The main water valve and the pipe it sits on.', answers: ['plumb_main|spec', 'plumb_main|location', 'plumb_supply|spec'] },
+    { id: 'drain_line', label: 'A drain line', hint: 'Where the printed markings show (ABS, PVC, cast iron).', answers: ['plumb_drain|spec', 'plumb_vent|spec'] },
+    { id: 'gas_meter', label: 'Gas meter & piping', hint: 'The meter and the pipe or connector leaving it.', answers: ['plumb_gas|spec', 'plumb_gas_shutoff|spec'], gas: true },
   ],
   roofing: [
-    { id: 'roof', label: 'Roof plane', hint: 'A roof plane, from the ladder, the ground or a drone.', repeat: { base: 'Roof plane', next: 'Next roof plane' } },
-    { id: 'roof_edge', label: 'Roof edge at an eave', hint: 'Close on the edge: the layers of shingle and the drip edge.' },
-    { id: 'gutters', label: 'Gutter & downspout', hint: 'A gutter run and where a downspout comes down.' },
+    { id: 'roof', label: 'Roof plane', hint: 'A roof plane, from the ladder, the ground or a drone.', repeat: { base: 'Roof plane', next: 'Next roof plane' }, answers: ['roof_material|type', 'roof_material|layer_count', 'roof_material_age|estimated_age'], documents: ['roof_material'] },
+    { id: 'roof_edge', label: 'Roof edge at an eave', hint: 'Close on the edge: the layers of shingle and the drip edge.', answers: ['roof_material|layer_count'] },
+    { id: 'gutters', label: 'Gutter & downspout', hint: 'A gutter run and where a downspout comes down.', answers: ['roof_gutters|material', 'roof_discharge|spec'] },
   ],
   exterior: [
-    { id: 'front', label: 'Front of the house', hint: 'The whole front: siding, walkway, porch, windows.' },
-    { id: 'back', label: 'Back of the house', hint: 'The whole back, with the deck or patio.' },
-    { id: 'side', label: 'Side of the house', hint: 'A whole side, from the ground.', repeat: { base: 'Side', next: 'Next side' } },
-    { id: 'siding_close', label: 'Siding up close', hint: 'A cut end or bottom edge of the siding — it tells the material apart.' },
+    { id: 'front', label: 'Front of the house', hint: 'The whole front: siding, walkway, porch, windows.', answers: ['ext_siding|spec', 'ext_walkways|spec'], documents: ['ext_siding'] },
+    { id: 'back', label: 'Back of the house', hint: 'The whole back, with the deck or patio.', answers: ['ext_siding|spec', 'ext_deck|spec'], documents: ['ext_siding'] },
+    { id: 'side', label: 'Side of the house', hint: 'A whole side, from the ground.', repeat: { base: 'Side', next: 'Next side' }, answers: ['ext_siding|spec'], documents: ['ext_siding'] },
+    { id: 'siding_close', label: 'Siding up close', hint: 'A cut end or bottom edge of the siding — it tells the material apart.', answers: ['ext_siding|spec'] },
   ],
   foundation: [
-    { id: 'crawl_wide', label: 'Crawlspace or basement wide', hint: 'From the hatch or stairs: floor framing, walls and the ground.' },
-    { id: 'wall_close', label: 'Foundation wall', hint: 'A wall up close — poured, block or stone.' },
-    { id: 'insulation', label: 'Under-floor insulation', hint: 'The insulation between the floor joists.' },
+    { id: 'crawl_wide', label: 'Crawlspace or basement wide', hint: 'From the hatch or stairs: floor framing, walls and the ground.', answers: ['found_type|type', 'found_joists|framing', 'found_cs_vapor|spec', 'found_cs_vent|spec', 'int_basement|spec'], documents: ['found_type'] },
+    { id: 'wall_close', label: 'Foundation wall', hint: 'A wall up close — poured, block or stone.', answers: ['found_type|wall_material'] },
+    { id: 'insulation', label: 'Under-floor insulation', hint: 'The insulation between the floor joists.', answers: ['found_cs_ins_type|spec'] },
   ],
   attic: [
-    { id: 'attic_wide', label: 'Attic view', hint: 'Wide, from the hatch or inside: framing, sheathing, insulation, vents and any ductwork.', repeat: { base: 'Attic view', next: 'Next view' } },
-    { id: 'decking', label: 'Decking close-up', hint: 'Close on the roof sheathing between the rafters: the APA stamp if one shows, or a sheet edge.' },
-    { id: 'insulation_depth', label: 'Insulation depth', hint: 'A ruler standing in the insulation.' },
-    { id: 'attic_access', label: 'Attic access', hint: 'The hatch or pull-down stair.' },
-    { id: 'fan_duct', label: 'Bath fan duct', hint: 'A bath or kitchen fan duct, and where it ends: the roof, the soffit, or loose in the attic.' },
+    { id: 'attic_wide', label: 'Attic view', hint: 'Wide, from the hatch or inside: framing, sheathing, insulation, vents and any ductwork.', repeat: { base: 'Attic view', next: 'Next view' }, answers: ['attic_framing|spec', 'attic_exhaust|spec', 'attic_instype|type'], documents: ['attic_framing'] },
+    { id: 'decking', label: 'Decking close-up', hint: 'Close on the roof sheathing between the rafters: the APA stamp if one shows, or a sheet edge.', answers: ['roof_sheath|spec'] },
+    { id: 'insulation_depth', label: 'Insulation depth', hint: 'A ruler standing in the insulation.', answers: ['attic_instype|est_r_value'] },
+    { id: 'attic_access', label: 'Attic access', hint: 'The hatch or pull-down stair.', answers: ['attic_access|spec'] },
+    { id: 'fan_duct', label: 'Bath fan duct', hint: 'A bath or kitchen fan duct, and where it ends: the roof, the soffit, or loose in the attic.', documents: ['primary_bathroom_exhaust_fan', 'attic_exhaust'] },
   ],
   interior: [
-    { id: 'room_view', label: 'Room view', hint: 'Wide, from a doorway: the floor, walls, ceiling and windows.', repeat: { base: 'Room', next: 'Next room' } },
-    { id: 'kitchen', label: 'Kitchen', hint: 'Close enough to read the counter surface, with the floor, cabinets and window.' },
-    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the counter, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' } },
-    { id: 'stairs', label: 'Stairs & railings', hint: 'The stair from the bottom: treads, the handrail, and the guard or balusters.' },
-    { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' } },
+    { id: 'room_view', label: 'Room view', hint: 'Wide, from a doorway: the floor, walls, ceiling and windows.', repeat: { base: 'Room', next: 'Next room' }, answers: ['int_flooring|spec', 'int_walls|spec', 'ext_windows|spec'], documents: ['int_flooring'] },
+    { id: 'kitchen', label: 'Kitchen', hint: 'Close enough to read the counter surface, with the floor, cabinets and window.', answers: ['kit_counter|spec'] },
+    { id: 'bathroom', label: 'Bathroom', hint: 'Wide: the tub or shower, the counter, the floor, the fan.', repeat: { base: 'Bathroom', next: 'Next bathroom' }, answers: ['primary_bathroom_exhaust_fan|spec'], documents: ['plumb_tubshower'] },
+    { id: 'stairs', label: 'Stairs & railings', hint: 'The stair from the bottom: treads, the handrail, and the guard or balusters.', documents: ['int_stairs'] },
+    { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' }, answers: ['win_glazing|spec', 'ext_windows|spec'] },
   ],
   fireplace: [
-    { id: 'fp_wide', label: 'Fireplace view', hint: 'The whole fireplace and its surround, with the hearth in front.' },
-    { id: 'firebox', label: 'Firebox / glass front', hint: 'Close on the firebox: through the glass on a sealed unit, doors open on an open one.' },
-    { id: 'controls', label: 'Controls, lower cover off', hint: 'With the lower louver off: the gas valve, the controls and the rating label behind it.' },
-    { id: 'chimney', label: 'Chimney or vent on the roof', hint: 'The chimney or vent cap where it leaves the roof or wall.' },
+    { id: 'fp_wide', label: 'Fireplace view', hint: 'The whole fireplace and its surround, with the hearth in front.', answers: ['fp_type|spec', 'fp_gas_logs|spec'], documents: ['fp_type'] },
+    { id: 'firebox', label: 'Firebox / glass front', hint: 'Close on the firebox: through the glass on a sealed unit, doors open on an open one.', answers: ['fp_type|spec', 'fp_liner|spec'] },
+    { id: 'controls', label: 'Controls, lower cover off', hint: 'With the lower louver off: the gas valve, the controls and the rating label behind it.', answers: ['fp_gas_logs|spec'], documents: ['fp_type'], gas: true },
+    { id: 'chimney', label: 'Chimney or vent on the roof', hint: 'The chimney or vent cap where it leaves the roof or wall.', answers: ['fp_chimney|spec', 'fp_gas_vent|spec'] },
   ],
   appliances: [
-    { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it — the burners or glass top, and the hood\'s filter or vent.' },
-    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true },
-    { id: 'dryer', label: 'Dryer hookup', hint: 'Behind the dryer: the outlet (240V) or the gas line and its shutoff, and where the vent leaves.' },
+    { id: 'range', label: 'Range & hood', hint: 'The cooktop and the hood above it — the burners or glass top, and the hood\'s filter or vent.', answers: ['kit_range|spec', 'kit_hood|spec', 'kit_oven|fuel'], documents: ['kit_range'] },
+    { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door, on the frame, or under the cooktop — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true, documents: ['kit_range', 'kit_oven', 'kit_fridge', 'kit_dishwasher', 'kit_hood', 'kit_microwave', 'kit_disposal'] },
+    { id: 'dryer', label: 'Dryer hookup', hint: 'Behind the dryer: the outlet (240V) or the gas line and its shutoff, and where the vent leaves.', answers: ['laundry_dryer|spec'], documents: ['laundry_dryer'] },
   ],
 };
 
 // ── THE SPACES' SHOTS (owner 2026-11-10, mockup HvfZznRpbbddWgKWQLS174: "Shoot Garage", Laundry's Hookups · Dryer vent ·
 // Washer tag). A space's photo is read against the open questions of every record the space links to; an appliance tag
 // is optional and read as a tag, as in Appliances.
-const SPACE_TAG: Shot = { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door or on the frame — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true };
+const SPACE_TAG: Shot = { id: 'tag', label: 'Appliance tag', hint: 'The rating label: inside the door or on the frame — make, model, serial and the date.', repeat: { base: 'Tag', next: 'Next tag' }, optional: true, smallPrint: true, tag: true,
+  documents: ['kit_range', 'kit_oven', 'kit_fridge', 'kit_dishwasher', 'kit_hood', 'kit_microwave', 'kit_disposal', 'laundry_washer', 'laundry_dryer'] };
 Object.assign(SYSTEM_SHOTS, {
   space_garage: [
-    { id: 'garage_view', label: 'Garage view', hint: 'Wide, from the house door: the floor, the walls and ceiling, and the vehicle door.' },
-    { id: 'opener', label: 'Opener & photo-eyes', hint: 'The opener on the ceiling, and a photo-eye at the bottom of the door track.' },
-    { id: 'house_door', label: 'Door to the house', hint: 'The door into the house, closed: the door, its hinges and a self-closer if it has one.' },
+    { id: 'garage_view', label: 'Garage view', hint: 'Wide, from the house door: the floor, the walls and ceiling, and the vehicle door.', answers: ['ext_garage_door|spec', 'gar_door|spec'], documents: ['gar_floor', 'gar_firewall', 'ext_garage_door'] },
+    { id: 'opener', label: 'Opener & photo-eyes', hint: 'The opener on the ceiling, and a photo-eye at the bottom of the door track.', documents: ['gar_opener'] },
+    { id: 'house_door', label: 'Door to the house', hint: 'The door into the house, closed: the door, its hinges and a self-closer if it has one.', documents: ['gar_firedoor'] },
   ],
   space_kitchen: [
-    { id: 'kitchen_view', label: 'Kitchen view', hint: 'Wide: the counters, cabinets, range and hood, and the sink.' },
-    { id: 'under_sink', label: 'Under the sink', hint: 'The cabinet open: the supply valves, the drain and trap, the disposal and the dishwasher line.' },
+    { id: 'kitchen_view', label: 'Kitchen view', hint: 'Wide: the counters, cabinets, range and hood, and the sink.', answers: ['kit_counter|spec', 'kit_range|spec', 'kit_hood|spec'], documents: ['kit_cabinets', 'kit_counter'] },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The cabinet open: the supply valves, the drain and trap, the disposal and the dishwasher line.', documents: ['kit_supplydrain', 'kit_leaks', 'kit_disposal'] },
     SPACE_TAG,
   ],
   space_laundry: [
-    { id: 'hookups', label: 'Hookups', hint: 'Behind the washer and dryer: the water valves and drain, and the dryer outlet (240V) or gas line and shutoff.' },
-    { id: 'dryer_vent', label: 'Dryer vent', hint: 'The dryer duct where it leaves the dryer and goes into the wall.' },
+    { id: 'hookups', label: 'Hookups', hint: 'Behind the washer and dryer: the water valves and drain, and the dryer outlet (240V) or gas line and shutoff.', answers: ['laundry_dryer|spec', 'laundry_drain|spec'], documents: ['laundry_washer', 'laundry_dryer'] },
+    { id: 'dryer_vent', label: 'Dryer vent', hint: 'The dryer duct where it leaves the dryer and goes into the wall.', documents: ['ext_dryer', 'laundry_dryer'] },
     { ...SPACE_TAG, label: 'Washer / dryer tag' },
   ],
   space_bathroom: [
-    { id: 'bath_view', label: 'Bathroom view', hint: 'Wide: the tub or shower, the toilet, the counter and the floor.' },
-    { id: 'under_sink', label: 'Under the sink', hint: 'The vanity open: the supply valves, the drain and trap.' },
-    { id: 'fan', label: 'Exhaust fan', hint: 'The fan in the ceiling, with its grille.', optional: true },
+    { id: 'bath_view', label: 'Bathroom view', hint: 'Wide: the tub or shower, the toilet, the counter and the floor.', answers: ['plumb_tubshower|spec'], documents: ['plumb_tubshower', 'plumb_toilets', 'plumb_sinks'] },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The vanity open: the supply valves, the drain and trap.', documents: ['primary_bathroom_drain_traps', 'plumb_sinks'] },
+    { id: 'fan', label: 'Exhaust fan', hint: 'The fan in the ceiling, with its grille.', optional: true, answers: ['primary_bathroom_exhaust_fan|spec'], documents: ['primary_bathroom_exhaust_fan'] },
   ],
 });
 
 const baseOf = (id: string) => String(id).split('~')[0];
 export const shotsFor = (systemId: string): readonly Shot[] => SYSTEM_SHOTS[baseOf(systemId)] ?? [];
+
+// ── WHICH SHOTS ARE ASKED (owner 2026-11-10: "follow checklist items" → "Use the mix", mockup QPJSux3ww7zjTPrJDeg8NA
+// approved; answered shots "stay thumbnails"). Pure. A shot is asked while one of the Details fields it answers is OPEN
+// (asked on this inspection — in its checklist and applying to this house — and unanswered), or while an item it documents
+// is on the checklist; a taken shot always stays (TAKEN). Every other shot says why it is not asked. Nobody edits a list.
+export type ShotWhy = 'answered' | 'not_here' | 'not_in_checklist' | 'no_gas';
+export type ShotPlan = {
+  /** Asked, not taken yet; `open` = the open fields it answers (none for a shot that documents an item). */
+  needed: { shot: Shot; open: string[] }[];
+  taken: Shot[];
+  notAsked: { shot: Shot; why: ShotWhy }[];
+  /** Open fields no asked shot answers — any photo of the section reads for them, or Details answers them. */
+  noShot: string[];
+};
+export function planShots(shots: readonly Shot[], f: {
+  /** The Details keys asked on this inspection for this page (in its checklist, applying), answered or not. */
+  asked: ReadonlySet<string>;
+  answered: (key: string) => boolean;
+  /** The item is on this inspection's checklist (its resolved template). */
+  inChecklist: (nodeId: string) => boolean;
+  takenCount: (shotId: string) => number;
+  /** The property panel's Gas supply says the house has none ("None — all electric"); unknown is not none. */
+  noGas: boolean;
+}): ShotPlan {
+  const plan: ShotPlan = { needed: [], taken: [], notAsked: [], noShot: [] };
+  const nodeOf = (k: string) => k.split('|')[0];
+  for (const shot of shots) {
+    if (f.takenCount(shot.id) > 0) { plan.taken.push(shot); continue; }
+    if (shot.gas && f.noGas) { plan.notAsked.push({ shot, why: 'no_gas' }); continue; }
+    const keys = shot.answers ?? [];
+    const docs = shot.documents ?? [];
+    const open = keys.filter(k => f.asked.has(k) && !f.answered(k));
+    if (open.length || docs.some(f.inChecklist) || (!keys.length && !docs.length)) { plan.needed.push({ shot, open }); continue; }
+    if (keys.some(k => f.asked.has(k))) plan.notAsked.push({ shot, why: 'answered' });
+    else if (keys.some(k => f.inChecklist(nodeOf(k)))) plan.notAsked.push({ shot, why: 'not_here' });
+    else plan.notAsked.push({ shot, why: 'not_in_checklist' });
+  }
+  const covered = new Set(plan.needed.flatMap(n => n.open));
+  plan.noShot = [...f.asked].filter(k => !f.answered(k) && !covered.has(k));
+  return plan;
+}
+export const SHOT_WHY: Record<ShotWhy, string> = {
+  answered: 'answered in Details',
+  not_here: "doesn't apply to this house",
+  not_in_checklist: "isn't in this company's checklist",
+  no_gas: 'the property panel says this house has no gas',
+};
 /** A shot whose value is in small print — a plate, a display, a printed size or label. */
 export const smallPrintShot = (s: Shot | undefined): boolean => !!s && !!(s.plate || s.reading || s.smallPrint);
 
