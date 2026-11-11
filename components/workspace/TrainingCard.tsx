@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { workspace } from '@/lib/workspace/client';
 import { Card } from './ui';
+import { setCompanyTraining } from '@/lib/training/api';
 
 type T = { optIn: boolean; askedAt: string | null; changedAt: string | null } | null;
 
@@ -30,8 +31,8 @@ export function TrainingCard({ companyId, companyName, isOwner }: { companyId: s
 
   const save = async (on: boolean) => {
     setBusy(true); setError(null); setConfirming(false);
-    const { error } = await workspace.rpc('set_company_training', { p_company: companyId, p_on: on });
-    if (error) { setBusy(false); setError(/owner/i.test(error.message) ? 'Only the company owner can change this.' : `Couldn't save. Nothing was changed. (${error.message})`); return; }
+    const { error } = await setCompanyTraining(companyId, on);
+    if (error) { setBusy(false); setError(/owner/i.test(error) ? 'Only the company owner can change this.' : `Couldn't save. Nothing was changed. (${error})`); return; }
     await load(); setBusy(false);
   };
 
