@@ -346,9 +346,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const knownValue = (st: GuidedStep) => st.rowIds.flatMap(id => { const r = index.byId[id]?.node; return r ? axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []) : []; }).join(', ') || 'Set';
     const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
-    const single = groups.length <= 1;
-    const active = single ? groups[0] : groups.find(g => g.id === openGroup);
-    const inGroup = !single && !!active;
+    // Every system like Heating (app ScopeWorkspace, owner 2026-11-10): tiles first, one group or many.
+    const active = groups.find(g => g.id === openGroup);
+    const inGroup = !!active;
     const items = active ? active.items : mine;
     const done = items.filter(isDone).length;
     const pool = inGroup ? items : mine;
@@ -365,7 +365,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         </div>
         <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-syssub">{!active
-          ? `${groups.length} groups · ${groups.filter(g => g.items.every(isDone)).length} complete · tap a group to open it`
+          ? `${groups.length} group${groups.length === 1 ? '' : 's'} · ${groups.filter(g => g.items.every(isDone)).length} complete · tap a group to open it`
           : `${items.length} item${items.length === 1 ? '' : 's'} · ${done} complete`}</div>
         {!mine.length ? <p className="pv-empty">Nothing in scope for this category yet.</p> : null}
         {/* THE PHOTOS TILE (app ScopeWorkspace, 2026-11-08): the system's named shots first — on the phone Ledrix reads them
@@ -378,9 +378,6 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             </div>
             <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm; whatever they don't settle is listed under Still needed.</div>
           </div>
-        ) : null}
-        {!photosOpen && active && groups.length <= 1 && hasTile ? (
-          <button type="button" className="pv-photobar" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))}>Photos & details<em>{tileMeta} ›</em></button>
         ) : null}
         {photosOpen ? null : !active ? (
           <div className="pv-tiles">
@@ -865,8 +862,6 @@ const CSS_TEXT = `
 .ldx-pv .pv-itile{height:100px;min-height:0;gap:3px;cursor:pointer;font:inherit}
 .ldx-pv .pv-phototile{border-color:rgba(33,123,232,0.55);background:rgba(33,123,232,0.12)}
 .ldx-pv .pv-phototile .pv-iv2{color:#9cc4f2}
-.ldx-pv .pv-photobar{display:flex;align-items:center;gap:8px;width:100%;margin:8px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(33,123,232,0.45);background:rgba(33,123,232,0.12);color:#e6ebee;font:inherit;font-weight:700;font-size:12px;text-align:left}
-.ldx-pv .pv-photobar em{margin-left:auto;font-style:normal;color:#9cc4f2;font-size:11px}
 .ldx-pv .pv-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .ldx-pv .pv-shot{border:1px dashed rgba(33,123,232,0.45);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:3px;min-height:72px}
 .ldx-pv .pv-shot b{font-size:10.5px;color:#e6ebee}
