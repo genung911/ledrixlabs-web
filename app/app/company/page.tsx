@@ -8,6 +8,7 @@ import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { roleLabel, useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { Card, ErrorBox, Loading, Page } from '@/components/workspace/ui';
 import { loadMembers, loadTemplates } from '@/lib/workspace/data';
+import { TrainingCard } from '@/components/workspace/TrainingCard';
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; members: number; templates: number };
 
@@ -48,6 +49,9 @@ export default function CompanyPage() {
             <Fact label="Templates" value={`${state.templates} ${state.templates === 1 ? 'template' : 'templates'}`} href="/app/templates" />
           </dl>
         </Card>
+      )}
+      {state.kind === 'ready' && access.companyId && (
+        <div className="mt-6"><TrainingCard companyId={access.companyId} companyName={companyName ?? null} isOwner={access.role === 'owner'} /></div>
       )}
       <p className="mt-6 text-xs text-muted">
         {access.role === 'owner'
