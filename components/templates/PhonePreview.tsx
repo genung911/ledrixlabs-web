@@ -9,7 +9,7 @@
 // Modeled on the app (ledrix-app, read-only), screen by screen:
 //   · header ................ src/app/ScopeScreen.tsx (chrome: back, blue dot + address, sub lines, menu)
 //   · landing ............... src/components/inspect/CoverageGrid.tsx (building row, "n of m checkpoints" under it,
-//                              three-across system tiles with the red / amber / green lights, dashed Add system)
+//                              three-across system tiles with the progress line (was red / amber / green lights until 2026-11-11), dashed Add system)
 //   · a system's page ....... src/components/systems/ScopeWorkspace.tsx — since 2026-10-24 the system's ITEM LIST:
 //                              one row per Guided Coverage step, grouped by component group (kind, name, status,
 //                              what is recorded). The steps come from the app's own guidedOrder.ts (byte-identical
@@ -300,7 +300,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 <Icon name={sys.icon ?? 'shape-outline'} size={24} />
                 <span className="pv-tl">{sys.label}</span>
                 {describeBy[sys.id]?.left ? <span className="pv-iv2" style={{ color: '#9cc4f2' }}>✦ {describeBy[sys.id].left} to describe</span> : null}
-                <span className="pv-lights" aria-hidden="true"><i className={p.finding ? 'r' : ''} /><i className={p.limited ? 'a' : ''} /><i className={done ? 'g' : ''} /></span>
+                <span className="pv-prog" aria-hidden="true"><i className={done ? 'g' : ''} style={{ width: `${p.total > 0 ? Math.round((p.met / p.total) * 100) : 0}%` }} /></span>
               </button>
             );
           })}
@@ -396,7 +396,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                   onClick={() => go({ kind: 'system', systemId: sysId, group: g.id })} aria-label={`${g.label}, ${d} of ${g.items.length} complete. Open its checklist`}>
                   <span className="pv-tl">{displayLabel(g.label)}</span>
                   <span className="pv-iv2" style={{ color: '#8a959c' }}>{d} of {g.items.length}</span>
-                  <span className="pv-lights" aria-hidden="true"><i className={qs.some(q => q.finding) ? 'r' : ''} /><i className={qs.some(q => q.limited) ? 'a' : ''} /><i className={all ? 'g' : ''} /></span>
+                  <span className="pv-prog" aria-hidden="true"><i className={all ? 'g' : ''} style={{ width: `${g.items.length ? Math.round((d / g.items.length) * 100) : 0}%` }} /></span>
                 </button>
               );
             })}
@@ -760,9 +760,9 @@ const CSS_TEXT = `
 .ldx-pv .pv-tl{color:#e6ebee;font-size:11.5px;font-weight:600;text-align:center;line-height:1.2;overflow-wrap:anywhere}
 .ldx-pv .pv-add{border-style:dashed;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.03)}
 .ldx-pv .pv-add .pv-tl{color:#8a959c}
-.ldx-pv .pv-lights{display:flex;gap:5px}
-.ldx-pv .pv-lights i{width:8px;height:8px;border-radius:4px;background:#2a333a}
-.ldx-pv .pv-lights i.r{background:#ff5a5f}.ldx-pv .pv-lights i.a{background:#f5b03c}.ldx-pv .pv-lights i.g{background:#3ecf7e}
+/* THE PROGRESS LINE (app 2026-11-11, replaces the three lights): a 3px line filled with the reviewed share, green when done. */
+.ldx-pv .pv-prog{display:block;align-self:stretch;margin:0 10px;height:3px;border-radius:2px;background:#2a333a;overflow:hidden}
+.ldx-pv .pv-prog i{display:block;height:3px;border-radius:2px;background:#5B9DF0}.ldx-pv .pv-prog i.g{background:#3ecf7e}
 .ldx-pv .pv-hit{outline:2px solid #217BE8;outline-offset:1px}
 .ldx-pv .pv-eyebrow{color:#7c878e;font-size:9.5px;font-weight:800;letter-spacing:1.4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ldx-pv .pv-sysrow{display:flex;align-items:center;gap:6px}
