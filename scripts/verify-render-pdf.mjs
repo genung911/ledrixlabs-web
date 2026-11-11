@@ -254,7 +254,9 @@ for (const [f, step, kind] of [['connect', 'connect', 'Error'], ['load', 'load',
                                ['evil-name', 'connect', 'Error'], ['non-error', 'connect', 'Error']]) {
   const r = await call(live, { key: KEY, withFault: f });
   ok(`failure "${f}" → 500 generic and exactly one log line`, r.status === 500 && r.logs.length === 1 && JSON.stringify(r.json) === '{"error":"render failed"}', JSON.stringify(r.logs));
-  ok(`failure "${f}" → log names step "${step}" and class ${kind}`, r.logs[0] === `[render-pdf] render failed at step "${step}" (${kind})`, JSON.stringify(r.logs));
+  ok(`failure "${f}" → log names step "${step}" and class ${kind}`, r.logs[0]?.startsWith(`[render-pdf] render failed at step "${step}" (${kind})`)
+    // the timing tail (2026-11-11) is steps, seconds, counts and sizes only — nothing else may follow
+    && /^ · (?:(?:connect|load|images|print) \d+\.\ds(?: · (?:connect|load|images|print) \d+\.\ds)*|no step finished) · at \d+\.\ds · images \d+ · html \d+ KB$/.test(r.logs[0].slice(`[render-pdf] render failed at step "${step}" (${kind})`.length)), JSON.stringify(r.logs));
   ok(`failure "${f}" → log carries no URL, token, upstream text or report HTML`, !r.logs.some(l => LOG_LEAKS.test(l)), JSON.stringify(r.logs));
 }
 

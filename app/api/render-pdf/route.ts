@@ -223,8 +223,21 @@ export async function POST(req: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
   // Which step failed — logged instead of the exception text (see the catch below).
   let phase: 'connect' | 'open' | 'load' | 'images' | 'print' = 'connect';
+  // TIMED (2026-11-11): a report render hit Vercel's 60 s limit with nothing logged — the platform killed it before the
+  // catch ran. Each step's time is logged as it ends (counts and sizes only, never content), and the whole render gives
+  // up at RENDER_BUDGET_MS with the step named, so a slow render says where it was slow.
+  const t0 = Date.now();
+  const RENDER_BUDGET_MS = 52_000;
+  const marks: string[] = [];
+  const mark = (step: string) => marks.push(`${step} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  const imgCount = (html.match(/<img\b/gi) ?? []).length;
+  let budgetTimer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<never>((_, reject) => { budgetTimer = setTimeout(() => reject(Object.assign(new Error('budget'), { name: 'RenderBudget' })), RENDER_BUDGET_MS); });
+  budget.catch(() => {});
+  const within = <T,>(p: Promise<T>) => Promise.race([p, budget]);
   try {
-    browser = await puppeteer.connect({ browserWSEndpoint: BROWSER_WS });
+    browser = await within(puppeteer.connect({ browserWSEndpoint: BROWSER_WS }));
+    mark('connect');
     phase = 'open';
     const page = await browser.newPage();
     await page.setJavaScriptEnabled(false);
@@ -236,23 +249,27 @@ export async function POST(req: NextRequest) {
     });
     // domcontentloaded is instant; networkidle0 hangs forever when a report has several images.
     phase = 'load';
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await within(page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 }));
+    mark('load');
     // Then wait for images to load — but NEVER hang on slow/broken ones (cap at 8s).
     phase = 'images';
-    await page.evaluate(() => Promise.race([
+    await within(page.evaluate(() => Promise.race([
       Promise.all(Array.from(document.images).map(img =>
         img.complete ? null : new Promise(res => { img.addEventListener('load', res); img.addEventListener('error', res); }))),
       new Promise(res => setTimeout(res, 8000)),
-    ]));
+    ])));
+    mark('images');
     phase = 'print';
-    const pdf = await page.pdf({
+    const pdf = await within(page.pdf({
       format: 'Letter',
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: '<span></span>',      // header content lives in the HTML; reserve none here
       footerTemplate: FOOTER_TEMPLATE,
       margin: { top: '0.4in', bottom: '0.6in', left: '0.4in', right: '0.4in' },
-    });
+    }));
+    mark('print');
+    console.log(`[render-pdf] ok · ${marks.join(' · ')} · images ${imgCount} · html ${Math.round(html.length / 1024)} KB · pdf ${Math.round(pdf.length / 1024)} KB`);
     // base64 JSON — far more reliable to consume in React Native than a binary body.
     return NextResponse.json(
       { pdf: Buffer.from(pdf).toString('base64') },
@@ -263,9 +280,10 @@ export async function POST(req: NextRequest) {
     // browser WebSocket URL with its token, and render errors can quote report HTML. The step and
     // the error's class name (e.g. TimeoutError, ProtocolError) are enough to diagnose.
     const kind = e instanceof Error && /^[A-Za-z]{1,40}$/.test(e.name) ? e.name : 'Error';
-    console.error(`[render-pdf] render failed at step "${phase}" (${kind})`);
+    console.error(`[render-pdf] render failed at step "${phase}" (${kind}) · ${marks.join(' · ') || 'no step finished'} · at ${((Date.now() - t0) / 1000).toFixed(1)}s · images ${imgCount} · html ${Math.round(html.length / 1024)} KB`);
     return NextResponse.json({ error: 'render failed' }, { status: 500 });
   } finally {
+    clearTimeout(budgetTimer);
     await browser?.close().catch(() => {});
   }
 }
