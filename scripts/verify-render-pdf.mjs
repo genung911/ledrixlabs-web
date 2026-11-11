@@ -437,6 +437,18 @@ for (const [label, value] of [
 }
 
 Module._load = realLoad;
+// ── 7. The photo wait runs on the server, not in the page (2026-11-11) ─────────────────────
+// JavaScript is disabled on the render page, so an in-page wait (load listeners, setTimeout) never settles: a report with a
+// photo still loading hung at "images" until the platform limit. Polled img.complete from here, bounded.
+{
+  const s = readFileSync(join(src, 'app/api/render-pdf/route.ts'), 'utf8');
+  ok('[images] no in-page wait: no listener, promise or timer inside page.evaluate',
+    !/page\.evaluate\([^;]*(addEventListener|setTimeout|new Promise)/s.test(s.replace(/\/\/.*$/gm, '')), 'an in-page wait never settles with JavaScript disabled');
+  ok('[images] photos are polled from the server, bounded by IMAGE_WAIT_MS',
+    /const IMAGE_WAIT_MS = 8000;/.test(s) && /for \(const until = Date\.now\(\) \+ IMAGE_WAIT_MS; Date\.now\(\) < until; \)/.test(s)
+    && /page\.evaluate\(\(\) => Array\.from\(document\.images\)\.filter\(i => !i\.complete\)\.length\)/.test(s) && /await page\.setJavaScriptEnabled\(false\);/.test(s));
+}
+
 if (failures.length) {
   console.error(`verify-render-pdf: ${failures.length} of ${checks} checks FAILED`);
   for (const f of failures) console.error(`  ✗ ${f}`);

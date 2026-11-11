@@ -253,11 +253,17 @@ export async function POST(req: NextRequest) {
     mark('load');
     // Then wait for images to load — but NEVER hang on slow/broken ones (cap at 8s).
     phase = 'images';
-    await within(page.evaluate(() => Promise.race([
-      Promise.all(Array.from(document.images).map(img =>
-        img.complete ? null : new Promise(res => { img.addEventListener('load', res); img.addEventListener('error', res); }))),
-      new Promise(res => setTimeout(res, 8000)),
-    ])));
+    // WAITED FROM HERE, NOT IN THE PAGE (2026-11-11): this was one in-page promise — load listeners raced with an 8 s
+    // setTimeout. JavaScript is disabled on this page, so neither the listeners nor the timer ever ran: with any photo
+    // still loading, the evaluate never settled and the render hit the platform limit (a 3-photo report: stuck at
+    // "images" until 52 s; a 0-photo report sailed through). Now a plain read of img.complete — no page script needed —
+    // is polled from the server every 250 ms, for at most IMAGE_WAIT_MS; slow or broken photos never hold the render.
+    const IMAGE_WAIT_MS = 8000;
+    for (const until = Date.now() + IMAGE_WAIT_MS; Date.now() < until; ) {
+      const pending = await within(page.evaluate(() => Array.from(document.images).filter(i => !i.complete).length));
+      if (!pending) break;
+      await new Promise(r => setTimeout(r, 250));
+    }
     mark('images');
     phase = 'print';
     const pdf = await within(page.pdf({
