@@ -2496,7 +2496,11 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
     const e = email.trim();
     if (!e || !/.+@.+\..+/.test(e)) { setErr('Enter a valid email.'); return; }
     setBusy(true); setErr('');
-    const { error } = await supabase.auth.signInWithOtp({ email: e, options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.href : undefined } });
+    // BACK TO THE CLEAN ADDRESS (owner 2026-11-11, desktop loop): this sent window.location.href, so after one failed link
+    // the address kept `#error=…otp_expired…`, every new link returned to it, and the client read that stale error before
+    // the new link's tokens — no sign-in, ever. Origin + path + query only; Supabase adds its own fragment.
+    const back = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}${window.location.search}` : undefined;
+    const { error } = await supabase.auth.signInWithOtp({ email: e, options: { emailRedirectTo: back } });
     setBusy(false);
     if (error) setErr(error.message); else setSent(true);
   };
@@ -2971,7 +2975,15 @@ export default function SharePage() {
   const [subOpen, setSubOpen]       = useState(false);
   const [ledrixOpen, setLedrixOpen] = useState(false);
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      // The client has read the link's fragment by now; a leftover auth fragment (tokens or an error) is cleared from the
+      // address so it is never sent back with the next link or shared by copying the address.
+      const h = window.location.hash || '';
+      if (/(^|[#&])(access_token|refresh_token|error_code|error_description|error)=/.test(h)) {
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+      }
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
