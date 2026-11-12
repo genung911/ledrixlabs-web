@@ -1062,9 +1062,11 @@ async function runTypes(files) {
     const dk = PM.previewDetailsKeys(clone(DEFAULT_TREE), PM.rulesFor(clone(DEFAULT_TREE)));
     const askIn = JSON.parse(read('lib/templateBuilder/core/ledrixRules.json')).askIn ?? [];
     // 2026-11-09 (app e2ae85ff): Last Known Service and CO Detector Proximity left Fireplace — seven remain.
-    r('details: the preview asks what the phone’s Details asks — the checklist answers and every spec with choices, never the seven look-to-answer items',
-      ['hvac_heating|fuel_source', 'hvac_flue|spec', 'plumb_wh_type|capacity', 'elec_panel|brand', 'int_flooring|spec'].every(k => dk.has(k))
-      && askIn.length === 7 && ![...dk].some(k => askIn.includes(k.split('|')[0])));
+    // 2026-11-11 (app build 792, owner: "Move those to the photos details page like all the others"): no item is askIn any
+    // more — the seven look-to-answer items are asked in Details too. Any item still marked askIn is never asked here.
+    r('details: the preview asks what the phone’s Details asks — the checklist answers and every spec with choices, the former look-to-answer items included',
+      ['hvac_heating|fuel_source', 'hvac_flue|spec', 'plumb_wh_type|capacity', 'elec_panel|brand', 'int_flooring|spec', 'elec_smoke|spec', 'elec_grounding|spec'].every(k => dk.has(k))
+      && askIn.length === 0 && ![...dk].some(k => askIn.includes(k.split('|')[0])));
   } catch (e) {
     r(`types scenario completed (${e?.message})`, false);
   }
