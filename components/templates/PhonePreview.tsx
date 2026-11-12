@@ -504,10 +504,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           {c === 'fnd' ? <span className="pv-verdict fnd">⚑ Finding</span> : c === 'lim' ? <span className="pv-verdict lim">⚠ Limited</span> : null}
           <button type="button" className={`pv-ibtn${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' dis' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'} aria-label="Satisfactory"
             onClick={() => setCond(p => { const o = { ...p }; if (o[n.id] === 'ok') delete o[n.id]; else o[n.id] = 'ok'; return o; })}>
-            <Glyph d={G.check} size={20} />
+            <Glyph d={G.check} size={30} />
           </button>
           <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
-            <Glyph d={G.camera} size={20} />
+            <Glyph d={G.camera} size={30} />
           </button>
         </div>
         {c === 'lim' && limReason[n.id] ? <div className="pv-limline">{limReason[n.id]}</div> : null}
@@ -820,8 +820,8 @@ const CSS_TEXT = `
 .ldx-pv .pv-cap em{font-style:normal;color:#6f7b82;font-size:10px;font-weight:600;letter-spacing:0}
 .ldx-pv .pv-conds{display:flex;gap:6px}
 .ldx-pv .pv-icons{justify-content:flex-end;align-items:center;gap:8px}
-.ldx-pv .pv-ibtn{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#12181c;border:1px solid #2a3439;color:#7c878e}
-.ldx-pv .pv-ibtn.ok{background:#0f2a1d;border-color:#2f8a5a;color:#7dd3a0}
+.ldx-pv .pv-ibtn{width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:#8a959c}
+.ldx-pv .pv-ibtn.ok{color:#7dd3a0}
 .ldx-pv .pv-ibtn.cam{color:#9cc4f2}
 .ldx-pv .pv-ibtn.dis{opacity:.35}
 .ldx-pv .pv-verdict{font-size:12px;font-weight:800;margin-right:auto}.ldx-pv .pv-verdict.fnd{color:#ffa3a3}.ldx-pv .pv-verdict.lim{color:#f5c46a}
