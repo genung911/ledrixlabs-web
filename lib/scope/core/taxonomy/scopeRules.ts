@@ -211,10 +211,17 @@ export type GateContext = {
   rowValues?: (nodeId: string) => readonly string[];
 };
 /** One area's limitation as either store holds it: only `except` matters to coverage. */
-export type AreaLimitLike = { except?: readonly unknown[] | null } | null | undefined;
+export type AreaLimitLike = { except?: readonly unknown[] | null; unit?: unknown } | null | undefined;
+/** A WHOLE-UNIT limitation (owner 2026-11-11): an entry keyed by a unit's node id and carrying its label covers that
+ *  unit's subtree exactly as an area limitation does. */
+export const unitLimitOf = (nodeId: string, limits: Record<string, AreaLimitLike> | null | undefined): { id: string; label: string } | null => {
+  const u = limits?.[nodeId]?.unit;
+  return typeof u === 'string' && u ? { id: nodeId, label: u } : null;
+};
 /** Every node an area limitation covers: the area node's whole subtree (its own id included) minus the items brought
  *  back with "Inspect one anyway" (and their subtrees). `limits` is keyed by area id, as sop_limitations.systems is —
- *  any other key in it (an ordinary system limitation) covers nothing here. Pure. */
+ *  any other key in it covers nothing here — an ordinary system limitation —
+ *  unless it is a WHOLE-UNIT limitation (it carries `unit`, owner 2026-11-11), which covers its unit's subtree. Pure. */
 export function areaCoveredNodes(systems: readonly TemplateNode[] | null | undefined,
   limits: Record<string, AreaLimitLike> | null | undefined, ctx?: GateContext): Set<string> {
   const out = new Set<string>();
@@ -235,7 +242,7 @@ export function areaCoveredNodes(systems: readonly TemplateNode[] | null | undef
     for (const c of n.children ?? []) add(c, except);
   };
   const walk = (n: TemplateNode) => {
-    const area = areaLimitOf(n.id);
+    const area = areaLimitOf(n.id) ?? unitLimitOf(n.id, limits);
     const lim = area ? (limits[n.id] ?? limits[area.id]) : undefined;
     if (area && lim) {
       const except = new Set((Array.isArray(lim.except) ? lim.except : []).map(String));
