@@ -660,7 +660,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-hh">{title} — CAMERA<button type="button" onClick={close}>CANCEL</button></div>
             <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'finding', nodeId: n.id })}>Finding</button>
             <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'limit', nodeId: n.id })}>Limitation</button>
-            <p className="pv-foot">In the app, the camera opens on this item with three shutters: Coverage, Finding, Limitation. Holding the camera icon lists limitation reasons without a photo.</p>
+            <p className="pv-foot">In the app, the camera opens on this item with three shutters: Coverage, Finding, Limitation. Holding the camera icon asks Finding or Limitation, then shows that quick list — these are those lists.</p>
           </div>
         </div>
       );
@@ -674,7 +674,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-hh">{title} — LIMITATION<button type="button" onClick={close}>CANCEL</button></div>
             {limitationReasonsFor(n).map(r => <button key={r} type="button" className="pv-row" onClick={() => pick(r)}>{r}</button>)}
             <button type="button" className="pv-big" onClick={() => pick('Photographed — Ledrix drafts it for Review')}>PHOTOGRAPH IT — LEDRIX DRAFTS IT FOR REVIEW</button>
-            <p className="pv-foot">In the app, holding the camera icon shows this list (a limitation without a photo).</p>
+            <p className="pv-foot">In the app, holding the camera icon and choosing Limitation shows this list (saved without a photo).</p>
           </div>
         </div>
       );
