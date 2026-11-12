@@ -17,7 +17,7 @@
 // one writer Scope uses, so the recorded-work guard and sync are identical.
 import type { InspectionTemplate, TemplateNode } from '../templates/InspectionTemplate';
 import { baseIdOf, instanceOrdinal } from './instances';
-import { NOT_PRESENT, predicatesOf, isSpecPredicate, specPredicateHolds, type SpecPredicate } from './applicability';
+import { NOT_PRESENT, predicatesOf, isSpecPredicate, isUtilityPredicate, specPredicateHolds, type SpecPredicate } from './applicability';
 
 // GROUPED BY SYSTEM (owner 2026-11-08, call B: "group by system since we have more now"). A section is the system's own
 // label, in the template's system order; the Outside / Inside / Structure grouping was for the checklist-building
@@ -100,6 +100,14 @@ export function whatsHereQuestions(tpl: InspectionTemplate | null | undefined, p
     const preds = all.filter(isSpecPredicate);
     return preds.length && preds.length === all.length ? preds : null;
   };
+  /** A DESCRIBING question may also wait on a UTILITY (Gas Venting: gas on) — the item's applicability removes it when the
+   *  utility is off. Only its spec gates place it here (owner 2026-11-11, build 792: the seven look-to-answer items asked
+   *  in Details "like all the others"). A host that BUILDS the checklist keeps the strict rule above. */
+  const describingPredsOf = (base: string) => {
+    const all = predicatesOf(ruleOf.get(base) as any);
+    const preds = all.filter(isSpecPredicate);
+    return preds.length && preds.length === all.filter(p => !isUtilityPredicate(p)).length ? preds : null;
+  };
   const walk = (n: TemplateNode, sys: TemplateNode) => {
     if (n.pointsTo) return;
     const base = baseIdOf(n.id);
@@ -112,12 +120,17 @@ export function whatsHereQuestions(tpl: InspectionTemplate | null | undefined, p
       for (const attrId of picked) {
         if (!gated.has(base)) out.push(q(attrId, true));
         else if (preds) later.push({ ...q(attrId, true), followUp: { parent: preds[0].specNodeId, predicates: preds } });
+        else {
+          // A rule reads it but it waits on a utility too: not a checklist-building question, still asked as a describing one.
+          const dp = describingPredsOf(base);
+          if (dp) descLater.push({ ...q(attrId, false), followUp: { parent: dp[0].specNodeId, predicates: dp } });
+        }
       }
       const pk = packOf.get(base);
       if (!pk?.askIn && !pk?.typeRow) for (const a of attrs) {
         if (picked.includes(a.id) || !(a.values ?? []).length) continue;
         if (!gated.has(base)) desc.push(q(a.id, false));
-        else if (preds) descLater.push({ ...q(a.id, false), followUp: { parent: preds[0].specNodeId, predicates: preds } });
+        else { const dp = preds ?? describingPredsOf(base); if (dp) descLater.push({ ...q(a.id, false), followUp: { parent: dp[0].specNodeId, predicates: dp } }); }
       }
     }
     (n.children ?? []).forEach(c => walk(c, sys));

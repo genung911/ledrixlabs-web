@@ -549,13 +549,17 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       <div key={n.id} data-pv-id={n.id} className={`pv-leaf${sel ? ' sel pv-hit' : ''}`}>
         <button type="button" className="pv-leafhead" onClick={() => { emit({ systemId: sysId, nodeId: n.id }); flash(n.id); }} aria-label={`Select ${n.label} in the editor`}>
           {/* Company Tips open from the blue ⓘ on the phone, never as a line under the name (owner 2026-11-05). */}
-          <span className="pv-ct">{previewRowTitle(n, picks)}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}</span>
+          <span className="pv-ct">{previewRowTitle(n, picks)}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}
+            {/* 📋 (app build 792): amber = not described (Details), blue = described (Change opens the grid). */}
+            {moved.length ? <span role="button" tabIndex={0} className={`pv-dicon${movedMissing ? ' miss' : ''}`} aria-label={movedMissing ? 'Not described yet — Details' : `Described: ${movedVals.join(', ')} — Change`}
+              onClick={e => { e.stopPropagation(); if (!movedMissing) setOpened(o => ({ ...o, [`spec:${n.id}`]: !o[`spec:${n.id}`] })); }}>
+              <Glyph d="M9 4h6v3H9zM6 6h3M15 6h3v15H6V6M9 12h6M9 16h4" size={15} /></span> : null}
+          </span>
         </button>
-        {moved.length ? (
+        {moved.length && !showSpecs && specOpen ? (
           <div className="pv-dline">
-            <span className={movedVals.length ? '' : 'miss'}>{movedVals.length ? <b>{movedVals.join(' · ')}</b> : null}{movedVals.length ? (movedMissing ? ' · more not described yet' : ' · from Details') : 'Not described yet'}</span>
-            {movedMissing ? <em>Details ›</em> : null}
-            {!showSpecs && (movedVals.length || specOpen) ? <button type="button" onClick={() => setOpened(o => ({ ...o, [`spec:${n.id}`]: !o[`spec:${n.id}`] }))}>{specOpen ? 'Done' : 'Change'}</button> : null}
+            <span>{movedVals.length ? <b>{movedVals.join(' · ')}</b> : 'Changing details'}</span>
+            <button type="button" onClick={() => setOpened(o => ({ ...o, [`spec:${n.id}`]: false }))}>Done</button>
           </div>
         ) : null}
         {ax.condition ? <div className="pv-sec">{conditionRow(n)}</div> : null}
@@ -808,7 +812,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-leaf{background:#0d151b;border:1px solid #1f2d37;border-radius:12px;padding:10px;margin-bottom:8px}
 .ldx-pv .pv-leaf.sel{border-color:#2F8CE8;background:#10202e}
 .ldx-pv .pv-leafhead{display:flex;flex-direction:column;width:100%}
-.ldx-pv .pv-ct{color:#eef3f5;font-size:14px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;width:100%;min-width:0}
+.ldx-pv .pv-ct{color:#eef3f5;font-size:16px;font-weight:600;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;width:100%;min-width:0}
 .ldx-pv .pv-hv{margin-left:auto;color:#8fa0ad;font-size:11.5px;font-weight:400;max-width:55%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ldx-pv .pv-hv.empty{color:#f0a020}
 .ldx-pv .pv-tips{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin-left:5px;border-radius:50%;background:#217BE8;color:#fff;font:italic 800 8.5px Georgia,serif;vertical-align:1px}
@@ -867,6 +871,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-known.left{border-color:#4a3a17}
 .ldx-pv .pv-known.left .pv-knownh{background:#2a1f0b;color:#f5b03c}
 .ldx-pv .pv-knownr b.miss{color:#f5b03c}
+.ldx-pv .pv-dicon{display:inline-flex;color:#6aa8f0;cursor:pointer}.ldx-pv .pv-dicon.miss{color:#f0b44a}
 .ldx-pv .pv-dline{display:flex;align-items:center;gap:10px;padding:5px 0 3px;font-size:11px;color:#8a959c}
 .ldx-pv .pv-dline span{flex:1;min-width:0}
 .ldx-pv .pv-dline span.miss{color:#f0a020;font-weight:600}
