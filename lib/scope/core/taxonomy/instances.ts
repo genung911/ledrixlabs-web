@@ -66,6 +66,32 @@ export function isInstanceId(id: string): boolean {
 /** The library node an id refers to, instance or not. Strips EVERY suffix, so a nested
  *  instance (`bath_sink~i2~i3` — the second sink in the third bathroom) still resolves to
  *  `bath_sink`. Total: a plain id returns itself. */
+/** The library item a node is an instance or a room's copy of: its `recordOf` (a space's own copy, 2026-11-12), else
+ *  its base id. The one way to look a node up in the pack, the rules or a trade's section. */
+export function libraryIdOf(node: { id: string; recordOf?: string } | null | undefined): string {
+  if (!node) return '';
+  return typeof node.recordOf === 'string' && node.recordOf ? baseIdOf(node.recordOf) : libraryBaseOf(node.id);
+}
+
+// ── A ROOM COPY'S ITEM, BY ID (2026-11-12) ── many pack and rule lookups have only an id. Every loaded template notes
+// its room copies here (noteRoomCopies — the inspection store, Scope's provider, the report), and libraryBaseOf answers
+// with the item a copy was made from. A copy's id is unique and never re-pointed, so the map only grows. STORAGE keys
+// (answers, condition, photos) keep the copy's own id — only lookups of WHAT the item is go through this.
+const _recordOf = new Map<string, string>();
+export function noteRoomCopies(systems: readonly any[] | null | undefined): void {
+  const walk = (n: any) => {
+    if (!n || typeof n !== 'object') return;
+    if (typeof n.recordOf === 'string' && n.recordOf) _recordOf.set(baseIdOf(String(n.id)), baseIdOf(n.recordOf));
+    (n.children ?? []).forEach(walk);
+  };
+  (systems ?? []).forEach(walk);
+}
+/** baseIdOf, then through a room copy to the item it was copied from — for pack, rule, tip and section lookups. */
+export function libraryBaseOf(id: string): string {
+  const b = baseIdOf(id);
+  return _recordOf.get(b) ?? b;
+}
+
 export function baseIdOf(id: string): string {
   if (typeof id !== 'string') return id;
   const i = id.indexOf(INSTANCE_SEP);

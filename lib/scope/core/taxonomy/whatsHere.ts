@@ -16,7 +16,7 @@
 // PURE — no React, no store. The screen (WhatsHereScreen) writes every answer through SpecOptionGrid → useSpecField, the
 // one writer Scope uses, so the recorded-work guard and sync are identical.
 import type { InspectionTemplate, TemplateNode } from '../templates/InspectionTemplate';
-import { baseIdOf, instanceOrdinal } from './instances';
+import { baseIdOf, instanceOrdinal, libraryIdOf } from './instances';
 import { NOT_PRESENT, predicatesOf, isSpecPredicate, isUtilityPredicate, specPredicateHolds, type SpecPredicate } from './applicability';
 
 // GROUPED BY SYSTEM (owner 2026-11-08, call B: "group by system since we have more now"). A section is the system's own
@@ -110,7 +110,7 @@ export function whatsHereQuestions(tpl: InspectionTemplate | null | undefined, p
   };
   const walk = (n: TemplateNode, sys: TemplateNode) => {
     if (n.pointsTo) return;
-    const base = baseIdOf(n.id);
+    const base = libraryIdOf(n);   // a room's own copy asks its item's questions (2026-11-12)
     const attrs = n.attributes ?? [];
     if (n.kind === 'component' && attrs.length) {
       const want = fields.get(base);

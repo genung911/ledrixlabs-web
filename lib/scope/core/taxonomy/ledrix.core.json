@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.11.2",
+  "packVersion": "2026.11.12.1",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -9438,7 +9438,7 @@
         },
         {
           "id": "primary_bathroom_exhaust_fan",
-          "label": "Exhaust Fan (Bath / Laundry)",
+          "label": "Exhaust Fan",
           "keywords": [
             "exhaust fan",
             "bath fan",

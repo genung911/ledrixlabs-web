@@ -6776,7 +6776,7 @@
           "children": [
             {
               "id": "primary_bathroom_exhaust_fan",
-              "label": "Exhaust Fan (Bath / Laundry)",
+              "label": "Exhaust Fan",
               "kind": "component",
               "keywords": [
                 "exhaust fan",
@@ -8039,7 +8039,7 @@
             },
             {
               "id": "space_laundry__link_primary_bathroom_exhaust_fan",
-              "label": "Exhaust Fan (Bath / Laundry)",
+              "label": "Exhaust Fan",
               "kind": "component",
               "pointsTo": {
                 "systemId": "interior",
@@ -8160,7 +8160,7 @@
           "children": [
             {
               "id": "space_bathroom__link_primary_bathroom_exhaust_fan",
-              "label": "Exhaust Fan (Bath / Laundry)",
+              "label": "Exhaust Fan",
               "kind": "component",
               "pointsTo": {
                 "systemId": "interior",
