@@ -401,9 +401,22 @@ function ReportsPanel({ reports, seals, portal, phase }: { reports: ReportRow[];
     if (!path) return;
     setOpening(path); setFailed(null);
     const url = await signReportFile(path);
+    if (!url) { setOpening(null); setFailed(path); return; }
+    // THE WEB REPORT OPENS AS A PAGE (owner 2026-11-12: it showed raw HTML with "â€”" for every dash). Storage serves
+    // the stored .html as plain text with no charset, so the browser printed its source. It is fetched and opened as
+    // a UTF-8 page instead; the PDF opens as before.
+    if (/\.html?$/i.test(path)) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(String(res.status));
+        const page = new Blob([await res.arrayBuffer()], { type: 'text/html;charset=utf-8' });
+        setOpening(null);
+        window.open(URL.createObjectURL(page), '_blank', 'noopener');
+      } catch { setOpening(null); setFailed(path); }
+      return;
+    }
     setOpening(null);
-    if (url) window.open(url, '_blank', 'noopener');
-    else setFailed(path);
+    window.open(url, '_blank', 'noopener');
   }
 
   return (
