@@ -69,6 +69,9 @@ export type TemplateNode = {
   startsLimited?: Array<{ field: string; value: string; reason: string; sentence: string }>;
   freeFormValue?: boolean;
   pointsTo?: { systemId: string; nodeId: string };
+  /** A ROOM'S OWN COPY of a system's item (app 2026-11-12): in an inspection a space's link becomes the room's own record;
+   *  this names the item it was copied from. Company templates keep links, so the builder never writes it. */
+  recordOf?: string;
   /** A SPACE (app 2026-11-10): a top-level room section whose items are all links — the app's TemplateNode.space. */
   space?: true;
   /** The room a space files captures under (app TemplateNode.room). */
