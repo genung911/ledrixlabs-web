@@ -43,7 +43,7 @@ export type PreviewSelection = { systemId: string | null; nodeId: string | null 
 // card that Next / Back stops on between two systems — a state of the walk, never a step.
 type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string; group?: string } | { kind: 'step'; key: string }
   | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' };
-type Sheet = { kind: 'limit' | 'finding'; nodeId: string } | null;
+type Sheet = { kind: 'limit' | 'finding' | 'camera'; nodeId: string } | null;
 
 // ── icons (MaterialCommunityIcons names the app's pack uses → simple inline strokes) ──
 const PATHS: Record<string, string> = {
@@ -494,20 +494,20 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
   };
 
+  // ✓ + 📷 (app build 789, owner 2026-11-11: "a satisfactory and a camera button to open the camera and then shutter is
+  // chosen"). The preview has no camera: 📷 opens a sheet with the camera's Finding / Limitation shutters.
   const conditionRow = (n: TemplateNode) => {
     const c = cond[n.id];
     return (
       <>
-        <div className="pv-conds">
-          <button type="button" className={`pv-cbtn${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' dis' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'}
+        <div className="pv-conds pv-icons">
+          {c === 'fnd' ? <span className="pv-verdict fnd">⚑ Finding</span> : c === 'lim' ? <span className="pv-verdict lim">⚠ Limited</span> : null}
+          <button type="button" className={`pv-ibtn${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' dis' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'} aria-label="Satisfactory"
             onClick={() => setCond(p => { const o = { ...p }; if (o[n.id] === 'ok') delete o[n.id]; else o[n.id] = 'ok'; return o; })}>
-            <Glyph d={G.check} size={18} /><span>Satisfactory</span>
+            <Glyph d={G.check} size={20} />
           </button>
-          <button type="button" className={`pv-cbtn${c === 'lim' ? ' lim' : ''}`} aria-pressed={c === 'lim'} onClick={() => setSheet({ kind: 'limit', nodeId: n.id })}>
-            <Glyph d={G.alert} size={18} /><span>Limitation</span>
-          </button>
-          <button type="button" className={`pv-cbtn${c === 'fnd' ? ' fnd' : ''}`} aria-pressed={c === 'fnd'} onClick={() => setSheet({ kind: 'finding', nodeId: n.id })}>
-            <Glyph d={G.flag} size={18} /><span>Finding</span>
+          <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
+            <Glyph d={G.camera} size={20} />
           </button>
         </div>
         {c === 'lim' && limReason[n.id] ? <div className="pv-limline">{limReason[n.id]}</div> : null}
@@ -558,7 +558,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             {!showSpecs && (movedVals.length || specOpen) ? <button type="button" onClick={() => setOpened(o => ({ ...o, [`spec:${n.id}`]: !o[`spec:${n.id}`] }))}>{specOpen ? 'Done' : 'Change'}</button> : null}
           </div>
         ) : null}
-        {ax.condition ? <div className="pv-sec"><div className="pv-cap">CONDITION</div>{conditionRow(n)}</div> : null}
+        {ax.condition ? <div className="pv-sec">{conditionRow(n)}</div> : null}
         {gridAttrs.map((a, i) => (
           <div key={a.id} className={`pv-sec${ax.condition || i > 0 ? ' div' : ''}`}>
             {optionGrid(n, pickKey(n.id, a.id), named ? a.label.toUpperCase() : 'MATERIAL / TYPE', previewOffered(n, a.id, a.values, picks), !!a.multi, named ? `Add ${a.label.toLowerCase()}` : 'Add a material')}
@@ -652,6 +652,19 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const loc = index.byId[sheet.nodeId]; if (!loc) return null;
     const n = loc.node; const title = n.label.toUpperCase();
     const close = () => setSheet(null);
+    if (sheet.kind === 'camera') {
+      return (
+        <div className="pv-sheetbg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
+          <div className="pv-sheet" role="dialog" aria-label={`${n.label} — camera`}>
+            <div className="pv-hd" />
+            <div className="pv-hh">{title} — CAMERA<button type="button" onClick={close}>CANCEL</button></div>
+            <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'finding', nodeId: n.id })}>Finding</button>
+            <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'limit', nodeId: n.id })}>Limitation</button>
+            <p className="pv-foot">In the app, the camera opens on this item with three shutters: Coverage, Finding, Limitation. Holding the camera icon lists limitation reasons without a photo.</p>
+          </div>
+        </div>
+      );
+    }
     if (sheet.kind === 'limit') {
       const pick = (r: string) => { setCond(p => ({ ...p, [n.id]: 'lim' })); setLimReason(p => ({ ...p, [n.id]: r })); close(); };
       return (
@@ -661,7 +674,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-hh">{title} — LIMITATION<button type="button" onClick={close}>CANCEL</button></div>
             {limitationReasonsFor(n).map(r => <button key={r} type="button" className="pv-row" onClick={() => pick(r)}>{r}</button>)}
             <button type="button" className="pv-big" onClick={() => pick('Photographed — Ledrix drafts it for Review')}>PHOTOGRAPH IT — LEDRIX DRAFTS IT FOR REVIEW</button>
-            <p className="pv-foot">In the app, a tap on Limitation opens the camera; holding it shows this list.</p>
+            <p className="pv-foot">In the app, holding the camera icon shows this list (a limitation without a photo).</p>
           </div>
         </div>
       );
@@ -806,6 +819,12 @@ const CSS_TEXT = `
 .ldx-pv .pv-cap{display:flex;justify-content:space-between;align-items:baseline;gap:8px;color:#8a959c;font-size:10px;font-weight:800;letter-spacing:1.2px;margin-bottom:7px}
 .ldx-pv .pv-cap em{font-style:normal;color:#6f7b82;font-size:10px;font-weight:600;letter-spacing:0}
 .ldx-pv .pv-conds{display:flex;gap:6px}
+.ldx-pv .pv-icons{justify-content:flex-end;align-items:center;gap:8px}
+.ldx-pv .pv-ibtn{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#12181c;border:1px solid #2a3439;color:#7c878e}
+.ldx-pv .pv-ibtn.ok{background:#0f2a1d;border-color:#2f8a5a;color:#7dd3a0}
+.ldx-pv .pv-ibtn.cam{color:#9cc4f2}
+.ldx-pv .pv-ibtn.dis{opacity:.35}
+.ldx-pv .pv-verdict{font-size:12px;font-weight:800;margin-right:auto}.ldx-pv .pv-verdict.fnd{color:#ffa3a3}.ldx-pv .pv-verdict.lim{color:#f5c46a}
 .ldx-pv .pv-cbtn{flex:1;min-height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#12181c;border:1px solid #2a3439;color:#7c878e;font-size:11.5px;font-weight:700}
 .ldx-pv .pv-cbtn span{color:#c7d0d6}
 .ldx-pv .pv-cbtn.ok{background:#0f2a1d;border-color:#2f8a5a;color:#7dd3a0}.ldx-pv .pv-cbtn.ok span{color:#9fe3bb}
