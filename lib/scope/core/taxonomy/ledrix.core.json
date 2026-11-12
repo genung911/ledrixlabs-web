@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.11.1",
+  "packVersion": "2026.11.11.2",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -11313,6 +11313,86 @@
             "includes": [
               "electric",
               "pellet"
+            ]
+          }
+        },
+        {
+          "node": "elec_smoke"
+        },
+        {
+          "node": "safety_smoke"
+        },
+        {
+          "node": "hvac_win_operation"
+        },
+        {
+          "node": "hvac_evap_blower"
+        },
+        {
+          "node": "plumb_sump"
+        },
+        {
+          "node": "found_cs_sump"
+        },
+        {
+          "node": "found_bsmt_sump"
+        },
+        {
+          "node": "ext_lighting"
+        },
+        {
+          "node": "ext_spa"
+        },
+        {
+          "node": "gar_opener"
+        },
+        {
+          "node": "ext_garage_door"
+        },
+        {
+          "node": "primary_bathroom_exhaust_fan"
+        },
+        {
+          "node": "int_bath_fan"
+        },
+        {
+          "node": "interior_nc_appliances"
+        },
+        {
+          "node": "kit_microwave"
+        },
+        {
+          "node": "appl_fridge"
+        },
+        {
+          "node": "appl_oven"
+        },
+        {
+          "node": "appl_hood"
+        },
+        {
+          "node": "appl_dishwasher"
+        },
+        {
+          "node": "appl_microwave"
+        },
+        {
+          "node": "appl_disposal"
+        },
+        {
+          "node": "appl_washer"
+        },
+        {
+          "node": "appl_dryer"
+        },
+        {
+          "node": "appl_range",
+          "when": {
+            "specNodeId": "kit_range",
+            "includes": [
+              "electric",
+              "induction",
+              "dual fuel"
             ]
           }
         }
