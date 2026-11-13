@@ -1238,7 +1238,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_2",
@@ -1270,7 +1276,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_3",
@@ -1302,7 +1314,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_4",
@@ -1334,7 +1352,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_5",
@@ -1366,7 +1390,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_6",
@@ -1398,7 +1428,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_7",
@@ -1430,7 +1466,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_head_8",
@@ -1462,7 +1504,13 @@
               "emptyLabel": "Unknown"
             }
           ],
-          "condition": true
+          "condition": true,
+          "findingShortcuts": [
+            {
+              "id": "fs_ms_filter_dirty",
+              "label": "Filter dirty / clogged — clean the washable filter"
+            }
+          ]
         },
         {
           "id": "hvac_ms_remote",

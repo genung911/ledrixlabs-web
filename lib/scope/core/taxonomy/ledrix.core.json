@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.12.3",
+  "packVersion": "2026.11.12.4",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -445,7 +445,8 @@
               "includes": [],
               "unlisted": [
                 "Electric Baseboard",
-                "Electric Wall Heater"
+                "Electric Wall Heater",
+                "Ductless Mini-Split"
               ],
               "exact": true
             }
@@ -795,7 +796,8 @@
               "includes": [],
               "unlisted": [
                 "Electric Baseboard",
-                "Electric Wall Heater"
+                "Electric Wall Heater",
+                "Ductless Mini-Split"
               ],
               "exact": true
             }
