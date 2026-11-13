@@ -681,12 +681,16 @@ async function runTypes(files) {
       L && L.question.field === KEY && L.question.label === 'AC System Type'
       && L.question.values.join('|') === 'Split System|Package Unit|Ductless Mini-Split|Window / Wall AC|Heat Pump AC|Evaporative Cooler');
     const coolingItems = E.flatItems(sys('cooling')).map(x => x.node).filter(n => n.kind === 'component' && n.id !== 'hvac_cooling');
-    const packFor = (id, v) => (PACK_RULES[id]?.requires ?? []).filter(p => p.specNodeId === KEY).every(p => p.includes.includes(v))
-      && (PACK_RULES[id]?.requires ?? []).some(p => p.specNodeId === KEY);
+    // 2026-11-12 (owner: "Window unit in cooling should not carry the thermostat"): the default's own type rule on a
+    // linked item (Thermostat: appliesWhen hvac_cooling::spec) counts the same as the pack's.
+    const tplRule = (id) => { const n = coolingItems.find(x => x.id === id); const w = n?.appliesWhen; return w && w.field === KEY ? w.anyOf : null; };
+    const packFor = (id, v) => (tplRule(id) ? tplRule(id).includes(v) : ((PACK_RULES[id]?.requires ?? []).filter(p => p.specNodeId === KEY).every(p => p.includes.includes(v))
+      && (PACK_RULES[id]?.requires ?? []).some(p => p.specNodeId === KEY)));
     r('types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', L && L.question.values.every(v =>
       JSON.stringify(expand(L, TL.itemsForType(L, v))) === JSON.stringify(coolingItems.filter(n => packFor(n.id, v)).map(n => n.id).sort())));
     r('types: items with no type rule are "Every cooling system"; Heat Pump and Backup Heat follow the heating answer in their own section',
-      L && L.every.map(n => n.label).join('|') === 'AC Age|Thermostat'
+      // 2026-11-12: Thermostat now has a type rule (ducted types and evaporative coolers), so only AC Age is every type.
+      L && L.every.map(n => n.label).join('|') === 'AC Age'
       && L.other.map(o => `${o.node.label}<${o.question.label}`).join('|') === 'Heat Pump<Heating System Type|Backup Heat<Heating System Type');
     const H = layout('heating'), WH = layout('water_heater');
     r('types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list',
