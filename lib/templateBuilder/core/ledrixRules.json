@@ -1,7 +1,20 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.12.2",
+ "packVersion": "2026.11.12.3",
  "nodes": {
+  "hvac_heating_age": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Radiant Heat"
+     ]
+    }
+   ]
+  },
   "hvac_type_boiler": {
    "requires": [
     {
@@ -62,6 +75,19 @@
     }
    ]
   },
+  "hvac_distribution": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Ductless Mini-Split"
+     ]
+    }
+   ]
+  },
   "hvac_ducts": {
    "requires": [
     {
@@ -69,6 +95,27 @@
      "includes": [
       "forced air",
       "fan coil"
+     ]
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Ductless Mini-Split",
+      "Radiant Heat"
+     ]
+    }
+   ]
+  },
+  "hvac_thermostat": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Ductless Mini-Split"
      ]
     }
    ]
@@ -143,6 +190,19 @@
      "exact": true,
      "whenUnanswered": "not_applicable",
      "attr": "efficiency"
+    }
+   ]
+  },
+  "hvac_dataplate": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [
+      "Electric Baseboard",
+      "Electric Wall Heater",
+      "Radiant Heat"
+     ]
     }
    ]
   },
@@ -1627,6 +1687,32 @@
     }
    ]
   },
+  "roof_scuppers": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [
+      "TPO (Flat)",
+      "EPDM (Flat)",
+      "Modified Bitumen"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "roof_ridgeline": {
+   "requires": [
+    {
+     "specNodeId": "roof_material::type",
+     "includes": [],
+     "unlisted": [
+      "TPO (Flat)",
+      "EPDM (Flat)",
+      "Modified Bitumen"
+     ]
+    }
+   ]
+  },
   "found_cs_access": {
    "dependsOnSpec": {
     "nodeId": "found_type::type",
@@ -2512,6 +2598,18 @@
     }
    ]
   },
+  "fp_firebox": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [
+      "Electric"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
   "fp_damper": {
    "requires": [
     {
@@ -2645,6 +2743,17 @@
    ]
   },
   "fp_arrestor": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [
+      "Electric",
+      "Decorative Only"
+     ],
+     "attr": "spec"
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "fp_chimney",
     "includes": [
@@ -2695,7 +2804,8 @@
    "dependsOnSpec": {
     "nodeId": "fp_type",
     "includes": [
-     "gas"
+     "gas",
+     "wood"
     ]
    }
   },

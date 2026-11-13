@@ -1084,8 +1084,7 @@
             "anyOf": [
               "Split System",
               "Package Unit",
-              "Heat Pump AC",
-              "Evaporative Cooler"
+              "Heat Pump AC"
             ]
           }
         },
@@ -3977,6 +3976,24 @@
               "walkZones": [
                 "roof",
                 "exterior"
+              ]
+            },
+            {
+              "id": "roof_scuppers",
+              "label": "Scuppers / Roof Drains",
+              "kind": "component",
+              "keywords": [
+                "scupper",
+                "roof drain",
+                "interior drain",
+                "overflow scupper",
+                "flat roof drain"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Visible",
+                "Not Accessible"
               ]
             }
           ],
