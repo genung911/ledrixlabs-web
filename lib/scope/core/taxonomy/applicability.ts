@@ -63,7 +63,12 @@ export type Utility = 'water' | 'gas' | 'power';
  *  decision 1). `origin: 'template'` tells typeConditions this is not a Ledrix per-type card. Absent = unchanged. */
 /** `attr` (2026-11-03, round 2): the field id, for a per-type card whose host keeps its field at the BARE id
  *  (`plumb_supply`) — read only by typeConditions' card link; the resolver ignores it. */
-export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string };
+/** `orSpec` (2026-11-12, owner: a mini-split's Indoor Heads "filled out in either" Heating or Cooling): OTHER answers
+ *  that satisfy the same predicate. It holds when its own field OR any alternative holds; it is unanswered only when
+ *  every one of them is. Without `orSpec` nothing changes. Read only by the resolver — every other reader keys on the
+ *  predicate's own `specNodeId`, which stays the field the item belongs to. */
+export type SpecAlternative = { specNodeId: string; includes: readonly string[]; unlisted?: readonly string[]; exact?: true };
+export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string; orSpec?: readonly SpecAlternative[] };
 export type UtilityPredicate = { utility: Utility };
 export type Predicate = SpecPredicate | UtilityPredicate;
 
@@ -295,13 +300,17 @@ export function resolveApplicability(
 
   for (const p of predicates) {
     if (isSpecPredicate(p)) {
-      const raw = facts.specValue(p.specNodeId);
-      const val = norm(raw);
-      if (!val) {
+      // The predicate's own field, then any alternative (orSpec): the ANSWERED ones decide; all unanswered is Rule 2.
+      const fields: { f: { includes?: readonly string[]; unlisted?: readonly string[]; exact?: true }; v: string }[] = [];
+      for (const f of [p, ...(Array.isArray(p.orSpec) ? p.orSpec : [])]) {
+        const v = norm(facts.specValue(f.specNodeId));
+        if (v) fields.push({ f, v });
+      }
+      if (!fields.length) {
         if (p.whenUnanswered === 'not_applicable') { required = true; continue; }  // Rule 2, opted out
         pending.push(p); continue;                                                // Rule 2
       }
-      if (!specPredicateHolds(val, p)) excluded = true;  // Rule 3
+      if (!fields.some(x => specPredicateHolds(x.v, x.f))) excluded = true;  // Rule 3
       continue;
     }
     if (isUtilityPredicate(p)) {

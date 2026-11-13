@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.12.4",
+ "packVersion": "2026.11.12.5",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -662,7 +662,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     }
    ]
   },
@@ -674,7 +683,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -701,7 +719,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -727,7 +754,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -752,7 +788,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -776,7 +821,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -799,7 +853,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -821,7 +884,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
@@ -842,7 +914,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     },
     {
      "specNodeId": "hvac_ms_heads",
