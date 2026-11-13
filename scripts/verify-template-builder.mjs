@@ -905,7 +905,7 @@ async function runTypes(files) {
       const wit = clone(fresh); const wEl = wit.systems.find(x => x.id === 'electrical');
       { const walkC = (n) => { const i = (n.children ?? []).findIndex(c => c.id === 'elec_svc_drop'); if (i >= 0) { n.children.splice(i + 1, 0, { ...clone(n.children[i]), id: 'elec_svc_drop~i2' }); return true; } return (n.children ?? []).some(walkC); }; walkC(wEl); }
       r('electrical: no type chips — a question that brings several items but decides under a third of the system stays a group list; Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
-        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|water_heater'
+        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|roofing|water_heater' /* + roofing 2026-11-12: Ridge / Sag Line and Scuppers follow the roof material */
         && !!CTS_find(wit, 'elec_svc_drop~i2') && !TL.typeLayoutOf(wit, wEl, PM.rulesFor(wit)));
       const row = (b, v) => ids(b?.rows.find(x => x.value === v)?.cards);
       const se = svc?.brought.find(b => b.label === 'Service Entrance');
@@ -1026,8 +1026,11 @@ async function runTypes(files) {
     }
     }
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
-      typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.length > 0 && L.every.every(n => ruleFree(n.id)))
-      && typedSystems.find(([s]) => s.id === 'heating')[1].every.map(n => n.id).join('|') === 'hvac_heating_age|hvac_dataplate|hvac_distribution|hvac_thermostat');
+      // AMENDED 2026-11-12 (owner, type pass): Heating's four every-type items (Age, Data Plate, Distribution, Thermostat)
+      // and every Fireplace item now follow their type, so those two have none; the rest still have some.
+      typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.every(n => ruleFree(n.id)))
+      && typedSystems.filter(([s]) => !['heating', 'fireplace'].includes(s.id)).every(([, L]) => L.every.length > 0)
+      && typedSystems.find(([s]) => s.id === 'heating')[1].every.length === 0);
     // Owner 2026-11-05 ("Make that change"): Furnace and Cabinet / Access are forced-air only — Ledrix's own rule, in the
     // pack. The builder files them under the forced-air types, and the preview (the phone's resolver) agrees per type.
     {
@@ -1042,8 +1045,11 @@ async function runTypes(files) {
         && ['hvac_furnace', 'hvac_cabinet'].every(id => FORCED.every(v => heatShows(id, v)) && OTHERS.every(v => !heatShows(id, v))));
     }
     const FP = typedSystems.find(([s]) => s.id === 'fireplace')?.[1];
-    r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Fireplace: by Chimney)',
-      !!FP && FP.gated.some(g => g.key.startsWith('fp_chimney') && g.nodes.length > 0 && g.nodes.every(n => !FP.every.includes(n))));
+    // AMENDED 2026-11-12: the Fireplace's chimney-ruled items now follow its type too; Heating's Furnace Efficiency rows are
+    // the example of an item another question in the system decides.
+    const HEL = typedSystems.find(([s]) => s.id === 'heating')?.[1];
+    r('types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Heating: by Furnace Efficiency)',
+      !!FP && !!HEL && HEL.gated.some(g => g.key.startsWith('hvac_furnace_eff') && g.nodes.length > 0 && g.nodes.every(n => !HEL.every.includes(n))));
     // a special-home checkpoint added to Heating lands in "Special homes", not "Every"
     let d2 = T.createDraft({ companyId: 'co_1', templateId: 'tpl_2', live: clone(DEFAULT_TREE), now: 5000 });
     const SH = await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href);
@@ -1730,7 +1736,7 @@ const EXEC_MUT = [
   { name: 'switching an item off deletes it instead', file: 'editorModel.ts', from: ": [{ op: 'trimNode', nodeId: id }];", to: ": [{ op: 'unaddNode', nodeId: id } as any];", check: 'switch: an item switched off is kept (off, offered on site) and switching it on brings it back', run: runDesktop },
   { name: 'a set-aside system comes back uncovered', file: 'editorModel.ts', from: "return r.ok ? [...back, ...ops.coverByDefault(r.tpl, id, true)] : back;", to: "return back;", check: 'switch: a set-aside system switched on comes back COVERED (restore + defaultActive true)', run: runDesktop },
   { name: 'a system switch sets the system aside', file: 'editorModel.ts', from: "return loc.depth === 0 ? ops.coverByDefault(tree, id, false) : [{ op: 'trimNode', nodeId: id }];", to: "return [{ op: 'trimNode', nodeId: id }];", check: 'switch: a system\'s switch is coverByDefault (it stays in the template, offered on site) — never a set-aside', run: runDesktop },
-  { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Fireplace: by Chimney)', run: runTypes },
+  { name: 'an item another question decides is called Every', file: 'typeLayout.ts', from: "    if (inner) {", to: "    if (false) {", check: 'types: an item another question in the system decides gets its own "Shown by …" section, not "Every" (Heating: by Furnace Efficiency)', run: runTypes },
   { name: 'the preview row title ignores the type', file: 'core/answerShapes.ts', from: "  if (!tt || !v) return label;", to: "  return label;", check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
   { name: 'the Propane name is not applied', file: 'core/answerShapes.ts', from: "const base = tt.map && typeof tt.map[v] === 'string' ? tt.map[v] : v;", to: "const base = v;", check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
   { name: 'the type titles are not exported', file: 'core/ledrixRules.json', from: ' "typeTitles": {', to: ' "x_typeTitles": {', check: 'types: the preview titles the Furnace by its picked type, as Scope does ("Gas Furnace", "Heat Pump", "Propane" → "Propane Furnace"; none or two picked → "Furnace"); other rows keep their names', run: runTypes },
