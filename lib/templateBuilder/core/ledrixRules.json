@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.13.1",
+ "packVersion": "2026.11.13.2",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -10,7 +10,8 @@
      "unlisted": [
       "Electric Baseboard",
       "Electric Wall Heater",
-      "Radiant Heat"
+      "Radiant Heat",
+      "Ductless Mini-Split"
      ],
      "typeFirst": true
     }
@@ -32,9 +33,7 @@
    "requires": [
     {
      "specNodeId": "hvac_heating::fuel_source",
-     "includes": [
-      "Ductless Mini-Split"
-     ],
+     "includes": [],
      "exact": true,
      "whenUnanswered": "not_applicable"
     }
@@ -228,7 +227,8 @@
      "unlisted": [
       "Electric Baseboard",
       "Electric Wall Heater",
-      "Radiant Heat"
+      "Radiant Heat",
+      "Ductless Mini-Split"
      ],
      "typeFirst": true
     }
@@ -417,7 +417,9 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [],
-     "unlisted": [],
+     "unlisted": [
+      "Ductless Mini-Split"
+     ],
      "typeFirst": true
     }
    ]
@@ -579,7 +581,9 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [],
-     "unlisted": [],
+     "unlisted": [
+      "Ductless Mini-Split"
+     ],
      "typeFirst": true
     }
    ]
@@ -589,7 +593,9 @@
     {
      "specNodeId": "hvac_cooling::spec",
      "includes": [],
-     "unlisted": [],
+     "unlisted": [
+      "Ductless Mini-Split"
+     ],
      "typeFirst": true
     }
    ]
@@ -634,9 +640,7 @@
    "requires": [
     {
      "specNodeId": "hvac_cooling::spec",
-     "includes": [
-      "Ductless Mini-Split"
-     ],
+     "includes": [],
      "exact": true,
      "whenUnanswered": "not_applicable"
     }
@@ -673,8 +677,7 @@
      "includes": [
       "Split System",
       "Package Unit",
-      "Heat Pump AC",
-      "Ductless Mini-Split"
+      "Heat Pump AC"
      ],
      "exact": true,
      "typeFirst": true
@@ -688,8 +691,7 @@
      "includes": [
       "Split System",
       "Package Unit",
-      "Heat Pump AC",
-      "Ductless Mini-Split"
+      "Heat Pump AC"
      ],
      "exact": true,
      "typeFirst": true
@@ -717,8 +719,7 @@
      "includes": [
       "Split System",
       "Package Unit",
-      "Heat Pump AC",
-      "Ductless Mini-Split"
+      "Heat Pump AC"
      ],
      "exact": true,
      "typeFirst": true
@@ -732,8 +733,7 @@
      "includes": [
       "Split System",
       "Package Unit",
-      "Heat Pump AC",
-      "Ductless Mini-Split"
+      "Heat Pump AC"
      ],
      "exact": true,
      "typeFirst": true
@@ -809,6 +809,111 @@
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_ms_unit": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_ms_unit_age": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_ms_dataplate": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_ms_disconnect": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_ms_condensate": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [
+      "Ductless Mini-Split"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     }
    ]
   },
@@ -1101,7 +1206,16 @@
       "Ductless Mini-Split"
      ],
      "exact": true,
-     "whenUnanswered": "not_applicable"
+     "whenUnanswered": "not_applicable",
+     "orSpec": [
+      {
+       "specNodeId": "hvac_heating::fuel_source",
+       "includes": [
+        "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
     }
    ]
   },

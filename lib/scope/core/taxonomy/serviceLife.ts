@@ -52,6 +52,8 @@ export function serviceLifeKindOf(text: string): string | null {
   if (/water.?heater|\bwh\b/i.test(t)) return /tankless|on.?demand|instant/i.test(t) ? 'water_heater_tankless' : 'water_heater_tank';
   if (/boiler/i.test(t)) return 'boiler';
   if (/heat.?pump/i.test(t)) return 'heat_pump';
+  // A mini-split IS a heat pump (2026-11-13): 10–15 years, never a furnace's 15–20 ("Heating Ductless Mini-Split").
+  if (/mini.?split|ductless/i.test(t)) return 'heat_pump';
   if (/(central )?air.?cond|a\/?c\b|condenser|cooling/i.test(t)) return 'ac';
   if (/furnace|heating/i.test(t)) return 'furnace';
   if (/roof|shingle/i.test(t)) return 'roof';

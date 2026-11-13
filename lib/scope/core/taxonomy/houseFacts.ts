@@ -91,3 +91,9 @@ export function houseSpecValue(extras: Readonly<Record<string, unknown>> | null 
   const v = extras[field];
   return typeof v === 'string' && v.trim() ? v : undefined;
 }
+
+/** The type questions every other item of their system waits for (type first, phase 2): host id → its field. Read by the
+ *  report's verdict — a system whose type is unanswered is never Satisfactory (verify:system-verdict). */
+export const TYPE_HOST_FIELDS: Readonly<Record<string, string>> = Object.fromEntries(
+  HOUSE_FACTS.flatMap(f => (f.source.kind === 'spec' ? [[f.source.nodeId, f.source.attr]] : [])),
+);

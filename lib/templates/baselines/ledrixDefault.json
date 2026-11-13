@@ -347,22 +347,6 @@
               "keywords": [],
               "trimmed": [],
               "condition": true
-            },
-            {
-              "id": "heating__link_hvac_ms_heads",
-              "label": "Indoor Heads & Outdoor Unit",
-              "kind": "component",
-              "pointsTo": {
-                "systemId": "cooling",
-                "nodeId": "hvac_ms_heads"
-              },
-              "appliesWhen": {
-                "field": "hvac_heating::fuel_source",
-                "anyOf": [
-                  "Ductless Mini-Split"
-                ]
-              },
-              "whenUnknown": "hide"
             }
           ],
           "trimmed": []
@@ -1175,6 +1159,139 @@
           "limitations": [
             "Not Operated"
           ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior"
+      ]
+    },
+    {
+      "id": "mini_split",
+      "label": "MINI-SPLIT",
+      "kind": "system",
+      "icon": "air-conditioner",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "hvac_ms_unit",
+          "label": "Outdoor Unit",
+          "kind": "component",
+          "keywords": [
+            "mini-split outdoor unit",
+            "ductless condenser",
+            "mini split condenser",
+            "outdoor unit",
+            "multi-zone outdoor"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "refrigerant",
+              "label": "Refrigerant",
+              "values": [
+                "R-410A",
+                "R-32",
+                "R-454B",
+                "R-22"
+              ],
+              "optional": true
+            },
+            {
+              "id": "size",
+              "label": "Size",
+              "values": [
+                "9000 BTU",
+                "12000 BTU",
+                "18000 BTU",
+                "24000 BTU",
+                "30000 BTU",
+                "36000 BTU",
+                "42000 BTU",
+                "48000 BTU"
+              ],
+              "optional": true
+            },
+            {
+              "id": "max_breaker",
+              "label": "Max Breaker (Plate)",
+              "values": [
+                "15 A",
+                "20 A",
+                "25 A",
+                "30 A",
+                "35 A",
+                "40 A"
+              ],
+              "optional": true
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "hvac_ms_unit_age",
+          "label": "Mini-Split Age",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "age",
+              "label": "Age",
+              "values": [
+                "Under 5 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
+                "Over 25 years old",
+                "Not determined"
+              ]
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "hvac_ms_dataplate",
+          "label": "Data Plate (Make/Model)",
+          "kind": "component",
+          "keywords": [
+            "mini-split data plate",
+            "outdoor unit label",
+            "model number",
+            "serial number"
+          ],
+          "trimmed": [],
+          "condition": true
+        },
+        {
+          "id": "hvac_ms_disconnect",
+          "label": "Mini-Split Disconnect",
+          "kind": "component",
+          "keywords": [
+            "mini-split disconnect",
+            "outdoor unit disconnect",
+            "service disconnect"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ]
+        },
+        {
+          "id": "hvac_ms_condensate",
+          "label": "Condensate Line",
+          "kind": "component",
+          "keywords": [
+            "mini-split condensate",
+            "head condensate line",
+            "condensate pump"
+          ],
+          "trimmed": [],
+          "condition": true
         },
         {
           "id": "hvac_ms_heads",
@@ -1533,7 +1650,8 @@
       "locationAxis": "room",
       "walkZone": "exterior",
       "walkZones": [
-        "exterior"
+        "exterior",
+        "interior"
       ]
     },
     {

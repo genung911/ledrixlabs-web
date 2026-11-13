@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.13.1",
-  "revision": 280,
+  "packVersion": "2026.11.13.2",
+  "revision": 281,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -86,7 +86,8 @@
               "unlisted": [
                 "Electric Baseboard",
                 "Electric Wall Heater",
-                "Radiant Heat"
+                "Radiant Heat",
+                "Ductless Mini-Split"
               ],
               "typeFirst": true
             }
@@ -129,14 +130,13 @@
           "requires": [
             {
               "specNodeId": "hvac_heating::fuel_source",
-              "includes": [
-                "Ductless Mini-Split"
-              ],
+              "includes": [],
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
           ],
-          "typeRow": true
+          "typeRow": true,
+          "retired": "2026-11-13: the Mini-Split unit rates it"
         },
         {
           "id": "hvac_type_radiant",
@@ -625,7 +625,8 @@
               "unlisted": [
                 "Electric Baseboard",
                 "Electric Wall Heater",
-                "Radiant Heat"
+                "Radiant Heat",
+                "Ductless Mini-Split"
               ],
               "typeFirst": true
             }
@@ -1024,7 +1025,9 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [],
-              "unlisted": [],
+              "unlisted": [
+                "Ductless Mini-Split"
+              ],
               "typeFirst": true
             }
           ]
@@ -1372,7 +1375,9 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [],
-              "unlisted": [],
+              "unlisted": [
+                "Ductless Mini-Split"
+              ],
               "typeFirst": true
             }
           ]
@@ -1521,7 +1526,9 @@
             {
               "specNodeId": "hvac_cooling::spec",
               "includes": [],
-              "unlisted": [],
+              "unlisted": [
+                "Ductless Mini-Split"
+              ],
               "typeFirst": true
             }
           ]
@@ -1609,14 +1616,13 @@
           "requires": [
             {
               "specNodeId": "hvac_cooling::spec",
-              "includes": [
-                "Ductless Mini-Split"
-              ],
+              "includes": [],
               "exact": true,
               "whenUnanswered": "not_applicable"
             }
           ],
-          "typeRow": true
+          "typeRow": true,
+          "retired": "2026-11-13: the Mini-Split unit rates it"
         },
         {
           "id": "ac_type_window",
@@ -1728,8 +1734,7 @@
               "includes": [
                 "Split System",
                 "Package Unit",
-                "Heat Pump AC",
-                "Ductless Mini-Split"
+                "Heat Pump AC"
               ],
               "exact": true,
               "typeFirst": true
@@ -1755,8 +1760,7 @@
               "includes": [
                 "Split System",
                 "Package Unit",
-                "Heat Pump AC",
-                "Ductless Mini-Split"
+                "Heat Pump AC"
               ],
               "exact": true,
               "typeFirst": true
@@ -1827,8 +1831,7 @@
               "includes": [
                 "Split System",
                 "Package Unit",
-                "Heat Pump AC",
-                "Ductless Mini-Split"
+                "Heat Pump AC"
               ],
               "exact": true,
               "typeFirst": true
@@ -1879,8 +1882,7 @@
               "includes": [
                 "Split System",
                 "Package Unit",
-                "Heat Pump AC",
-                "Ductless Mini-Split"
+                "Heat Pump AC"
               ],
               "exact": true,
               "typeFirst": true
@@ -2040,6 +2042,265 @@
             }
           ],
           "layout": "row"
+        }
+      ],
+      "subsystems": [
+        {
+          "id": "cooling__core",
+          "name": "Cooling",
+          "nodeIds": [
+            "hvac_cooling",
+            "hvac_cooling_age",
+            "ac_type_split",
+            "ac_type_package",
+            "ac_type_heatpump",
+            "ac_type_minisplit",
+            "ac_type_window",
+            "ac_type_evap",
+            "hvac_condenser",
+            "hvac_compressor",
+            "hvac_evaporator_coil",
+            "hvac_condensate",
+            "hvac_disconnect",
+            "hvac_win_operation",
+            "hvac_win_mount",
+            "hvac_win_outlet",
+            "hvac_evap_pads",
+            "hvac_evap_water",
+            "hvac_evap_blower"
+          ]
+        }
+      ],
+      "sectionType": "system",
+      "locationAxis": "room",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior"
+      ]
+    },
+    {
+      "id": "mini_split",
+      "label": "MINI-SPLIT",
+      "icon": "air-conditioner",
+      "order": 0,
+      "nodes": [
+        {
+          "id": "hvac_ms_unit",
+          "label": "Outdoor Unit",
+          "keywords": [
+            "mini-split outdoor unit",
+            "ductless condenser",
+            "mini split condenser",
+            "outdoor unit",
+            "multi-zone outdoor"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "refrigerant",
+              "label": "Refrigerant",
+              "values": [
+                "R-410A",
+                "R-32",
+                "R-454B",
+                "R-22"
+              ],
+              "optional": true
+            },
+            {
+              "id": "size",
+              "label": "Size",
+              "values": [
+                "9000 BTU",
+                "12000 BTU",
+                "18000 BTU",
+                "24000 BTU",
+                "30000 BTU",
+                "36000 BTU",
+                "42000 BTU",
+                "48000 BTU"
+              ],
+              "optional": true
+            },
+            {
+              "id": "max_breaker",
+              "label": "Max Breaker (Plate)",
+              "values": [
+                "15 A",
+                "20 A",
+                "25 A",
+                "30 A",
+                "35 A",
+                "40 A"
+              ],
+              "optional": true
+            }
+          ],
+          "condition": true,
+          "establishesAs": "hvac_ms_unit",
+          "instanceScope": "system",
+          "unitLabel": "Mini-Split",
+          "countLabel": "mini-splits",
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hvac_ms_unit_age",
+          "label": "Mini-Split Age",
+          "kind": "spec",
+          "origin": "core",
+          "storedOn": "hvac_ms_unit",
+          "attributes": [
+            {
+              "id": "age",
+              "label": "Age",
+              "values": [
+                "Under 5 years old",
+                "5–10 years old",
+                "10–15 years old",
+                "15–20 years old",
+                "20–25 years old",
+                "Over 25 years old",
+                "Not determined"
+              ]
+            }
+          ],
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hvac_ms_dataplate",
+          "label": "Data Plate (Make/Model)",
+          "keywords": [
+            "mini-split data plate",
+            "outdoor unit label",
+            "model number",
+            "serial number"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hvac_ms_disconnect",
+          "label": "Mini-Split Disconnect",
+          "keywords": [
+            "mini-split disconnect",
+            "outdoor unit disconnect",
+            "service disconnect"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "walkZone": "exterior",
+          "walkZones": [
+            "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "hvac_ms_condensate",
+          "label": "Condensate Line",
+          "keywords": [
+            "mini-split condensate",
+            "head condensate line",
+            "condensate pump"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "hvac_ms_heads",
@@ -2624,7 +2885,16 @@
                 "Ductless Mini-Split"
               ],
               "exact": true,
-              "whenUnanswered": "not_applicable"
+              "whenUnanswered": "not_applicable",
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includes": [
+                    "Ductless Mini-Split"
+                  ],
+                  "exact": true
+                }
+              ]
             }
           ],
           "layout": "row"
@@ -2632,28 +2902,20 @@
       ],
       "subsystems": [
         {
-          "id": "cooling__core",
-          "name": "Cooling",
+          "id": "mini_split__unit",
+          "name": "Outdoor Unit",
           "nodeIds": [
-            "hvac_cooling",
-            "hvac_cooling_age",
-            "ac_type_split",
-            "ac_type_package",
-            "ac_type_heatpump",
-            "ac_type_minisplit",
-            "ac_type_window",
-            "ac_type_evap",
-            "hvac_condenser",
-            "hvac_compressor",
-            "hvac_evaporator_coil",
-            "hvac_condensate",
-            "hvac_disconnect",
-            "hvac_win_operation",
-            "hvac_win_mount",
-            "hvac_win_outlet",
-            "hvac_evap_pads",
-            "hvac_evap_water",
-            "hvac_evap_blower",
+            "hvac_ms_unit",
+            "hvac_ms_unit_age",
+            "hvac_ms_dataplate",
+            "hvac_ms_disconnect",
+            "hvac_ms_condensate"
+          ]
+        },
+        {
+          "id": "mini_split__heads",
+          "name": "Indoor Heads",
+          "nodeIds": [
             "hvac_ms_heads",
             "hvac_ms_head_1",
             "hvac_ms_head_2",
@@ -2662,7 +2924,13 @@
             "hvac_ms_head_5",
             "hvac_ms_head_6",
             "hvac_ms_head_7",
-            "hvac_ms_head_8",
+            "hvac_ms_head_8"
+          ]
+        },
+        {
+          "id": "mini_split__controls",
+          "name": "Controls",
+          "nodeIds": [
             "hvac_ms_remote"
           ]
         }
@@ -2671,7 +2939,8 @@
       "locationAxis": "room",
       "walkZone": "exterior",
       "walkZones": [
-        "exterior"
+        "exterior",
+        "interior"
       ]
     },
     {
@@ -12331,6 +12600,8 @@
       "max": 8,
       "plateSuggest": true,
       "plateNodes": [
+        "hvac_ms_unit",
+        "hvac_ms_dataplate",
         "hvac_condenser",
         "hvac_cooling",
         "hvac_ms_heads"

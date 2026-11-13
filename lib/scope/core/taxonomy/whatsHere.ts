@@ -26,7 +26,7 @@ import { NOT_PRESENT, predicatesOf, isSpecPredicate, isUtilityPredicate, specPre
 export type WhatsHereSection = string;
 
 /** Systems whose data plate is asked for on the page (the tag tells type, make, model and year). */
-export const PLATE_SYSTEMS: Record<string, string> = { heating: 'Furnace / heating unit', cooling: 'AC condenser / heat pump', water_heater: 'Water heater' };
+export const PLATE_SYSTEMS: Record<string, string> = { heating: 'Furnace / heating unit', cooling: 'AC condenser / heat pump', mini_split: 'Mini-split outdoor unit', water_heater: 'Water heater' };
 
 type PackNode = { id: string; requires?: unknown; dependsOnSpec?: { nodeId?: string; includes?: readonly string[] } | null; askIn?: string; typeRow?: boolean };
 export type WhatsHereQuestion = {
