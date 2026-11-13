@@ -113,7 +113,7 @@ export type ComponentAttribute = {
   /** How the answer is entered when it is not a tile grid. `dimensions` (owner 2026-11-08, Filter › Size): wheels for
    *  width × height × depth plus a quantity, stored as "20x20x1" / "20x20x1 × 2" (filterSize.ts). `values` stay the
    *  common sizes (what a photo read and a spoken answer may match). */
-  input?: 'dimensions';
+  input?: 'dimensions' | 'temperature';   // temperature (2026-11-13): a head's supply air, one wheel in °F (supplyTemp.ts)
 };
 
 export type ComponentAxes = {

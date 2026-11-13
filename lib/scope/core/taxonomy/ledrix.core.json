@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.13.2",
-  "revision": 281,
+  "packVersion": "2026.11.13.3",
+  "revision": 282,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -2382,6 +2382,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2449,6 +2463,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2515,6 +2543,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2580,6 +2622,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2644,6 +2700,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2707,6 +2777,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2769,6 +2853,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
@@ -2830,6 +2928,20 @@
               "freeText": true,
               "optional": true,
               "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
             }
           ],
           "condition": true,
