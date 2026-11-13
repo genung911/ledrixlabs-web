@@ -127,4 +127,9 @@ export type InspectionTemplate = {
   counts?: Array<Partial<import('../../scope/core/taxonomy/countRules').CountRule> & { id: string }>;
   /** Inspection snapshots only (app 2026-11-03): the effective count rules, captured at creation and kept. */
   countDefinitions?: import('../../scope/core/taxonomy/countRules').CountRule[];
+  /** EXPECTED SERVICE LIFE (owner 2026-11-12, scope/core/taxonomy/serviceLife.ts — the app's file). On a COMPANY
+   *  template: its changes to Ledrix's years, by id — "Reset to Ledrix" removes the entry. */
+  serviceLives?: Array<Partial<import('../../scope/core/taxonomy/serviceLife').ServiceLife> & { id: string }>;
+  /** INSPECTION SNAPSHOTS ONLY: the effective service lives, captured at creation and kept. Absent = Ledrix's. */
+  serviceLifeDefinitions?: import('../../scope/core/taxonomy/serviceLife').ServiceLife[];
 };
