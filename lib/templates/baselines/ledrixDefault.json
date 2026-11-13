@@ -1078,6 +1078,15 @@
           "pointsTo": {
             "systemId": "heating",
             "nodeId": "hvac_thermostat"
+          },
+          "appliesWhen": {
+            "field": "hvac_cooling::spec",
+            "anyOf": [
+              "Split System",
+              "Package Unit",
+              "Heat Pump AC",
+              "Evaporative Cooler"
+            ]
           }
         },
         {
@@ -1455,6 +1464,23 @@
             }
           ],
           "condition": true
+        },
+        {
+          "id": "hvac_ms_remote",
+          "label": "Remote / Wall Controller",
+          "kind": "component",
+          "keywords": [
+            "remote",
+            "wall controller",
+            "mini-split remote",
+            "handheld controller"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "limitations": [
+            "Not Present",
+            "Not Operated"
+          ]
         }
       ],
       "locationAxis": "room",

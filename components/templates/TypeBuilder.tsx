@@ -68,12 +68,24 @@ export function TypeBuilder({ tree, system, layout, pick, onOps, onOpen, selecte
   const [openCopies, setOpenCopies] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const apply = (o: TemplateOp[]) => { if (!o.length) return true; const ok = onOps(o); if (ok) setMsg(null); return ok; };
+  // "NOT FOR <TYPE>" (owner 2026-11-12: "Window unit in cooling should not carry the thermostat and distribution from
+  // heating" → "Yes for not for windows/wall"): on a type's list, the ⋯ of an item shown for it takes it off THAT type —
+  // the same validated rule the "All types" grid's untick writes (typeRuleOps). Not on the type question itself, and not
+  // while a whole grid view is open (pick is a type).
+  const notFor = (n: TemplateNode) => {
+    if (pick === GRID || n.id === layout.question.nodeId) return undefined;
+    const cur = layout.shows[n.id] ?? [];
+    if (!cur.includes(pick)) return undefined;
+    const why: string | false = disabled ? 'The draft can’t change right now.' : cur.length === 1 ? `It shows only for ${pick}; switch it off instead.` : false;
+    return [{ label: `Not for ${pick}`, disabled: why,
+      onSelect: () => { const g = copyGroupOf(layout, n.id); const r = typeRuleOps(tree, layout, g ? g.items.map(i => i.id) : [n.id], cur.filter(v => v !== pick)); if (!r.ok) { setMsg(r.reason); return; } apply(r.ops); } }];
+  };
 
   const row = (n: TemplateNode, tag?: React.ReactNode): React.ReactNode => {
     if (lens && !lens.isIn(n.id)) return null;   // a building selected: only what's in it (2026-11-06)
     const g = copyGroupOf(layout, n.id);
     if (g) return <CopiesRow key={g.id} g={g} open={openCopies === g.id} onToggle={() => setOpenCopies(openCopies === g.id ? null : g.id)} onOps={apply} onOpen={onOpen} disabled={disabled} />;
-    return <ItemRow key={n.id} tree={tree} node={n} onOps={apply} onOpen={onOpen} selected={selected} disabled={disabled} tag={tag} />;
+    return <ItemRow key={n.id} tree={tree} node={n} onOps={apply} onOpen={onOpen} selected={selected} disabled={disabled} tag={tag} more={notFor(n)} />;
   };
   const section = (id: string, title: string, count: number, children: React.ReactNode, action?: React.ReactNode): React.ReactNode => (
     <div id={id} key={id} className="scroll-mt-2 overflow-hidden rounded-xl border border-hairline">

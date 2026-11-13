@@ -15,9 +15,12 @@ import { useBuildingLens } from './BuildingLens';
 
 const LOCKED = 'The draft can’t change right now.';
 
-export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: {
+export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag, more }: {
   tree: InspectionTemplate; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; onOpen: (id: string) => void;
   selected: string | null; disabled: boolean; tag?: React.ReactNode;
+  /** Extra ⋯ actions from the screen showing the row (the by-type list's "Not for <type>", owner 2026-11-12) — also on
+   *  an item shown here from another section, which otherwise has no menu. */
+  more?: { label: string; onSelect: () => void; disabled?: string | false }[];
 }) {
   const lens = useBuildingLens();
   const [renaming, setRenaming] = useState(false);
@@ -48,8 +51,9 @@ export function ItemRow({ tree, node, onOps, onOpen, selected, disabled, tag }: 
       {inDetails ? <span className="flex-none rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-accent" title="Asked in Pre-Inspect › Details">Details</span> : null}
       {inInspect ? <span className="flex-none rounded-full bg-hairline px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-muted" title="Judged in Inspect">Condition</span> : null}
       {tag}
-      {node.pointsTo ? <span className="w-8 flex-none" aria-hidden /> : (
+      {node.pointsTo ? (more?.length ? <Menu label={`More for ${node.label}`} items={more} /> : <span className="w-8 flex-none" aria-hidden />) : (
         <Menu label={`More for ${node.label}`} items={[
+          ...(more ?? []),
           { label: 'Rename', disabled: disabled && LOCKED, onSelect: () => { setV(node.label); cancelled.current = false; setRenaming(true); } },
           { label: 'Move to…', disabled: (disabled && LOCKED) || moveBlockFor(tree, node.id) || false, onSelect: () => setMoving(true) },
           // With a building selected in the strip (2026-11-06), Switch off takes it out of THAT building only.

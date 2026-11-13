@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.12.1",
+  "packVersion": "2026.11.12.2",
   "revision": 279,
   "locale": "en-US",
   "severityVocabulary": [
@@ -2331,6 +2331,34 @@
             }
           ],
           "layout": "row"
+        },
+        {
+          "id": "hvac_ms_remote",
+          "label": "Remote / Wall Controller",
+          "keywords": [
+            "remote",
+            "wall controller",
+            "mini-split remote",
+            "handheld controller"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Present",
+            "Not Operated"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [
+                "Ductless Mini-Split"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
         }
       ],
       "subsystems": [
@@ -2365,7 +2393,8 @@
             "hvac_ms_head_5",
             "hvac_ms_head_6",
             "hvac_ms_head_7",
-            "hvac_ms_head_8"
+            "hvac_ms_head_8",
+            "hvac_ms_remote"
           ]
         }
       ],
