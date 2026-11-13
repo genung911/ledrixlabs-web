@@ -93,6 +93,8 @@ registerHooks({
       return { url: STUB, shortCircuit: true };
     }
     if (spec.startsWith('@/lib/')) return { url: pathToFileURL(join(repo, spec.slice(2) + '.ts')).href, shortCircuit: true };
+    // A lib file's own relative import (One Home, 2026-11-12: homeSystemsModel → ../taxonomy/serviceLife), resolved as .ts.
+    if (spec.startsWith('.') && !/\.[a-z]+$/.test(spec) && ctx.parentURL?.startsWith(pathToFileURL(join(repo, 'lib')).href)) return { url: new URL(spec + '.ts', ctx.parentURL).href, shortCircuit: true };
     // The page's own lib import (findings by system, 2026-11-04), resolved from the repo, not the cache dir.
     if (spec.endsWith('/lib/report/findingSections')) return { url: pathToFileURL(join(repo, 'lib/report/findingSections.ts')).href, shortCircuit: true };
     return next(spec, ctx);

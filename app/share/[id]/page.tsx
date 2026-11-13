@@ -14,6 +14,7 @@ import { assetUrl, withTokenInHtml, defaultReportHtmlPaths, loadFirstReport } fr
 import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
 import { portalShareUrl } from '@/lib/portalShareLink';
 import { portalCan, type PortalAction } from '@/lib/portalActions';
+import { homeSystems, type HomeSystem } from '@/lib/scope/core/home/homeSystemsModel';
 
 // ─── API helpers (proxy through Next.js to avoid CORS) ───────────────────────
 // Desktop breakpoint — the page is inline-styled, so responsiveness is driven by this
@@ -203,12 +204,20 @@ type FloorPlanRow = { inspection_id: string; layout: FPLayout | null; fingerprin
 // earlier testing; flip to true to restore.
 const FLOORPLAN_ENABLED = false;
 
-type Tab = 'home' | 'findings' | 'specs' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix';
+type Tab = 'home' | 'findings' | 'specs' | 'repairs' | 'projects' | 'reminders' | 'docs' | 'report' | 'ethix' | 'systems' | 'maintain' | 'history';
 // User-facing tab names — the lifecycle standard (internal Tab ids never change).
 const TAB_LABEL: Record<Tab, string> = {
   home: 'Home', findings: 'Repairs Needed', specs: 'Systems & Specs', repairs: 'Repair Request', projects: 'Repair Status',
   reminders: 'Maintenance', docs: 'Docs', report: 'Reports', ethix: 'Ethix',
+  systems: 'Systems', maintain: 'Maintain', history: 'History',
 };
+// ONE HOME (owner 2026-11-12, mockup GejuM8pyUwwkWUyVnuPFGD "approved"): the report link opens Ledrix Home's own five
+// sections. Every older screen still opens (deep links, the Home tiles) and lights the section it belongs to.
+const RAIL: { tab: Tab; label: string }[] = [
+  { tab: 'home', label: 'Home' }, { tab: 'systems', label: 'Systems' }, { tab: 'maintain', label: 'Maintain' },
+  { tab: 'history', label: 'History' }, { tab: 'report', label: 'Report' },
+];
+const RAIL_OF: Partial<Record<Tab, Tab>> = { findings: 'systems', specs: 'systems', reminders: 'maintain', projects: 'maintain', repairs: 'maintain', docs: 'history' };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const APPLIANCE_SYSTEMS = ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace',
@@ -1248,7 +1257,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
   const pillars: [Tab, IconName, string, number | string][] = [
     ['report', 'docs', 'Reports', ''],
     ['findings', 'findings', 'Repairs Needed', anomalies.filter(a => !['wear', 'good'].includes(priorityOf(a).key)).length],
-    ['specs', 'specs', 'Systems & Specs', confirmedSpecs.length],
+    ['systems', 'specs', 'Systems', confirmedSpecs.length],
     ['repairs', 'projects', 'Repair Request', includedRepairs],
     ['projects', 'projects', 'Repair Status', `${projects.filter(p => p.status === 'resolved').length}/${projects.length}`],
     ['reminders', 'reminders', 'Maintenance', dueReminders.length],
@@ -1680,111 +1689,6 @@ function FindingsTab({ anomalies, record, shareId, floorPlan }: { anomalies: Ano
 function titleCaseLabel(s: string): string {
   return (s ?? '').trim().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
-function SpecCard({ s }: { s: Spec }) {
-  const attrs = Array.isArray(s.attributes) ? s.attributes : [];
-  return (
-    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px', marginBottom: 8 }}>
-      <div style={{ marginBottom: attrs.length || s.system || s.room ? 10 : 0 }}>
-        <FLabel>{s.category ? titleCaseLabel(s.category) : 'SPEC'}{s.instanceLabel ? ` · ${s.instanceLabel}` : ''}</FLabel>
-        <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{s.material || '—'}</div>
-      </div>
-      {(s.system || s.room) && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: attrs.length ? 10 : 0 }}>
-          {s.system && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <FLabel>SYSTEM</FLabel>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{titleCaseLabel(s.system)}</div>
-            </div>
-          )}
-          {s.room && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <FLabel>ROOM</FLabel>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 500 }}>{s.room}</div>
-            </div>
-          )}
-        </div>
-      )}
-      {attrs.length > 0 && (
-        <div>
-          {attrs.map((a, i) => (
-            <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
-              <span style={{ color: DIM, flexShrink: 0, lineHeight: 1.55 }}>•</span>
-              <span style={{ color: '#33454B', fontSize: 12, lineHeight: 1.55 }}><strong style={{ color: TEXT }}>{titleCaseLabel(a.key)}:</strong> {a.unit ? `${a.value} ${a.unit}` : a.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-function SpecsTab({ specs }: { specs: Spec[] }) {
-  const [search, setSearch] = useState('');
-  const [sort, setSort]     = useState<'system' | 'room'>('system');
-
-  const confirmed = specs.filter(s => s.status === 'confirmed');
-  const filtered = confirmed.filter(s => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (s.category ?? '').toLowerCase().includes(q) || (s.material ?? '').toLowerCase().includes(q) || (s.room ?? '').toLowerCase().includes(q) || (s.system ?? '').toLowerCase().includes(q);
-  });
-
-  const groups = (() => {
-    const m = new Map<string, Spec[]>();
-    for (const s of filtered) {
-      const k = ((sort === 'system' ? s.system : s.room) || '').trim() || 'Other';
-      if (!m.has(k)) m.set(k, []);
-      m.get(k)!.push(s);
-    }
-    return Array.from(m.entries())
-      .map(([key, items]) => ({ key, items: items.slice().sort((a, b) => (a.category ?? '').localeCompare(b.category ?? '')) }))
-      .sort((a, b) => (a.key === 'Other' ? 1 : b.key === 'Other' ? -1 : a.key.localeCompare(b.key)));
-  })();
-
-  return (
-    <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Inspection</div>
-      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Systems &amp; Specs</div>
-
-      <div style={{ position: 'relative', marginBottom: 14 }}>
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 12 }}>⌕</span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search specs…" style={{
-          width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-          padding: '10px 12px 10px 30px', color: TEXT, fontSize: 12, outline: 'none',
-          fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
-        }} />
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 2 }}>
-        <span style={{ ...eyebrow(DIM, 8), flexShrink: 0 }}>Sort</span>
-        {(['system', 'room'] as const).map(key => (
-          <button key={key} onClick={() => setSort(key)} style={{
-            background: sort === key ? TEXT : CARD, border: `1px solid ${sort === key ? TEXT : BORDER}`,
-            color: sort === key ? '#fff' : MED, borderRadius: 99, padding: '6px 14px', fontSize: 8.5,
-            fontWeight: 600, letterSpacing: '0.12em', fontFamily: MONO,
-            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, textTransform: 'capitalize',
-          }}>{key}</button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>
-          <div style={{ fontSize: 22, marginBottom: 8 }}>✓</div>
-          <div style={{ ...eyebrow(DIM, 9) }}>{search ? 'NO SPECS MATCH YOUR SEARCH' : 'NO SPECS RECORDED'}</div>
-        </div>
-      ) : groups.map(g => (
-        <div key={g.key} style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 2px 8px' }}>
-            <span style={{ fontFamily: SERIF, color: TEXT, fontSize: 14, fontWeight: 600 }}>{g.key === 'Other' ? 'Other' : titleCaseLabel(g.key)}</span>
-            <span style={{ fontFamily: MONO, color: DIM, fontSize: 9.5, fontWeight: 500 }}>({g.items.length})</span>
-          </div>
-          {g.items.map((s, i) => <SpecCard key={i} s={s} />)}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── PROJECTS TAB ─────────────────────────────────────────────────────────────
 function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { projects: Project[]; anomalies: Anomaly[]; shareId: string; address?: string; onRefresh: () => void }) {
   const [statusFilter, setStatusFilter] = useState<'open' | 'all'>('open');
   const [showAdd, setShowAdd] = useState(false);
@@ -2250,7 +2154,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
 }
 
 // ─── MAINTENANCE TAB — spec-driven schedule + the Carfax service history ────────
-function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: { reminders: Reminder[]; log: MaintenanceLog[]; shareId: string; onRefresh: () => void; access: boolean; onUnlock: () => void }) {
+function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock, showHistory = true }: { reminders: Reminder[]; log: MaintenanceLog[]; shareId: string; onRefresh: () => void; access: boolean; onUnlock: () => void; showHistory?: boolean }) {
   const [showCompleted, setShowCompleted] = useState(false);
   const pending   = reminders.filter(r => !r.completed);
   const completed = reminders.filter(r => r.completed);
@@ -2277,7 +2181,18 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
         return (a.due_date ?? '9999') < (b.due_date ?? '9999') ? -1 : 1;
       }).map(r => <ReminderCard key={r.id} r={r} onUpdate={onRefresh} access={access} onUnlock={onUnlock} />)}
 
-      {/* Service history — the living Carfax timeline */}
+      {/* Service history — the living Carfax timeline (One Home: its own History section; here only on the old screen) */}
+      {showHistory && log.length > 0 && <ServiceHistory log={log} onRefresh={onRefresh} />}
+    </div>
+  );
+}
+
+/** The home's service history — every repair, upkeep and improvement logged, newest first. */
+function ServiceHistory({ log, onRefresh }: { log: MaintenanceLog[]; onRefresh: () => void }) {
+  const MONO = 'Roboto Mono, monospace';
+  return (
+    <>
+      {log.length === 0 && <div style={{ textAlign: 'center', padding: '20px 0', color: MED, fontSize: 14 }}>Nothing logged yet.</div>}
       {log.length > 0 && (
         <div style={{ marginTop: 28 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Service history · {log.length}</div>
@@ -2303,6 +2218,177 @@ function RemindersTab({ reminders, log, shareId, onRefresh, access, onUnlock }: 
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+// ─── ONE HOME: SYSTEMS · MAINTAIN · HISTORY (owner 2026-11-12, mockup GejuM8pyUwwkWUyVnuPFGD) ────────────────────
+// Systems and each System screen come from the SAME model the Ledrix Home app reads (homeSystemsModel.ts, copied from the
+// app): what the inspection recorded, the year made against its typical service life, the manual Ledrix checked from the
+// data plate and its upkeep, and the findings the report printed under that system.
+
+/** The five sections, under the header. Tapping one starts fresh there (no back stack). */
+function HomeRail({ active, onPick }: { active: Tab; onPick: (t: Tab) => void }) {
+  const on = RAIL_OF[active] ?? active;
+  return (
+    <nav aria-label="Home sections" style={{ display: 'flex', gap: 4, padding: '8px 12px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(246,247,244,0.95)', position: 'sticky', top: 57, zIndex: 89, overflowX: 'auto' }}>
+      {RAIL.map(r => (
+        <button key={r.tab} onClick={() => onPick(r.tab)} aria-current={on === r.tab ? 'page' : undefined}
+          style={{ flex: '1 0 auto', minHeight: 36, padding: '6px 12px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+            background: on === r.tab ? ACCENT : 'transparent', color: on === r.tab ? '#fff' : MED }}>{r.label}</button>
+      ))}
+    </nav>
+  );
+}
+
+const SYS_MONO = 'Roboto Mono, monospace';
+const sysLine = (s: HomeSystem): string => [
+  s.facts[0]?.value,
+  s.made ? `${s.made.year}` : '',
+  s.life?.past ? 'past its typical life' : '',
+  s.manual ? 'manual' : '',
+].filter(Boolean).join(' · ');
+
+function SystemsTab({ record, anomalies, onAllFindings }: { record: HomeRecord; anomalies: Anomaly[]; onAllFindings: () => void }) {
+  const systems = useMemo(() => homeSystems({ specs: Array.isArray(record.specs) ? record.specs : [], findings: anomalies, inspectedAt: record.inspection_date ?? null }), [record, anomalies]);
+  const [open, setOpen] = useState<string | null>(null);
+  const current = systems.find(s => s.key === open) ?? null;
+  if (current) return <SystemScreen s={current} record={record} onBack={() => setOpen(null)} />;
+  return (
+    <div style={{ padding: '16px 18px 96px' }}>
+      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
+      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 14 }}>Systems</div>
+      {anomalies.length > 0 && (
+        <button onClick={onAllFindings} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '13px 15px', marginBottom: 12, cursor: 'pointer', textAlign: 'left' }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: TEXT }}>All findings</span>
+          <span style={{ fontSize: 13, color: MED }}>{anomalies.length} ›</span>
+        </button>
+      )}
+      {systems.length === 0 ? <div style={{ textAlign: 'center', padding: '26px 0', color: MED, fontSize: 14 }}>No systems recorded yet.</div> : (
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' }}>
+          {systems.map((s, i) => (
+            <button key={s.key} onClick={() => setOpen(s.key)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 15px', border: 'none', borderBottom: i < systems.length - 1 ? `1px solid ${BORDER}` : 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: TEXT }}>{s.label}</span>
+                {sysLine(s) && <span style={{ display: 'block', fontSize: 12, color: MED, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sysLine(s)}</span>}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: s.findings.length ? WARN : MED, flexShrink: 0 }}>{s.findings.length ? `${s.findings.length} finding${s.findings.length === 1 ? '' : 's'}` : 'No findings'}</span>
+              <span aria-hidden style={{ color: MED }}>›</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SystemScreen({ s, record, onBack }: { s: HomeSystem; record: HomeRecord; onBack: () => void }) {
+  const [openFinding, setOpenFinding] = useState<Anomaly | null>(null);
+  const byId = new Map((Array.isArray(record.anomalies) ? record.anomalies : []).map(a => [a.id, a] as const));
+  const every = (d: number) => (d % 365 === 0 ? (d === 365 ? 'Every year' : `Every ${d / 365} years`) : d % 30 === 0 ? (d === 30 ? 'Every month' : `Every ${d / 30} months`) : `Every ${d} days`);
+  const card: CSSProperties = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '13px 15px' };
+  const head: CSSProperties = { fontFamily: SYS_MONO, fontSize: 10, letterSpacing: '0.16em', color: MED, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 };
+  return (
+    <div style={{ padding: '14px 18px 96px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <button onClick={onBack} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: ACCENT, fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0 }}>‹ Systems</button>
+      <div>
+        <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 26, fontWeight: 600 }}>{s.label}</div>
+        {s.facts.length > 0 && <div style={{ fontSize: 13, color: MED, marginTop: 3 }}>{s.facts.slice(0, 3).map(f => f.value).join(' · ')}</div>}
+      </div>
+      {s.made && (
+        <div style={card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ ...head, marginBottom: 0 }}>Made</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{s.made.year} · {s.made.age} year{s.made.age === 1 ? '' : 's'}</span>
+          </div>
+          {s.life && <>
+            <div style={{ height: 8, borderRadius: 4, background: BORDER, marginTop: 10, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.min(100, Math.round((s.made.age / s.life.high) * 100))}%`, background: s.life.past ? WARN : ACCENT }} />
+            </div>
+            <div style={{ fontSize: 12, color: MED, marginTop: 6 }}>Typical life {s.life.low}–{s.life.high} years.{s.life.past ? ' Past it: worth budgeting for a replacement.' : ''}</div>
+          </>}
+        </div>
+      )}
+      {s.manual && (
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: TEXT }}>Owner&apos;s manual</span>
+            <span style={{ fontFamily: SYS_MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: ACCENT }}>FROM THE DATA PLATE</span>
+          </div>
+          <a href={s.manual.url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 22, border: `1px solid ${ACCENT}`, color: ACCENT, fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>Open manual</a>
+        </div>
+      )}
+      {s.upkeep.length > 0 && (
+        <div style={card}>
+          <div style={head}>Upkeep from the manual</div>
+          {s.upkeep.map((u, i) => (
+            <div key={u.task} style={{ display: 'flex', gap: 10, padding: '9px 0', borderTop: i ? `1px solid ${BORDER}` : 'none' }}>
+              <span style={{ flex: 1, fontSize: 14, color: TEXT }}>{u.task}</span>
+              <span style={{ fontSize: 12, color: MED }}>{every(u.intervalDays)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {s.facts.length > 0 && (
+        <div style={card}>
+          <div style={head}>Recorded at the inspection</div>
+          {s.facts.map((f, i) => (
+            <div key={`${f.label}-${i}`} style={{ display: 'flex', gap: 10, padding: '8px 0', borderTop: i ? `1px solid ${BORDER}` : 'none' }}>
+              <span style={{ flex: 1, fontSize: 13, color: MED }}>{f.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: TEXT, textAlign: 'right' }}>{f.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={card}>
+        <div style={head}>From the inspection</div>
+        {s.findings.length === 0 ? <div style={{ fontSize: 14, color: MED }}>No findings for this system.</div> : s.findings.map((f, i) => {
+          const a = byId.get(f.id);
+          return (
+            <button key={f.id || i} onClick={() => a && setOpenFinding(a)} disabled={!a} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, padding: '9px 0', border: 'none', borderTop: i ? `1px solid ${BORDER}` : 'none', background: 'none', textAlign: 'left', cursor: a ? 'pointer' : 'default' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{f.title}</span>
+              <span style={{ fontSize: 12, color: f.isSafety ? CRITICAL : MED }}>{a ? priorityOf(a).label : f.severity}{f.isSafety ? ' · Safety' : ''}</span>
+            </button>
+          );
+        })}
+      </div>
+      {openFinding && <FindingDetailModal a={openFinding} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={record.share_id} onClose={() => setOpenFinding(null)} />}
+    </div>
+  );
+}
+
+/** Maintain: upkeep reminders, repair status and the repair request, one section. */
+function MaintainTab(props: {
+  reminders: Reminder[]; log: MaintenanceLog[]; projects: Project[]; repairs: RepairRow[]; anomalies: Anomaly[]; record: HomeRecord;
+  shareId: string; access: boolean; onUnlock: () => void; onRefreshReminders: () => void; onRefreshProjects: () => void; onRefreshRepairs: () => void;
+}) {
+  const [part, setPart] = useState<'upkeep' | 'projects' | 'repairs'>('upkeep');
+  const parts: [typeof part, string][] = [['upkeep', 'Upkeep'], ['projects', 'Repair status'], ['repairs', 'Repair request']];
+  return (
+    <div>
+      <div role="tablist" aria-label="Maintain" style={{ display: 'flex', gap: 6, padding: '12px 18px 0' }}>
+        {parts.map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={part === k} onClick={() => setPart(k)} style={{ minHeight: 34, padding: '6px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+            border: `1px solid ${part === k ? ACCENT : BORDER}`, background: part === k ? ACCENT : CARD, color: part === k ? '#fff' : TEXT }}>{l}</button>
+        ))}
+      </div>
+      {part === 'upkeep' && <RemindersTab reminders={props.reminders} log={props.log} shareId={props.shareId} onRefresh={props.onRefreshReminders} access={props.access} onUnlock={props.onUnlock} showHistory={false} />}
+      {part === 'projects' && <ProjectsTab projects={props.projects} anomalies={props.anomalies} shareId={props.shareId} address={props.record.address} onRefresh={props.onRefreshProjects} />}
+      {part === 'repairs' && <RepairsTab anomalies={props.anomalies} shareId={props.shareId} repairs={props.repairs} record={props.record} onRefresh={props.onRefreshRepairs} signedIn={props.access} />}
+    </div>
+  );
+}
+
+/** History: the service history, then the home's documents. */
+function HistoryTab({ log, record, onRefresh }: { log: MaintenanceLog[]; record: HomeRecord; onRefresh: () => void }) {
+  return (
+    <div>
+      <div style={{ padding: '16px 18px 0' }}>
+        <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
+        <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600 }}>History</div>
+        <ServiceHistory log={log} onRefresh={onRefresh} />
+      </div>
+      <DocsTab record={record} />
     </div>
   );
 }
@@ -2957,7 +3043,7 @@ export default function SharePage() {
   useEffect(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
-      if (t && ['report', 'findings', 'specs', 'repairs', 'projects', 'reminders', 'docs', 'ethix'].includes(t)) setTab(t);
+      if (t && ['report', 'findings', 'specs', 'repairs', 'projects', 'reminders', 'docs', 'ethix', 'systems', 'maintain', 'history'].includes(t)) setTab(t === 'specs' ? 'systems' : t);
     } catch { /* no-op */ }
   }, []);
   const [copied,    setCopied]    = useState(false);
@@ -2966,6 +3052,7 @@ export default function SharePage() {
   // history; back returns to wherever you came from (home if the stack is empty).
   const go   = (t: Tab) => { setHist(h => [...h, tab]); setTab(t); };
   const back = () => setHist(h => { const n = [...h]; setTab(n.pop() ?? 'home'); return n; });
+  const pick = (t: Tab) => { setHist([]); setTab(t); };
 
   // Ledrix premium access. Sign-in is always required; a Stripe subscription is required ONLY when
   // billing is switched on (NEXT_PUBLIC_BILLING_ENABLED=1). Until then this is DORMANT: signed-in === access.
@@ -3199,6 +3286,7 @@ export default function SharePage() {
       `}</style>
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
+      <HomeRail active={tab} onPick={pick} />
       {!canEdit() && (
         <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
           View-only link — you can look, but changes are turned off.
@@ -3207,7 +3295,10 @@ export default function SharePage() {
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
-      {tab === 'specs'     && <SpecsTab specs={specs} />}
+      {(tab === 'systems' || tab === 'specs') && <SystemsTab record={record} anomalies={anomalies} onAllFindings={() => go('findings')} />}
+      {tab === 'maintain'  && <MaintainTab reminders={reminders} log={log} projects={projects} repairs={repairs} anomalies={anomalies} record={record} shareId={shareId} access={access} onUnlock={() => setSubOpen(true)}
+        onRefreshReminders={() => { loadReminders(); loadLog(); }} onRefreshProjects={loadProjects} onRefreshRepairs={loadRepairs} />}
+      {tab === 'history'   && <HistoryTab log={log} record={record} onRefresh={loadLog} />}
       {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} anomalies={anomalies} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
