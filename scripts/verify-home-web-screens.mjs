@@ -8,6 +8,7 @@
 //   3. a System screen: year made against its life, the CHECKED manual (the model's), its upkeep, its findings
 //   4. Maintain holds upkeep, repair status and the repair request; History holds the service history and documents
 //   5. no 3D house and no sensors on the web
+//   6. claiming: an emailed code; on sign-in a homeowner profile, the client's reports, the report link's home (resident)
 //   node scripts/verify-home-web-screens.mjs
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -33,6 +34,15 @@ function checks(src) {
     && src.includes('showHistory={false} />}') && src.includes("{tab === 'maintain'  && <MaintainTab"));
   ok('4 History: the service history, then documents', /function HistoryTab[\s\S]{0,600}<ServiceHistory log=\{log\} onRefresh=\{onRefresh\} \/>[\s\S]{0,120}<DocsTab record=\{record\} \/>/.test(src)
     && src.includes("{tab === 'history'   && <HistoryTab"));
+  // 6 (phase 3, owner 2026-11-12 "email code first", "spouse yes"): claim by an emailed code, then claim on sign-in
+  ok('6 the emailed code signs in on this page', src.includes("await supabase.auth.verifyOtp({ email: email.trim(), token: t, type: 'email' });")
+    && src.includes('autoComplete="one-time-code"'));
+  ok('6 signed in: a homeowner, the client\'s reports, and (on the report\'s own link only) this home as resident',
+    src.includes("await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });")
+    && src.includes("await supabase.rpc('claim_my_reports');")
+    && src.includes("if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN });"));
+  ok('6 an inspector\'s email is told to use another', (src.match(/This email is registered as an inspector\. Use a different email for Ledrix Home\./g) ?? []).length === 2);
+  ok('6 "Claim your home" shows to someone not signed in', src.includes('claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : undefined}'));
   ok('5 no 3D house or sensors on the web', !/SpatialTwinGL|Dollhouse|SensorsLens|sensor_readings/.test(src));
   return out;
 }
@@ -46,7 +56,11 @@ const MUT = [
   ['Systems ignores the inspection date', 'inspectedAt: record.inspection_date ?? null', 'inspectedAt: null'],
   ['an unchecked manual is linked from the page', '{s.manual && (', '{(s.manual || record.specs?.[0]) && ('],
   ['Maintain shows the history twice', 'showHistory={false} />}', 'showHistory />}'],
-  ['History has no documents', '      <DocsTab record={record} />\n    </div>\n  );\n}\n\n// ─── DOCS TAB', '    </div>\n  );\n}\n\n// ─── DOCS TAB'],
+  ['History has no documents', '      <DocsTab record={record} />\n    </div>\n  );\n}\n\n/** "Make this home yours"', '    </div>\n  );\n}\n\n/** "Make this home yours"'],
+  ['a view-only link claims the home', 'if (canEdit() && PORTAL_TOKEN) { const r', 'if (PORTAL_TOKEN) { const r'],
+  ['the code is checked as a magic link', "token: t, type: 'email' });", "token: t, type: 'magiclink' });"],
+  ['the claim card shows when signed in', 'claim={!session ? <ClaimCard', 'claim={true ? <ClaimCard'],
+  ['the client\'s own reports are never claimed', "await supabase.rpc('claim_my_reports');", "({ data: [] });"],
   ['the specs link is a dead end', "(tab === 'systems' || tab === 'specs') && <SystemsTab", "tab === 'systems' && <SystemsTab"],
 ];
 for (const [why, a, b] of MUT) {

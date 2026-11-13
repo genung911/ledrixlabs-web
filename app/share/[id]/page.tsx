@@ -1234,10 +1234,12 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
   );
 }
 
-function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange, access, shareId, onUnlock, onAsk }: {
+function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange, access, shareId, onUnlock, onAsk, claim }: {
   record: HomeRecord; anomalies: Anomaly[];
   projects: Project[]; reminders: Reminder[]; repairs: RepairRow[];
   onTabChange: (t: Tab) => void;
+  /** One Home phase 3: the "Claim your home" card, under the hero, for someone not signed in. */
+  claim?: ReactNode;
   access: boolean; shareId: string; onUnlock: () => void; onAsk: () => void;
 }) {
   const desk = useDesk();
@@ -1292,6 +1294,7 @@ function HomeTab({ record, anomalies, projects, reminders, repairs, onTabChange,
       </div>
 
       {/* Ledrix analysis — the AI intelligence layer (premium; locked teaser when not) */}
+      {claim && <div style={{ margin: `${desk ? 22 : 16}px ${gut}px 0` }}>{claim}</div>}
       <div style={{ margin: `${desk ? 26 : 20}px ${gut}px 0` }}>
         <InsightSection access={access} shareId={shareId} onUnlock={onUnlock} />
       </div>
@@ -2393,6 +2396,17 @@ function HistoryTab({ log, record, onRefresh }: { log: MaintenanceLog[]; record:
   );
 }
 
+/** "Make this home yours" — the Home screen's way in to claiming (mockup GejuM8pyUwwkWUyVnuPFGD, board 1). */
+function ClaimCard({ onClaim }: { onClaim: () => void }) {
+  return (
+    <div style={{ background: CARD, border: '1px solid #C9DBF4', borderRadius: 14, padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>Make this home yours</div>
+      <div style={{ fontSize: 13, lineHeight: 1.45, color: MED }}>Keep the record on your account, log upkeep, store receipts and ask Ledrix about your home.</div>
+      <button onClick={onClaim} style={{ minHeight: 44, borderRadius: 22, border: 'none', background: ACCENT, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Claim your home</button>
+    </div>
+  );
+}
+
 // ─── DOCS TAB ─────────────────────────────────────────────────────────────────
 
 function DocsTab({ record }: { record: HomeRecord }) {
@@ -2578,6 +2592,19 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
   const [sent,  setSent]  = useState(false);
   const [busy,  setBusy]  = useState(false);
   const [err,   setErr]   = useState('');
+  // CLAIM BY CODE (One Home phase 3, owner 2026-11-12: "email code first"): the email carries a 6-digit code (the
+  // Supabase Magic Link template has {{ .Token }}); typing it here signs in on THIS page, no redirect. The link in the
+  // same email still works (sendLink's redirect) for anyone who taps it instead.
+  const [code,  setCode]  = useState('');
+  const verifyCode = async () => {
+    const t = code.replace(/\D/g, '');
+    if (t.length < 6) { setErr('Enter the 6-digit code from the email.'); return; }
+    setBusy(true); setErr('');
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: t, type: 'email' });
+    setBusy(false);
+    if (error) setErr(/expired|invalid/i.test(error.message) ? 'That code didn\u2019t work. Check the newest email, or send a new code.' : error.message);
+    else onClose();
+  };
   const sendLink = async () => {
     const e = email.trim();
     if (!e || !/.+@.+\..+/.test(e)) { setErr('Enter a valid email.'); return; }
@@ -2599,8 +2626,8 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
           <ValDeltaSVG size={20} color={BLUE} sheen />
           <span style={{ color: BLUE, fontSize: 9, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>LEDRIX</span>
         </div>
-        <div style={{ color: TEXT, fontSize: 21, fontWeight: 600, letterSpacing: -0.5, marginBottom: 7 }}>Make your home record live.</div>
-        <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>Ask Ledrix anything about your home — what a finding means, repair priorities, costs, what to do next — and get a living AI Insight that stays current with your record. Free members get the record; Ledrix members get the intelligence.</p>
+        <div style={{ color: TEXT, fontSize: 21, fontWeight: 600, letterSpacing: -0.5, marginBottom: 7 }}>Claim your home</div>
+        <p style={{ color: TEXT, fontSize: 12.5, lineHeight: 1.6, marginBottom: 20 }}>The inspection becomes the start of your home&apos;s record. Claim it to log repairs and upkeep, store receipts and manuals, and ask Ledrix about your home — on the web and in the Ledrix Home app. The link still opens the record without an account.</p>
         {BILLING_ENABLED && (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
@@ -2616,16 +2643,21 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
         {BILLING_ENABLED && signedIn ? (
           <button onClick={onSubscribe} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Subscribe — {PLAN_BASE_PRICE}/mo</button>
         ) : sent ? (
-          <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
-            <div style={{ color: BLUE, fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Check your email ✉</div>
-            <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.5 }}>We sent a sign-in link to <b style={{ color: ACCENT }}>{email}</b>. Tap it to unlock Ledrix.</p>
+          <div style={{ padding: '6px 0 2px' }}>
+            <div style={{ color: BLUE, fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Check your email</div>
+            <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>We sent a 6-digit code to <b style={{ color: ACCENT }}>{email}</b>.</p>
+            <input value={code} onChange={e => { setCode(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && verifyCode()} placeholder="123456" inputMode="numeric" autoComplete="one-time-code" aria-label="Sign-in code"
+              style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: TEXT, fontSize: 20, letterSpacing: 6, textAlign: 'center', outline: 'none', marginBottom: 8 }} />
+            {err && <div style={{ color: CRITICAL, fontSize: 11, marginBottom: 8 }}>{err}</div>}
+            <button onClick={verifyCode} disabled={busy} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Checking…' : 'Claim my home'}</button>
+            <button onClick={() => { setSent(false); setCode(''); setErr(''); }} style={{ width: '100%', background: 'none', border: 'none', color: MED, fontSize: 12, padding: '10px 0 0', cursor: 'pointer' }}>Use a different email or send a new code</button>
           </div>
         ) : (
           <>
             <input value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && sendLink()} placeholder="you@email.com" type="email"
               style={{ width: '100%', background: CARD, border: `1px solid ${err ? CRITICAL : BORDER}`, borderRadius: 12, padding: 14, color: TEXT, fontSize: 14, outline: 'none', marginBottom: 8 }} />
             {err && <div style={{ color: CRITICAL, fontSize: 10, marginBottom: 8 }}>{err}</div>}
-            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(33,123,232,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'CONTINUE WITH EMAIL'}</button>
+            <button onClick={sendLink} disabled={busy} style={{ width: '100%', background: 'rgba(33,123,232,0.10)', color: BLUE, border: '1px solid rgba(33,123,232,0.5)', borderRadius: 12, padding: 15, fontSize: 12, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', boxShadow: '0 0 18px rgba(33,123,232,0.28)', opacity: busy ? 0.6 : 1 }}>{busy ? 'SENDING…' : 'SEND ME A SIGN-IN CODE'}</button>
           </>
         )}
         <button onClick={onClose} style={{ width: '100%', background: 'none', border: 'none', color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: 12, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>MAYBE LATER</button>
@@ -3074,6 +3106,30 @@ export default function SharePage() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
+  // CLAIM ON SIGN-IN (One Home phase 3, owner 2026-11-12): signed in on this page, the person becomes a homeowner
+  // (homeowner_profiles; the server refuses an inspector's email), claims every report sent to their email
+  // (claim_my_reports, #110 — the owner), and, on the report's own link, joins this home (claim_by_link, #123 — a
+  // resident; a spouse). Once per page load; the server decides everything.
+  const [claim, setClaim] = useState<null | { kind: 'claimed' | 'waiting' | 'refused'; text: string }>(null);
+  const claimTried = useRef(false);
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid || !shareId || claimTried.current) return;
+    claimTried.current = true;
+    (async () => {
+      const inspector = (m?: string) => !!m && /inspector/i.test(m);
+      const prof = await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });
+      if (inspector(prof.error?.message)) { setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' }); return; }
+      const mine = await supabase.rpc('claim_my_reports');
+      const homes = Array.isArray(mine.data) ? mine.data : [];
+      let viaLink: unknown = null; let linkErr = '';
+      if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN }); viaLink = r.data ?? null; linkErr = r.error?.message ?? ''; }
+      if (homes.length || viaLink) setClaim({ kind: 'claimed', text: 'This home is on your account.' });
+      else if (inspector(linkErr)) setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' });
+      else if (!canEdit()) setClaim({ kind: 'refused', text: 'This is a view-only link. Ask for the report’s own link to claim the home.' });
+      else setClaim({ kind: 'waiting', text: 'Your claim is waiting: the current owner hands the home over when they move out.' });
+    })().catch(() => { claimTried.current = false; });
+  }, [session, shareId]);
   useEffect(() => {
     if (!BILLING_ON || !session?.user?.id) { setSubscribed(false); return; }
     supabase.from('home_subscriptions').select('status').eq('user_id', session.user.id).maybeSingle()
@@ -3287,13 +3343,17 @@ export default function SharePage() {
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
       <HomeRail active={tab} onPick={pick} />
+      {claim && (
+        <div role="status" style={{ background: claim.kind === 'claimed' ? '#EAF5EE' : claim.kind === 'waiting' ? '#EEF4FD' : '#FDF0EC', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, fontWeight: 600, padding: '9px 18px', textAlign: 'center' }}>{claim.text}</div>
+      )}
       {!canEdit() && (
         <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
           View-only link — you can look, but changes are turned off.
         </div>
       )}
 
-      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix} />}
+      {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix}
+        claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : undefined} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
       {(tab === 'systems' || tab === 'specs') && <SystemsTab record={record} anomalies={anomalies} onAllFindings={() => go('findings')} />}
       {tab === 'maintain'  && <MaintainTab reminders={reminders} log={log} projects={projects} repairs={repairs} anomalies={anomalies} record={record} shareId={shareId} access={access} onUnlock={() => setSubOpen(true)}
