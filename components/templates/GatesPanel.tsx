@@ -23,10 +23,10 @@
 import { useMemo, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
-import { gateNodes, type Gate, type GateEffect, type GateReason } from '@/lib/scope/core/taxonomy/gates';
+import { gateLine, gateNodes, type Gate, type GateEffect, type GateReason } from '@/lib/scope/core/taxonomy/gates';
 import { LEDRIX_GATES, accessGatesOfPart, gateReachesPart, gatesOfPart, isRemoved, limitRows, ownGates, parentIndex, partLimitSummary, sayReason, systemIndex, systemsOfGate, templateGates, type GateEntry } from '@/lib/templates/limitationModel';
 import { ops } from '@/lib/templates/editorModel';
-import { ChipList, Pill, btn, field, label } from './ui';
+import { ChipList, Menu, Pill, btn, field, label } from './ui';
 import { displayLabel } from './systemLabel';
 
 function walk(systems: readonly TemplateNode[], f: (n: TemplateNode, path: string[]) => void, path: string[] = []) {
@@ -188,12 +188,108 @@ export function UtilitiesPanel({ tree, onOps, disabled }: { tree: InspectionTemp
   const sysName = (id: string) => displayLabel(systems.find(s => s.id === id)?.label ?? id);
   return (
     <div className="space-y-4 px-4 py-4">
-      <p className="text-xs text-muted">When the inspector records a utility as off, the items that need it are skipped and named in the report. One setting for every system it reaches.</p>
-      <GateList G={G} gates={utils} inPart={() => true} disabled={disabled} count={g => G.covered(g).length}
-        where={g => { const s = systemsOfGate(g, systems, idx); return s.length ? `Reaches ${s.map(sysName).join(', ')}` : ''; }}
-        empty="No utilities — Ledrix’s are turned off for this template." />
+      <p className="text-sm text-body">When the inspector records a utility as off, Ledrix skips the items that need it and the report says why.</p>
+      {utils.length ? utils.map(g => <UtilityCard key={g.id} G={G} gate={g} disabled={disabled} reaches={systemsOfGate(g, systems, idx).map(sysName)} />)
+        : <p className="text-sm text-muted">No utilities — Ledrix’s are turned off for this template.</p>}
       {offHere.length > 0 && <p className="text-xs text-muted">Turned off for this template: {offHere.map(e => G.ledrixOf(e.id)?.label ?? e.id).join(', ')}{' '}
         <button className={btn.ghost} disabled={disabled} onClick={() => G.save(G.own.filter(e => !offHere.some(o => o.id === e.id && isRemoved(e))))}>Turn back on</button></p>}
+    </div>
+  );
+}
+
+// UTILITIES, CLEANED UP (owner 2026-11-12: "How can we clean this up to be easier to see what is happening without a wall
+// of text"; mockup https://claude.ai/artifact/5ktKnZRzXM25jMS4wVXgQD, "approved"). One card per utility: a one-line summary
+// (how many items it skips, which systems); opened, one drop-down per reason, ONE sample report line (gateLine — the
+// report's own words), and the items as checkboxes grouped by system (ticked = skipped). Rename, Reset and Turn off live
+// in the ⋯ menu. A system's access Limitations keep GateList / GateEditor.
+const EFFECT_WORDS: Record<GateEffect, string> = { remove: 'Skip the items', qualify: 'Rate them, with a note', none: 'Rate them normally' };
+function UtilityCard({ G, gate: g, reaches, disabled }: { G: ReturnType<typeof useGates>; gate: Gate; reaches: string[]; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const { systems } = G;
+  const inNow = new Set(G.covered(g).map(n => n.id));
+  const all = [...new Set([...inNow, ...(G.ledrixOf(g.id)?.items ?? []).map(i => i.node)])]
+    .map(id => find(systems, id)).filter((f): f is { node: TemplateNode; path: string[] } => !!f);
+  // Grouped by the system each item sits in, in the template's system order.
+  const groups: { system: string; items: TemplateNode[] }[] = [];
+  for (const f of all) {
+    const sys = displayLabel(f.path[0] ?? f.node.label);
+    const grp = groups.find(x => x.system === sys) ?? (groups.push({ system: sys, items: [] }), groups[groups.length - 1]);
+    grp.items.push(f.node);
+  }
+  const skips = g.reasons.some(r => r.effect === 'remove');
+  const skipped = all.filter(f => inNow.has(f.node.id)).length;
+  const summary = !all.length ? 'Nothing to skip in this template yet' : skips ? `Skips ${skipped} of ${all.length} item${all.length === 1 ? '' : 's'}` : 'Items stay on the checklist';
+  const sample = g.reasons.find(r => r.effect !== 'none');
+  const sampleLabels = all.filter(f => inNow.has(f.node.id)).slice(0, 3).map(f => displayLabel(f.node.label));
+  const changed = G.overridden(g.id);
+  return (
+    <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-ink">{g.label} off</span>
+            <span className="block truncate text-xs text-muted">{summary}{reaches.length ? ` · ${reaches.join(', ')}` : ''}</span>
+          </span>
+          {changed ? <Pill tone="warn">Changed</Pill> : <span className="text-[11px] text-muted">Ledrix</span>}
+          <span aria-hidden className={`text-muted transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+        </button>
+        <Menu label={`More for ${g.label} off`} items={[
+          { label: 'Rename in the report', onSelect: () => { setOpen(true); setRenaming(true); }, disabled: disabled && 'The draft can’t change right now.' },
+          { label: 'Reset to Ledrix', onSelect: () => { G.reset(g.id); }, disabled: (disabled && 'The draft can’t change right now.') || (!changed && 'It is Ledrix’s already.') },
+          { label: 'Turn off for this template', onSelect: () => { G.turnOff(g.id); }, disabled: disabled && 'The draft can’t change right now.', danger: true },
+        ]} />
+      </div>
+      {open && (
+        <div className="space-y-4 border-t border-hairline px-3 py-3">
+          {renaming && (
+            <label className="block max-w-sm"><span className={label}>Called in the report</span>
+              <input className={field} autoFocus defaultValue={g.label} disabled={disabled}
+                onBlur={e => { const v = e.target.value.trim(); if (v && v !== g.label) G.put({ ...g, label: v }); setRenaming(false); }} /></label>
+          )}
+          <div className="space-y-2">
+            <p className={label}>When the inspector records</p>
+            {g.reasons.map((r, i) => (
+              <div key={`${r.value}-${i}`} className="flex flex-wrap items-center gap-3">
+                <span className="w-40 text-sm font-semibold text-ink">{r.value}</span>
+                <select className={`${field} w-auto`} value={r.effect} disabled={disabled} aria-label={`When ${r.value}`}
+                  onChange={e => G.setReason(g, i, { effect: e.target.value as GateEffect })}>
+                  {(['remove', 'qualify', 'none'] as GateEffect[]).map(eff => <option key={eff} value={eff}>{EFFECT_WORDS[eff]}</option>)}
+                </select>
+                {r.effect === 'qualify' && (
+                  <input className={`${field} w-56`} defaultValue={r.phrase ?? ''} disabled={disabled} aria-label={`Note for ${r.value}`} key={`${r.value}-${r.phrase ?? ''}`}
+                    onBlur={e => { const v = e.target.value.trim(); if (v && v !== r.phrase) G.setReason(g, i, { phrase: v }); }} />
+                )}
+              </div>
+            ))}
+          </div>
+          {sample && (
+            <div className="flex flex-wrap items-baseline gap-2 rounded-lg border border-hairline bg-ground px-3 py-2">
+              <span className={`${label} mb-0`}>In the report</span>
+              <span className="text-sm text-ink">{gateLine({ gate: g, reason: sample, cause: sample.value }, sample.effect === 'remove' ? (sampleLabels.length < skipped ? [...sampleLabels, '…'] : sampleLabels) : [])}</span>
+            </div>
+          )}
+          {skips && all.length > 0 && (
+            <div>
+              <p className={label}>Items it skips <span className="ml-1 font-normal normal-case tracking-normal">· untick one to keep it on the checklist</span></p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {groups.map(grp => (
+                  <fieldset key={grp.system} className="min-w-0 space-y-1.5">
+                    <legend className="mb-1 text-[13px] font-semibold text-ink">{grp.system} <span className="font-normal text-muted">{grp.items.filter(n => inNow.has(n.id)).length} of {grp.items.length}</span></legend>
+                    {grp.items.map(n => (
+                      <label key={n.id} className={`flex items-center gap-2 text-[13px] ${inNow.has(n.id) ? 'text-ink' : 'text-muted'}`}>
+                        <input type="checkbox" checked={inNow.has(n.id)} disabled={disabled} onChange={() => G.toggleItem(g, n.id)} />
+                        <span className="min-w-0">{displayLabel(n.label)}{inNow.has(n.id) ? '' : ' · kept'}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted">Only what the job has: gas off never skips an electric water heater.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

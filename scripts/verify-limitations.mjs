@@ -122,7 +122,16 @@ async function checks(src) {
     && /const on = sel\.systemId === s\.id && !utilitiesOn && !expectedLifeOn;/.test(tr)
     && /utilitiesOn=\{ctab === 'utilities'\} onOpenUtilities=\{\(\) => \{ setMode\('edit'\); setCtab\('utilities'\); \}\}/.test(pg)
     && /if \(tab === 'utilities'\) return \(\s*<Shell[^\n]*>\s*<UtilitiesPanel tree=\{tree\}/.test(ws)
-    && /const utils = G\.gates\.filter\(g => g\.utility\);/.test(gp) && /<GateList G=\{G\} gates=\{utils\} inPart=\{\(\) => true\}/.test(gp);
+    && /const utils = G\.gates\.filter\(g => g\.utility\);/.test(gp) && /utils\.map\(g => <UtilityCard key=\{g\.id\} G=\{G\} gate=\{g\}/.test(gp);
+  // 2026-11-12 (owner, mockup 5ktKnZRzXM25jMS4wVXgQD "approved"): each utility is a one-line summary; opened, a drop-down per
+  // reason, one sample report line in the report's own words, and the items as checkboxes by system (ticked = skipped).
+  out['Utilities, cleaned up: a summary line; a drop-down per reason; the report\'s own line; items ticked by system; Rename/Reset/Turn off in ⋯'] =
+    /const summary = !all\.length \? 'Nothing to skip in this template yet' : skips \? `Skips \$\{skipped\} of \$\{all\.length\}/.test(gp)
+    && /onChange=\{e => G\.setReason\(g, i, \{ effect: e\.target\.value as GateEffect \}\)\}/.test(gp)
+    && /\{gateLine\(\{ gate: g, reason: sample, cause: sample\.value \}/.test(gp)
+    && /<input type="checkbox" checked=\{inNow\.has\(n\.id\)\} disabled=\{disabled\} onChange=\{\(\) => G\.toggleItem\(g, n\.id\)\} \/>/.test(gp)
+    && /const sys = displayLabel\(f\.path\[0\] \?\? f\.node\.label\);/.test(gp)
+    && /label: 'Rename in the report'/.test(gp) && /label: 'Reset to Ledrix', onSelect: \(\) => \{ G\.reset\(g\.id\); \}/.test(gp) && /label: 'Turn off for this template', onSelect: \(\) => \{ G\.turnOff\(g\.id\); \}/.test(gp);
   out['the systems list shows the count'] = /const limits = useMemo\(\(\) => limitCounts\(tree\), \[tree\]\);/.test(tr) && /\{itemCount\(s\)\}\{limits\.get\(s\.id\) \?/.test(tr);
   out['the Limitations step is gone (an old link opens What you inspect); Review lists them all once and opens a system’s, or Utilities'] =
     !/\{ id: 'gates', label:/.test(pg) && !/section === 'gates'/.test(pg) && /s === 'counts' \|\| s === 'gates' \? 'systems'/.test(pg)
@@ -165,7 +174,12 @@ const MUT = [
   ['a system stays highlighted on Utilities', rep('tree', 'const on = sel.systemId === s.id && !utilitiesOn && !expectedLifeOn;', 'const on = sel.systemId === s.id && !expectedLifeOn;')],
   ['the page never opens Utilities', rep('page', "setMode('edit'); setCtab('utilities'); }}", "setMode('edit'); }}")],
   ['no Utilities screen', rep('ws', "if (tab === 'utilities') return (", "if (tab === 'nope2') return (")],
-  ['Utilities shows only some items', rep('gp', '<GateList G={G} gates={utils} inPart={() => true}', '<GateList G={G} gates={utils} inPart={() => false}')],
+  ['Utilities shows no cards', rep('gp', 'utils.map(g => <UtilityCard key={g.id} G={G} gate={g}', 'utils.slice(0, 0).map(g => <UtilityCard key={g.id} G={G} gate={g}')],
+  ['an item\'s checkbox does nothing', rep('gp', 'onChange={() => G.toggleItem(g, n.id)} />', 'onChange={() => {}} />')],
+  ['a reason\'s drop-down does nothing', rep('gp', 'onChange={e => G.setReason(g, i, { effect: e.target.value as GateEffect })}', 'onChange={() => {}}')],
+  ['the report line is made up, not the report\'s', rep('gp', '{gateLine({ gate: g, reason: sample, cause: sample.value }', '{String({ gate: g, reason: sample, cause: sample.value }')],
+  ['items are not grouped by their system', rep('gp', 'const sys = displayLabel(f.path[0] ?? f.node.label);', 'const sys = displayLabel(f.node.label);')],
+  ['Reset does nothing', rep('gp', "label: 'Reset to Ledrix', onSelect: () => { G.reset(g.id); }", "label: 'Reset to Ledrix', onSelect: () => { }")],
   ['no count in the list', rep('tree', '{itemCount(s)}{limits.get(s.id) ?', '{itemCount(s)}{false ?')],
   ['the step comes back', rep('page', "  { id: 'report', label: 'Report',", "  { id: 'gates', label: 'Limitations', icon: '' },\n  { id: 'report', label: 'Report',")],
   ['Review drops the list', rep('page', '<LimitationsList tree={tree} onOpen=', '<div data-x=')],
