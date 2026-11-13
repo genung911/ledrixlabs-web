@@ -134,8 +134,10 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   // 2026-11-06 (owner, Fireplace "we don't operate it"): per type answer, the item starts as this limitation and the
   // report prints the company's sentence (templates/startsLimited). Judged against the template by templateValidate.
   startsLimited:    { check: (v) => (Array.isArray(v) && v.every(e => obj(e) && !onlyKeys(e, ['field', 'value', 'reason', 'sentence'])
-    && typeof e.field === 'string' && /^[^:]+::[^:]+$/.test(e.field) && !nonEmpty(e.value) && !nonEmpty(e.reason) && !nonEmpty(e.sentence)) ? null
-    : 'must be a list of {field "<nodeId>::<attrId>", value, reason, sentence}'), class: 'policy', why: 'what the company does not operate — a disclosure in the report' },
+    // 2026-11-12 (owner, "usually limited", mockup Es1PBNZxrzsdJbxhonA9Ct): field '' with value '*' = from the start of
+    // every new job, following no question (the evaporator coil, enclosed and not visible).
+    && typeof e.field === 'string' && (/^[^:]+::[^:]+$/.test(e.field) || (e.field === '' && e.value === '*')) && !nonEmpty(e.value) && !nonEmpty(e.reason) && !nonEmpty(e.sentence)) ? null
+    : 'must be a list of {field "<nodeId>::<attrId>" (or "" with value "*": from the start), value, reason, sentence}'), class: 'policy', why: 'what the company does not operate — a disclosure in the report' },
   defaultActive:    { check: bool, class: 'policy', why: 'what a new inspection covers' },
   appliesToTypes:   { check: strList, class: 'policy', why: 'when this item is inspected (legacy Equipment Types)' },
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },

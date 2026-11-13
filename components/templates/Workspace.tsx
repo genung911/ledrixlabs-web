@@ -17,6 +17,7 @@ import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
 import { ItemLimitations, LimitationsRow, PartLimitations, UtilitiesPanel } from './GatesPanel';
 import { ServiceLivesPanel } from './ServiceLivesPanel';
+import { UsuallyLimited } from './UsuallyLimited';
 import { accessGatesOfPart, templateGates } from '@/lib/templates/limitationModel';
 import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
@@ -169,6 +170,7 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (tab === 'quickfindings') return facet('quickfindings', <ComponentCondition node={node} onOps={onOps} disabled={disabled} />, 'condition');
   if (tab === 'condition') return facet('condition', <>
     {sw('Inspectors rate its condition', 'Satisfactory · Limitation · Finding', assessesCondition(node), v => onOps(ops.assessed(node.id, v)))}
+    <UsuallyLimited tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} />
     {assessesCondition(node) && <div className="px-4 py-4"><div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
       <FacetRow title="Quick findings" line={shortcutNames.join(', ') || 'None yet · tap to add'} count={shortcuts} onOpen={() => setTab('quickfindings')} />
       <FacetRow title="Limitations" line={ownLimits.join(', ') || 'None yet · tap to add'} count={ownLimits.length} onOpen={() => setTab('limitations')} />

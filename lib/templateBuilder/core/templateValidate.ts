@@ -131,6 +131,13 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
       if (x.startsLimited.length && n.condition !== true) add('error', 'starts_limited_not_assessed', `"${n.label}" starts as a limitation but is not assessed.`, n.id);
       const vals = new Set<string>();
       for (const e of x.startsLimited as Array<{ field: string; value: string; reason: string; sentence: string }>) {
+        if (e.field === '' && e.value === '*') {   // usually limited, from the start (2026-11-12): no question to check
+          if (vals.has('')) add('error', 'starts_limited_duplicate', `"${n.label}" is usually limited twice.`, n.id);
+          vals.add('');
+          if (!(n.limitations ?? []).some(r => r.trim().toLowerCase() === String(e.reason).trim().toLowerCase())) add('error', 'starts_limited_reason', `"${n.label}" starts as "${e.reason}", which is not one of its limitation reasons.`, n.id);
+          if (!String(e.sentence ?? '').trim()) add('error', 'starts_limited_sentence', `"${n.label}" needs a report sentence.`, n.id);
+          continue;
+        }
         const { w, a } = attrOf(String(e.field));
         if (!w || !a) { add('error', 'starts_limited_missing_field', `"${n.label}" starts limited on "${e.field}", which is not in the template.`, n.id); continue; }
         if (e.value !== '*' && !a.values.includes(e.value)) add('warning', 'starts_limited_unknown_value', `"${n.label}" starts limited for "${e.value}", which "${a.label}" does not offer.`, n.id);
