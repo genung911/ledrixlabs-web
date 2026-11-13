@@ -42,7 +42,6 @@ const pathOf = (systems: readonly TemplateNode[], id: string | undefined) => {
   const f = find(systems, id);
   return f ? [...f.path, f.node.label].map(displayLabel).join(' › ') : id;
 };
-const plural = (n: number) => `${n} item${n === 1 ? '' : 's'}`;
 
 /** Every edit a gate takes, all written through `onOps` as the template's `gates` field. */
 function useGates(tree: InspectionTemplate, onOps: (o: TemplateOp[]) => boolean) {
@@ -87,41 +86,6 @@ export function LimitationsRow({ tree, part, onOpen }: { tree: InspectionTemplat
   );
 }
 
-/** The situations listed on a screen, each edited in place under its rows. `inPart` limits the items shown. */
-function GateList({ G, gates, inPart, where, count, disabled, empty }: {
-  G: ReturnType<typeof useGates>; gates: Gate[]; inPart: (id: string) => boolean; where: (g: Gate) => string; count: (g: Gate) => number; disabled: boolean; empty: string;
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-  if (!gates.length) return <p className="text-sm text-muted">{empty}</p>;
-  return (
-    <div className="space-y-2">
-      {gates.map(g => {
-        const isOpen = open === g.id;
-        const n = count(g);
-        const w = where(g);
-        return (
-          <div key={g.id} className="overflow-hidden rounded-xl border border-hairline">
-            {limitRows(g).map(row => (
-              <button key={row.reasons.map(r => r.value).join('|')} onClick={() => setOpen(isOpen ? null : g.id)} aria-expanded={isOpen}
-                className="grid w-full gap-1 border-b border-hairline px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-ink/5 md:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.6fr)] md:items-center md:gap-3">
-                <span className="min-w-0">
-                  <span className="font-semibold text-ink">{g.utility ? `${g.label} off` : row.reasons.map(r => sayReason(r.value)).join(' or ')}</span>
-                  {w && <span className="block text-[11px] text-muted">{w}</span>}
-                </span>
-                <span>{row.effect === 'remove' ? <Pill tone="warn">Skipped</Pill> : row.effect === 'qualify' ? <Pill tone="accent">Still rated</Pill> : <Pill>Rated as seen</Pill>}</span>
-                <span className="text-xs text-body">{row.effect === 'remove'
-                  ? `${plural(n)} don’t count as missed. Report: ${g.utility ? `“Not tested — ${g.label.toLowerCase()} off” for each.` : `“${g.label} — not inspected:” and the reason.`}`
-                  : row.effect === 'qualify' ? `Each rating ends “(${row.reasons[0].phrase ?? ''})”.` : 'Nothing extra.'}</span>
-              </button>
-            ))}
-            {isOpen && <GateEditor G={G} gate={g} inPart={inPart} disabled={disabled} onGone={() => setOpen(null)} />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 /** A SYSTEM's Limitations screen (2026-11-07, limitations back in Condition): only its ACCESS situations — the roof method,
  *  attic, crawlspace, the panel cover, or one the company added — each edited in place with this system's items. Utilities
  *  are in Utilities; an item's own reasons are in its Condition. "+ Add a limitation" offers rows inside this system. */
@@ -156,11 +120,11 @@ export function PartLimitations({ tree, part, onOps, disabled }: {
   };
   return (
     <div className="space-y-4 px-4 py-4">
-      <p className="text-xs text-muted">When the inspector can’t get to or onto {displayLabel(part.label)}: what the checklist and the report do. Ledrix’s are set already; tap one to change it.</p>
+      <p className="text-sm text-body">When the inspector can’t get to or onto {displayLabel(part.label)}, Ledrix skips the items it can’t reach and the report says why.</p>
       <div>
         <p className={label}>Access{mine.length ? ` · ${mine.length}` : ''}</p>
-        <GateList G={G} gates={mine} inPart={inPart} disabled={disabled} count={g => G.covered(g).filter(n => inPart(n.id)).length}
-          where={g => (g.row ? `Recorded on ${pathOf(systems, g.row)}` : '')} empty={`Nothing limits access to ${displayLabel(part.label)} — every item is rated as seen.`} />
+        {mine.length ? <div className="space-y-2">{mine.map(g => <GateCard key={g.id} G={G} gate={g} inPart={inPart} disabled={disabled} reaches={g.row ? [`Recorded on ${pathOf(systems, g.row)}`] : []} />)}</div>
+          : <p className="text-sm text-muted">Nothing limits access to {displayLabel(part.label)} — every item is rated as seen.</p>}
       </div>
       {offHere.length > 0 && <p className="text-xs text-muted">Turned off for this template: {offHere.map(e => G.ledrixOf(e.id)?.label ?? e.id).join(', ')}{' '}
         <button className={btn.ghost} disabled={disabled} onClick={() => G.save(G.own.filter(e => !offHere.some(o => o.id === e.id && isRemoved(e))))}>Turn back on</button></p>}
@@ -189,7 +153,7 @@ export function UtilitiesPanel({ tree, onOps, disabled }: { tree: InspectionTemp
   return (
     <div className="space-y-4 px-4 py-4">
       <p className="text-sm text-body">When the inspector records a utility as off, Ledrix skips the items that need it and the report says why.</p>
-      {utils.length ? utils.map(g => <UtilityCard key={g.id} G={G} gate={g} disabled={disabled} reaches={systemsOfGate(g, systems, idx).map(sysName)} />)
+      {utils.length ? utils.map(g => <GateCard key={g.id} G={G} gate={g} disabled={disabled} reaches={systemsOfGate(g, systems, idx).map(sysName)} />)
         : <p className="text-sm text-muted">No utilities — Ledrix’s are turned off for this template.</p>}
       {offHere.length > 0 && <p className="text-xs text-muted">Turned off for this template: {offHere.map(e => G.ledrixOf(e.id)?.label ?? e.id).join(', ')}{' '}
         <button className={btn.ghost} disabled={disabled} onClick={() => G.save(G.own.filter(e => !offHere.some(o => o.id === e.id && isRemoved(e))))}>Turn back on</button></p>}
@@ -203,13 +167,17 @@ export function UtilitiesPanel({ tree, onOps, disabled }: { tree: InspectionTemp
 // report's own words), and the items as checkboxes grouped by system (ticked = skipped). Rename, Reset and Turn off live
 // in the ⋯ menu. A system's access Limitations keep GateList / GateEditor.
 const EFFECT_WORDS: Record<GateEffect, string> = { remove: 'Skip the items', qualify: 'Rate them, with a note', none: 'Rate them normally' };
-function UtilityCard({ G, gate: g, reaches, disabled }: { G: ReturnType<typeof useGates>; gate: Gate; reaches: string[]; disabled: boolean }) {
+// LIMITATIONS, THE SAME WAY (owner 2026-11-12: "clean up the Limitations screens the same way"): a system's access
+// situations (attic, crawlspace, roof method, panel cover, the company's own) use this card too, showing only that
+// system's items (`inPart`); a company's own situation is deleted, a Ledrix one turned off.
+function GateCard({ G, gate: g, reaches, disabled, inPart = () => true }: { G: ReturnType<typeof useGates>; gate: Gate; reaches: string[]; disabled: boolean; inPart?: (id: string) => boolean }) {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const { systems } = G;
   const inNow = new Set(G.covered(g).map(n => n.id));
-  const all = [...new Set([...inNow, ...(G.ledrixOf(g.id)?.items ?? []).map(i => i.node)])]
-    .map(id => find(systems, id)).filter((f): f is { node: TemplateNode; path: string[] } => !!f);
+  const candidates = g.utility ? [...inNow, ...(G.ledrixOf(g.id)?.items ?? []).map(i => i.node)] : [...inNow, ...G.areaLeaves(g)];
+  const all = [...new Set(candidates)].filter(id => inPart(id))
+    .map(id => find(systems, id)).filter((f): f is { node: TemplateNode; path: string[] } => !!f && !(f.node.children ?? []).length);
   // Grouped by the system each item sits in, in the template's system order.
   const groups: { system: string; items: TemplateNode[] }[] = [];
   for (const f of all) {
@@ -228,16 +196,16 @@ function UtilityCard({ G, gate: g, reaches, disabled }: { G: ReturnType<typeof u
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-ink">{g.label} off</span>
+            <span className="block text-sm font-semibold text-ink">{g.utility ? `${g.label} off` : g.label}</span>
             <span className="block truncate text-xs text-muted">{summary}{reaches.length ? ` · ${reaches.join(', ')}` : ''}</span>
           </span>
-          {changed ? <Pill tone="warn">Changed</Pill> : <span className="text-[11px] text-muted">Ledrix</span>}
+          {g.origin === 'company' ? <Pill tone="accent">This company</Pill> : changed ? <Pill tone="warn">Changed</Pill> : <span className="text-[11px] text-muted">Ledrix</span>}
           <span aria-hidden className={`text-muted transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
         </button>
-        <Menu label={`More for ${g.label} off`} items={[
+        <Menu label={`More for ${g.label}`} items={[
           { label: 'Rename in the report', onSelect: () => { setOpen(true); setRenaming(true); }, disabled: disabled && 'The draft can’t change right now.' },
-          { label: 'Reset to Ledrix', onSelect: () => { G.reset(g.id); }, disabled: (disabled && 'The draft can’t change right now.') || (!changed && 'It is Ledrix’s already.') },
-          { label: 'Turn off for this template', onSelect: () => { G.turnOff(g.id); }, disabled: disabled && 'The draft can’t change right now.', danger: true },
+          ...(g.origin === 'company' ? [] : [{ label: 'Reset to Ledrix', onSelect: () => { G.reset(g.id); }, disabled: (disabled && 'The draft can’t change right now.') || (!changed && 'It is Ledrix’s already.') }]),
+          { label: g.origin === 'company' ? 'Delete' : 'Turn off for this template', onSelect: () => { G.turnOff(g.id); }, disabled: disabled && 'The draft can’t change right now.', danger: true },
         ]} />
       </div>
       {open && (
@@ -251,7 +219,7 @@ function UtilityCard({ G, gate: g, reaches, disabled }: { G: ReturnType<typeof u
             <p className={label}>When the inspector records</p>
             {g.reasons.map((r, i) => (
               <div key={`${r.value}-${i}`} className="flex flex-wrap items-center gap-3">
-                <span className="w-40 text-sm font-semibold text-ink">{r.value}</span>
+                <span className="w-40 text-sm font-semibold text-ink">{r.value === '*limitation' ? 'Any limitation' : sayReason(r.value)}</span>
                 <select className={`${field} w-auto`} value={r.effect} disabled={disabled} aria-label={`When ${r.value}`}
                   onChange={e => G.setReason(g, i, { effect: e.target.value as GateEffect })}>
                   {(['remove', 'qualify', 'none'] as GateEffect[]).map(eff => <option key={eff} value={eff}>{EFFECT_WORDS[eff]}</option>)}
@@ -285,7 +253,7 @@ function UtilityCard({ G, gate: g, reaches, disabled }: { G: ReturnType<typeof u
                   </fieldset>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-muted">Only what the job has: gas off never skips an electric water heater.</p>
+              {g.utility && <p className="mt-2 text-xs text-muted">Only what the job has: gas off never skips an electric water heater.</p>}
             </div>
           )}
         </div>
@@ -328,65 +296,6 @@ export function ItemLimitations({ tree, part, onOps, disabled, policy, onOpenSys
               );
             })}
           </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** One gate, edited in place under its rows. Items are shown for THIS part (a gate may reach others too). */
-function GateEditor({ G, gate: current, inPart, disabled, onGone }: {
-  G: ReturnType<typeof useGates>; gate: Gate; inPart: (id: string) => boolean; disabled: boolean; onGone: () => void;
-}) {
-  const { systems } = G;
-  return (
-    <div aria-label={`Edit ${current.label}`} className="bg-ground px-3 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {current.origin === 'company' ? <Pill tone="accent">This company</Pill> : G.overridden(current.id) ? <Pill tone="warn">Changed from Ledrix</Pill> : <Pill>Ledrix</Pill>}
-        <span className="text-xs text-muted">Recorded on {current.row ? pathOf(systems, current.row) : `${current.label} — on at this visit`}</span>
-        <span className="flex-1" />
-        {current.origin !== 'company' && G.overridden(current.id) && <button className={btn.secondary} disabled={disabled} onClick={() => G.reset(current.id)}>Reset to Ledrix</button>}
-        <button className={btn.ghost} disabled={disabled} onClick={() => { if (G.turnOff(current.id)) onGone(); }}>{current.origin === 'company' ? 'Delete' : 'Turn off for this template'}</button>
-      </div>
-      <label className="mt-3 block max-w-sm"><span className={label}>Report label</span>
-        <input className={field} defaultValue={current.label} disabled={disabled} onBlur={e => { const v = e.target.value.trim(); if (v && v !== current.label) G.put({ ...current, label: v }); }} /></label>
-      <div className="mt-3 overflow-hidden rounded-xl border border-hairline bg-surface">
-        <div className="hidden grid-cols-[170px_220px_minmax(0,1fr)] gap-3 px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted md:grid"><span>When the inspector records</span><span>On the checklist</span><span>In the report</span></div>
-        {current.reasons.map((r, i) => (
-          <div key={`${r.value}-${i}`} className="grid gap-2 border-t border-hairline px-3 py-2.5 text-sm md:grid-cols-[170px_220px_minmax(0,1fr)] md:items-center md:gap-3">
-            <span className="text-ink">{r.value === '*limitation' ? <>Any limitation <span className="text-xs text-muted">(its reason is the cause)</span></> : r.value}</span>
-            <span role="radiogroup" aria-label={`Effect of ${r.value}`} className="inline-flex w-max overflow-hidden rounded-lg border border-hairline text-xs">
-              {(['remove', 'qualify', 'none'] as GateEffect[]).map(eff => (
-                <button key={eff} role="radio" aria-checked={r.effect === eff} disabled={disabled} onClick={() => G.setReason(current, i, { effect: eff })}
-                  className={`px-2.5 py-1 font-semibold ${r.effect === eff ? (eff === 'remove' ? 'bg-safety/15 text-safety' : eff === 'qualify' ? 'bg-amber-600/15 text-amber-700 dark:text-amber-300' : 'bg-ink/10 text-ink') : 'text-body hover:bg-ink/5'}`}>
-                  {eff === 'remove' ? 'Skipped' : eff === 'qualify' ? 'Still rated' : 'Rated as seen'}
-                </button>
-              ))}
-            </span>
-            {r.effect === 'qualify'
-              ? <input className={`${field} font-mono text-xs`} defaultValue={r.phrase ?? ''} disabled={disabled} aria-label={`Phrase for ${r.value}`}
-                  onBlur={e => { const v = e.target.value.trim(); if (v && v !== r.phrase) G.setReason(current, i, { phrase: v }); }} />
-              : <span className="text-xs text-muted">{r.effect === 'remove' ? `Named as not ${current.utility ? 'tested' : 'inspected'}, with the reason. The items below don’t count as missed.` : 'Nothing extra.'}</span>}
-          </div>
-        ))}
-      </div>
-      {current.reasons.some(r => r.effect === 'remove') && (
-        <div className="mt-3">
-          <p className={label}>Items skipped here</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(() => {
-              const inNow = new Set(G.covered(current).map(n => n.id));
-              const all = current.utility ? [...inNow, ...(G.ledrixOf(current.id)?.items ?? []).map(i => i.node).filter(id => !inNow.has(id))] : G.areaLeaves(current);
-              return [...new Set(all)].filter(id => inPart(id)).map(id => {
-                const n = find(systems, id)?.node;
-                if (!n) return null;
-                const on = inNow.has(id);
-                return <button key={id} disabled={disabled} onClick={() => G.toggleItem(current, id)} aria-pressed={on}
-                  className={`rounded-full border border-hairline bg-surface px-2.5 py-0.5 text-xs ${on ? 'text-ink' : 'text-muted line-through opacity-60'}`}>{displayLabel(n.label)}</button>;
-              });
-            })()}
-          </div>
-          <p className="mt-2 text-xs text-muted">Tap an item to keep it in (struck through = stays on the checklist).{current.utility ? ' This utility is one setting for every system it reaches. It only removes an item that is present for the job’s answers — gas off never removes an electric water heater’s operation.' : ''}</p>
         </div>
       )}
     </div>

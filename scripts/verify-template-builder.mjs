@@ -1378,8 +1378,10 @@ const RULES = {
     // Owner 2026-11-07 (mockup FSTfPJUMmjGDVFqiqneD6o): in each system, under its groups. Deeper: verify-limitations.mjs.
     const gp = strip(all['components/templates/GatesPanel.tsx'] ?? '');
     // Owner 2026-11-07 (mockup CgiHJ5LqFQb4hAFSrAr3ox): a Limitations row first in every system, group and item.
-    return /export function LimitationsRow\(/.test(gp) && /export function PartLimitations\(/.test(gp) && /When the inspector records/.test(gp) && /On the checklist/.test(gp) && /In the report/.test(gp)
-      && /onClick=\{\(\) => setOpen\(isOpen \? null : g\.id\)\}/.test(gp) && /\{isOpen && <GateEditor /.test(gp) ? [] : ['components/templates/GatesPanel.tsx'];
+    return /export function LimitationsRow\(/.test(gp) && /export function PartLimitations\(/.test(gp) && /When the inspector records/.test(gp) && /In the report/.test(gp)
+      // 2026-11-12 (owner: "clean up the Limitations screens the same way" as Utilities, mockup 5ktKnZRzXM25jMS4wVXgQD):
+      // one card per situation (GateCard) — a summary line; a tap opens its reasons, the report line and its items.
+      && /onClick=\{\(\) => setOpen\(o => !o\)\} aria-expanded=\{open\}/.test(gp) && /\{open && \(/.test(gp) ? [] : ['components/templates/GatesPanel.tsx'];
   },
   'move: the ⋯ menu on a group and an item offers Move to…, disabled with the reason when it cannot move; the dialog moves only through moveOps': all => {
     const w = strip(all['components/templates/Workspace.tsx'] ?? ''), d = strip(all['components/templates/MoveTo.tsx'] ?? '');
@@ -1586,8 +1588,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
-  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', 'onClick={() => setOpen(isOpen ? null : g.id)}', 'onClick={() => {}}'), 'a tap opens nothing'],
-  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', '{isOpen && <GateEditor ', '{false && <GateEditor '), 'the editor never shows'],
+  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', 'onClick={() => setOpen(o => !o)} aria-expanded={open}', 'onClick={() => {}} aria-expanded={open}'), 'a tap opens nothing'],
+  ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', '{open && (', '{false && ('), 'the editor never shows'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/Tree.tsx', 'const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);', 'const covered = isCovered(tree, s);'), 'the systems list ignores the building'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/GroupList.tsx', 'const kids = (system.children ?? []).filter(c => !lens || lens.isIn(c.id));', 'const kids = system.children ?? [];'), 'a building lists parts it doesn\'t have'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('app/app/templates/[id]/page.tsx', '<BuildingLensProvider tree={tree} buildingId={building}>', '<BuildingLensProvider tree={tree} buildingId={null}>'), 'the strip changes nothing'],

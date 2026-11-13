@@ -105,9 +105,10 @@ async function checks(src) {
     && (ep.match(/\{about\}/g) ?? []).length === 2
     && /const \{ count, line \} = useMemo\(\(\) => partLimitSummary\(templateGates\(tree\), tree\.systems \?\? \[\], part\), \[tree, part\]\);/.test(gp);
   out['the system screen edits each situation in place with that system’s items; + Add offers rows inside it'] =
-    /\{isOpen && <GateEditor G=\{G\} gate=\{g\} inPart=\{inPart\}/.test(gp)
-    && /\.filter\(id => inPart\(id\)\)\.map\(id =>/.test(gp)
-    && /count=\{g => G\.covered\(g\)\.filter\(n => inPart\(n\.id\)\)\.length\}/.test(gp)
+    // 2026-11-12: each situation is a GateCard (the Utilities layout), showing only this system's items.
+    /mine\.map\(g => <GateCard key=\{g\.id\} G=\{G\} gate=\{g\} inPart=\{inPart\}/.test(gp)
+    && /const all = \[\.\.\.new Set\(candidates\)\]\.filter\(id => inPart\(id\)\)/.test(gp)
+    && /label: g\.origin === 'company' \? 'Delete' : 'Turn off for this template'/.test(gp)
     && /visit\(\[part\], parentNode\);/.test(gp);
   out['the item’s Limitations: its reasons, the TPR switch, and — read only — what limits it automatically, each opening where it is set'] =
     /<ChipList values=\{part\.limitations \?\? \[\]\}[\s\S]{0,200}onChange=\{v => onOps\(ops\.limitations\(part\.id, v\)\)\}/.test(gp)
@@ -122,7 +123,7 @@ async function checks(src) {
     && /const on = sel\.systemId === s\.id && !utilitiesOn && !expectedLifeOn;/.test(tr)
     && /utilitiesOn=\{ctab === 'utilities'\} onOpenUtilities=\{\(\) => \{ setMode\('edit'\); setCtab\('utilities'\); \}\}/.test(pg)
     && /if \(tab === 'utilities'\) return \(\s*<Shell[^\n]*>\s*<UtilitiesPanel tree=\{tree\}/.test(ws)
-    && /const utils = G\.gates\.filter\(g => g\.utility\);/.test(gp) && /utils\.map\(g => <UtilityCard key=\{g\.id\} G=\{G\} gate=\{g\}/.test(gp);
+    && /const utils = G\.gates\.filter\(g => g\.utility\);/.test(gp) && /utils\.map\(g => <GateCard key=\{g\.id\} G=\{G\} gate=\{g\}/.test(gp);
   // 2026-11-12 (owner, mockup 5ktKnZRzXM25jMS4wVXgQD "approved"): each utility is a one-line summary; opened, a drop-down per
   // reason, one sample report line in the report's own words, and the items as checkboxes by system (ticked = skipped).
   out['Utilities, cleaned up: a summary line; a drop-down per reason; the report\'s own line; items ticked by system; Rename/Reset/Turn off in ⋯'] =
@@ -131,7 +132,7 @@ async function checks(src) {
     && /\{gateLine\(\{ gate: g, reason: sample, cause: sample\.value \}/.test(gp)
     && /<input type="checkbox" checked=\{inNow\.has\(n\.id\)\} disabled=\{disabled\} onChange=\{\(\) => G\.toggleItem\(g, n\.id\)\} \/>/.test(gp)
     && /const sys = displayLabel\(f\.path\[0\] \?\? f\.node\.label\);/.test(gp)
-    && /label: 'Rename in the report'/.test(gp) && /label: 'Reset to Ledrix', onSelect: \(\) => \{ G\.reset\(g\.id\); \}/.test(gp) && /label: 'Turn off for this template', onSelect: \(\) => \{ G\.turnOff\(g\.id\); \}/.test(gp);
+    && /label: 'Rename in the report'/.test(gp) && /label: 'Reset to Ledrix', onSelect: \(\) => \{ G\.reset\(g\.id\); \}/.test(gp) && /label: g\.origin === 'company' \? 'Delete' : 'Turn off for this template', onSelect: \(\) => \{ G\.turnOff\(g\.id\); \}/.test(gp);
   out['the systems list shows the count'] = /const limits = useMemo\(\(\) => limitCounts\(tree\), \[tree\]\);/.test(tr) && /\{itemCount\(s\)\}\{limits\.get\(s\.id\) \?/.test(tr);
   out['the Limitations step is gone (an old link opens What you inspect); Review lists them all once and opens a system’s, or Utilities'] =
     !/\{ id: 'gates', label:/.test(pg) && !/section === 'gates'/.test(pg) && /s === 'counts' \|\| s === 'gates' \? 'systems'/.test(pg)
@@ -165,7 +166,7 @@ const MUT = [
   ['every system gets the row', rep('ws', 'about={hasAccess ?', 'about={true ?')],
   ['the system row opens nothing', rep('ws', "if (tab === 'limitations') return (", "if (tab === 'nope') return (")],
   ['a system lists utilities too', rep('gp', 'const mine = useMemo(() => accessGatesOfPart(gates, systems, part.id), [gates, systems, part.id]);', 'const mine = useMemo(() => gatesOfPart(gates, systems, part.id), [gates, systems, part.id]);')],
-  ['other parts’ items shown', rep('gp', '.filter(id => inPart(id)).map(id =>', '.map(id =>')],
+  ['other parts’ items shown', rep('gp', 'const all = [...new Set(candidates)].filter(id => inPart(id))', 'const all = [...new Set(candidates)]')],
   ['+ Add offers everything', rep('gp', 'visit([part], parentNode);', 'visit(systems, null);')],
   ['the item’s reasons are not saved', rep('gp', 'onChange={v => onOps(ops.limitations(part.id, v))}', 'onChange={() => {}}')],
   ['the TPR switch leaves', rep('ws', 'policy={<EveryTypeOperates', 'x={<EveryTypeOperates')],
@@ -174,7 +175,8 @@ const MUT = [
   ['a system stays highlighted on Utilities', rep('tree', 'const on = sel.systemId === s.id && !utilitiesOn && !expectedLifeOn;', 'const on = sel.systemId === s.id && !expectedLifeOn;')],
   ['the page never opens Utilities', rep('page', "setMode('edit'); setCtab('utilities'); }}", "setMode('edit'); }}")],
   ['no Utilities screen', rep('ws', "if (tab === 'utilities') return (", "if (tab === 'nope2') return (")],
-  ['Utilities shows no cards', rep('gp', 'utils.map(g => <UtilityCard key={g.id} G={G} gate={g}', 'utils.slice(0, 0).map(g => <UtilityCard key={g.id} G={G} gate={g}')],
+  ['a system shows other parts\' cards empty', rep('gp', 'mine.map(g => <GateCard key={g.id} G={G} gate={g} inPart={inPart}', 'mine.map(g => <GateCard key={g.id} G={G} gate={g} inPart={() => true}')],
+  ['Utilities shows no cards', rep('gp', 'utils.map(g => <GateCard key={g.id} G={G} gate={g}', 'utils.slice(0, 0).map(g => <GateCard key={g.id} G={G} gate={g}')],
   ['an item\'s checkbox does nothing', rep('gp', 'onChange={() => G.toggleItem(g, n.id)} />', 'onChange={() => {}} />')],
   ['a reason\'s drop-down does nothing', rep('gp', 'onChange={e => G.setReason(g, i, { effect: e.target.value as GateEffect })}', 'onChange={() => {}}')],
   ['the report line is made up, not the report\'s', rep('gp', '{gateLine({ gate: g, reason: sample, cause: sample.value }', '{String({ gate: g, reason: sample, cause: sample.value }')],
