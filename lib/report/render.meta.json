@@ -1,7 +1,7 @@
 {
   "generatedBy": "ledrix-app scripts/export-report-bundle.mjs",
-  "appCommit": "6e04da68a29092df32978bb67cfc4fd9f2cd20c2",
-  "appSourcesDirty": true,
+  "appCommit": "6b08a687e79d5b04d174fa95beb3f017ec2fa92c",
+  "appSourcesDirty": false,
   "sourcesSha256": "8524e764cf40f903d6369a778efa44c3f6b1babb706c37bb29e5bb54bf692d60",
   "sourceFiles": 297,
   "packVersion": "2026.11.12.1",
