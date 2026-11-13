@@ -16,13 +16,14 @@ import { Menu, Pill, Toggle, btn, label } from './ui';
 import { MoveToDialog, moveBlockFor } from './MoveTo';
 import { EveryTypeOperates } from './TypeBuilder';
 import { ItemLimitations, LimitationsRow, PartLimitations, UtilitiesPanel } from './GatesPanel';
+import { ServiceLivesPanel } from './ServiceLivesPanel';
 import { accessGatesOfPart, templateGates } from '@/lib/templates/limitationModel';
 import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
-export type ComponentTab = 'overview' | 'limitations' | 'condition' | 'quickfindings' | 'details' | 'requirements' | 'applicability' | 'utilities';
+export type ComponentTab = 'overview' | 'limitations' | 'condition' | 'quickfindings' | 'details' | 'requirements' | 'applicability' | 'utilities' | 'expectedlife';
 
 // ONE SHAPE AT EVERY LEVEL (owner 2026-11-07, mockup https://claude.ai/artifact/CgiHJ5LqFQb4hAFSrAr3ox, "approved"): an item
 // has no tabs. 'overview' is its rows (Limitations · Condition · Details · Requirements · Applies when); every other value
@@ -33,7 +34,7 @@ export type ComponentTab = 'overview' | 'limitations' | 'condition' | 'quickfind
 // both. Build and push"): an item's rows are Condition · Details · Requirements · Applies when; Condition (on) opens Quick
 // findings and Limitations, each with back to Condition. Groups have no Limitations row; a system has one only when an
 // access situation reaches it. 'utilities' is the Utilities screen, opened from the top of the systems list.
-const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', limitations: 'Limitations', condition: 'Condition', quickfindings: 'Quick findings', details: 'Details', requirements: 'Requirements', applicability: 'Applies when', utilities: 'Utilities' };
+const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', limitations: 'Limitations', condition: 'Condition', quickfindings: 'Quick findings', details: 'Details', requirements: 'Requirements', applicability: 'Applies when', utilities: 'Utilities', expectedlife: 'Expected life' };
 
 /** A request to bring one panel section into view (the tree's section rows, owner 2026-11-05). `n` changes per click. */
 export type Reveal = { id: string; n: number };
@@ -80,6 +81,12 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   if (tab === 'utilities') return (
     <Shell scrollKey="utilities" reveal={null} kind="Utilities" title="Utilities" sub="Water · Gas · Power — one setting for every system they reach" onBack={{ label: loc?.node.label ?? system.label, go: () => setTab('overview') }}>
       <UtilitiesPanel tree={tree} onOps={onOps} disabled={disabled} />
+    </Shell>
+  );
+  // EXPECTED LIFE (owner 2026-11-12, mockup Gg6Wvs8yXeWorcNvbqWhd2): a template setting, opened beside Utilities.
+  if (tab === 'expectedlife') return (
+    <Shell scrollKey="expectedlife" reveal={null} kind="Template setting" title="Expected life" sub="How long each kind of equipment typically lasts" onBack={{ label: loc?.node.label ?? system.label, go: () => setTab('overview') }}>
+      <ServiceLivesPanel tree={tree} onOps={onOps} disabled={disabled} />
     </Shell>
   );
   // A system's access situations (roof method, attic, crawlspace, panel cover): its Limitations row and screen.

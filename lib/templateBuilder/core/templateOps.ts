@@ -203,7 +203,26 @@ export const TEMPLATE_FIELDS: Record<string, FieldSpec> = {
   associationNotInspected: { check: checkSystemIdList, class: 'policy', why: 'which systems start each job marked Not inspected — association responsibility' },
   // 2026-11-05 (owner: a template holds only the homes it is for): Older / Log / New construction, beside propertyTypes.
   alsoKinds: { check: checkAlsoKinds, class: 'content', why: 'which other kinds of home it is for (older, log, new construction)' },
+  // 2026-11-12 (owner, mockup Gg6Wvs8yXeWorcNvbqWhd2 "approved"): this template's changes to Ledrix's expected service
+  // lives (taxonomy/serviceLife.ts), by id — Reset to Ledrix removes the entry. Captured into each new inspection.
+  serviceLives: { check: checkServiceLives, class: 'policy', why: 'how old equipment may be before Ledrix drafts a past-its-service-life finding' },
 };
+
+/** A template's changes to Ledrix's service lives: `{ id, low?, high? }`, whole years from 1 to 100, low not above high. */
+function checkServiceLives(v: unknown): string | null {
+  if (!Array.isArray(v)) return 'must be a list';
+  const ids = new Set<string>();
+  for (const c of v) {
+    if (!obj(c) || typeof c.id !== 'string' || !/^[a-z][a-z0-9_]{0,59}$/.test(c.id)) return 'each service life needs an id';
+    if (ids.has(c.id)) return `service life ${c.id} is listed twice`;
+    ids.add(c.id);
+    const extra = Object.keys(c).find(k => k !== 'id' && k !== 'low' && k !== 'high');
+    if (extra) return `service life ${c.id}: ${extra} is Ledrix's and cannot be changed`;
+    for (const k of ['low', 'high']) if (c[k] !== undefined && !(Number.isInteger(c[k]) && (c[k] as number) >= 1 && (c[k] as number) <= 100)) return `service life ${c.id}: ${k} must be whole years from 1 to 100`;
+    if (Number.isInteger(c.low) && Number.isInteger(c.high) && (c.low as number) > (c.high as number)) return `service life ${c.id}: the start is after the end`;
+  }
+  return null;
+}
 
 const ALSO_KIND_IDS = ['older', 'log', 'new_construction'];
 function checkAlsoKinds(v: unknown): string | null {

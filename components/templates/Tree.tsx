@@ -26,10 +26,12 @@ export function itemCount(n: TemplateNode): number {
 }
 
 
-export function SystemTree({ tree, sel, onSelect, onOps, disabled, onOpenUtilities, utilitiesOn }: {
+export function SystemTree({ tree, sel, onSelect, onOps, disabled, onOpenUtilities, utilitiesOn, onOpenExpectedLife, expectedLifeOn }: {
   tree: InspectionTemplate; sel: Sel; onSelect: (s: Sel) => void; onOps: (o: TemplateOp[]) => boolean; disabled: boolean;
   /** UTILITIES (owner 2026-11-07, mockup D55cNLEk1gM9B4cHbTtD1q): Water, Gas and Power, set once, from the top of the list. */
   onOpenUtilities: () => void; utilitiesOn: boolean;
+  /** EXPECTED LIFE (owner 2026-11-12, mockup Gg6Wvs8yXeWorcNvbqWhd2): service lives, set once, beside Utilities. */
+  onOpenExpectedLife: () => void; expectedLifeOn: boolean;
 }) {
   // No search box (owner 2026-11-06: "can you remove the search bar, I don't think it is needed") — the systems list is
   // short, and a system opens group first.
@@ -40,6 +42,7 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled, onOpenUtiliti
   // The limitations count beside each system (owner 2026-11-07: "have a count next to it").
   const limits = useMemo(() => limitCounts(tree), [tree]);
   const utilities = useMemo(() => utilityCount(tree), [tree]);
+  const lifeChanges = Array.isArray((tree as { serviceLives?: unknown[] }).serviceLives) ? (tree as { serviceLives: unknown[] }).serviceLives.length : 0;
   const offSystems = tree.trimmedSystems ?? [];
   const addSystem = () => {
     const v = newName.trim(); if (!v) return;
@@ -57,9 +60,15 @@ export function SystemTree({ tree, sel, onSelect, onOps, disabled, onOpenUtiliti
             <span className="min-w-0 flex-1 truncate">Utilities</span>
             <span className="whitespace-nowrap font-mono text-[10px] text-muted" title="Water, Gas and Power">{utilities ? <>{utilities} limit{utilities === 1 ? '' : 's'}</> : null}</span>
           </button>
+          <button onClick={onOpenExpectedLife} aria-current={expectedLifeOn ? 'true' : undefined}
+            className={`flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2 pr-2 text-left text-sm ${expectedLifeOn ? 'bg-accent/15 font-semibold text-accent-ink' : 'font-medium text-ink hover:bg-ink/5'}`}>
+            <span className="shrink-0 text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg></span>
+            <span className="min-w-0 flex-1 truncate">Expected life</span>
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted" title="Service lives changed from Ledrix">{lifeChanges ? <>{lifeChanges} changed</> : null}</span>
+          </button>
         </li>
         {shown.map((s, i) => {
-          const on = sel.systemId === s.id && !utilitiesOn;
+          const on = sel.systemId === s.id && !utilitiesOn && !expectedLifeOn;
           // A building selected in the strip (2026-11-06): its systems are the ones it has.
           const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);
           return (

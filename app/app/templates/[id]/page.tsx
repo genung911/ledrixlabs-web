@@ -347,7 +347,8 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
                 {/* THE BUILDING, at the top of the column it acts on (2026-11-06): its systems list is right under it. */}
                 <div className="mb-2"><BuildingPicker tree={tree} value={building} onChange={setBuilding} onOps={onOps} disabled={!!readOnly} /></div>
-                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} utilitiesOn={ctab === 'utilities'} onOpenUtilities={() => { setMode('edit'); setCtab('utilities'); }} />
+                <SystemTree tree={tree} sel={sel} onSelect={select} onOps={onOps} disabled={!!readOnly} utilitiesOn={ctab === 'utilities'} onOpenUtilities={() => { setMode('edit'); setCtab('utilities'); }}
+                  expectedLifeOn={ctab === 'expectedlife'} onOpenExpectedLife={() => { setMode('edit'); setCtab('expectedlife'); }} />
               </div>
               <section aria-label="Editor" className={`${view === 'edit' ? 'flex' : 'hidden'} relative min-h-[560px] flex-col overflow-hidden rounded-xl border border-hairline bg-surface lg:min-h-0 2xl:flex`}>
                 {ASK_LEDRIX && <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1 border-b border-hairline px-2">
