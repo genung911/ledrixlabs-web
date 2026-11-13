@@ -1765,6 +1765,41 @@
               "limitations": [
                 "Not Measured"
               ]
+            },
+            {
+              "id": "plumb_well",
+              "label": "Well Equipment",
+              "kind": "component",
+              "keywords": [
+                "well",
+                "well head",
+                "well cap",
+                "well pump",
+                "pump control"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located",
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "plumb_pressure_tank",
+              "label": "Pressure Tank",
+              "kind": "component",
+              "keywords": [
+                "pressure tank",
+                "well tank",
+                "bladder tank",
+                "pressure switch"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located",
+                "Not Accessible"
+              ]
             }
           ],
           "trimmed": []
@@ -2282,6 +2317,42 @@
                 }
               ],
               "condition": true
+            },
+            {
+              "id": "plumb_gas_meter",
+              "label": "Gas Meter / Main Shutoff",
+              "kind": "component",
+              "keywords": [
+                "gas meter",
+                "meter shutoff",
+                "main gas shutoff",
+                "gas service",
+                "regulator"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located",
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "plumb_propane_tank",
+              "label": "Propane Tank / Regulator",
+              "kind": "component",
+              "keywords": [
+                "propane tank",
+                "lp tank",
+                "propane regulator",
+                "tank gauge",
+                "propane"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Located",
+                "Not Accessible"
+              ]
             }
           ],
           "trimmed": []

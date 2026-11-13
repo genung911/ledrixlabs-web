@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.12.5",
+ "packVersion": "2026.11.13.1",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -11,7 +11,8 @@
       "Electric Baseboard",
       "Electric Wall Heater",
       "Radiant Heat"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -60,7 +61,8 @@
       "Propane",
       "Oil Furnace"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -71,7 +73,8 @@
      "includes": [
       "heat pump",
       "mini-split"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -84,7 +87,8 @@
       "Electric Baseboard",
       "Electric Wall Heater",
       "Ductless Mini-Split"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -105,7 +109,8 @@
       "Electric Wall Heater",
       "Ductless Mini-Split",
       "Radiant Heat"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -116,7 +121,8 @@
      "includes": [],
      "unlisted": [
       "Ductless Mini-Split"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -138,7 +144,8 @@
       "Electric Wall Heater",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -151,7 +158,8 @@
       "propane",
       "oil furnace",
       "boiler"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -165,6 +173,12 @@
      "exact": true,
      "whenUnanswered": "not_applicable",
      "attr": "efficiency"
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -178,6 +192,12 @@
      "exact": true,
      "whenUnanswered": "not_applicable",
      "attr": "efficiency"
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -191,6 +211,12 @@
      "exact": true,
      "whenUnanswered": "not_applicable",
      "attr": "efficiency"
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -203,7 +229,8 @@
       "Electric Baseboard",
       "Electric Wall Heater",
       "Radiant Heat"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -216,7 +243,8 @@
       "propane",
       "oil furnace",
       "boiler"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -228,7 +256,8 @@
       "gas",
       "propane",
       "oil furnace"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -241,7 +270,8 @@
       "propane",
       "oil furnace",
       "boiler"
-     ]
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -268,7 +298,8 @@
       "Boiler",
       "Radiant Heat"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -288,7 +319,8 @@
       "Electric Wall Heater",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -315,7 +347,88 @@
       "Boiler",
       "Radiant Heat"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_manufactured_crossover_duct": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_manufactured_furnace": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_older_gravity_furnace": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_older_oil_furnace": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_older_steam_boiler": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_multi_unit_shared_plant": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_humidifier": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_radiant": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -441,6 +554,46 @@
     }
    ]
   },
+  "attic_manufactured_bellywood_ductwork": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "attic_older_asbestos_ductwrap": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_nc_registers": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "hvac_cooling_age": {
+   "requires": [
+    {
+     "specNodeId": "hvac_cooling::spec",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
   "ac_type_split": {
    "requires": [
     {
@@ -523,7 +676,8 @@
       "Heat Pump AC",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -537,7 +691,8 @@
       "Heat Pump AC",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -550,7 +705,8 @@
       "Package Unit",
       "Heat Pump AC"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -564,7 +720,8 @@
       "Heat Pump AC",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -578,7 +735,8 @@
       "Heat Pump AC",
       "Ductless Mini-Split"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -1206,6 +1364,30 @@
     }
    ]
   },
+  "plumb_gas": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas",
+      "Propane"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "plumb_gas_shutoff": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas",
+      "Propane"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "laundry_washer": {
    "requires": [
     {
@@ -1217,6 +1399,67 @@
    "requires": [
     {
      "utility": "water"
+    }
+   ]
+  },
+  "plumb_gas_meter": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas"
+     ],
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_propane_tank": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Propane"
+     ],
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_well": {
+   "requires": [
+    {
+     "specNodeId": "house::water",
+     "includes": [
+      "Well",
+      "Shared well"
+     ],
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_pressure_tank": {
+   "requires": [
+    {
+     "specNodeId": "house::water",
+     "includes": [
+      "Well",
+      "Shared well",
+      "Cistern"
+     ],
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_wh_type_age": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -1328,6 +1571,26 @@
     }
    ]
   },
+  "plumb_wh_tpr": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_wh_operation": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
   "plumb_wh_expansion": {
    "requires": [
     {
@@ -1340,11 +1603,20 @@
       "Heat Pump (Hybrid)",
       "Solar Assisted"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
   "plumb_wh_flue": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "plumb_wh_type::type",
     "includes": [
@@ -1366,7 +1638,8 @@
       "Heat Pump (Hybrid)",
       "Solar Assisted"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -1382,7 +1655,18 @@
       "Heat Pump (Hybrid)",
       "Solar Assisted"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_wh": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ]
   },
@@ -1796,7 +2080,95 @@
     }
    ]
   },
+  "found_joists": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "found_beams": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "found_subfloor": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_manufactured_tie_downs": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_manufactured_skirting": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_manufactured_belly_wrap": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_manufactured_marriage_line": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_multi_unit_shared_foundation": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
   "found_cs_access": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1806,6 +2178,14 @@
    }
   },
   "found_cs_vapor": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1815,6 +2195,14 @@
    }
   },
   "found_cs_vent": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1824,6 +2212,14 @@
    }
   },
   "found_cs_piers": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1833,6 +2229,14 @@
    }
   },
   "found_cs_ins_type": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1842,6 +2246,14 @@
    }
   },
   "found_cs_ins_cov": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1851,6 +2263,14 @@
    }
   },
   "found_cs_sump": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1860,6 +2280,14 @@
    }
   },
   "found_bsmt_sump": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1868,6 +2296,14 @@
    }
   },
   "found_bsmt_walls": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
@@ -1875,13 +2311,64 @@
     ]
    }
   },
+  "gar_floor": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached",
+      "Carport"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "gar_drain": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "int_basement": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "found_type::type",
     "includes": [
      "basement"
     ]
    }
+  },
+  "foundation_log_sill": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "foundation_log_connection": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
   },
   "ext_sid_vinyl": {
    "requires": [
@@ -2590,6 +3077,61 @@
     }
    ]
   },
+  "gar_door": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "gar_opener": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "ext_garage_door": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "gar_springs": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "garage_gar_door_hardware": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
   "fp_t_wood_masonry": {
    "requires": [
     {
@@ -2689,7 +3231,8 @@
      "unlisted": [
       "Electric"
      ],
-     "attr": "spec"
+     "attr": "spec",
+     "typeFirst": true
     }
    ]
   },
@@ -2703,7 +3246,8 @@
       "Gas Insert",
       "Gas Log Set"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     },
     {
      "specNodeId": "fp_chimney",
@@ -2764,7 +3308,8 @@
       "Pellet Stove",
       "Decorative Only"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -2778,7 +3323,8 @@
       "Gas Insert",
       "Gas Log Set"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     },
     {
      "specNodeId": "fp_chimney",
@@ -2821,7 +3367,8 @@
       "Pellet Stove",
       "Decorative Only"
      ],
-     "exact": true
+     "exact": true,
+     "typeFirst": true
     }
    ]
   },
@@ -2834,7 +3381,8 @@
       "Electric",
       "Decorative Only"
      ],
-     "attr": "spec"
+     "attr": "spec",
+     "typeFirst": true
     }
    ],
    "dependsOnSpec": {
@@ -2849,6 +3397,12 @@
    "requires": [
     {
      "utility": "gas"
+    },
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ],
    "dependsOnSpec": {
@@ -2874,6 +3428,12 @@
    "requires": [
     {
      "utility": "gas"
+    },
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
     }
    ],
    "dependsOnSpec": {
@@ -2884,6 +3444,14 @@
    }
   },
   "fp_gas_shutoff": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "fp_type",
     "includes": [
@@ -2893,6 +3461,14 @@
    }
   },
   "fp_creosote": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ],
    "dependsOnSpec": {
     "nodeId": "fp_type",
     "includes": [
@@ -2900,6 +3476,69 @@
      "pellet"
     ]
    }
+  },
+  "fireplace_manufactured_fireplace_venting": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "fireplace_older_fireplace_chimney": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "fireplace_multi_unit_shared_chimney": {
+   "requires": [
+    {
+     "specNodeId": "fp_type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "gar_firedoor": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "gar_firewall": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "gar_penetrations": {
+   "requires": [
+    {
+     "specNodeId": "house::garage",
+     "includes": [
+      "Attached"
+     ],
+     "exact": true
+    }
+   ]
   },
   "kit_dishwasher": {
    "requires": [

@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.12.5",
-  "revision": 279,
+  "packVersion": "2026.11.13.1",
+  "revision": 280,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -87,7 +87,8 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Radiant Heat"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -193,7 +194,8 @@
                 "Propane",
                 "Oil Furnace"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -231,7 +233,8 @@
               "includes": [
                 "heat pump",
                 "mini-split"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -271,7 +274,8 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Ductless Mini-Split"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -329,7 +333,8 @@
                 "Electric Wall Heater",
                 "Ductless Mini-Split",
                 "Radiant Heat"
-              ]
+              ],
+              "typeFirst": true
             }
           ],
           "walkZone": "attic",
@@ -369,7 +374,8 @@
               "includes": [],
               "unlisted": [
                 "Ductless Mini-Split"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -448,7 +454,8 @@
                 "Electric Wall Heater",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -508,7 +515,8 @@
                 "propane",
                 "oil furnace",
                 "boiler"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -529,6 +537,12 @@
               "exact": true,
               "whenUnanswered": "not_applicable",
               "attr": "efficiency"
+            },
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
             }
           ]
         },
@@ -553,6 +567,12 @@
               "exact": true,
               "whenUnanswered": "not_applicable",
               "attr": "efficiency"
+            },
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
             }
           ]
         },
@@ -573,6 +593,12 @@
               "exact": true,
               "whenUnanswered": "not_applicable",
               "attr": "efficiency"
+            },
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
             }
           ]
         },
@@ -600,7 +626,8 @@
                 "Electric Baseboard",
                 "Electric Wall Heater",
                 "Radiant Heat"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -631,7 +658,8 @@
                 "propane",
                 "oil furnace",
                 "boiler"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -667,7 +695,8 @@
                 "gas",
                 "propane",
                 "oil furnace"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -721,7 +750,8 @@
                 "propane",
                 "oil furnace",
                 "boiler"
-              ]
+              ],
+              "typeFirst": true
             }
           ]
         },
@@ -761,7 +791,8 @@
                 "Boiler",
                 "Radiant Heat"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -799,7 +830,8 @@
                 "Electric Wall Heater",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -841,7 +873,8 @@
                 "Boiler",
                 "Radiant Heat"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ],
           "typeTitle": {
@@ -872,7 +905,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_manufactured_furnace",
@@ -883,7 +924,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_older_gravity_furnace",
@@ -894,7 +943,15 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_older_oil_furnace",
@@ -905,7 +962,15 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_older_steam_boiler",
@@ -916,7 +981,15 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_multi_unit_shared_plant",
@@ -927,7 +1000,15 @@
           "appliesTo": [
             "multi_unit"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_humidifier",
@@ -938,7 +1019,15 @@
           ],
           "kind": "equipment",
           "origin": "core",
-          "coverageRole": "vocabulary"
+          "coverageRole": "vocabulary",
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_radiant",
@@ -950,7 +1039,15 @@
           ],
           "kind": "equipment",
           "origin": "core",
-          "coverageRole": "vocabulary"
+          "coverageRole": "vocabulary",
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_boiler_expansion",
@@ -1229,7 +1326,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "attic_older_asbestos_ductwrap",
@@ -1240,7 +1345,15 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "hvac_nc_registers",
@@ -1254,7 +1367,15 @@
           "appliesTo": [
             "new_construction"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -1395,7 +1516,15 @@
               ]
             }
           ],
-          "condition": false
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "hvac_cooling::spec",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "ac_type_split",
@@ -1602,7 +1731,8 @@
                 "Heat Pump AC",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ],
           "countLabel": "cooling systems"
@@ -1628,7 +1758,8 @@
                 "Heat Pump AC",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -1656,7 +1787,8 @@
                 "Package Unit",
                 "Heat Pump AC"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -1698,7 +1830,8 @@
                 "Heat Pump AC",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -1749,7 +1882,8 @@
                 "Heat Pump AC",
                 "Ductless Mini-Split"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -3324,7 +3458,17 @@
               ]
             }
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::gas",
+              "includes": [
+                "Natural gas",
+                "Propane"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "plumb_gas_shutoff",
@@ -3349,7 +3493,17 @@
               ]
             }
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::gas",
+              "includes": [
+                "Natural gas",
+                "Propane"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "plumbing_manufactured_water_heater_vent",
@@ -3603,6 +3757,120 @@
           "kind": "equipment",
           "origin": "core",
           "coverageRole": "vocabulary"
+        },
+        {
+          "id": "plumb_gas_meter",
+          "label": "Gas Meter / Main Shutoff",
+          "keywords": [
+            "gas meter",
+            "meter shutoff",
+            "main gas shutoff",
+            "gas service",
+            "regulator"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Located",
+            "Not Accessible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::gas",
+              "includes": [
+                "Natural gas"
+              ],
+              "exact": true,
+              "typeFirst": true
+            }
+          ]
+        },
+        {
+          "id": "plumb_propane_tank",
+          "label": "Propane Tank / Regulator",
+          "keywords": [
+            "propane tank",
+            "lp tank",
+            "propane regulator",
+            "tank gauge",
+            "propane"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Located",
+            "Not Accessible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::gas",
+              "includes": [
+                "Propane"
+              ],
+              "exact": true,
+              "typeFirst": true
+            }
+          ]
+        },
+        {
+          "id": "plumb_well",
+          "label": "Well Equipment",
+          "keywords": [
+            "well",
+            "well head",
+            "well cap",
+            "well pump",
+            "pump control"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Located",
+            "Not Accessible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::water",
+              "includes": [
+                "Well",
+                "Shared well"
+              ],
+              "exact": true,
+              "typeFirst": true
+            }
+          ]
+        },
+        {
+          "id": "plumb_pressure_tank",
+          "label": "Pressure Tank",
+          "keywords": [
+            "pressure tank",
+            "well tank",
+            "bladder tank",
+            "pressure switch"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Located",
+            "Not Accessible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::water",
+              "includes": [
+                "Well",
+                "Shared well",
+                "Cistern"
+              ],
+              "exact": true,
+              "typeFirst": true
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -3620,7 +3888,9 @@
             "plumb_sup_other",
             "plumb_main",
             "plumb_flow",
-            "plumb_pressure"
+            "plumb_pressure",
+            "plumb_well",
+            "plumb_pressure_tank"
           ]
         },
         {
@@ -3663,7 +3933,9 @@
           "name": "Fuel · Gas",
           "nodeIds": [
             "plumb_gas",
-            "plumb_gas_shutoff"
+            "plumb_gas_shutoff",
+            "plumb_gas_meter",
+            "plumb_propane_tank"
           ]
         },
         {
@@ -3802,7 +4074,15 @@
               ]
             }
           ],
-          "condition": false
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "wh_t_tank_gas",
@@ -4035,6 +4315,14 @@
               "reason": "Not Operated",
               "sentence": "The temperature and pressure relief valve was not operated. Older valves may not reseat once lifted; testing by a qualified plumber is recommended."
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -4054,6 +4342,14 @@
           "condition": true,
           "limitations": [
             "Not Tested"
+          ],
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -4078,7 +4374,8 @@
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -4128,7 +4425,15 @@
               ]
             }
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_pan",
@@ -4153,7 +4458,8 @@
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -4186,7 +4492,8 @@
                 "Heat Pump (Hybrid)",
                 "Solar Assisted"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -4200,7 +4507,15 @@
           ],
           "kind": "equipment",
           "origin": "core",
-          "coverageRole": "vocabulary"
+          "coverageRole": "vocabulary",
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_gas_shutoff",
@@ -6324,6 +6639,14 @@
                 "Post & Beam"
               ]
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6342,6 +6665,14 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6365,6 +6696,14 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6376,7 +6715,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "foundation_manufactured_skirting",
@@ -6387,7 +6734,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "foundation_manufactured_belly_wrap",
@@ -6398,7 +6753,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "foundation_manufactured_marriage_line",
@@ -6409,7 +6772,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "foundation_multi_unit_shared_foundation",
@@ -6420,7 +6791,15 @@
           "appliesTo": [
             "multi_unit"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "found_cs_access",
@@ -6460,6 +6839,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6495,6 +6882,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6531,6 +6926,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6560,6 +6963,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6601,6 +7012,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6625,6 +7044,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6653,6 +7080,14 @@
           "walkZone": "crawlspace",
           "walkZones": [
             "crawlspace"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6679,6 +7114,14 @@
           "walkZone": "basement",
           "walkZones": [
             "basement"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6711,6 +7154,14 @@
           "walkZone": "basement",
           "walkZones": [
             "basement"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6730,6 +7181,16 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached",
+                "Carport"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -6746,6 +7207,15 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -6780,6 +7250,14 @@
           "walkZone": "basement",
           "walkZones": [
             "basement"
+          ],
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -6795,7 +7273,15 @@
           "appliesTo": [
             "log"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "foundation_log_connection",
@@ -6809,7 +7295,15 @@
           "appliesTo": [
             "log"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -9505,6 +9999,15 @@
           "walkZones": [
             "garage",
             "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -9529,7 +10032,16 @@
           "walkZones": [
             "garage"
           ],
-          "establishesAs": "gar_opener"
+          "establishesAs": "gar_opener",
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
+          ]
         },
         {
           "id": "ext_garage_door",
@@ -9566,6 +10078,15 @@
           "walkZones": [
             "garage",
             "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -9587,6 +10108,15 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -9600,6 +10130,15 @@
           "walkZones": [
             "garage",
             "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -10119,7 +10658,8 @@
               "unlisted": [
                 "Electric"
               ],
-              "attr": "spec"
+              "attr": "spec",
+              "typeFirst": true
             }
           ]
         },
@@ -10144,7 +10684,8 @@
                 "Gas Insert",
                 "Gas Log Set"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             },
             {
               "specNodeId": "fp_chimney",
@@ -10272,7 +10813,8 @@
                 "Pellet Stove",
                 "Decorative Only"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -10313,7 +10855,8 @@
                 "Gas Insert",
                 "Gas Log Set"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             },
             {
               "specNodeId": "fp_chimney",
@@ -10372,7 +10915,8 @@
                 "Pellet Stove",
                 "Decorative Only"
               ],
-              "exact": true
+              "exact": true,
+              "typeFirst": true
             }
           ]
         },
@@ -10408,7 +10952,8 @@
                 "Electric",
                 "Decorative Only"
               ],
-              "attr": "spec"
+              "attr": "spec",
+              "typeFirst": true
             }
           ]
         },
@@ -10447,6 +10992,12 @@
           "requires": [
             {
               "utility": "gas"
+            },
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
             }
           ]
         },
@@ -10512,6 +11063,12 @@
           "requires": [
             {
               "utility": "gas"
+            },
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
             }
           ]
         },
@@ -10533,7 +11090,15 @@
           },
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "fp_creosote",
@@ -10557,6 +11122,14 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
           ]
         },
         {
@@ -10568,7 +11141,15 @@
           "appliesTo": [
             "manufactured"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "fireplace_older_fireplace_chimney",
@@ -10579,7 +11160,15 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         },
         {
           "id": "fireplace_multi_unit_shared_chimney",
@@ -10590,7 +11179,15 @@
           "appliesTo": [
             "multi_unit"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "fp_type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -10713,6 +11310,15 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -10740,6 +11346,15 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {
@@ -10762,6 +11377,15 @@
           "walkZone": "garage",
           "walkZones": [
             "garage"
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::garage",
+              "includes": [
+                "Attached"
+              ],
+              "exact": true
+            }
           ]
         },
         {

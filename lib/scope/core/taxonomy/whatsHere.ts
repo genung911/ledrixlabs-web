@@ -17,6 +17,7 @@
 // one writer Scope uses, so the recorded-work guard and sync are identical.
 import type { InspectionTemplate, TemplateNode } from '../templates/InspectionTemplate';
 import { baseIdOf, instanceOrdinal, libraryIdOf } from './instances';
+import { isHouseKey } from './houseFacts';
 import { NOT_PRESENT, predicatesOf, isSpecPredicate, isUtilityPredicate, specPredicateHolds, type SpecPredicate } from './applicability';
 
 // GROUPED BY SYSTEM (owner 2026-11-08, call B: "group by system since we have more now"). A section is the system's own
@@ -90,13 +91,17 @@ export function whatsHereQuestions(tpl: InspectionTemplate | null | undefined, p
   const fields = shapingFields(rules);
   const ruleOf = new Map(rules.map(n => [n.id, n]));
   const packOf = new Map(packNodes.map(n => [n.id, n]));
-  const gated = new Set(rules.filter(n => (Array.isArray(n.requires) && (n.requires as any[]).length > 0) || !!n.dependsOnSpec).map(n => n.id));
+  // A HOUSE FACT IS ANSWERED ELSEWHERE (2026-11-13): a rule on `house::gas` / `house::garage` … reads Before you start and
+  // Details, never a question on this page, so it neither makes an item a follow-up nor drops it — the item's own
+  // applicability already takes it away when the house fact rules it out.
+  const ownPreds = (base: string) => predicatesOf(ruleOf.get(base) as any).filter(p => !(isSpecPredicate(p) && isHouseKey(p.specNodeId)));
+  const gated = new Set(rules.filter(n => ownPreds(n.id).length > 0).map(n => n.id));
   const out: WhatsHereQuestion[] = [];
   const later: WhatsHereQuestion[] = [];
   const desc: WhatsHereQuestion[] = [];
   const descLater: WhatsHereQuestion[] = [];
   const specPredsOf = (base: string) => {
-    const all = predicatesOf(ruleOf.get(base) as any);
+    const all = ownPreds(base);
     const preds = all.filter(isSpecPredicate);
     return preds.length && preds.length === all.length ? preds : null;
   };
@@ -104,7 +109,7 @@ export function whatsHereQuestions(tpl: InspectionTemplate | null | undefined, p
    *  utility is off. Only its spec gates place it here (owner 2026-11-11, build 792: the seven look-to-answer items asked
    *  in Details "like all the others"). A host that BUILDS the checklist keeps the strict rule above. */
   const describingPredsOf = (base: string) => {
-    const all = predicatesOf(ruleOf.get(base) as any);
+    const all = ownPreds(base);
     const preds = all.filter(isSpecPredicate);
     return preds.length && preds.length === all.filter(p => !isUtilityPredicate(p)).length ? preds : null;
   };

@@ -68,7 +68,11 @@ export type Utility = 'water' | 'gas' | 'power';
  *  every one of them is. Without `orSpec` nothing changes. Read only by the resolver — every other reader keys on the
  *  predicate's own `specNodeId`, which stays the field the item belongs to. */
 export type SpecAlternative = { specNodeId: string; includes: readonly string[]; unlisted?: readonly string[]; exact?: true };
-export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string; orSpec?: readonly SpecAlternative[] };
+/** `typeFirst` (2026-11-13, owner: "heating/cooling may need the system type described before anything appears in scope"):
+ *  the item waits for this answer — unanswered, it does not apply (the same verdict as `whenUnanswered`). It is a
+ *  SEPARATE marker on purpose: `whenUnanswered` is how a per-type condition card is recognised (typeConditions, the
+ *  classifier's pool, the type-change guard), and an ordinary item that merely waits for its system's type is not a card. */
+export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; typeFirst?: true; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string; orSpec?: readonly SpecAlternative[] };
 export type UtilityPredicate = { utility: Utility };
 export type Predicate = SpecPredicate | UtilityPredicate;
 
@@ -307,7 +311,7 @@ export function resolveApplicability(
         if (v) fields.push({ f, v });
       }
       if (!fields.length) {
-        if (p.whenUnanswered === 'not_applicable') { required = true; continue; }  // Rule 2, opted out
+        if (p.whenUnanswered === 'not_applicable' || p.typeFirst === true) { required = true; continue; }  // Rule 2, opted out (a card, or type-first)
         pending.push(p); continue;                                                // Rule 2
       }
       if (!fields.some(x => specPredicateHolds(x.v, x.f))) excluded = true;  // Rule 3
