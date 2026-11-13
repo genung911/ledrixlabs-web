@@ -118,7 +118,8 @@ async function checks(src) {
     && !/Limitation reasons/.test(ep);
   out['Utilities: one row at the top of the systems list opens one screen for Water, Gas and Power, with all their items'] =
     /const utilities = useMemo\(\(\) => utilityCount\(tree\), \[tree\]\);/.test(tr) && /<button onClick=\{onOpenUtilities\} aria-current=\{utilitiesOn/.test(tr)
-    && /const on = sel\.systemId === s\.id && !utilitiesOn;/.test(tr)
+    // 2026-11-12: Expected life sits beside Utilities; neither leaves a system highlighted.
+    && /const on = sel\.systemId === s\.id && !utilitiesOn && !expectedLifeOn;/.test(tr)
     && /utilitiesOn=\{ctab === 'utilities'\} onOpenUtilities=\{\(\) => \{ setMode\('edit'\); setCtab\('utilities'\); \}\}/.test(pg)
     && /if \(tab === 'utilities'\) return \(\s*<Shell[^\n]*>\s*<UtilitiesPanel tree=\{tree\}/.test(ws)
     && /const utils = G\.gates\.filter\(g => g\.utility\);/.test(gp) && /<GateList G=\{G\} gates=\{utils\} inPart=\{\(\) => true\}/.test(gp);
@@ -161,7 +162,7 @@ const MUT = [
   ['the TPR switch leaves', rep('ws', 'policy={<EveryTypeOperates', 'x={<EveryTypeOperates')],
   ['what limits it automatically opens nothing', rep('gp', 'onClick={() => (g.utility ? onOpenUtilities() : sys && onOpenSystem(sys))}', 'onClick={() => {}}')],
   ['no Utilities row', rep('tree', '<button onClick={onOpenUtilities}', '<button onClick={() => {}}')],
-  ['a system stays highlighted on Utilities', rep('tree', 'const on = sel.systemId === s.id && !utilitiesOn;', 'const on = sel.systemId === s.id;')],
+  ['a system stays highlighted on Utilities', rep('tree', 'const on = sel.systemId === s.id && !utilitiesOn && !expectedLifeOn;', 'const on = sel.systemId === s.id && !expectedLifeOn;')],
   ['the page never opens Utilities', rep('page', "setMode('edit'); setCtab('utilities'); }}", "setMode('edit'); }}")],
   ['no Utilities screen', rep('ws', "if (tab === 'utilities') return (", "if (tab === 'nope2') return (")],
   ['Utilities shows only some items', rep('gp', '<GateList G={G} gates={utils} inPart={() => true}', '<GateList G={G} gates={utils} inPart={() => false}')],
