@@ -1169,7 +1169,7 @@
     },
     {
       "id": "mini_split",
-      "label": "MINI-SPLIT",
+      "label": "MINI SPLIT",
       "kind": "system",
       "icon": "air-conditioner",
       "defaultActive": true,

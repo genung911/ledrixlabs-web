@@ -2080,7 +2080,7 @@
     },
     {
       "id": "mini_split",
-      "label": "MINI-SPLIT",
+      "label": "MINI SPLIT",
       "icon": "air-conditioner",
       "order": 0,
       "nodes": [
