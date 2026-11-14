@@ -1,8 +1,8 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.13.3",
-  "revision": 282,
+  "packVersion": "2026.11.13.4",
+  "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
     "critical",
@@ -3053,6 +3053,90 @@
       "walkZones": [
         "exterior",
         "interior"
+      ]
+    },
+    {
+      "id": "heat_pump",
+      "label": "HEAT PUMP",
+      "icon": "sun-snowflake",
+      "order": 0,
+      "nodes": [
+        {
+          "id": "hvac_hp_operation",
+          "label": "Heat Pump Operation",
+          "keywords": [
+            "heat pump operation",
+            "supply temperature",
+            "return temperature",
+            "heat pump test",
+            "defrost"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "return_temp",
+              "label": "Return",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Operated — outdoor temperature",
+            "Not Operated"
+          ],
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Heat Pump"
+              ],
+              "exact": true,
+              "typeFirst": true,
+              "orSpec": [
+                {
+                  "specNodeId": "hvac_cooling::spec",
+                  "includes": [
+                    "Heat Pump AC"
+                  ],
+                  "exact": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "subsystems": [
+        {
+          "id": "heat_pump__operation",
+          "name": "Operation",
+          "nodeIds": [
+            "hvac_hp_operation"
+          ]
+        }
+      ],
+      "sectionType": "system",
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior",
+        "exterior"
       ]
     },
     {

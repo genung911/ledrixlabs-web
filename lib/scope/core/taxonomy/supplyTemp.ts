@@ -9,7 +9,7 @@ export const TEMP_MIN = 40, TEMP_MAX = 140;
 /** The wheel's numbers, 40–140 °F. */
 export const TEMP_VALUES: readonly number[] = Array.from({ length: TEMP_MAX - TEMP_MIN + 1 }, (_, i) => TEMP_MIN + i);
 /** Where the wheel starts for an unrecorded field: a working heat pump's heat ~100 °F, cooling ~55 °F. */
-export const TEMP_START: Readonly<Record<string, number>> = { heat_supply: 100, cool_supply: 55 };
+export const TEMP_START: Readonly<Record<string, number>> = { heat_supply: 100, cool_supply: 55, return_temp: 70 };   // return: a heat pump's return air (2026-11-13)
 
 export const formatTemp = (n: number): string => `${Math.round(n)} °F`;
 /** The degrees a stored value says, or null ("Not tested", blank, anything else). */

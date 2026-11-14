@@ -24,6 +24,8 @@ export const LEDRIX_SERVICE_LIVES: readonly ServiceLife[] = [
   { id: 'furnace',               label: 'Gas furnace',           low: 15, high: 20 },
   { id: 'boiler',                label: 'Boiler',                low: 20, high: 35 },
   { id: 'heat_pump',             label: 'Heat pump',             low: 10, high: 15 },
+  // A heat pump's indoor air handler (owner 2026-11-13: "its own" entry) — it outlasts the outdoor unit.
+  { id: 'air_handler',           label: 'Air handler',           low: 15, high: 20 },
   { id: 'ac',                    label: 'A/C condenser',         low: 10, high: 15 },
   { id: 'roof',                  label: 'Roof covering',         low: 17, high: 20 },
 ];
@@ -51,6 +53,8 @@ export function serviceLifeKindOf(text: string): string | null {
   const t = String(text ?? '');
   if (/water.?heater|\bwh\b/i.test(t)) return /tankless|on.?demand|instant/i.test(t) ? 'water_heater_tankless' : 'water_heater_tank';
   if (/boiler/i.test(t)) return 'boiler';
+  // A heat pump's HEATING half is its indoor air handler (2026-11-13): Heating's Age on a heat pump is the air handler's.
+  if (/air.?handler/i.test(t) || (/heat.?pump/i.test(t) && /heating/i.test(t) && !/mini.?split|ductless/i.test(t))) return 'air_handler';
   if (/heat.?pump/i.test(t)) return 'heat_pump';
   // A mini-split IS a heat pump (2026-11-13): 10–15 years, never a furnace's 15–20 ("Heating Ductless Mini-Split").
   if (/mini.?split|ductless/i.test(t)) return 'heat_pump';

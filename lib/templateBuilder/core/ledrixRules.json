@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.13.3",
+ "packVersion": "2026.11.13.4",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -1212,6 +1212,27 @@
        "specNodeId": "hvac_heating::fuel_source",
        "includes": [
         "Ductless Mini-Split"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_hp_operation": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
        ],
        "exact": true
       }

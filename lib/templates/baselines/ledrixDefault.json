@@ -1767,6 +1767,62 @@
       ]
     },
     {
+      "id": "heat_pump",
+      "label": "HEAT PUMP",
+      "kind": "system",
+      "icon": "sun-snowflake",
+      "defaultActive": true,
+      "children": [
+        {
+          "id": "hvac_hp_operation",
+          "label": "Heat Pump Operation",
+          "kind": "component",
+          "keywords": [
+            "heat pump operation",
+            "supply temperature",
+            "return temperature",
+            "heat pump test",
+            "defrost"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "return_temp",
+              "label": "Return",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Operated — outdoor temperature",
+            "Not Operated"
+          ]
+        }
+      ],
+      "locationAxis": "room",
+      "walkZone": "interior",
+      "walkZones": [
+        "interior",
+        "exterior"
+      ]
+    },
+    {
       "id": "plumbing",
       "label": "PLUMBING",
       "kind": "system",
