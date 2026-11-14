@@ -130,8 +130,10 @@ export type AdvisoryContext = {
 
 const hits = (v: string | null | undefined, needles?: string[]): string | null => {
   if (!needles?.length || !v) return null;
-  const low = v.toLowerCase();
-  return needles.some(n => low.includes(n.toLowerCase())) ? v : null;
+  // Several picks (owner 2026-11-14, "a house can have multiple"): the answer that matched is the one named — "Well —
+  // not municipally treated", never "Public, Well — …".
+  const entries = v.split(',').map(x => x.trim()).filter(Boolean);
+  return entries.find(e => needles.some(n => e.toLowerCase().includes(n.toLowerCase()))) ?? null;
 };
 
 /** Does this advisory apply to this house, and why. Null = selectable but not suggested. */
