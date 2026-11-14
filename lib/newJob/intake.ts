@@ -7,7 +7,7 @@ export const HOME_TYPES = ['Site-Built', 'Manufactured', 'Mobile', 'Multi-Unit',
 export const DELTA_OPTIONS = ['ADU', 'Wellhouse', 'Detached Garage', 'Guest House', 'Dual-Fuel Zones', 'Radon Mitigation', 'Crawlspace', 'Pool/Spa', 'Solar'];
 export const WATER_SOURCE_OPTIONS = ['Public', 'Well', 'Shared well', 'Cistern'] as const;
 export const SEWER_TYPE_OPTIONS = ['Public sewer', 'Septic', 'Shared septic', 'Lagoon'] as const;
-export const GAS_SUPPLY_OPTIONS = ['Natural gas', 'Propane', 'None — all electric'] as const;
+export const GAS_SUPPLY_OPTIONS = ['Natural gas', 'Propane', 'No gas service'] as const;   // 2026-11-13 (owner): was "None — all electric"
 /** The phone's stock fallback when a company type has no template of its own (AddInspectionScreen TYPE_DEFAULT_TEMPLATE). */
 export const TYPE_DEFAULT_TEMPLATE: Record<string, string> = { 'Full Home Inspection': 'internachi', '4-Point': 'fourpoint' };
 /** Dollars → invoice cents (whole cents, never negative). */

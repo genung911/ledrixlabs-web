@@ -193,7 +193,7 @@ export function planShots(shots: readonly Shot[], f: {
   /** The item is on this inspection's checklist (its resolved template). */
   inChecklist: (nodeId: string) => boolean;
   takenCount: (shotId: string) => number;
-  /** The property panel's Gas supply says the house has none ("None — all electric"); unknown is not none. */
+  /** The property panel's Gas supply says the house has none ("No gas service"); unknown is not none. */
   noGas: boolean;
 }): ShotPlan {
   const plan: ShotPlan = { needed: [], taken: [], notAsked: [], noShot: [] };
