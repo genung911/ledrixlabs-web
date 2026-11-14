@@ -129,6 +129,17 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
   };
   let field: string | null = null; let best = 1;
   for (const [k, c] of tally) if (c > best && several(k)) { best = c; field = k; }
+  // A UNIT SYSTEM WITH NO TYPE QUESTION OF ITS OWN (2026-11-13, ledrix-app DECISIONS phase 3a): every Mini Split item
+  // follows Cooling's (or Heating's) type, so its layout reads that question — the one most of its items share.
+  if (!field) {
+    const outside = new Map<string, number>();
+    for (const n of items) for (const k of new Set((preds.get(n.id) ?? []).map(x => x.key))) {
+      if (inSystem(k) || isCount(k)) continue;
+      const f = fieldNode(k); if (!f?.a || f.a.values.length < 2) continue;
+      outside.set(k, (outside.get(k) ?? 0) + 1);
+    }
+    for (const [k, c] of outside) if (c > best && c * 2 >= items.length) { best = c; field = k; }
+  }
   if (!field) return null;
   // Chips only when the question decides at least a THIRD of the system (owner 2026-11-06, mockup
   // NC6nHJ1mUGuv2ikCUfU3Cc): Heating 19/25, Cooling 20/25, Water Heater 8/13, Fireplace 7/16, Roofing 10/23 keep them;
@@ -161,7 +172,9 @@ export function typeLayoutOf(tree: InspectionTemplate, system: TemplateNode, def
       other.push({ node: n, question: { nodeId: f.n.id, label: f.a?.label || f.n.label, systemLabel: systemOf.get(f.n.id)?.label ?? '' } });
       continue;
     }
-    if (ps.some(x => x.key === field)) { typed.push(n); continue; }
+    // Typed only when it does NOT show for every type: a type-first gate (2026-11-13, "waits for the type") holds for
+    // every answer, and such an item is the system's Every item, not a typed one.
+    if (ps.some(x => x.key === field) && shows[n.id].length < question.values.length) { typed.push(n); continue; }
     const inner = ps.find(x => x.key !== field && inSystem(x.key) && !isCount(x.key) && fieldNode(x.key)?.n.id !== n.id && fieldNode(x.key));
     if (inner) {
       const f = fieldNode(inner.key)!;

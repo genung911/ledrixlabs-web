@@ -136,6 +136,7 @@ const sourceFiles = () => Object.fromEntries([
   ['core/answerShapes.ts', read('lib/templateBuilder/core/answerShapes.ts')],
   // 2026-11-08: the preview's Described-in-Details runs the app's whatsHere.ts (a byte-identical copy) and what it imports.
   ['scope/taxonomy/whatsHere.ts', read('lib/scope/core/taxonomy/whatsHere.ts')],
+  ['scope/taxonomy/houseFacts.ts', read('lib/scope/core/taxonomy/houseFacts.ts')],   // 2026-11-13: whatsHere imports it
   ['scope/taxonomy/instances.ts', read('lib/scope/core/taxonomy/instances.ts')],
   ['scope/taxonomy/applicability.ts', read('lib/scope/core/taxonomy/applicability.ts')],
 ]);
@@ -684,37 +685,58 @@ async function runTypes(files) {
     // 2026-11-12 (owner: "Window unit in cooling should not carry the thermostat"): the default's own type rule on a
     // linked item (Thermostat: appliesWhen hvac_cooling::spec) counts the same as the pack's.
     const tplRule = (id) => { const n = coolingItems.find(x => x.id === id); const w = n?.appliesWhen; return w && w.field === KEY ? w.anyOf : null; };
-    const packFor = (id, v) => (tplRule(id) ? tplRule(id).includes(v) : ((PACK_RULES[id]?.requires ?? []).filter(p => p.specNodeId === KEY).every(p => p.includes.includes(v))
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): a type-first gate
+    // carries `unlisted` — it holds for an answer in `includes` OR (when `unlisted` is authored) one NOT in `unlisted`
+    // (`{includes: [], unlisted: []}` = every type; AC Age's `unlisted: ['Ductless Mini-Split']` = every type but that).
+    // Read from the pack's own rule here, not from the module under test.
+    const gateHolds = (p, v) => p.includes.includes(v) || (Array.isArray(p.unlisted) && !p.unlisted.includes(v));
+    const packFor = (id, v) => (tplRule(id) ? tplRule(id).includes(v) : ((PACK_RULES[id]?.requires ?? []).filter(p => p.specNodeId === KEY).every(p => gateHolds(p, v))
       && (PACK_RULES[id]?.requires ?? []).some(p => p.specNodeId === KEY)));
+    // An "every type" gate: on the type field, includes nothing, excludes nothing — the item shows for any real answer.
+    const everyGate = p => p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0;
+    const everyTypeItem = id => { const rq = PACK_RULES[id]?.requires; return !coolingItems.find(x => x.id === id)?.appliesWhen && !PACK_RULES[id]?.dependsOnSpec && (!rq || (rq.length > 0 && rq.every(p => p.specNodeId === KEY && everyGate(p)))); };
     r('types: each Cooling type shows EXACTLY the items the pack gives it (copies expanded)', L && L.question.values.every(v =>
       JSON.stringify(expand(L, TL.itemsForType(L, v))) === JSON.stringify(coolingItems.filter(n => packFor(n.id, v)).map(n => n.id).sort())));
     r('types: items with no type rule are "Every cooling system"; Heat Pump and Backup Heat follow the heating answer in their own section',
       // 2026-11-12: Thermostat now has a type rule (ducted types and evaporative coolers), so only AC Age is every type.
-      L && L.every.map(n => n.label).join('|') === 'AC Age'
+      // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): every Cooling item is now
+      // gated on the type first; an "every type" gate (includes [] + unlisted []) still counts as Every. AC Age now skips
+      // Ductless Mini-Split (the Mini Split system has its own age), so it is typed — Every is exactly the every-gate items.
+      L && L.every.map(n => n.id).join('|') === coolingItems.filter(n => everyTypeItem(n.id)).map(n => n.id).join('|')
+      && !L.every.some(n => n.id === 'hvac_cooling_age') && (L.shows.hvac_cooling_age ?? []).join('|') === L.question.values.filter(v => v !== 'Ductless Mini-Split').join('|')
       && L.other.map(o => `${o.node.label}<${o.question.label}`).join('|') === 'Heat Pump<Heating System Type|Backup Heat<Heating System Type');
     const H = layout('heating'), WH = layout('water_heater');
     r('types: Heating, Water Heater and Fireplace are laid out by type; a material list (Plumbing) and a system with no type question (Attic) keep the plain list',
       H?.question.label === 'Heating System Type' && WH?.question.label === 'Type & Fuel' && layout('fireplace')?.question.label === 'Fireplace Type'
       && layout('plumbing') === null && layout('attic') === null);
-    const g = L && L.copies[0];
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): the heads moved to the
+    // new MINI SPLIT system (same ids), whose items all follow Cooling's (or Heating's) "Ductless Mini-Split" answer. So the
+    // ONE row of copies is now in Mini Split's layout, and Cooling has no copies and none of the moved items.
+    const MSL = layout('mini_split');
+    const g = MSL && MSL.copies[0];
+    const MS_MOVED = ['hvac_ms_heads', 'hvac_ms_remote', ...Array.from({ length: 8 }, (_, i) => `hvac_ms_head_${i + 1}`)];
     r('types: Indoor Head 1–8 are ONE row (one per head, 1–8), listed under Ductless Mini-Split only',
-      L && L.copies.length === 1 && g.items.length === 8 && g.items.every((n, i) => n.id === `hvac_ms_head_${i + 1}`) && /one per head \(1–8\)/.test(g.label)
-      && TL.itemsForType(L, 'Ductless Mini-Split').filter(n => TL.copyGroupOf(L, n.id)).length === 1
-      && L.question.values.filter(v => v !== 'Ductless Mini-Split').every(v => !TL.itemsForType(L, v).some(n => TL.copyGroupOf(L, n.id))));
+      !!MSL && MSL.copies.length === 1 && g.items.length === 8 && g.items.every((n, i) => n.id === `hvac_ms_head_${i + 1}`) && /one per head \(1–8\)/.test(g.label)
+      && MS_MOVED.every(id => !!E.locate(d.tree, id) && (E.flatItems(sys('mini_split')).some(x => x.node.id === id)))
+      && L && L.copies.length === 0 && !coolingItems.some(n => MS_MOVED.includes(n.id)));
     const nLog = d.log.length;
-    const cp = step(TL.copiesOps(g, n => E.ops.describe(n.id, "Note the head's location and drain.")), 2000);
+    // never crash the scenario on a missing group: the check below then fails on its own
+    const cp = g ? step(TL.copiesOps(g, n => E.ops.describe(n.id, "Note the head's location and drain.")), 2000) : { ok: false };
     r('types: editing the copies row changes every copy at once, as ONE change set (one undo)',
       cp.ok && d.log.length === nLog + 1 && Array.from({ length: 8 }, (_, i) => E.locate(d.tree, `hvac_ms_head_${i + 1}`).node.description).every(x => x === "Note the head's location and drain."));
 
     // a grid untick: Condenser no longer for Package Unit
-    const t1 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], ['Split System', 'Ductless Mini-Split', 'Heat Pump AC']);
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): Ledrix's Condenser rule no
+    // longer includes Ductless Mini-Split (the Mini Split system has its own Outdoor Unit), so the untick keeps the other two.
+    const C_LEFT = ['Split System', 'Heat Pump AC'];
+    const t1 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], C_LEFT);
     const n1 = d.log.length; const a1 = t1.ok && step(t1.ops, 3000);
     const cond = E.locate(d.tree, 'hvac_condenser').node;
     r("types: a grid untick writes the item's appliesWhen through the validated op — one change set",
-      a1 && a1.ok && d.log.length === n1 + 1 && JSON.stringify(cond.appliesWhen) === JSON.stringify({ field: KEY, anyOf: ['Split System', 'Ductless Mini-Split', 'Heat Pump AC'] }));
+      a1 && a1.ok && d.log.length === n1 + 1 && JSON.stringify(cond.appliesWhen) === JSON.stringify({ field: KEY, anyOf: C_LEFT }));
     const L2 = layout('cooling');
     r("types: after the untick the phone's resolver and the grid agree for EVERY type",
-      L2.question.values.every(v => phoneShows(d.tree, 'hvac_condenser', v) === ['Split System', 'Ductless Mini-Split', 'Heat Pump AC'].includes(v))
+      L2.question.values.every(v => phoneShows(d.tree, 'hvac_condenser', v) === C_LEFT.includes(v))
       && L2.question.values.every(v => (L2.shows.hvac_condenser ?? []).includes(v) === phoneShows(d.tree, 'hvac_condenser', v)));
     // a rule on another field is kept beside the type clause
     const hp = 'cooling__link_hvac_heating';
@@ -724,13 +746,17 @@ async function runTypes(files) {
     r('types: a grid untick keeps the item\'s other rule (Heat Pump still follows the heating answer)',
       t0.ok && Array.isArray(hpRule?.all) && hpRule.all.some(c => c.field === 'hvac_heating::fuel_source') && hpRule.all.some(c => c.field === KEY));
     // an item with no Ledrix type rule becomes typed by a grid untick
-    const t2 = TL.typeRuleOps(d.tree, L2, ['hvac_cooling_age'], L2.question.values.filter(v => v !== 'Evaporative Cooler'));
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): AC Age is no longer rule-free
+    // (type first, every type but Ductless Mini-Split), so the untick narrows inside what Ledrix allows; it must still write
+    // the company clause for exactly the ticked types and the phone must agree.
+    const t2 = TL.typeRuleOps(d.tree, L2, ['hvac_cooling_age'], (L2.allowed.hvac_cooling_age ?? []).filter(v => v !== 'Evaporative Cooler'));
     step(t2.ok ? t2.ops : [], 3100);
     r('types: unticking a type for an every-type item narrows it for that type only (the phone agrees)',
       t2.ok && !phoneShows(d.tree, 'hvac_cooling_age', 'Evaporative Cooler') && phoneShows(d.tree, 'hvac_cooling_age', 'Split System')
-      && layout('cooling').typed.some(n => n.id === 'hvac_cooling_age'));
+      && layout('cooling').typed.some(n => n.id === 'hvac_cooling_age')
+      && JSON.stringify(E.locate(d.tree, 'hvac_cooling_age').node.appliesWhen) === JSON.stringify({ field: KEY, anyOf: ['Split System', 'Package Unit', 'Window / Wall AC', 'Heat Pump AC'] }));
     // ticking back every type Ledrix allows removes the company clause
-    const t3 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], ['Split System', 'Package Unit', 'Ductless Mini-Split', 'Heat Pump AC']);
+    const t3 = TL.typeRuleOps(d.tree, layout('cooling'), ['hvac_condenser'], ['Split System', 'Package Unit', 'Heat Pump AC']);   // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): Ledrix allows these three now
     step(t3.ok ? t3.ops : [], 3200);
     r('types: ticking back every type Ledrix allows removes the type rule again (no company rule left)',
       t3.ok && t3.ops.length > 0 && E.locate(d.tree, 'hvac_condenser').node.appliesWhen === undefined && phoneShows(d.tree, 'hvac_condenser', 'Package Unit'));
@@ -749,19 +775,33 @@ async function runTypes(files) {
       && !PM.itemApplies(PM.rulesFor(d.tree), newId, () => undefined)
       && TL.itemsForType(layout('cooling'), 'Window / Wall AC').some(n => n.id === newId));
     // the preview follows the chosen type
-    const ans = TL.previewAnswer(layout('cooling'), 'Ductless Mini-Split');
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): Ductless Mini-Split now
+    // brings the MINI SPLIT system (Outdoor Unit, heads) and none of Cooling's condenser items, so the preview is checked
+    // with Split System on Cooling (its condenser + coil, no window/evaporative/mini-split items) AND with Ductless
+    // Mini-Split, which must show Mini Split's unit and head count and no Cooling condenser.
     const idx = PM.buildIndex(d.tree);
-    const sv = PM.previewSpecValue(idx, { [ans.key]: [ans.value] }, {});
     const defs = PM.rulesFor(d.tree);
-    const shown = PM.leavesOf(PM.tilesOf(sys('cooling'))[0], id => PM.itemApplies(defs, id, sv)).map(n => n.id);
+    const previewOf = (value, sysId) => { const a = TL.previewAnswer(layout('cooling'), value); const sv = PM.previewSpecValue(idx, { [a.key]: [a.value] }, {});
+      return { key: a.key, ids: PM.tilesOf(sys(sysId)).flatMap(t => PM.leavesOf(t, id => PM.itemApplies(defs, id, sv)).map(n => n.id)) }; };
+    const spl = previewOf('Split System', 'cooling'), msC = previewOf('Ductless Mini-Split', 'cooling'), msM = previewOf('Ductless Mini-Split', 'mini_split');
+    const spM = previewOf('Split System', 'mini_split');
     r("types: the preview, answered with the chosen type, shows that type's items and none of another type's",
-      ans.key === KEY && ['hvac_condenser', 'hvac_ms_heads'].every(id => shown.includes(id))
-      && ['hvac_evaporator_coil', 'hvac_win_operation', 'hvac_evap_pads'].every(id => !shown.includes(id)));
+      spl.key === KEY && ['hvac_condenser', 'hvac_evaporator_coil'].every(id => spl.ids.includes(id))
+      && ['hvac_win_operation', 'hvac_evap_pads', 'hvac_ms_heads', 'hvac_ms_unit'].every(id => !spl.ids.includes(id))
+      && ['hvac_ms_unit', 'hvac_ms_heads'].every(id => msM.ids.includes(id)) && !spM.ids.includes('hvac_ms_unit')
+      && ['hvac_condenser', 'hvac_evaporator_coil', 'hvac_win_operation'].every(id => !msC.ids.includes(id)));
 
     // ── SECOND PASS (owner 2026-11-05, photo of Heating): "Every" means every; the tree shows sections only ──────────
     const fresh = clone(DEFAULT_TREE);
     const fdefs = PM.rulesFor(fresh);
     const ruleFree = id => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return !x || (!(x.requires ?? []).length && !x.dependsOnSpec); };
+    // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): "no rule at all" also covers
+    // the type-first "every type" gate (`{includes: [], unlisted: []}` on the system's type field — any real answer) and a
+    // house:: fact (house::garage on the garage slab and drain), which the website does not read yet (DECISIONS "Not yet").
+    const everyRuled = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; if (!x) return true; if (x.dependsOnSpec) return false;
+      return (x.requires ?? []).every(p => String(p.specNodeId).startsWith('house::') || (p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0)); };
+    const SPECIAL_IDS = new Set((await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href)).SPECIAL_HOMES.map(x => x.id));
+    const everyGated = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return (x?.requires ?? []).some(p => p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0); };
     const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);
     // ── MATERIALS FIRST (owner 2026-11-05, mockup VPAuQHWYGoQghmimznXpgf, "Approved use recommendations") ──
     {
@@ -776,7 +816,12 @@ async function runTypes(files) {
       r('materials: Plumbing Supply is its materials question, each answer with the ONE card the phone shows for it, the typed answer\'s card, then what every home gets',
         !TL.typeLayoutOf(fresh, fsys('plumbing'), fdefs) && sup?.questions.length === 1 && q.rows.length === 6
         && q.rows.every(x => x.card && PM.itemApplies(fdefs, x.card.id, k => (k === q.field || k === q.node.id ? x.value : undefined)))
-        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure'   /* 2026-11-09: valve + location split */
+        // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): Well Equipment and the
+        // Pressure Tank now follow house::water, a house fact the website does not read yet (DECISIONS "Not yet: … Web
+        // parity is a follow-up"), so the builder lists them with what every home gets. Pinned exactly: the three every-home
+        // items, then those two and nothing else.
+        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure|Well Equipment|Pressure Tank'   /* 2026-11-09: valve + location split */
+        && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank'
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
       const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
@@ -905,7 +950,7 @@ async function runTypes(files) {
       const wit = clone(fresh); const wEl = wit.systems.find(x => x.id === 'electrical');
       { const walkC = (n) => { const i = (n.children ?? []).findIndex(c => c.id === 'elec_svc_drop'); if (i >= 0) { n.children.splice(i + 1, 0, { ...clone(n.children[i]), id: 'elec_svc_drop~i2' }); return true; } return (n.children ?? []).some(walkC); }; walkC(wEl); }
       r('electrical: no type chips — a question that brings several items but decides under a third of the system stays a group list; Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
-        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|roofing|water_heater' /* + roofing 2026-11-12: Ridge / Sag Line and Scuppers follow the roof material */
+        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|mini_split|roofing|water_heater' /* + roofing 2026-11-12: Ridge / Sag Line and Scuppers follow the roof material; + mini_split 2026-11-13: its items follow Cooling's type, read from outside the system */
         && !!CTS_find(wit, 'elec_svc_drop~i2') && !TL.typeLayoutOf(wit, wEl, PM.rulesFor(wit)));
       const row = (b, v) => ids(b?.rows.find(x => x.value === v)?.cards);
       const se = svc?.brought.find(b => b.label === 'Service Entrance');
@@ -1028,9 +1073,15 @@ async function runTypes(files) {
     r('types: "Every <system>" holds ONLY items with no rule at all, in every typed system of the Ledrix Default (Heating\'s included)',
       // AMENDED 2026-11-12 (owner, type pass): Heating's four every-type items (Age, Data Plate, Distribution, Thermostat)
       // and every Fireplace item now follow their type, so those two have none; the rest still have some.
-      typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.every(n => ruleFree(n.id)))
-      && typedSystems.filter(([s]) => !['heating', 'fireplace'].includes(s.id)).every(([, L]) => L.every.length > 0)
-      && typedSystems.find(([s]) => s.id === 'heating')[1].every.length === 0);
+      // AMENDED 2026-11-13 (owner, type first + Mini Split unit — ledrix-app DECISIONS 2026-11-13): Every holds exactly the
+      // items with no rule or an every-type gate (nothing that narrows by type); Cooling's last one, AC Age, now skips
+      // Ductless Mini-Split, so Cooling joins Heating and Fireplace with none.
+      typedSystems.length >= 5 && typedSystems.every(([, L]) => L.every.every(n => everyRuled(n.id, L.question.field)))
+      && typedSystems.every(([s, L]) => E.flatItems(s).map(x => x.node).filter(n => n.kind === 'component' && n.id !== L.question.nodeId && !SPECIAL_IDS.has(n.id)
+        && everyGated(n.id, L.question.field) && everyRuled(n.id, L.question.field)).every(n => L.every.some(e => e.id === n.id)))
+      // AMENDED 2026-11-13 (typeLayout fix: an every-type gate is Every, not typed): which systems have Every items is no
+      // longer pinned per system — every one of them is exactly the every-gated / unruled items, as above.
+      && typedSystems.some(([, L]) => L.every.length > 0));
     // Owner 2026-11-05 ("Make that change"): Furnace and Cabinet / Access are forced-air only — Ledrix's own rule, in the
     // pack. The builder files them under the forced-air types, and the preview (the phone's resolver) agrees per type.
     {

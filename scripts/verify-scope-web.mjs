@@ -132,7 +132,9 @@ ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 
 // item for it lands on that row. (Older jobs' snapshots keep Age inside the unit — the Kimball fixture above.)
 {
   const base = JSON.parse(read('lib/templates/baselines/ledrixDefault.json'));
-  const v = M.buildScope({ ...base, systems: base.systems.map(x => ({ ...x, inScope: true })) }, M.valueMapOf([]), { findings: () => 0, photos: () => 0 });
+  // AMENDED 2026-11-13 (owner, type first — ledrix-app DECISIONS 2026-11-13): Heating's items wait for its type, so the
+  // Age row is asked once the type is answered (a gas furnace here); the row's place and key are what this protects.
+  const v = M.buildScope({ ...base, systems: base.systems.map(x => ({ ...x, inScope: true })) }, M.valueMapOf([{ kind: 'spec', node_key: 'hvac_heating::fuel_source', value: { value: 'Gas Furnace' }, structure_id: 'main' }]), { findings: () => 0, photos: () => 0 });
   const heatRows = v.systems.find(x => x.node.id === 'heating')?.tiles.flatMap(t => t.rows) ?? [];
   const ids = heatRows.map(r => r.node.id);
   const ageRow = heatRows.find(r => r.node.id === 'hvac_heating_age');
