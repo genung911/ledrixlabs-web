@@ -102,7 +102,7 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
     { id: 'gas_meter', label: 'Gas meter & piping', hint: 'The meter and the pipe or connector leaving it.', answers: ['plumb_gas|spec', 'plumb_gas_shutoff|spec'], gas: true },
   ],
   roofing: [
-    { id: 'roof', label: 'Roof plane', hint: 'A roof plane, from the ladder, the ground or a drone.', repeat: { base: 'Roof plane', next: 'Next roof plane' }, answers: ['roof_material|type', 'roof_material|layer_count', 'roof_material_age|estimated_age'], documents: ['roof_material'] },
+    { id: 'roof', label: 'Roof plane', hint: 'A roof plane, from the ladder, the ground or a drone.', repeat: { base: 'Roof plane', next: 'Next roof plane' }, answers: ['roof_material|type', 'roof_material|layer_count'], documents: ['roof_material'] },   // 2026-11-13: Remaining Life is the inspector's estimate, never read off a photo
     { id: 'roof_edge', label: 'Roof edge at an eave', hint: 'Close on the edge: the layers of shingle and the drip edge.', answers: ['roof_material|layer_count'] },
     { id: 'gutters', label: 'Gutter & downspout', hint: 'A gutter run and where a downspout comes down.', answers: ['roof_gutters|material', 'roof_discharge|spec'] },
   ],
@@ -263,7 +263,17 @@ export type ShotCondition = { key: string; includes?: readonly string[]; unliste
 /** `collects` (2026-11-09): a WHOLE-HOUSE field one house holds several values of — carpet in the bedrooms, tile in the
  *  bath, hardwood in the living room. It stays asked after its first answer; `have` is what it already holds (confirmed,
  *  or proposed by an earlier photo), and the read may only ADD a value not in it, one answer per value. */
-export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean; when?: readonly ShotCondition[]; collects?: { have: readonly string[] } };
+/** `year` (owner 2026-11-13: "Water heater and cooling age should be entered as the year manufactured like heating does,
+ *  then age calculated by Ledrix and compared to the age limits"): a plate-bearing unit's Age is asked as the YEAR it was
+ *  made, read off a printed date — never as one of the field's old ranges ("Under 5 years old" came back for a condenser
+ *  whose label read "DATE OF MANUFACTURE JAN 2023"). Its answer is the 4-digit year. */
+export type ShotQuestion = { key: string; system: string; label: string; choices: readonly string[]; dimensions?: boolean; year?: boolean; when?: readonly ShotCondition[]; collects?: { have: readonly string[] } };
+/** A year a unit can have been made in, as the read's answer (a printed date: "JAN 2023", "2023", "01/2023"). */
+export function madeYearOf(value: unknown, nowYear: number = new Date().getFullYear()): string | null {
+  const m = /\b((?:19|20)\d{2})\b/.exec(String(value ?? ''));
+  const y = m ? Number(m[1]) : NaN;
+  return y >= 1950 && y <= nowYear ? String(y) : null;
+}
 
 /** The whole-house fields (`node|attr`). Owner 2026-11-09, on the interior set: one bedroom photo must not close Floors
  *  for the living room's hardwood. Insulation is here for the attic (blown fill on the floor, foam on the kneewalls). */
@@ -329,6 +339,8 @@ export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system:
     : '');
   const q = (x: ShotQuestion) => x.dimensions
     ? `- ${x.key} — ${x.label}${gather(x)}: the size printed on it — often along the frame, sideways or upside down — as WIDTHxHEIGHTxDEPTH in inches (e.g. "16x25x1")`
+    : x.year
+    ? `- ${x.key} — ${x.label}${cond(x)}: the 4-digit YEAR the unit was made, only from a manufacture date printed on its plate or label (e.g. "2023" for "DATE OF MANUFACTURE JAN 2023"); never from the serial number, never from how it looks`
     : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${order(x.choices).map(c => JSON.stringify(c)).join(' | ')}`;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
@@ -388,7 +400,7 @@ export function validateShotRead(raw: any, ctx: ShotContext, g: ReadGuards = {})
     const q = byKey.get(String(a?.key ?? ''));
     if (!q) continue;
     const size = q.dimensions ? parseSizeEntry(String(a?.value ?? '')) : null;
-    const hit = size ? formatSizeEntry(size) : q.choices.find(c => norm(c) === norm(a?.value));
+    const hit = q.year ? madeYearOf(a?.value) : size ? formatSizeEntry(size) : q.choices.find(c => norm(c) === norm(a?.value));
     if (!hit) continue;   // never a value the template does not offer (a size field takes any real size)
     if (g.guards && !seenSays(a?.seen, hit)) continue;   // the guards: no evidence, no answer
     // One answer per question — or, on a whole-house field, one per value it does not already hold.

@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.13.4",
+  "packVersion": "2026.11.13.5",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -6248,22 +6248,22 @@
         },
         {
           "id": "roof_material_age",
-          "label": "Roof Age",
+          "label": "Roof Remaining Life",
           "keywords": [],
           "kind": "spec",
           "origin": "core",
           "storedOn": "roof_material",
           "attributes": [
             {
-              "id": "estimated_age",
-              "label": "Estimated Age",
+              "id": "remaining_life",
+              "label": "Remaining Life",
+              "optional": true,
               "values": [
-                "Under 5 years old",
-                "5–10 years old",
-                "10–15 years old",
-                "15–20 years old",
-                "20–25 years old",
-                "Over 25 years old",
+                "More than 10 years",
+                "5–10 years",
+                "2–5 years",
+                "Less than 2 years",
+                "At or past end of life",
                 "Not determined"
               ]
             }
