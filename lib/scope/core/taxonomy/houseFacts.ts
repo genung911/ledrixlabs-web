@@ -22,19 +22,21 @@ export type HouseFactSource =
 /** `none`: the house may have none of it (owner 2026-11-13, build 811: "Fireplace made me realize we need a 'none' option").
  *  A spec fact's None records applicability's NOT_PRESENT ('Not present'), the absence every rule already reads; the
  *  garage's None is one of its Details choices. A foundation is never none. */
-export type HouseFact = { id: string; label: string; group: HouseFactGroup; source: HouseFactSource; none?: true };
+/** `question` / `hint`: the wizard's page for this fact (owner 2026-11-13, mockup 79T4… boards 8–10: "a full page for each
+ *  one … options larger, easy to read"). `multi`: pick every one that applies. */
+export type HouseFact = { id: string; label: string; group: HouseFactGroup; source: HouseFactSource; none?: true; question?: string; hint?: string; multi?: true };
 
 /** The facts, in the page's order (board 6). */
 export const HOUSE_FACTS: readonly HouseFact[] = [
-  { id: 'gas',          label: 'Gas',          group: 'utilities', source: { kind: 'extras', key: 'gasSupply' } },
-  { id: 'water',        label: 'Water',        group: 'utilities', source: { kind: 'extras', key: 'waterSource' } },
-  { id: 'sewer',        label: 'Sewer',        group: 'utilities', source: { kind: 'extras', key: 'sewerType' } },
-  { id: 'heats',        label: 'What heats',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_heating', attr: 'fuel_source' }, none: true },
-  { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true },
-  { id: 'water_heater', label: 'Water heater', group: 'equipment', source: { kind: 'spec', nodeId: 'plumb_wh_type', attr: 'type' }, none: true },
-  { id: 'fireplace',    label: 'Fireplace',    group: 'equipment', source: { kind: 'spec', nodeId: 'fp_type', attr: 'spec' }, none: true },
-  { id: 'foundation',   label: 'Foundation',   group: 'building',  source: { kind: 'spec', nodeId: 'found_type', attr: 'type' } },
-  { id: 'garage',       label: 'Garage',       group: 'building',  source: { kind: 'extras', key: 'garageType' } },
+  { id: 'gas',          label: 'Gas',          group: 'utilities', source: { kind: 'extras', key: 'gasSupply' }, question: 'What gas does the house have?', hint: 'Look for a meter at the side of the house, or a tank in the yard.' },
+  { id: 'water',        label: 'Water',        group: 'utilities', source: { kind: 'extras', key: 'waterSource' }, question: 'Where does the water come from?', hint: 'A well has a well head and a pressure tank.' },
+  { id: 'sewer',        label: 'Sewer',        group: 'utilities', source: { kind: 'extras', key: 'sewerType' }, question: 'Where does the sewer go?', hint: 'Septic shows a tank lid or cleanouts in the yard.' },
+  { id: 'heats',        label: 'What heats',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_heating', attr: 'fuel_source' }, none: true, question: 'What heats the house?', hint: 'Pick every one.', multi: true },
+  { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true, question: 'What cools the house?', hint: 'Pick every one.', multi: true },
+  { id: 'water_heater', label: 'Water heater', group: 'equipment', source: { kind: 'spec', nodeId: 'plumb_wh_type', attr: 'type' }, none: true, question: 'What kind of water heater?', hint: 'The data plate on its side says.' },
+  { id: 'fireplace',    label: 'Fireplace',    group: 'equipment', source: { kind: 'spec', nodeId: 'fp_type', attr: 'spec' }, none: true, question: 'Is there a fireplace?', hint: 'Pick its type, or None.' },
+  { id: 'foundation',   label: 'Foundation',   group: 'building',  source: { kind: 'spec', nodeId: 'found_type', attr: 'type' }, question: 'What does the house sit on?', hint: 'Pick every one: a basement with a crawlspace addition is two.', multi: true },
+  { id: 'garage',       label: 'Garage',       group: 'building',  source: { kind: 'extras', key: 'garageType' }, question: 'What garage does the house have?', hint: 'Detached adds a Detached Garage building.' },
 ];
 
 export const HOUSE_FACT_GROUPS: readonly { id: HouseFactGroup; label: string }[] = [
