@@ -53,15 +53,24 @@ const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foun
 const UTILITY = ['roofing', 'exterior', 'interior', 'electrical', 'foundation'];
 const UTILITY_OFF = ['interior__walls_ceilings_floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
   'int_windows', 'int_egress', 'int_doors', 'int_trim'];
+// 2026-11-14 (owner, test run x1: "Change detached shop to just shop … Do we need a better list?" → "yes go with that
+// list"): Shop (was Detached Shop); Guest House is a living space without its own Kitchen and Laundry; Well House brings
+// only the well equipment, the pressure check and its shelter; Barn / Pole Barn, Pool House, Shed and Carport join.
+const LIVING = RESIDENTIAL.filter(s => s !== 'kitchen' && s !== 'laundry');
+const WELL_OFF = ['plumbing__drain_waste_vent', 'plumbing__fixtures', 'plumbing__fuel_gas',
+  'plumb_supply', 'plumb_sup_copper', 'plumb_sup_pex', 'plumb_sup_cpvc', 'plumb_sup_galv', 'plumb_sup_pvc', 'plumb_sup_pb', 'plumb_sup_other', 'plumb_main', 'plumb_flow'];
 export const LEDRIX_DEFAULT_STRUCTURE_TYPES: readonly StructureTypeDef[] = [
-  { id: 'ledrix_shop',        name: 'Detached Shop',   kind: 'shop',        icon: 'warehouse',            systems: UTILITY, off: UTILITY_OFF },
+  { id: 'ledrix_shop',        name: 'Shop',            kind: 'shop',        icon: 'warehouse',            systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_adu',         name: 'ADU',             kind: 'adu',         icon: 'home-group',           systems: RESIDENTIAL },
-  { id: 'ledrix_guest_house', name: 'Guest House',     kind: 'guest_house', icon: 'home-variant-outline', systems: RESIDENTIAL },
+  { id: 'ledrix_guest_house', name: 'Guest House',     kind: 'guest_house', icon: 'home-variant-outline', systems: LIVING },
   { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_outbuilding', name: 'Outbuilding',     kind: 'outbuilding', icon: 'home-outline',         systems: [] },
-  // 2026-11-14 (owner: fold the old intake Add-ons in): the old "Wellhouse" add-on is a building — its pump, tank and
-  // wiring under a small roof.
-  { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'plumbing'] },
+  // 2026-11-14 (owner: fold the old intake Add-ons in): the old "Wellhouse" add-on is a building.
+  { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'plumbing'], off: WELL_OFF },
+  { id: 'ledrix_barn',        name: 'Barn / Pole Barn', kind: 'outbuilding', icon: 'barn',                systems: UTILITY, off: UTILITY_OFF },
+  { id: 'ledrix_pool_house',  name: 'Pool House',      kind: 'outbuilding', icon: 'pool',                 systems: ['roofing', 'exterior', 'electrical', 'plumbing', 'primary_bathroom'] },
+  { id: 'ledrix_shed',        name: 'Shed',            kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior'] },
+  { id: 'ledrix_carport',     name: 'Carport',         kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'foundation'] },
 ];
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));

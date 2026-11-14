@@ -11,9 +11,9 @@ import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/cor
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { rulesFor } from './phonePreviewModel';
 import { displayLabel } from './systemLabel';
-import { isCovered } from '@/lib/templates/editorModel';
+import { isCovered, linksOf, ops } from '@/lib/templates/editorModel';
 import {
-  guidedStepsOf, whenSentence, itemAnswerOf, itemAnswerOps, materialChoices, toggleMaterialOps, addMaterialOps,
+  guidedStepsOf, sharedPartsOf, whenSentence, itemAnswerOf, itemAnswerOps, materialChoices, toggleMaterialOps, addMaterialOps,
   materialPhotoOf, materialPhotoOps, type GuidedStep, type ItemAnswer, type MaterialPhoto,
 } from '@/lib/templates/guidedModel';
 import { btn, field } from './ui';
@@ -186,6 +186,11 @@ function StepBody({ step, tree, defs, onOps, disabled }: { step: GuidedStep; tre
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} aria-label={`Add a ${low(step.node.label)} option`} />
           <button type="button" className={btn.secondary} disabled={disabled || !adding.trim()} onClick={add}>Add</button>
         </div>
+        {/* LEAVE IT OUT (owner 2026-11-14, test run x7: "how do i remove this?") — the item's own switch, as "No, leave it
+            out" on an ordinary item; it keeps its place in the walk to bring back. */}
+        {itemAnswerOf(tree, step.node) === 'no'
+          ? <p className="text-sm text-body">{title} is left out. <button type="button" className="font-semibold text-accent" disabled={disabled} onClick={() => onOps(itemAnswerOps(tree, step.node, 'yes'))}>Bring it back</button></p>
+          : <button type="button" className="self-start text-sm font-semibold text-muted hover:text-ink" disabled={disabled} onClick={() => onOps(itemAnswerOps(tree, step.node, 'no'))}>Leave {title} out</button>}
       </>
     );
   }
@@ -223,7 +228,44 @@ function StepBody({ step, tree, defs, onOps, disabled }: { step: GuidedStep; tre
       <div className="flex max-w-md flex-col gap-3">
         {ITEM_CHOICES.map(c => <Opt key={c.a} on={a === c.a} disabled={disabled} onClick={() => { if (a !== c.a) onOps(itemAnswerOps(tree, step.node, c.a)); }}>{c.label}</Opt>)}
       </div>
+      {a !== 'no' ? <GuidedAlsoShowIn tree={tree} node={step.node} onOps={onOps} disabled={disabled} /> : null}
     </>
+  );
+}
+
+/** "ALSO SHOW IN…" (owner 2026-11-14, test run x5, mockup V5QHLXYzFcCuFF4RduCqb7 approved): the systems this item also
+ *  shows in, as chips; the button opens a list of the others to tick. The same edit as All settings' Also show in
+ *  (ops.showIn / ops.unlink) — recorded once, reported where it lives. */
+function GuidedAlsoShowIn({ tree, node, onOps, disabled }: { tree: InspectionTemplate; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { setOpen(false); }, [node.id]);
+  const home = systemOf(tree, node);
+  const links = linksOf(tree, node.id);
+  const others = tree.systems.filter(s => s.id !== home.id && !(s as TemplateNode & { space?: boolean }).space);
+  return (
+    <div className="max-w-2xl space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {links.length ? <span className="text-xs text-muted">Also shows in</span> : null}
+        {links.map(l => {
+          const sys = tree.systems.find(s => s.id === l.systemId);
+          return (
+            <span key={l.pointerId} className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-ink">
+              {displayLabel(sys?.label ?? l.systemId)}
+              <button type="button" aria-label={`Stop showing in ${displayLabel(sys?.label ?? l.systemId)}`} disabled={disabled} onClick={() => onOps(ops.unlink(l.pointerId))}>×</button>
+            </span>
+          );
+        })}
+        <button type="button" className="text-sm font-semibold text-accent" disabled={disabled} onClick={() => setOpen(o => !o)}>{open ? 'Done' : '+ Also show in…'}</button>
+      </div>
+      {open ? (
+        <div className="grid grid-cols-1 gap-2 rounded-xl border border-hairline bg-ground p-3 sm:grid-cols-2" role="group" aria-label="Also show in">
+          {others.map(s => {
+            const link = links.find(l => l.systemId === s.id);
+            return <Opt key={s.id} on={!!link} disabled={disabled} onClick={() => onOps(link ? ops.unlink(link.pointerId) : ops.showIn(tree, node, s.id))}>{displayLabel(s.label)}</Opt>;
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -251,6 +293,11 @@ function Review({ system, steps, tree, onChange, onNext, nextLabel }: { system: 
           </div>
         ))}
       </div>
+      {/* ONE UNIT, AS ON THE PHONE (owner 2026-11-14, test run x3): the Heat Pump / Mini Split page also shows these, set
+          under Heating and Cooling because other equipment shares them. */}
+      {(system.id === 'heat_pump' || system.id === 'mini_split') && sharedPartsOf(tree, rulesFor(tree), system.id).map(g => (
+        <p key={g.system} className="max-w-2xl text-sm text-body"><span className="font-semibold text-ink">Also on the {displayLabel(system.label)} page, from {g.system}:</span> {g.labels.join(' · ')} <span className="text-muted">(set under {g.system})</span></p>
+      ))}
       <div className="mt-auto pt-4"><button type="button" className={`${btn.primary} min-w-[220px]`} onClick={onNext}>{nextLabel}</button></div>
     </>
   );

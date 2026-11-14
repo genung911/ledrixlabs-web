@@ -256,10 +256,29 @@ export function ReviewSection(p: ReviewProps) {
       <div className="min-w-0"><p className="text-sm font-semibold text-ink">{title}</p>{detail && <div className="text-xs text-body">{detail}</div>}</div>
     </li>
   );
+  // SAY WHAT NEEDS YOU (owner 2026-11-14, test run x8: "a wall of text and i dont know what its asking me to review"; mockup
+  // V5QHLXYzFcCuFF4RduCqb7 approved): one headline, only the things that stop Publish (each with Open), the checks folded
+  // to one line, and the notes and building changes folded away as counts.
+  const blocking = p.fixes.filter(f => f.blocks);
+  const notes = p.fixes.filter(f => !f.blocks);
+  const allOk = !errors.length && !p.buildingErrors.length && !carried.length && !p.readOnly && p.saveState !== 'error';
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4">
-      <div><h2 className="text-xl font-bold tracking-tight text-ink">Review & publish</h2><p className="text-sm text-muted">{p.status}</p></div>
-      <FixList fixes={p.fixes} onGo={p.onGo} onOps={p.onOps} disabled={!!p.readOnly} />
+      <div>
+        <h2 className={`text-2xl font-extrabold tracking-tight ${blocking.length || !allOk ? 'text-ink' : 'text-ok'}`}>
+          {blocking.length ? `${blocking.length} thing${blocking.length === 1 ? '' : 's'} to fix first` : allOk ? '✓ Ready to publish' : 'Review & publish'}
+        </h2>
+        <p className="text-sm text-muted">{p.status} · {p.edits} change{p.edits === 1 ? '' : 's'} in this draft</p>
+      </div>
+      <FixList fixes={blocking} onGo={p.onGo} onOps={p.onOps} disabled={!!p.readOnly} />
+      {notes.length > 0 && (
+        <details className="rounded-xl border border-hairline bg-surface px-4 py-2">
+          <summary className="cursor-pointer text-sm font-semibold text-ink">{notes.length} note{notes.length === 1 ? '' : 's'} · optional</summary>
+          <div className="pt-2"><FixList fixes={notes} onGo={p.onGo} onOps={p.onOps} disabled={!!p.readOnly} /></div>
+        </details>
+      )}
+      <details open={!allOk} className="rounded-xl border border-hairline bg-surface px-4 py-2">
+        <summary className="cursor-pointer text-sm font-semibold text-ink">{allOk ? '✓ All checks pass' : 'Checks'}</summary>
       <Card title="Before publishing">
         <ul className="divide-y divide-hairline">
           {row(p.saveState === 'saved' || p.saveState === 'clean' ? true : p.saveState === 'error' ? false : 'warn', 'Draft saved',
@@ -276,10 +295,12 @@ export function ReviewSection(p: ReviewProps) {
           {p.readOnly && row(false, 'This draft can’t change right now', p.readOnly)}
         </ul>
       </Card>
+      </details>
       {p.buildingChanges.length > 0 && (
-        <Card title="Building type changes">
-          <ul className="list-disc space-y-0.5 pl-5">{p.buildingChanges.map(c => <li key={c}>{c}</li>)}</ul>
-        </Card>
+        <details className="rounded-xl border border-hairline bg-surface px-4 py-2">
+          <summary className="cursor-pointer text-sm font-semibold text-ink">Building types · {p.buildingChanges.length} change{p.buildingChanges.length === 1 ? '' : 's'}</summary>
+          <ul className="list-disc space-y-0.5 pl-5 pt-2 text-sm text-body">{p.buildingChanges.map(c => <li key={c}>{c}</li>)}</ul>
+        </details>
       )}
       <Card title={p.isNew ? 'Publish this template' : `Publish as v${p.nextVersion}`}>
         <p>{p.isNew ? 'It becomes a live template your company can assign to inspection types.' : 'New inspections that use this template start from this version.'} Inspections already started or finished keep the copy they started with.</p>

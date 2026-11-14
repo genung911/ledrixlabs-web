@@ -21,12 +21,15 @@ export type GuidedStep =
  *  live items), with the group each sits in. Links (an item shown here from another system) are never asked twice. */
 function walkItems(system: TemplateNode): Array<{ node: TemplateNode; group: string }> {
   const out: Array<{ node: TemplateNode; group: string }> = [];
+  // EACH ITEM ONCE (owner 2026-11-14, test run x6): a switched-off leftover group can hold the same ids as a live one
+  // (Ledrix Default's Attic › Concerns repeats Moisture / Staining and Pests / Rodents) — the live place wins.
+  const seen = new Set<string>();
   const walk = (n: TemplateNode, group: string) => {
     const kids = [...(n.children ?? []), ...((n as TemplateNode & { trimmed?: TemplateNode[] }).trimmed ?? [])];
     for (const c of kids) {
       if (c.pointsTo) continue;
       if (c.kind === 'subsystem') { walk(c, displayLabel(c.label)); continue; }
-      if (c.kind === 'component') out.push({ node: c, group });
+      if (c.kind === 'component' && !seen.has(c.id)) { seen.add(c.id); out.push({ node: c, group }); }
       if ((c.children ?? []).length) walk(c, group);
     }
   };
@@ -34,9 +37,52 @@ function walkItems(system: TemplateNode): Array<{ node: TemplateNode; group: str
   return out;
 }
 
+// ── THE HEAT PUMP AND THE MINI SPLIT FOLD, AS ON THE PHONE (owner 2026-11-14, test run x3: "Heat pump is not accurate") ──
+// A heat pump is one unit: its parts live in Heating (shown when the heating is a Heat Pump) and Cooling (when the cooling
+// is a Heat Pump AC), and the phone gathers them on the Heat Pump tile. The walk asks them there too — and Heating /
+// Cooling stop asking them. Stored exactly where they are; only the walk's order changes. Same for the mini split.
+const UNIT_VALUES: Readonly<Record<'heat_pump' | 'mini_split', readonly string[]>> = {
+  heat_pump: ['heat pump', 'heat pump ac'], mini_split: ['ductless mini-split'],
+};
+/** The unit an item of Heating or Cooling belongs to: every value its rules name is that unit's. Else null. */
+export function unitOfItem(tree: InspectionTemplate, defs: RuleDefinitions, node: TemplateNode): 'heat_pump' | 'mini_split' | null {
+  const { byId } = indexTree(tree);
+  const vals = predsOf(defs, node.id, byId).flatMap(({ p }) => {
+    const inc = (p as { includes?: unknown }).includes;
+    return (Array.isArray(inc) ? inc : typeof inc === 'string' ? [inc] : []).map(v => String(v).trim().toLowerCase()).filter(Boolean);
+  });
+  if (!vals.length) return null;
+  for (const u of ['heat_pump', 'mini_split'] as const) if (vals.every(v => UNIT_VALUES[u].includes(v))) return u;
+  return null;
+}
+const FOLDS_FROM = ['heating', 'cooling'];
+
 /** The questions a system asks, in the walk's order: a materials item asks which materials and which need a photo; a
- *  material's own condition card is answered there, never asked on its own; any other item asks whether to inspect it. */
+ *  material's own condition card is answered there, never asked on its own; any other item asks whether to inspect it.
+ *  The Heat Pump / Mini Split also ask their parts from Heating and Cooling, which then leave them out. */
 export function guidedStepsOf(tree: InspectionTemplate, system: TemplateNode, defs: RuleDefinitions): GuidedStep[] {
+  const own = stepsOfOne(tree, system, defs);
+  if (FOLDS_FROM.includes(system.id)) return own.filter(st => !unitOfItem(tree, defs, st.node));
+  if (system.id === 'heat_pump' || system.id === 'mini_split') {
+    const folded = FOLDS_FROM.map(id => tree.systems.find(s => s.id === id)).filter((s): s is TemplateNode => !!s)
+      .flatMap(s => stepsOfOne(tree, s, defs).filter(st => unitOfItem(tree, defs, st.node) === system.id));
+    return [...own, ...folded];
+  }
+  return own;
+}
+/** What else the inspector gets on a heat pump (or mini split) job: Heating's and Cooling's items that show for it and are
+ *  shared with other equipment (set under Heating / Cooling, so never asked twice) — listed on the Heat Pump step. */
+export function sharedPartsOf(tree: InspectionTemplate, defs: RuleDefinitions, unit: 'heat_pump' | 'mini_split'): Array<{ system: string; labels: string[] }> {
+  const { byId } = indexTree(tree);
+  return FOLDS_FROM.map(id => tree.systems.find(x => x.id === id)).filter((x): x is TemplateNode => !!x).map(sys => {
+    const labels = [...new Set(stepsOfOne(tree, sys, defs).filter(st => st.kind !== 'materialPhoto' && !unitOfItem(tree, defs, st.node) && !isOff(tree, st.node)).filter(st => {
+      const vals = predsOf(defs, st.node.id, byId).flatMap(({ p }) => { const inc = (p as { includes?: unknown }).includes; return (Array.isArray(inc) ? inc : typeof inc === 'string' ? [inc] : []).map(v => String(v).trim().toLowerCase()); });
+      return !vals.length || vals.some(v => UNIT_VALUES[unit].includes(v));
+    }).map(st => displayLabel(st.node.label)))];
+    return { system: displayLabel(sys.label), labels };
+  }).filter(g => g.labels.length);
+}
+function stepsOfOne(tree: InspectionTemplate, system: TemplateNode, defs: RuleDefinitions): GuidedStep[] {
   const qs = materialLayoutOf(tree, system, defs).flatMap(g => g.questions);
   const cards = new Set(qs.flatMap(q => [...q.cards.map(c => c.id), ...q.off.map(o => o.card.id)]));
   const out: GuidedStep[] = [];

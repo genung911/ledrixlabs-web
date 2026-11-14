@@ -1188,6 +1188,18 @@ async function runGuided(files) {
     r('guided: a photo "only when it\'s Polybutylene" is required on that material\'s card; "every time" is required on the item and on no card',
       c1 && some.mode === 'some' && some.values.join() === 'Polybutylene' && G.requiresPhoto(poly)
       && c2 && every.mode === 'every' && G.requiresPhoto(q().node) && q().rows.every(x => !G.requiresPhoto(x.card)));
+    // 2026-11-14 (owner, test run): x3 the Heat Pump asks its parts from Heating and Cooling, which leave them out; x6 an item
+    // is asked once (Attic's leftover Concerns group repeats two ids).
+    const sys = id => d.tree.systems.find(s => s.id === id);
+    const defs = PM.rulesFor(d.tree);
+    const hpSteps = G.guidedStepsOf(d.tree, sys('heat_pump'), defs).map(x => x.node.id);
+    const parts = ['heating', 'cooling'].flatMap(id => G.guidedStepsOf(d.tree, { ...sys(id) }, { nodes: {} }).map(x => x.node)).filter(n => G.unitOfItem(d.tree, defs, n) === 'heat_pump').map(n => n.id);
+    const leftIn = ['heating', 'cooling'].flatMap(id => G.guidedStepsOf(d.tree, sys(id), defs).map(x => x.node.id));
+    r('guided: the Heat Pump asks its parts from Heating and Cooling, and they stop asking them',
+      parts.length >= 1 && parts.every(id => hpSteps.includes(id)) && !parts.some(id => leftIn.includes(id))
+      && G.sharedPartsOf(d.tree, defs, 'heat_pump').some(g => g.system === 'Cooling' && g.labels.length >= 3));
+    const attic = G.guidedStepsOf(d.tree, sys('attic'), defs).map(x => x.node.id);
+    r('guided: each item is asked once (a leftover group repeating ids is skipped)', attic.length === new Set(attic).size && attic.includes('attic_pests'));
   } catch (e) { r(`guided scenario completed (${e?.message})`, false); }
   return results;
 }
@@ -1314,6 +1326,23 @@ const RULES = {
       && /id: 'advisories'[^\n]*next: \(\) => void saveAndNext\(\),/.test(cp)
       && /if \(isLast\) \{ void create\(\); return; \}/.test(cp) && /const isLast = cur\?\.id === 'name';/.test(cp)
       && /\{cur\.skip && !isLast && <button/.test(cp) ? [] : ['app/app/templates/create/page.tsx'];
+  },
+  // 2026-11-14 (owner, test run x4, x7): All settings has a way back to Guided; a materials item can be left out.
+  'guided: All settings links back to the guided setup; a materials question can leave its item out': all => {
+    const pg = strip(all['app/app/templates/[id]/page.tsx'] ?? ''), gs = strip(all['components/templates/GuidedSetup.tsx'] ?? '');
+    return /onClick=\{\(\) => setWalk\('guided'\)\}>‹ Back to guided setup<\/button>/.test(pg)
+      && /onClick=\{\(\) => onOps\(itemAnswerOps\(tree, step\.node, 'no'\)\)\}>Leave \{title\} out<\/button>/.test(gs) ? [] : ['components/templates/GuidedSetup.tsx'];
+  },
+  // 2026-11-14 (owner, test run x5, x8; mockup V5QHLXYzFcCuFF4RduCqb7 approved).
+  'guided: each question can add "Also show in…" — the same showIn / unlink edits as All settings': all => {
+    const gs = strip(all['components/templates/GuidedSetup.tsx'] ?? '');
+    return /\{a !== 'no' \? <GuidedAlsoShowIn tree=\{tree\} node=\{step\.node\}/.test(gs)
+      && /onClick=\{\(\) => onOps\(link \? ops\.unlink\(link\.pointerId\) : ops\.showIn\(tree, node, s\.id\)\)\}/.test(gs) ? [] : ['components/templates/GuidedSetup.tsx'];
+  },
+  'review: one headline; only what stops Publish is listed open; notes and checks fold away': all => {
+    const se = strip(all['components/templates/Sections.tsx'] ?? '');
+    return /const blocking = p\.fixes\.filter\(f => f\.blocks\);/.test(se) && /<FixList fixes=\{blocking\}/.test(se)
+      && /'✓ Ready to publish'/.test(se) && /\{allOk \? '✓ All checks pass' : 'Checks'\}/.test(se) ? [] : ['components/templates/Sections.tsx'];
   },
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
   'writes: only the three template tables, the company template context and the publish RPC': all => {
@@ -1791,6 +1820,9 @@ const MUT = {
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
   'item: no tabs — its rows (Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': rep('components/templates/Workspace.tsx', "if (tab === 'details') return facet('details',", "if (tab === 'nope') return facet('details',"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
+  'guided: All settings links back to the guided setup; a materials question can leave its item out': rep('components/templates/GuidedSetup.tsx', ">Leave {title} out</button>", ">Remove</button>"),
+  'guided: each question can add "Also show in…" — the same showIn / unlink edits as All settings': rep('components/templates/GuidedSetup.tsx', "{a !== 'no' ? <GuidedAlsoShowIn", "{false ? <GuidedAlsoShowIn"),
+  'review: one headline; only what stops Publish is listed open; notes and checks fold away': rep('components/templates/Sections.tsx', '<FixList fixes={blocking}', '<FixList fixes={p.fixes}'),
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', '<p className="text-xs text-muted">A private draft.', '<p className="text-xs text-muted">Import a template from Spectora. A private draft.'),
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'let tree = built.tree;', 'let tree = forked;'),
   'suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box': rep('components/templates/EditorParts.tsx', '{!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions', '<CatalogPanel /> {!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions'),
@@ -1984,6 +2016,9 @@ const EXEC_MUT = [
   { name: 'two own add-ons share an id', file: 'createModel.ts', from: "for (let i = 2; taken.has(id); i++) id = addOnSystemId(`own_${slug}_${i}`);", to: "", check: 'create: the add-ons become sections on the real Ledrix Default — marked add-on, off for new jobs; your own get fresh ids and an item; the draft validates', run: runCreate },
   { name: 'standards claim to be checked', file: 'createModel.ts', from: "· checks coming soon`, soon: true });", to: "· checked`, soon: true });", check: 'create: the last screen says what each answer did; the state and standards read "checks coming soon"', run: runCreate },
   { name: 'the purpose is added twice', file: 'createModel.ts', from: "(services.includes(p) ? [...services] : [...services, p])", to: "[...services, p]", check: 'create: the purpose joins the company’s services, once; the name follows the purpose and first state', run: runCreate },
+  { name: 'Heating keeps asking the heat pump parts', file: 'guidedModel.ts', from: "  if (FOLDS_FROM.includes(system.id)) return own.filter(st => !unitOfItem(tree, defs, st.node));\n", to: '', check: 'guided: the Heat Pump asks its parts from Heating and Cooling, and they stop asking them', run: runGuided },
+  { name: 'the Heat Pump asks only its own item', file: 'guidedModel.ts', from: "    return [...own, ...folded];", to: "    return own;", check: 'guided: the Heat Pump asks its parts from Heating and Cooling, and they stop asking them', run: runGuided },
+  { name: 'a repeated item is asked twice', file: 'guidedModel.ts', from: "if (c.kind === 'component' && !seen.has(c.id)) { seen.add(c.id); out.push({ node: c, group }); }", to: "if (c.kind === 'component') out.push({ node: c, group });", check: 'guided: each item is asked once (a leftover group repeating ids is skipped)', run: runGuided },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 // The checks each run really reports, unmutated — what a mutation's `check` must be one of.

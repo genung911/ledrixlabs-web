@@ -360,7 +360,10 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                   <PhonePreview tree={tree} selection={sel} onSelect={s => setSel(s)} answer={answer} />
                 </aside>
               </div>
-            ) : (
+            ) : (<>
+            {/* THE WAY BACK (owner 2026-11-14, test run x4: "now I cannot get back") — the Guided | All settings switch is
+                small, at the end of the tab row; this says it where the eye is. */}
+            <div className="px-4 pt-2 lg:px-6"><button type="button" className="text-sm font-semibold text-accent" onClick={() => setWalk('guided')}>‹ Back to guided setup</button></div>
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
                 {/* THE BUILDING, at the top of the column it acts on (2026-11-06): its systems list is right under it. */}
@@ -388,7 +391,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 <CompletionCard tree={tree} nodeId={sel.nodeId} />
               </aside>
             </div>
-            )}
+            </>)}
             </BuildingLensProvider>
           </div>
           {/* BACK / NEXT (2026-11-06): a convenience through the steps, never a gate. */}

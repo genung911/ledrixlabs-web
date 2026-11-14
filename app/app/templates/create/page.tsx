@@ -223,7 +223,13 @@ export default function CreateTemplatePage() {
     ...(homes && types.includes('single_family') ? [{ id: 'single_family', q: 'What can come with a single family home?', sub: 'The inspector picks from these when adding an inspection.', body: (
       <div className="max-w-xl space-y-3">
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {LEDRIX_DEFAULT_STRUCTURE_TYPES.map(t => tile(otherBuildings.includes(t.id), t.name, () => setOtherBuildings(flip(otherBuildings, t.id))))}
+          {/* WHAT EACH COVERS (owner 2026-11-14, test run x1: "Do we need to determine what the items in the list cover?") */}
+          {LEDRIX_DEFAULT_STRUCTURE_TYPES.map(t => (
+            <div key={t.id} className="flex flex-col gap-1">
+              {tile(otherBuildings.includes(t.id), t.name, () => setOtherBuildings(flip(otherBuildings, t.id)))}
+              <span className="px-1 text-xs text-muted">{t.systems.length ? t.systems.map(sysLabel).join(', ') : 'You pick its systems'}</span>
+            </div>
+          ))}
           {ownBuildings.map(b => tile(true, b, () => setOwnBuildings(ownBuildings.filter(x => x !== b))))}
         </div>
         <form className="flex gap-2" onSubmit={e => { e.preventDefault(); addOwn(ownBuilding, ownBuildings, setOwnBuildings, () => setOwnBuilding('')); }}>
