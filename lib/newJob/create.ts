@@ -43,7 +43,7 @@ export const BASELINE_TEMPLATES = ['internachi', 'ashi', 'trec', 'fourpoint'] as
 /** The intake fields a phone requires before it saves (AddInspectionScreen's handleSave), keyed as its record holds them. */
 export const REQUIRED: readonly [string, string][] = [
   ['address', 'Address'], ['city', 'City'], ['state', 'State'], ['zip', 'Zip'], ['sqft', 'Sq Ft'], ['yearBuilt', 'Year Built'],
-  ['homeType', 'Home Type'], ['deltas', 'Add-ons (choose None if there are none)'], ['inspectionType', 'Inspection Type'],
+  ['homeType', 'Home Type'], ['deltas', 'Also on the property (choose None if there is nothing)'], ['inspectionType', 'Inspection Type'],
   ['scheduledTime', 'Time'], ['clientName', 'Client Name'],
 ];
 /** The server columns a phone's sync probes before it sends them (versionedSync), as "<table>.<column>". */

@@ -59,6 +59,9 @@ export const LEDRIX_DEFAULT_STRUCTURE_TYPES: readonly StructureTypeDef[] = [
   { id: 'ledrix_guest_house', name: 'Guest House',     kind: 'guest_house', icon: 'home-variant-outline', systems: RESIDENTIAL },
   { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_outbuilding', name: 'Outbuilding',     kind: 'outbuilding', icon: 'home-outline',         systems: [] },
+  // 2026-11-14 (owner: fold the old intake Add-ons in): the old "Wellhouse" add-on is a building — its pump, tank and
+  // wiring under a small roof.
+  { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'plumbing'] },
 ];
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));

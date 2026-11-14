@@ -24,7 +24,7 @@ import { NO_SOURCE, sourceFields, type OrderSource, type SourceChoice } from '@/
 import { SourcePicker } from '@/components/crm/CrmApp';
 import { loadServices, orderForJob, draftInvoiceFor, type Service } from '@/lib/office/api';
 import { webDevice } from '@/lib/findings/edit';
-import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
+import { GAS_SUPPLY_OPTIONS, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
 
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const AREA = 'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
@@ -40,7 +40,7 @@ type Person = { mode: 'pick' | 'new'; id: string; name: string; email: string; p
 const NO_PERSON: Person = { mode: 'pick', id: '', name: '', email: '', phone: '' };
 
 // WHAT THE TEMPLATE OFFERS AT INTAKE (owner 2026-11-14, mockup B6BhhbaEivmUiE9GtETeqi): the app's intakeOffer.ts, copied.
-import { HOME_TYPE_LABEL, MAX_UNIT_BUILDINGS, intakeAddOns, intakeExtras, intakeHomeTypes, intakeLayouts, unitBuildingNames, type UnitLayout } from '@/lib/templateBuilder/core/intakeOffer';
+import { HOME_TYPE_LABEL, MAX_UNIT_BUILDINGS, PROPERTY_FEATURES, buildingsNamed, intakeAddOns, intakeExtras, intakeHomeTypes, intakeLayouts, unitBuildingNames, type UnitLayout } from '@/lib/templateBuilder/core/intakeOffer';
 
 export default function NewInspectionPage() {
   const { access } = useWorkspace();
@@ -61,7 +61,6 @@ export default function NewInspectionPage() {
     homeType: '', unitCount: '', buildingCount: '', deltas: [] as string[], deltasNone: false, waterSource: '', sewerType: '', gasSupply: '', inspectionType: '', lockbox: '', notes: '' });
   const set = (k: keyof typeof f, v: any) => setF(p => ({ ...p, [k]: v }));
   const [templateId, setTemplateId] = useState('');
-  const [withHome, setWithHome] = useState<string[]>([]);       // building types picked for a single family home
   const [unitLayout, setUnitLayout] = useState<UnitLayout>('one');
   const [booked, setBooked] = useState<string[]>([]);            // the template's add-on services booked
   const [leadId, setLeadId] = useState<string>(access.userId);
@@ -139,7 +138,7 @@ export default function NewInspectionPage() {
       const res = await fetch('/api/inspections/new', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
         body: JSON.stringify({ device: webDevice(), templateId, record, leadId: leadId || null, notes: f.notes, today: localToday(),
-          buildings: f.homeType === 'Site-Built' ? withHome.filter(id => intakeExtras(offerTpl).some(b => b.id === id)) : [],
+          buildings: f.homeType === 'Site-Built' && !f.deltasNone ? buildingsNamed(offerTpl, f.deltas.join(', ')) : [],
           extras: { waterSource: f.waterSource || undefined, sewerType: f.sewerType || undefined, gasSupply: f.gasSupply || undefined,
             lockbox: f.lockbox.trim() || undefined, addOns: record.deltas || undefined, addOnServices: record.addOnServices || undefined,
             addonSpecialist: vendorName || undefined, agentName: a.name || undefined, agentEmail: a.email || undefined, agentPhone: a.phone || undefined } }),
@@ -250,12 +249,6 @@ export default function NewInspectionPage() {
               </div>
               <div><span className={LABEL}>Home type *</span>
                 <div className="flex flex-wrap gap-1.5">{intakeHomeTypes(offerTpl).map(h => <button key={h} type="button" className={CHIP(f.homeType === h)} onClick={() => set('homeType', h)}>{HOME_TYPE_LABEL[h]}</button>)}</div></div>
-              {f.homeType === 'Site-Built' && intakeExtras(offerTpl).length > 0 && (
-                <div><span className={LABEL}>Buildings with the home</span>
-                  <div className="flex flex-wrap gap-1.5">{intakeExtras(offerTpl).map(b => { const on = withHome.includes(b.id); return (
-                    <button key={b.id} type="button" aria-pressed={on} className={CHIP(on)} onClick={() => setWithHome(on ? withHome.filter(x => x !== b.id) : [...withHome, b.id])}>{b.name}</button>); })}</div>
-                  <p className="mt-1 text-xs text-muted">Each one is its own building on the job, with its own systems.</p></div>
-              )}
               {f.homeType === 'Multi-Unit' && (() => {
                 const made = unitBuildingNames({ homeType: 'Multi-Unit', unitCount: f.unitCount, buildingCount: layout === 'many' ? f.buildingCount : '1' });
                 return (
@@ -279,8 +272,11 @@ export default function NewInspectionPage() {
               <div><span className={LABEL}>Also on the property *</span>
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" className={CHIP(f.deltasNone)} onClick={() => setF(p => ({ ...p, deltasNone: !p.deltasNone, deltas: [] }))}>None</button>
-                  {DELTA_OPTIONS.map(d => <button key={d} type="button" className={CHIP(f.deltas.includes(d))} onClick={() => setF(p => ({ ...p, deltasNone: false, deltas: p.deltas.includes(d) ? p.deltas.filter(x => x !== d) : [...p.deltas, d] }))}>{d}</button>)}
-                </div></div>
+                  {/* FOLDED IN (owner 2026-11-14, mockup THyGHFhzq8L6tsHGV5kw5p): the template's buildings for a single family
+                      home (each a building of the job), then the features; every pick is kept by name, as before. */}
+                  {[...(f.homeType === 'Site-Built' ? intakeExtras(offerTpl).map(b => b.name) : []), ...PROPERTY_FEATURES].map(d => <button key={d} type="button" className={CHIP(f.deltas.includes(d))} onClick={() => setF(p => ({ ...p, deltasNone: false, deltas: p.deltas.includes(d) ? p.deltas.filter(x => x !== d) : [...p.deltas, d] }))}>{d}</button>)}
+                </div>
+                {f.homeType === 'Site-Built' && buildingsNamed(offerTpl, f.deltas.join(', ')).length > 0 && <p className="mt-1 text-xs text-muted">The job starts with the house, {intakeExtras(offerTpl).filter(b => f.deltas.includes(b.name)).map(b => b.name).join(', ')}, each with its own systems.</p>}</div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {([['waterSource', 'Water', WATER_SOURCE_OPTIONS], ['sewerType', 'Sewer', SEWER_TYPE_OPTIONS], ['gasSupply', 'Gas', GAS_SUPPLY_OPTIONS]] as const).map(([k, l, opts]) => (
                   // Pick every one (owner 2026-11-14: "a house can have multiple … for all of the screens").

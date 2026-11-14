@@ -71,3 +71,24 @@ export function unitBuildingNames(record: Record<string, unknown>): string[] {
   }
   return names.slice(0, MAX_UNIT_BUILDINGS - 1);
 }
+
+// ── ALSO ON THE PROPERTY (owner 2026-11-14: "fold them in", mockup THyGHFhzq8L6tsHGV5kw5p approved) ──────────────────
+// The old intake Add-ons list is split by what each one is: a building (ADU, Detached Garage, Guest House, Well House) is
+// one of the template's building types; a feature stays a feature (below); Pool/Spa is the Pool & spa add-on service.
+// Everything picked is kept, by name, in the job's `addOns` field, as before — the Home Profile and the report read it.
+export const PROPERTY_FEATURES: readonly string[] = ['Crawlspace', 'Solar', 'Radon Mitigation', 'Dual-Fuel Zones'];
+export const NOTHING_ELSE = 'None';
+
+/** The building types whose names are among the picks — the buildings a new job is made with. */
+export function buildingsNamed(tpl: Pick<InspectionTemplate, 'structureTypes'> | null | undefined, picks: string | null | undefined): string[] {
+  const names = new Set(String(picks ?? '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  return intakeExtras(tpl).filter(b => names.has(b.name.toLowerCase())).map(b => b.id);
+}
+
+/** Tap a pick: None stands alone; any other pick clears None. Kept in the order tapped, joined with ", ". */
+export function togglePropertyPick(current: string | null | undefined, name: string): string {
+  const now = String(current ?? '').split(',').map(x => x.trim()).filter(Boolean);
+  if (name === NOTHING_ELSE) return now.includes(NOTHING_ELSE) ? '' : NOTHING_ELSE;
+  const rest = now.filter(x => x !== NOTHING_ELSE);
+  return (rest.some(x => x.toLowerCase() === name.toLowerCase()) ? rest.filter(x => x.toLowerCase() !== name.toLowerCase()) : [...rest, name]).join(', ');
+}
