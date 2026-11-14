@@ -139,6 +139,8 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
     && typeof e.field === 'string' && (/^[^:]+::[^:]+$/.test(e.field) || (e.field === '' && e.value === '*')) && !nonEmpty(e.value) && !nonEmpty(e.reason) && !nonEmpty(e.sentence)) ? null
     : 'must be a list of {field "<nodeId>::<attrId>" (or "" with value "*": from the start), value, reason, sentence}'), class: 'policy', why: 'what the company does not operate — a disclosure in the report' },
   defaultActive:    { check: bool, class: 'policy', why: 'what a new inspection covers' },
+  // 2026-11-14 (owner, add-on services gated by booking): an add-on section — in a job only when booked (addOnServices.ts).
+  addOn:            { check: bool, class: 'policy', why: 'an add-on service, in a job only when it is booked' },
   appliesToTypes:   { check: strList, class: 'policy', why: 'when this item is inspected (legacy Equipment Types)' },
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },
   // LIVE since 2026-10-21 (one rule model): compiled into the inspection's frozen rules at creation (templateRules.ts).

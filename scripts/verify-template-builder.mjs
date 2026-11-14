@@ -41,7 +41,7 @@ const walk = dir => {
 };
 const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
-const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog', 'propertyTypes', 'specialHomes'];
+const CORE = ['templateOps', 'templateValidate', 'templateChangeSets', 'templateDraft', 'templateAuthoring', 'templateOpSummary', 'templateRules', 'structureTypes', 'requirementsContract', 'equipmentCatalog', 'propertyTypes', 'specialHomes', 'addOnServices'];
 // 2026-10-21 (one rule model): the resolver the phone runs, copied from the app's TAXONOMY folder (not templates).
 // 'guidedOrder' since 2026-10-24: the phone preview's item list and Guided Coverage walk run the app's own module.
 const TAXONOMY_CORE = ['applicability', 'guidedOrder'];
@@ -131,6 +131,7 @@ const sourceFiles = () => Object.fromEntries([
   ['typeLayout.ts', read('lib/templates/typeLayout.ts')],
   ['materialLayout.ts', read('lib/templates/materialLayout.ts')],
   ['guidedModel.ts', read('lib/templates/guidedModel.ts')],   // 2026-11-14: guided template setup
+  ['createModel.ts', read('lib/templates/createModel.ts')],   // 2026-11-14: create a template, every answer builds it
   ['systemLabel.ts', read('components/templates/systemLabel.ts')],
   ['moveModel.ts', read('lib/templates/moveModel.ts')],
   ['phonePreviewModel.ts', read('components/templates/phonePreviewModel.ts')],
@@ -1191,6 +1192,52 @@ async function runGuided(files) {
   return results;
 }
 
+// ── CREATE A TEMPLATE: EVERY ANSWER BUILDS IT (owner 2026-11-14, mockup B6BhhbaEivmUiE9GtETeqi → "Approved, start building
+// it") ── executed on the real Ledrix Default: the purpose picks the Ledrix build; home types become property types; the
+// standards are grouped and pre-ticked; the add-ons become sections that start off; the last screen says what each did.
+async function runCreate(files) {
+  const dir = stage(files);
+  const C = await import(pathToFileURL(join(dir, 'createModel.ts')).href);
+  const S = await import(pathToFileURL(join(dir, 'startingPoints.ts')).href);
+  const V = await import(pathToFileURL(join(dir, 'core/templateValidate.ts')).href);
+  const results = {};
+  const r = (k, v) => { results[k] = !!v; };
+  try {
+    const own = { id: 'own1', name: 'Full Home', tree: clone(DEFAULT_TREE), base: 'internachi' };
+    const pts = S.startingPoints({ context: { ...S.EMPTY_CONTEXT ?? {}, services: ['home'], jurisdictions: [], standards: [], affiliations: [], licensing: null, notes: '' },
+      templates: [own], types: [{ templateId: 'own1', name: 'Full Home' }], ledrixDefault: clone(DEFAULT_TREE), ledrixFourPoint: clone(DEFAULT_TREE) });
+    r('create: what it’s for picks the Ledrix build — never a company template; Commercial has none yet; Something else is blank',
+      C.buildFor('home', pts)?.kind === 'ledrix_default' && C.buildFor('new_construction', pts)?.kind === 'ledrix_new_construction'
+      && C.buildFor('four_point', pts)?.kind === 'ledrix_fourpoint' && C.buildFor('other', pts)?.kind === 'blank' && C.buildFor('commercial', pts) === null
+      && C.PURPOSES.find(p => p.id === 'commercial')?.soon === true && !C.PURPOSES.some(p => p.id !== 'commercial' && p.soon));
+    r('create: home types become property types in order; multi unit adds only the layouts picked; 4-Point and blank skip them',
+      C.propertyTypesFor(['multi', 'single_family', 'condo_townhome'], ['multi_unit_many']).join() === 'single_family,condo_townhome,multi_unit_many'
+      && C.propertyTypesFor(['manufactured'], ['multi_unit_one', 'multi_unit_many']).join() === 'manufactured'
+      && C.asksHomeTypes('home') && C.asksHomeTypes('new_construction') && !C.asksHomeTypes('four_point') && !C.asksHomeTypes('other'));
+    const sug = C.suggestedStandards({ jurisdictions: ['ID'], affiliations: ['internachi', 'state_association'] });
+    r('create: standards in three groups, pre-ticked from the state and each membership (saying why); the state reads by name',
+      C.STANDARD_GROUPS.map(g => `${g.id}:${g.ids.join('+')}`).join() === 'state:state_sop,association:internachi_sop+ashi_sop,company:company'
+      && sug.map(x => x.id).join() === 'state_sop,internachi_sop' && sug[1].why === 'you’re a member'
+      && C.suggestedStandards({ jurisdictions: [], affiliations: [] }).length === 0 && C.suggestedStandards({ jurisdictions: [], affiliations: ['state_association'] }).length === 0
+      && C.stateStandardLabel(['Idaho']) === 'Idaho’s' && C.stateStandardLabel(['Idaho', 'Utah']) === 'Idaho’s and Utah’s' && C.stateStandardLabel([]) === 'Your state’s');
+    const a = C.withAddOns(clone(DEFAULT_TREE), ['radon', 'septic'], ['Lead paint', 'lead paint!']);
+    const add = a.ok ? a.tree.systems.filter(s => s.addOn) : [];
+    r('create: the add-ons become sections on the real Ledrix Default — marked add-on, off for new jobs; your own get fresh ids and an item; the draft validates',
+      a.ok && add.map(s => s.id).join() === 'addon_radon,addon_septic,addon_own_lead_paint,addon_own_lead_paint_2'
+      && add.every(s => s.defaultActive === false && s.children.length >= 1) && add[2].label === 'LEAD PAINT'
+      && V.validateTemplate(a.tree).filter(i => i.severity === 'error').length === 0
+      && C.withAddOns(clone(DEFAULT_TREE), [], []).tree.systems.length === DEFAULT_TREE.systems.length);
+    const lines = C.builtLines({ purpose: 'home', systems: 14, homeTypes: ['single_family', 'manufactured'], checkpoints: 6, buildings: ['ADU'], addOns: ['Radon'], states: ['Idaho'], standards: ['InterNACHI'] });
+    r('create: the last screen says what each answer did; the state and standards read "checks coming soon"',
+      lines.map(l => l.text).join(' | ') === 'Home inspection · 14 systems | Single family home · Manufactured | + 6 checkpoints for the kinds of home | ADU · offered at intake | Radon · add-ons offered at intake | Idaho, InterNACHI · checks coming soon'
+      && lines[lines.length - 1].soon === true && C.builtLines({ purpose: 'four_point', systems: 4, homeTypes: ['condo_townhome'], checkpoints: 0, buildings: [], addOns: [], states: [], standards: [] }).length === 1);
+    r('create: the purpose joins the company’s services, once; the name follows the purpose and first state',
+      C.withService(['home'], 'four_point').join() === 'home,four_point' && C.withService(['home'], 'home').join() === 'home'
+      && C.defaultName('home', 'Idaho') === 'Home inspection · Idaho' && C.defaultName('other', null) === 'New template');
+  } catch (e) { r(`create scenario completed (${e?.message})`, false); }
+  return results;
+}
+
 console.log('executed');
 const real = await runExecuted(sourceFiles());
 for (const [k, v] of Object.entries(real)) ok(k, v);
@@ -1200,6 +1247,8 @@ const typesRes = await runTypes(sourceFiles());
 for (const [k, v] of Object.entries(typesRes)) ok(k, v);
 const guidedRes = await runGuided(sourceFiles());
 for (const [k, v] of Object.entries(guidedRes)) ok(k, v);
+const createRes = await runCreate(sourceFiles());
+for (const [k, v] of Object.entries(createRes)) ok(k, v);
 
 // ── 3. Static ─────────────────────────────────────────────────────────────────────────────────────────────
 const BUILDER_DIRS = ['lib/templateBuilder', 'lib/templates', 'components/templates', 'app/app/templates', 'app/api/template-assistant'];
@@ -1255,10 +1304,13 @@ const RULES = {
   // ONE QUESTION PER SCREEN (owner 2026-11-14, mockup MgKsXQx2KDiXpyL4NfAAu9 → "approved"): the create page asks its
   // questions in order, one per screen with Back · Skip · Next; the company's answers are saved leaving the last company
   // question; the last screen creates the private draft.
-  'create: one question per screen, in order; the company answers are saved before Start from; the last screen creates the draft': all => {
+  // RE-ANCHORED 2026-11-14 (owner, mockup B6BhhbaEivmUiE9GtETeqi → approved): every answer builds it — What it's for
+  // first (it picks the Ledrix build: no Start from), one screen per home type, Add-on services; answers saved before Name it.
+  'create: one question per screen, in order; the company answers are saved before Name it; the last screen creates the draft': all => {
     const cp = strip(all['app/app/templates/create/page.tsx'] ?? '');
     const ids = [...cp.matchAll(/\{ id: '(\w+)', q: /g)].map(m => m[1]).join(',');
-    return ids === 'where,what,standards,associations,license,advisories,start,kind,buildings,name'
+    return ids === 'what,where,license,associations,standards,single_family,manufactured,multi,condo,also,addons,advisories,name'
+      && /const chosen = buildFor\(purpose, points\);/.test(cp) && !/id: 'start'|Start from/.test(cp)
       && /id: 'advisories'[^\n]*next: \(\) => void saveAndNext\(\),/.test(cp)
       && /if \(isLast\) \{ void create\(\); return; \}/.test(cp) && /const isLast = cur\?\.id === 'name';/.test(cp)
       && /\{cur\.skip && !isLast && <button/.test(cp) ? [] : ['app/app/templates/create/page.tsx'];
@@ -1387,8 +1439,9 @@ const RULES = {
     const cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ov = strip(all['components/templates/Sections.tsx'] ?? '');
     const out = [];
     // 2026-11-14 (owner, mockup MgKsXQx2KDiXpyL4NfAAu9): one question per screen — the kind of home is its own screen, after a Ledrix starting point.
-    if (!/chosen && asksKindOfHome\(chosen\.kind\) && d\.ledrixDefault \? \[\{ id: 'kind'[\s\S]{0,120}<KindOfHome /.test(cr)) out.push('KindOfHome is not mounted under a Ledrix starting point');
-    if (!/buildStarterTree\(chosen\.kind, forked, d\.ledrixDefault, \{ \.\.\.kindChoice, propertyTypes: picked \}\)/.test(cr) || !/const tree = built\.tree;/.test(cr)) out.push('the draft is not built by buildStarterTree');
+    // RE-ANCHORED 2026-11-14 (owner): the kinds are asked as one screen per home type under What it's for.
+    if (!/\.\.\.\(homes && types\.includes\('manufactured'\) \? \[\{ id: 'manufactured'/.test(cr) || !/const picked = chosen \? \(homes \? propertyTypesFor\(types, layouts\)/.test(cr)) out.push('the home types are not asked per type');
+    if (!/buildStarterTree\(chosen\.kind, forked, d\.ledrixDefault, \{ \.\.\.kindChoice, propertyTypes: picked \}\)/.test(cr) || !/let tree = built\.tree;/.test(cr)) out.push('the draft is not built by buildStarterTree');
     if (!/onOps\(ops\.associationNotInspected\(/.test(ov) || !/onOps\(ops\.olderCutoffYear\(/.test(ov)) out.push('the Overview does not edit the pre-mark / cutoff year through ops');
     return out;
   },
@@ -1401,8 +1454,9 @@ const RULES = {
   },
   'create: no individual license is collected, import is not offered as working, and no compliance is claimed': all => {
     const page = strip(all['app/app/templates/create/page.tsx'] ?? ''), sp = strip(all['lib/templates/startingPoints.ts'] ?? '');
-    const imp = page.slice(page.indexOf('Import a template'), page.indexOf('contact support', page.indexOf('Import a template')));   // the import card only
-    return !/license_number|licenseNumber|License #|license number"/i.test(page) && /Coming later/.test(imp) && !/onClick|role="radio"/.test(imp)
+    // RE-ANCHORED 2026-11-14 (owner: "we would need to import and evaluate template to convert to Ledrix … a totally
+    // different concept"): the create page offers no import at all; that is a later, separate job.
+    return !/license_number|licenseNumber|License #|license number"/i.test(page) && !/Import a template|Spectora|HomeGauge/.test(page)
       && !/compliant|compliance score|%\s*covered/i.test(page + sp) ? [] : ['app/app/templates/create/page.tsx'];
   },
   'suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box': all => {
@@ -1533,7 +1587,7 @@ const RULES = {
       && /on=\{lens \? lens\.isIn\(node\.id\) : true\}/.test(ws) && /const kids = \(system\.children \?\? \[\]\)\.filter\(c => !lens \|\| lens\.isIn\(c\.id\)\);/.test(gl)
       && /lens\.offIn\(system\.id\)/.test(ep) && /const covered = lens \? lens\.isIn\(s\.id\) : isCovered\(tree, s\);/.test(tr)
       && /\(!lens \|\| lens\.isIn\(c\.id\)\)/.test(mb) && /if \(lens && !lens\.isIn\(n\.id\)\) return null;/.test(tb)
-      && /q: 'Other buildings you include\?'/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)   /* 2026-11-14: its own screen */
+      && /q: 'What can come with a single family home\?'/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)   /* 2026-11-14: its own screen; re-anchored 2026-11-14 (owner): asked under Single family home */
       ? [] : ['components/templates/BuildingLens.tsx'];
   },
   'limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there': all => {
@@ -1704,7 +1758,7 @@ const MUT = {
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
   'materials: a card comes and goes with its material (no switch of its own); its materials are edited only on the Material type list': rep('components/templates/Workspace.tsx', 'skip={hostQ?.attr.id} />', ' />'),
-  'create: one question per screen, in order; the company answers are saved before Start from; the last screen creates the draft': rep('app/app/templates/create/page.tsx', ", next: () => void saveAndNext(),", ","),
+  'create: one question per screen, in order; the company answers are saved before Name it; the last screen creates the draft': rep('app/app/templates/create/page.tsx', ", next: () => void saveAndNext(),", ","),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),
@@ -1737,8 +1791,8 @@ const MUT = {
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': add('components/templates/EditorParts.tsx', "\nconst x = <button onClick={() => onOps(ops.setAside(node.id))}>Set this group aside</button>;"),
   'item: no tabs — its rows (Condition · Details · Requirements · Applies when) each open their own screen with back to the item; selecting opens the rows': rep('components/templates/Workspace.tsx', "if (tab === 'details') return facet('details',", "if (tab === 'nope') return facet('details',"),
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': rep('app/app/templates/create/page.tsx', "router.push(`/app/templates/new?draft=${encodeURIComponent(draft.id)}`)", "router.push('/app/templates')"),
-  'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', 'Coming later</Pill>', 'Beta</Pill>'),
-  'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'const tree = built.tree;', 'const tree = forked;'),
+  'create: no individual license is collected, import is not offered as working, and no compliance is claimed': rep('app/app/templates/create/page.tsx', '<p className="text-xs text-muted">A private draft.', '<p className="text-xs text-muted">Import a template from Spectora. A private draft.'),
+  'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': rep('app/app/templates/create/page.tsx', 'let tree = built.tree;', 'let tree = forked;'),
   'suggest: Ledrix\'s parts are offered inside each type\'s list (and at the end of an untyped system\'s list), added only through suggestOps; no separate catalog box': rep('components/templates/EditorParts.tsx', '{!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions', '<CatalogPanel /> {!typeView && catalogTypesForSystem(system).length > 0 && <LedrixSuggestions'),
   'types: a type\'s list tags only Ledrix\'s Typical — no "Also:", "Only", or "All types" text — and the chips carry no suggestion count': rep('components/templates/TypeBuilder.tsx', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : typical(n);', 'return g ? <Pill tone="warn">×1–{g.items.length}</Pill> : <>{typical(n)}<span>Also: {(layout.shows[n.id] ?? []).join(", ")}</span></>;'),
   'types: a typed system shows the by-type layout in its panel (never in the menu), and the preview answers with the chosen type': rep(EDIT, ' answer={answer} />', ' />'),
@@ -1920,6 +1974,16 @@ const EXEC_MUT = [
   { name: 'adding an Off material makes a second card', file: 'materialLayout.ts', from: "if (was) return switchMaterialOnOps(q, was);", to: "", check: 'materials: a company material (Brass) switched off is listed Off too, and adding "brass" again switches that one on — no second card', run: runTypes },
   { name: 'the new group is made but the item stays put', file: 'moveModel.ts', from: "return [...add, ...ops.move(id, gid, 0)];", to: "return add;", check: 'move: "+ New group" adds the group at the end of the system with the item as its first — ONE change set', run: runTypes },
   { name: 'a duplicate group name makes a second group', file: 'moveModel.ts', from: "!name.trim() || newGroupClash(tree, systemId, name)) return [];", to: "!name.trim()) return [];", check: 'move: a name the system already has as a group is that group (no duplicate); a group, a copied system or a blank name makes nothing', run: runTypes },
+  { name: 'Commercial is buildable', file: 'createModel.ts', from: "home: 'ledrix_default', new_construction: 'ledrix_new_construction', four_point: 'ledrix_fourpoint', commercial: null, other: 'blank',", to: "home: 'ledrix_default', new_construction: 'ledrix_new_construction', four_point: 'ledrix_fourpoint', commercial: 'ledrix_default', other: 'blank',", check: 'create: what it’s for picks the Ledrix build — never a company template; Commercial has none yet; Something else is blank', run: runCreate },
+  { name: 'a company template is the build', file: 'createModel.ts', from: "return kind ? points.find(p => p.kind === kind) ?? null : null;", to: "return points.find(p => p.recommended) ?? (kind ? points.find(p => p.kind === kind) ?? null : null);", check: 'create: what it’s for picks the Ledrix build — never a company template; Commercial has none yet; Something else is blank', run: runCreate },
+  { name: 'multi unit adds both layouts whatever was picked', file: 'createModel.ts', from: "if (types.includes('multi')) layouts.forEach(l => on.add(l));", to: "if (types.includes('multi')) ['multi_unit_one', 'multi_unit_many'].forEach(l => on.add(l));", check: 'create: home types become property types in order; multi unit adds only the layouts picked; 4-Point and blank skip them', run: runCreate },
+  { name: '4-Point asks home types', file: 'createModel.ts', from: "export const asksHomeTypes = (p: Purpose): boolean => p === 'home' || p === 'new_construction';", to: "export const asksHomeTypes = (p: Purpose): boolean => p !== 'other';", check: 'create: home types become property types in order; multi unit adds only the layouts picked; 4-Point and blank skip them', run: runCreate },
+  { name: 'a state association pre-ticks InterNACHI', file: 'createModel.ts', from: "if (c.affiliations.includes('internachi')) out.push", to: "if (c.affiliations.length) out.push", check: 'create: standards in three groups, pre-ticked from the state and each membership (saying why); the state reads by name', run: runCreate },
+  { name: 'the state is pre-ticked with no state picked', file: 'createModel.ts', from: "if (c.jurisdictions.length) out.push({ id: 'state_sop'", to: "if (true) out.push({ id: 'state_sop'", check: 'create: standards in three groups, pre-ticked from the state and each membership (saying why); the state reads by name', run: runCreate },
+  { name: 'an add-on starts on for every job', file: 'core/addOnServices.ts', from: "    defaultActive: false, addOn: true,", to: "    defaultActive: true, addOn: true,", check: 'create: the add-ons become sections on the real Ledrix Default — marked add-on, off for new jobs; your own get fresh ids and an item; the draft validates', run: runCreate },
+  { name: 'two own add-ons share an id', file: 'createModel.ts', from: "for (let i = 2; taken.has(id); i++) id = addOnSystemId(`own_${slug}_${i}`);", to: "", check: 'create: the add-ons become sections on the real Ledrix Default — marked add-on, off for new jobs; your own get fresh ids and an item; the draft validates', run: runCreate },
+  { name: 'standards claim to be checked', file: 'createModel.ts', from: "· checks coming soon`, soon: true });", to: "· checked`, soon: true });", check: 'create: the last screen says what each answer did; the state and standards read "checks coming soon"', run: runCreate },
+  { name: 'the purpose is added twice', file: 'createModel.ts', from: "(services.includes(p) ? [...services] : [...services, p])", to: "[...services, p]", check: 'create: the purpose joins the company’s services, once; the name follows the purpose and first state', run: runCreate },
   { name: 'unknown answer sources pass through', file: 'assistant.ts', from: "source: s === 'company' || s === 'jurisdiction' ? s : 'general'", to: 'source: s', check: 'assistant: answers keep their source labels; unknown sources become general; non-text is dropped', run: runDesktop },
 ];
 // The checks each run really reports, unmutated — what a mutation's `check` must be one of.

@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     notes: typeof body?.notes === 'string' ? body.notes.slice(0, 4000) : '',
     extras: body?.extras && typeof body.extras === 'object' ? body.extras : {},
     today: typeof body?.today === 'string' && /^\d{4}-\d\d-\d\d$/.test(body.today) ? body.today : undefined,
+    // What comes with a single family home (owner 2026-11-14): building type ids, at most 24.
+    buildings: Array.isArray(body?.buildings) ? body.buildings.filter((x: unknown) => typeof x === 'string' && x.length <= 80).slice(0, 24) : [],
   }, { supaUrl: SUPA_URL, anonKey: ANON, token });
   const headers = { 'Cache-Control': 'private, no-store' };
   if (!r.ok) return NextResponse.json({ error: r.error, code: r.code, ...(r.id ? { id: r.id } : {}) }, { status: r.status, headers });

@@ -49,7 +49,7 @@ const FIELD_WORDS: Record<string, string> = {
   description: 'Guidance', keywords: 'Voice words', method: 'Method choices', limitations: 'Limitation reasons',
   methodPrompt: 'Method question', titleFrom: 'Title from an answer', groupUnder: 'Shown under a spec card',
   whenUnknown: 'When the rule is unanswered', icon: 'Icon', locationAxis: 'Location', walkZones: 'Walk zones',
-  trimmedOptions: 'Choices set aside', defaultActive: 'On for new inspections', appliesToTypes: 'Equipment types',
+  trimmedOptions: 'Choices set aside', defaultActive: 'On for new inspections', addOn: 'Add-on service', appliesToTypes: 'Equipment types',
   equipmentTypes: 'Equipment type menu',
 };
 

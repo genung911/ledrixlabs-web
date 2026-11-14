@@ -24,7 +24,7 @@ import { NO_SOURCE, sourceFields, type OrderSource, type SourceChoice } from '@/
 import { SourcePicker } from '@/components/crm/CrmApp';
 import { loadServices, orderForJob, draftInvoiceFor, type Service } from '@/lib/office/api';
 import { webDevice } from '@/lib/findings/edit';
-import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, HOME_TYPES, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
+import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
 
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const AREA = 'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
@@ -38,6 +38,9 @@ const timeWords = (hhmm: string) => { const m = /^(\d\d):(\d\d)$/.exec(hhmm); if
 
 type Person = { mode: 'pick' | 'new'; id: string; name: string; email: string; phone: string };
 const NO_PERSON: Person = { mode: 'pick', id: '', name: '', email: '', phone: '' };
+
+// WHAT THE TEMPLATE OFFERS AT INTAKE (owner 2026-11-14, mockup B6BhhbaEivmUiE9GtETeqi): the app's intakeOffer.ts, copied.
+import { HOME_TYPE_LABEL, MAX_UNIT_BUILDINGS, intakeAddOns, intakeExtras, intakeHomeTypes, intakeLayouts, unitBuildingNames, type UnitLayout } from '@/lib/templateBuilder/core/intakeOffer';
 
 export default function NewInspectionPage() {
   const { access } = useWorkspace();
@@ -55,9 +58,12 @@ export default function NewInspectionPage() {
 
   // the form — the phone's keys
   const [f, setF] = useState({ address: '', city: '', state: '', zip: '', date: localToday(), time: '09:00', yearBuilt: '', sqft: '', bedrooms: '', bathrooms: '',
-    homeType: '', unitCount: '', deltas: [] as string[], deltasNone: false, waterSource: '', sewerType: '', gasSupply: '', inspectionType: '', lockbox: '', notes: '' });
+    homeType: '', unitCount: '', buildingCount: '', deltas: [] as string[], deltasNone: false, waterSource: '', sewerType: '', gasSupply: '', inspectionType: '', lockbox: '', notes: '' });
   const set = (k: keyof typeof f, v: any) => setF(p => ({ ...p, [k]: v }));
   const [templateId, setTemplateId] = useState('');
+  const [withHome, setWithHome] = useState<string[]>([]);       // building types picked for a single family home
+  const [unitLayout, setUnitLayout] = useState<UnitLayout>('one');
+  const [booked, setBooked] = useState<string[]>([]);            // the template's add-on services booked
   const [leadId, setLeadId] = useState<string>(access.userId);
   const [client, setClient] = useState<Person>(NO_PERSON);
   const [agent, setAgent] = useState<Person>(NO_PERSON);
@@ -98,6 +104,10 @@ export default function NewInspectionPage() {
   };
   const typeNames = types.length ? types.map(t => t.name) : Object.keys(TYPE_DEFAULT_TEMPLATE);
   const templateChoices = [...templates.map(t => ({ id: t.id, name: t.name })), ...BASELINES];
+  const offerTpl = templates.find(t => t.id === templateId)?.tree ?? null;
+  const layouts = intakeLayouts(offerTpl);
+  const layout: UnitLayout = layouts.includes(unitLayout) ? unitLayout : layouts[0];
+  const offeredAddOns = intakeAddOns(offerTpl);
   const base = services.find(s => s.id === baseService) ?? null;
   const addonList = services.filter(s => addons.has(s.id));
   const priceNum = price.trim() === '' ? (base?.price ?? 0) : Number(price);
@@ -117,10 +127,11 @@ export default function NewInspectionPage() {
     const record = {
       address: f.address.trim(), city: f.city.trim(), state: f.state.trim(), zip: f.zip.trim(), sqft: f.sqft.trim(), yearBuilt: f.yearBuilt.trim(),
       bedrooms: f.bedrooms.trim(), bathrooms: f.bathrooms.trim(), homeType: f.homeType, unitCount: f.homeType === 'Multi-Unit' ? f.unitCount.trim() : '',
+      buildingCount: f.homeType === 'Multi-Unit' && layout === 'many' ? f.buildingCount.trim() : '',
       waterSource: f.waterSource, sewerType: f.sewerType, gasSupply: f.gasSupply,
       deltas: f.deltasNone ? 'None' : f.deltas.join(', '), inspectionType: f.inspectionType, date: f.date, scheduledTime: timeWords(f.time),
       clientName: c.name, clientEmail: c.email, clientPhone: c.phone, agentName: a.name, agentEmail: a.email, agentPhone: a.phone,
-      inspector: leadName, lockboxCombo: f.lockbox.trim(), addOnServices: addonList.map(s => s.name).join(', '), addonInspector: vendorName, specialNotes: f.notes.trim(),
+      inspector: leadName, lockboxCombo: f.lockbox.trim(), addOnServices: [...new Set([...addonList.map(s => s.name), ...booked.filter(b => offeredAddOns.includes(b))])].join(', '), addonInspector: vendorName, specialNotes: f.notes.trim(),
     };
     setBusy(true);
     try {
@@ -128,6 +139,7 @@ export default function NewInspectionPage() {
       const res = await fetch('/api/inspections/new', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
         body: JSON.stringify({ device: webDevice(), templateId, record, leadId: leadId || null, notes: f.notes, today: localToday(),
+          buildings: f.homeType === 'Site-Built' ? withHome.filter(id => intakeExtras(offerTpl).some(b => b.id === id)) : [],
           extras: { waterSource: f.waterSource || undefined, sewerType: f.sewerType || undefined, gasSupply: f.gasSupply || undefined,
             lockbox: f.lockbox.trim() || undefined, addOns: record.deltas || undefined, addOnServices: record.addOnServices || undefined,
             addonSpecialist: vendorName || undefined, agentName: a.name || undefined, agentEmail: a.email || undefined, agentPhone: a.phone || undefined } }),
@@ -237,8 +249,33 @@ export default function NewInspectionPage() {
                 <div><label className={LABEL} htmlFor="ni-ba">Bathrooms</label><input id="ni-ba" className={FIELD} value={f.bathrooms} onChange={e => set('bathrooms', e.target.value)} /></div>
               </div>
               <div><span className={LABEL}>Home type *</span>
-                <div className="flex flex-wrap gap-1.5">{HOME_TYPES.map(h => <button key={h} type="button" className={CHIP(f.homeType === h)} onClick={() => set('homeType', h)}>{h}</button>)}</div></div>
-              {f.homeType === 'Multi-Unit' && <div className="max-w-[160px]"><label className={LABEL} htmlFor="ni-units">How many units</label><input id="ni-units" className={FIELD} inputMode="numeric" value={f.unitCount} onChange={e => set('unitCount', e.target.value)} /></div>}
+                <div className="flex flex-wrap gap-1.5">{intakeHomeTypes(offerTpl).map(h => <button key={h} type="button" className={CHIP(f.homeType === h)} onClick={() => set('homeType', h)}>{HOME_TYPE_LABEL[h]}</button>)}</div></div>
+              {f.homeType === 'Site-Built' && intakeExtras(offerTpl).length > 0 && (
+                <div><span className={LABEL}>Buildings with the home</span>
+                  <div className="flex flex-wrap gap-1.5">{intakeExtras(offerTpl).map(b => { const on = withHome.includes(b.id); return (
+                    <button key={b.id} type="button" aria-pressed={on} className={CHIP(on)} onClick={() => setWithHome(on ? withHome.filter(x => x !== b.id) : [...withHome, b.id])}>{b.name}</button>); })}</div>
+                  <p className="mt-1 text-xs text-muted">Each one is its own building on the job, with its own systems.</p></div>
+              )}
+              {f.homeType === 'Multi-Unit' && (() => {
+                const made = unitBuildingNames({ homeType: 'Multi-Unit', unitCount: f.unitCount, buildingCount: layout === 'many' ? f.buildingCount : '1' });
+                return (
+                  <div className="space-y-2">
+                    {layouts.length > 1 && <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Layout">{layouts.map(l => (
+                      <button key={l} type="button" role="radio" aria-checked={layout === l} className={CHIP(layout === l)} onClick={() => setUnitLayout(l)}>{l === 'one' ? 'One building' : 'Several buildings'}</button>))}</div>}
+                    <div className="flex flex-wrap gap-3">
+                      {layout === 'many' && <div className="max-w-[160px]"><label className={LABEL} htmlFor="ni-bldgs">Buildings</label><input id="ni-bldgs" className={FIELD} inputMode="numeric" value={f.buildingCount} onChange={e => set('buildingCount', e.target.value.replace(/[^0-9]/g, '').slice(0, 2))} /></div>}
+                      <div className="max-w-[160px]"><label className={LABEL} htmlFor="ni-units">{layout === 'many' ? 'Units in each' : 'Units'}</label><input id="ni-units" className={FIELD} inputMode="numeric" value={f.unitCount} onChange={e => set('unitCount', e.target.value.replace(/[^0-9]/g, '').slice(0, 2))} /></div>
+                    </div>
+                    <p className="text-xs text-muted">Starts with {made.length + 1} {made.length ? 'buildings' : 'building'}: the main one{made.length ? `, ${made.slice(0, 3).join(', ')}${made.length > 3 ? '…' : ''}` : ''} (at most {MAX_UNIT_BUILDINGS}). Rename or remove any on site.</p>
+                  </div>
+                );
+              })()}
+              {offeredAddOns.length > 0 && (
+                <div><span className={LABEL}>Add-on services</span>
+                  <div className="flex flex-wrap gap-1.5">{offeredAddOns.map(a => { const on = booked.includes(a); return (
+                    <button key={a} type="button" aria-pressed={on} className={CHIP(on)} onClick={() => setBooked(on ? booked.filter(x => x !== a) : [...booked, a])}>{a}</button>); })}</div>
+                  <p className="mt-1 text-xs text-muted">Each booked add-on is its own section of the inspection.</p></div>
+              )}
               <div><span className={LABEL}>Also on the property *</span>
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" className={CHIP(f.deltasNone)} onClick={() => setF(p => ({ ...p, deltasNone: !p.deltasNone, deltas: [] }))}>None</button>

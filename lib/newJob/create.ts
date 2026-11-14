@@ -23,6 +23,8 @@ export type NewJobRequest = {
   notes?: string;
   extras?: Record<string, string | undefined>;
   today?: string;
+  /** The building types picked for what comes with a single family home (owner 2026-11-14, intakeOffer.ts). */
+  buildings?: string[];
 };
 export type NewJobDeps = {
   supaUrl: string; anonKey: string; token: string;
@@ -123,7 +125,7 @@ export async function createJobFromWebsite(req: NewJobRequest, deps: NewJobDeps)
       job = await serial(() => C.createComposer().composeNewInspection({
         userId: uid, email: (user as any)?.email ?? null, companyId, companyName: prof?.company_name ?? null, device: req.device,
         template, hiddenIds: Array.isArray(hidden) ? hidden.map(String) : [], caps: { columns, valueKinds, documentKeys },
-        input: { id, templateId, record, leadId: req.leadId ?? null, notes: req.notes ?? '', extras: req.extras ?? {}, today: req.today },
+        input: { id, templateId, record, leadId: req.leadId ?? null, notes: req.notes ?? '', extras: req.extras ?? {}, today: req.today, buildings: req.buildings ?? [] },
       }));
     } catch (e: any) {
       if (e?.name === 'NewInspectionTemplateError') return refuse(422, 'template_unavailable', 'That template could not be loaded, so the inspection was not created. Check Templates and try again.');

@@ -46,6 +46,8 @@ export type TemplateNode = {
   icon?: string;
   defaultActive?: boolean;
   inScope?: boolean;
+  /** System-level (app 2026-11-14, addOnServices.ts): an add-on service — starts off for every new job; booking it at intake switches it into that job's scope. */
+  addOn?: boolean;
   locationAxis?: 'room' | 'elevation' | 'none';
   walkZones?: WalkZone[];
   instanceOf?: string;
