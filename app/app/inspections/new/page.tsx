@@ -24,7 +24,7 @@ import { NO_SOURCE, sourceFields, type OrderSource, type SourceChoice } from '@/
 import { SourcePicker } from '@/components/crm/CrmApp';
 import { loadServices, orderForJob, draftInvoiceFor, type Service } from '@/lib/office/api';
 import { webDevice } from '@/lib/findings/edit';
-import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, HOME_TYPES, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents } from '@/lib/newJob/intake';
+import { DELTA_OPTIONS, GAS_SUPPLY_OPTIONS, HOME_TYPES, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
 
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const AREA = 'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
@@ -246,10 +246,12 @@ export default function NewInspectionPage() {
                 </div></div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {([['waterSource', 'Water', WATER_SOURCE_OPTIONS], ['sewerType', 'Sewer', SEWER_TYPE_OPTIONS], ['gasSupply', 'Gas', GAS_SUPPLY_OPTIONS]] as const).map(([k, l, opts]) => (
-                  <div key={k}><label className={LABEL} htmlFor={`ni-${k}`}>{l}</label>
-                    <select id={`ni-${k}`} className={FIELD} value={(f as any)[k]} onChange={e => set(k, e.target.value)}>
-                      <option value="">Not given</option>{opts.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select></div>))}
+                  // Pick every one (owner 2026-11-14: "a house can have multiple … for all of the screens").
+                  <div key={k} role="group" aria-label={l}><span className={LABEL}>{l}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {opts.map(o => { const on = splitPicks((f as any)[k]).includes(o); return (
+                        <button key={o} type="button" aria-pressed={on} className={CHIP(on)} onClick={() => set(k, togglePick((f as any)[k], o, opts))}>{o}</button>); })}
+                    </div></div>))}
               </div>
               <p className="text-xs text-muted">Utilities from the order. The inspector confirms or corrects them on site.</p>
             </div>
