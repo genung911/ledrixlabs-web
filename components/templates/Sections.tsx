@@ -113,7 +113,7 @@ export function OverviewSection({ tree, status, issues, onGo, onOps, disabled }:
           <Card title="Building types" action={<button className={btn.ghost} onClick={() => onGo('buildings')}>Open</button>}>
             <p>{types.source === 'template' ? 'This template has its own building types: ' : 'Using Ledrix’s default building types: '}{types.types.map(t => t.name).join(', ') || 'none'}.</p>
           </Card>
-          <Card title="Requirements" action={<button className={btn.ghost} onClick={() => onGo('requirements')}>Open</button>}>
+          <Card title="Required photos & readings" action={<button className={btn.ghost} onClick={() => onGo('requirements')}>Open</button>}>
             <p>{reqCount ? `${reqCount} requirement${reqCount === 1 ? '' : 's'} on ${reqItems.length} item${reqItems.length === 1 ? '' : 's'} — checked on the phone before the report is sent.` : 'No company requirements. Inspections use Ledrix’s built-in rules.'}</p>
           </Card>
         </div>
@@ -131,8 +131,8 @@ export function RequirementsSection({ tree, onGo }: { tree: InspectionTemplate; 
   const carried = unpublishableRequirements(tree);
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
-      <div><h2 className="text-xl font-bold tracking-tight text-ink">Requirements</h2>
-        <p className="text-sm text-muted">What inspectors must record, item by item. Add them from an item’s Requirements tab.</p></div>
+      <div><h2 className="text-xl font-bold tracking-tight text-ink">Required photos &amp; readings</h2>
+        <p className="text-sm text-muted">The photos and readings inspectors must capture, item by item. Add them from an item’s Required photos & readings.</p></div>
       <div className="rounded-xl border border-hairline bg-ground px-4 py-3 text-sm text-body" role="status">
         <p>Before the report is sent, the phone lists any item missing its proof — each one opens the item. The inspector can send without it.{carried.length ? <> <span className="font-semibold text-ink">Not publishable yet:</span> inspections can’t use {carried.join('; ')}.</> : null}</p>
       </div>
@@ -162,7 +162,7 @@ export function RequirementsSection({ tree, onGo }: { tree: InspectionTemplate; 
               </li>
             ))}
           </ul>
-        ) : <p className="text-muted">No item carries requirements. Open an item in Systems & Components and use its Requirements tab.</p>}
+        ) : <p className="text-muted">No item asks for a photo or reading yet. Open an item and use its Required photos & readings.</p>}
       </Card>
       <p className="text-[11px] text-muted">Levels: {REQUIREMENT_LEVELS.map(l => LEVEL_LABEL[l]).join(' · ')}. Purposes describe why something is collected and never change how strict it is.</p>
     </div>

@@ -95,7 +95,8 @@ async function checks(src) {
     && /\{assessesCondition\(node\) && <div className="px-4 py-4">[\s\S]{0,200}<FacetRow title="Quick findings"[^\n]*onOpen=\{\(\) => setTab\('quickfindings'\)\} \/>\s*<FacetRow title="Limitations"[^\n]*onOpen=\{\(\) => setTab\('limitations'\)\} \/>/.test(ws)
     && /if \(tab === 'quickfindings'\) return facet\('quickfindings', <ComponentCondition node=\{node\} onOps=\{onOps\} disabled=\{disabled\} \/>, 'condition'\);/.test(ws)
     && /if \(tab === 'limitations'\) return facet\('limitations', <ItemLimitations tree=\{tree\} part=\{node\}[\s\S]{0,300}onOpenUtilities=\{\(\) => setTab\('utilities'\)\} \/>, 'condition'\);/.test(ws)
-    && /onBack=\{back === 'overview' \? \{ label: node\.label, go: \(\) => setTab\('overview'\) \} : \{ label: TAB_LABEL\[back\], go: \(\) => setTab\(back\) \}\}/.test(ws);
+    // 2026-11-14: a materials item's Details is titled Material type (tabName); back still goes to Condition / the item.
+    && /onBack=\{back === 'overview' \? \{ label: node\.label, go: \(\) => setTab\('overview'\) \} : \{ label: tabName\(back\), go: \(\) => setTab\(back\) \}\}/.test(ws);
   out['groups have no Limitations row; a system has one only when an access situation reaches it, and its screen lists only those'] =
     /<GroupDetails tree=\{tree\} system=\{system\} node=\{node\} onOps=\{onOps\} onOpen=\{open\} selected=\{sel\.nodeId\} disabled=\{disabled\} \/>/.test(ws)
     && /const hasAccess = accessGatesOfPart\(templateGates\(tree\), tree\.systems \?\? \[\], system\.id\)\.length > 0;/.test(ws)

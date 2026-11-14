@@ -53,7 +53,7 @@ export function MaterialAnswers({ tree, system, node, onOps, onOpen, selected, d
       {qs.map(q => (
         <div key={q.field} className="overflow-hidden rounded-xl border border-hairline" aria-label={`${q.attr.label || q.node.label} answers`}>
           <p className="border-b border-hairline bg-ground px-3 py-1.5 text-xs font-semibold text-ink">{q.attr.label || q.node.label} <span className="font-normal text-muted">· each answer and the card it brings · the inspector ticks every one seen</span></p>
-          <MaterialQuestionRows q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} />
+          <MaterialQuestionRows q={q} tree={tree} system={system} onOps={onOps} onOpen={onOpen} selected={selected} disabled={disabled} onItsOwnPage />
         </div>
       ))}
     </div>
@@ -72,8 +72,10 @@ function AddItem({ label, onAdd, disabled }: { label: string; onAdd: (name: stri
 
 /** One materials question: a row per answer → the card it brings, each with an On/Off switch; the Off materials under the
  *  list, still shown and marked Off (owner 2026-11-06, mockup LZNLt31XvGjAnMrhhmWL2t); "+ Add material". */
-export function MaterialQuestionRows({ q, tree, system, onOps, onOpen, selected, disabled }: {
+export function MaterialQuestionRows({ q, tree, system, onOps, onOpen, selected, disabled, onItsOwnPage }: {
   q: MaterialQuestion; tree: InspectionTemplate; system: TemplateNode; onOps: OnOps; onOpen: (id: string) => void; selected: string | null; disabled: boolean;
+  /** On the item's own Material type page (2026-11-14) — "Edit the question" would only open the page it is on. */
+  onItsOwnPage?: boolean;
 }) {
   const [name, setName] = useState('');
   const row = (value: string, card: TemplateNode | null, sw: React.ReactNode, off = false) => (
@@ -106,7 +108,7 @@ export function MaterialQuestionRows({ q, tree, system, onOps, onOpen, selected,
         <input value={name} onChange={e => setName(e.target.value)} disabled={disabled} aria-label={`New material for ${label}`}
           placeholder="+ Add material" className={`${field} min-w-[10rem] flex-1 py-1.5`} />
         <button className={btn.secondary + ' px-3 py-1.5'} disabled={disabled || !name.trim()}>Add</button>
-        <button type="button" className={btn.ghost + ' px-2 py-1 text-xs'} onClick={() => onOpen(q.node.id)}>Edit the question</button>
+        {onItsOwnPage ? null : <button type="button" className={btn.ghost + ' px-2 py-1 text-xs'} onClick={() => onOpen(q.node.id)}>Edit the question</button>}
       </form>
     </div>
   );

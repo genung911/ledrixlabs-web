@@ -1243,6 +1243,15 @@ const RULES = {
       && /const allSteps = useMemo\(\(\) => previewSteps\(walkSystems, applies\), \[walkSystems, applies\]\);/.test(p)
       && /const tile = systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\);/.test(p) && /<b>Review &amp; send<\/b>/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
+  // ONE LIST FOR MATERIALS (owner 2026-11-14, mockup WGxSxwd2gAzkxGr4VRhMK2): a material's card has no switch of its own
+  // ("Comes with …" in its place); a materials item's material field is edited only on its Material type list (no Details
+  // switch, no second editor of the same choices).
+  'materials: a card comes and goes with its material (no switch of its own); its materials are edited only on the Material type list': all => {
+    const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), ep = strip(all['components/templates/EditorParts.tsx'] ?? '');
+    return /action=\{cardQ && cardValue \? <button[^\n]*>Comes with \{cardValue\} · on \{displayName\(cardQ\.node\.label\)\}<\/button> : <IncludedSwitch /.test(ws)
+      && /\{!hostQ && sw\('Inspectors record details'/.test(ws) && /<ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} skip=\{hostQ\?\.attr\.id\} \/>/.test(ws)
+      && /\(node\.attributes \?\? \[\]\)\.filter\(a => a\.id !== skip\)\.map\(a => <AttrEditor/.test(ep) ? [] : ['components/templates/Workspace.tsx'];
+  },
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
   'writes: only the three template tables, the company template context and the publish RPC': all => {
     const s = strip(all[API] ?? '');
@@ -1322,7 +1331,8 @@ const RULES = {
   'switch: systems, groups and items have the SAME title-line switch (includeOps); no "Set … aside" button, menu entry or list remains': all => {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tree = strip(all['components/templates/Tree.tsx'] ?? '');
     const bad = [];
-    const sw = [...ws.matchAll(/action=\{<IncludedSwitch [^>]*onChange=\{[^}]*includeOps\(tree, (system|node|off\.node)\.id, (v|true|false)\)/g)].map(m => m[1]);
+    // 2026-11-14: a material's card shows "Comes with …" in the switch's place (the switch is on its material's list).
+    const sw = [...ws.matchAll(/(?:action=\{|: )<IncludedSwitch [^>]*onChange=\{[^}]*includeOps\(tree, (system|node|off\.node)\.id, (v|true|false)\)/g)].map(m => m[1]);
     if (!(sw.includes('system') && sw.filter(x => x === 'node').length === 2 && sw.includes('off.node'))) bad.push(`Workspace switches: ${JSON.stringify(sw)}`);
     const ui = Object.entries(all).filter(([f]) => /^components\/templates\/[^/]+\.tsx$/.test(f)).map(([f, t]) => [f, strip(t)]);
     for (const [f, t] of ui) if (/Set this (system|group|item) aside|label: 'Set aside'|ops\.setAside\(|ops\.restore\(|>Restore</.test(t)) bad.push(f);
@@ -1336,9 +1346,17 @@ const RULES = {
     const ws = strip(all['components/templates/Workspace.tsx'] ?? ''), page = strip(all[EDIT] ?? '');
     // Owner 2026-11-07 (mockup CgiHJ5LqFQb4hAFSrAr3ox): one screen shape at every level. Before: one Item tab (2026-11-06).
     // 2026-11-07 (mockup D55cNLEk1gM9B4cHbTtD1q): the item's limitations moved inside Condition; Condition is its first row.
-    const at = ws.indexOf('<AboutRows>\n          <FacetRow title="Condition"');
+    // RE-ANCHORED 2026-11-14 (owner, mockup WGxSxwd2gAzkxGr4VRhMK2): the rows read Condition · Details · Required photos &
+    // readings · Shows when; a materials item leads with Material type, then its per-material Condition.
+    const at = ws.indexOf('<AboutRows>\n          {(() => {');
     const rows = at < 0 ? '' : ws.slice(at, ws.indexOf('</AboutRows>', at));
-    return at >= 0 && ['Condition', 'Details', 'Requirements', 'Applies when'].every((t, i, a) => rows.indexOf(`<FacetRow title="${t}"`) > (i ? rows.indexOf(`<FacetRow title="${a[i - 1]}"`) : -1))
+    const plain = rows.slice(rows.lastIndexOf('return <>'));
+    const host = rows.slice(rows.indexOf('if (hostQ) {'), rows.indexOf('if (cardQ)'));
+    const inOrder = (txt, keys) => keys.every((k, i) => txt.indexOf(k) >= 0 && (!i || txt.indexOf(k) > txt.indexOf(keys[i - 1])));
+    return at >= 0 && inOrder(plain, ['<FacetRow title="Condition"', '<FacetRow title="Details"', '{rowsReq}', '{rowWhen}'])
+      && /const rowsReq = <FacetRow title="Required photos & readings"/.test(rows) && /const rowWhen = <FacetRow title="Shows when"/.test(rows)
+      && inOrder(host, ['<FacetRow title="Material type"', '<FacetRow title="Condition · per material" line="Each material chosen gets its own condition rating"', '{rowsReq}{rowWhen}'])
+      && /requirements: 'Required photos & readings', applicability: 'Shows when'/.test(ws)
       && ['condition', 'details', 'requirements', 'applicability'].every(t => new RegExp(`if \\(tab === '${t}'\\) return facet\\('${t}',`).test(ws))
       && /if \(tab === 'limitations'\) return facet\('limitations', <ItemLimitations /.test(ws)
       && /onBack=\{back === 'overview' \? \{ label: node\.label, go: \(\) => setTab\('overview'\) \}/.test(ws)
@@ -1673,6 +1691,7 @@ const MUT = {
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
+  'materials: a card comes and goes with its material (no switch of its own); its materials are edited only on the Material type list': rep('components/templates/Workspace.tsx', 'skip={hostQ?.attr.id} />', ' />'),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),

@@ -21,6 +21,10 @@ import { UsuallyLimited } from './UsuallyLimited';
 import { accessGatesOfPart, templateGates } from '@/lib/templates/limitationModel';
 import { useBuildingLens } from './BuildingLens';
 import { MaterialAnswers } from './MaterialsBuilder';
+import { rulesFor } from './phonePreviewModel';
+import { materialLayoutOf } from '@/lib/templates/materialLayout';
+import { whenSentence } from '@/lib/templates/guidedModel';
+import { displayLabel as displayName } from './systemLabel';
 
 type Sel = { systemId: string | null; nodeId: string | null };
 type OnOps = (o: TemplateOp[]) => boolean;
@@ -35,7 +39,7 @@ export type ComponentTab = 'overview' | 'limitations' | 'condition' | 'quickfind
 // both. Build and push"): an item's rows are Condition · Details · Requirements · Applies when; Condition (on) opens Quick
 // findings and Limitations, each with back to Condition. Groups have no Limitations row; a system has one only when an
 // access situation reaches it. 'utilities' is the Utilities screen, opened from the top of the systems list.
-const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', limitations: 'Limitations', condition: 'Condition', quickfindings: 'Quick findings', details: 'Details', requirements: 'Requirements', applicability: 'Applies when', utilities: 'Utilities', expectedlife: 'Expected life' };
+const TAB_LABEL: Record<ComponentTab, string> = { overview: 'Item', limitations: 'Limitations', condition: 'Condition', quickfindings: 'Quick findings', details: 'Details', requirements: 'Required photos & readings', applicability: 'Shows when', utilities: 'Utilities', expectedlife: 'Expected life' };
 
 /** A request to bring one panel section into view (the tree's section rows, owner 2026-11-05). `n` changes per click. */
 export type Reveal = { id: string; n: number };
@@ -149,9 +153,17 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
   const onDetails = (on: boolean) => { const x = ops.switchDetails(node, on); if (x.length && !onOps(x)) return; mark('details', on); };
   const onReqs = (on: boolean) => { const x = ops.switchRequirements(node, on); if (x.length && !onOps(x)) return; mark('reqs', on); if (on) setTab('requirements'); };
   const nothing = !assessesCondition(node) && !detailsOn && !reqsOn;
+  // PER MATERIAL (owner 2026-11-14, mockup WGxSxwd2gAzkxGr4VRhMK2): a materials item is not rated itself — each material
+  // chosen brings its own condition card. Its page leads with Material type; a material's card names the material that
+  // brings it and has no switch of its own (it comes and goes with its material, on the Material type list).
+  const mats = materialLayoutOf(tree, system, rulesFor(tree)).flatMap(g => g.questions);
+  const hostQ = mats.find(q => q.node.id === node.id) ?? null;
+  const cardQ = hostQ ? null : mats.find(q => q.cards.some(c => c.id === node.id) || q.off.some(o => o.card.id === node.id)) ?? null;
+  const cardValue = cardQ ? (cardQ.rows.find(r => r.card?.id === node.id)?.value ?? cardQ.off.find(o => o.card.id === node.id)?.value ?? null) : null;
+  const tabName = (t: ComponentTab) => (t === 'details' && hostQ ? 'Material type' : TAB_LABEL[t]);
   // The screen one of the item's rows opens: same header shape, back goes to the item (Condition's two go back to Condition).
   const facet = (t: Exclude<ComponentTab, 'overview'>, body: React.ReactNode, back: ComponentTab = 'overview') => (
-    <Shell scrollKey={`${sk}|${t}`} reveal={null} kind={TAB_LABEL[t]} title={TAB_LABEL[t]} sub={`${path} › ${node.label}`} onBack={back === 'overview' ? { label: node.label, go: () => setTab('overview') } : { label: TAB_LABEL[back], go: () => setTab(back) }}>
+    <Shell scrollKey={`${sk}|${t}`} reveal={null} kind={tabName(t)} title={tabName(t)} sub={`${path} › ${node.label}`} onBack={back === 'overview' ? { label: node.label, go: () => setTab('overview') } : { label: tabName(back), go: () => setTab(back) }}>
       {body}
     </Shell>
   );
@@ -176,10 +188,12 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
       <FacetRow title="Limitations" line={ownLimits.join(', ') || 'None yet · tap to add'} count={ownLimits.length} onOpen={() => setTab('limitations')} />
     </div></div>}</>);
   if (tab === 'details') return facet('details', <>
-    {sw('Inspectors record details', 'Material, type or count', detailsOn, onDetails)}
-    {detailsOn && <><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} /><ComponentFields node={node} onOps={onOps} disabled={disabled} /></>}</>);
+    {/* A materials item (2026-11-14): its materials are switched on and off only on this list, each with its card —
+        no Details switch above it and no second editor of the same choices below it. */}
+    {!hostQ && sw('Inspectors record details', 'Material, type or count', detailsOn, onDetails)}
+    {detailsOn && <><MaterialAnswers tree={tree} system={system} node={node} onOps={onOps} onOpen={open} selected={sel.nodeId} disabled={disabled} /><ComponentFields node={node} onOps={onOps} disabled={disabled} skip={hostQ?.attr.id} /></>}</>);
   if (tab === 'requirements') return facet('requirements', <>
-    {sw('Requirements', 'Proof photos and readings', reqsOn, onReqs)}
+    {sw('Required photos & readings', 'Photos or readings your inspectors must capture here', reqsOn, onReqs)}
     {reqsOn && <RequirementsEditor tree={tree} node={node} onOps={onOps} disabled={disabled} />}</>);
   if (tab === 'applicability') return facet('applicability', <Applicability tree={tree} system={system} node={node} onOps={onOps} disabled={disabled} onOpenBuildingTypes={onOpenBuildingTypes} />);
   // THE ITEM: its rows, then where else it shows.
@@ -188,13 +202,35 @@ export function NodeWorkspace({ tree, sel, onSelect, onOps, disabled, tab, setTa
     <Shell scrollKey={sk} reveal={reveal} kind="Component" title={node.label} sub={`${path} · ${ON_SUB}`} onBack={close} onRename={node.pointsTo ? undefined : v => onOps(ops.rename(node.id, v))} renameDisabled={disabled}
       tips={{ value: node.description ?? '', what: 'item', onCommit: v => onOps(ops.describe(node.id, v)) }}
       menu={moveMenu(node.id)}
-      action={<IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}>
+      // A material's card has no switch of its own (owner 2026-11-14): it is switched with its material on the Material type list.
+      action={cardQ && cardValue ? <button type="button" className="text-xs font-semibold text-accent-ink hover:underline" onClick={() => onSelect({ systemId: system.id, nodeId: cardQ.node.id })}>Comes with {cardValue} · on {displayName(cardQ.node.label)}</button> : <IncludedSwitch on={lens ? lens.isIn(node.id) : true} label={node.label} disabled={disabled} onChange={v => { if (lens) onOps(lens.set(node.id, v)); else if (!v) onOps(includeOps(tree, node.id, false)); }} />} badge={unseen ? <UnseenPill /> : recordsNothingHere(node) ? <Pill tone="warn">Hidden — nothing to record</Pill> : null}>
       <div className="space-y-5 px-4 py-4">
         <AboutRows>
+          {(() => {
+            // The rows in the order the inspector works: a materials item's Material type first, then its per-material
+            // Condition; every item's photo / reading rule, then when it shows (one plain sentence, or Every inspection).
+            const reqLine = reqs ? `${reqs} photo${reqs === 1 ? '' : 's'} or reading${reqs === 1 ? '' : 's'}` : reqsOn ? 'On · none yet' : 'None';
+            const askPhoto = hostQ ? hostQ.rows.filter(r => r.card && requirementsOf(r.card).length).length : 0;
+            const when = cardQ && cardValue ? `${cardValue} is chosen · ${cardQ.node.label} › Material type` : whenSentence(tree, rulesFor(tree), node)?.replace(/^Appears when /, '').replace(/\.$/, '') ?? 'Every inspection';
+            const rowsReq = <FacetRow title="Required photos & readings" line={hostQ ? `${reqs ? reqLine + ' every time' : 'None every time'}${askPhoto ? ` · ${askPhoto} material${askPhoto === 1 ? '' : 's'} ask${askPhoto === 1 ? 's' : ''} for one` : ''}` : reqLine} count={reqs || undefined} onOpen={() => setTab('requirements')} />;
+            const rowWhen = <FacetRow title="Shows when" line={when.charAt(0).toUpperCase() + when.slice(1)} onOpen={() => setTab('applicability')} />;
+            if (hostQ) {
+              const offered = hostQ.rows.length;
+              return <>
+                <FacetRow title="Material type" line={`${offered} material${offered === 1 ? '' : 's'} offered${hostQ.typed ? ', and Other' : ''} · each brings its own condition card`} onOpen={() => setTab('details')} />
+                <FacetRow title="Condition · per material" line="Each material chosen gets its own condition rating" onOpen={() => setTab('details')} />
+                {rowsReq}{rowWhen}
+              </>;
+            }
+            if (cardQ) return <>{rowWhen}
+          <FacetRow title="Condition" line={assessesCondition(node) ? `Satisfactory · Limitation · Finding${shortcuts ? ` · ${shortcuts} quick finding${shortcuts === 1 ? '' : 's'}` : ''}${ownLimits.length ? ` · ${ownLimits.length} limitation${ownLimits.length === 1 ? '' : 's'}` : ''}` : 'Off — not rated'} onOpen={() => setTab('condition')} />
+                {rowsReq}</>;
+            return <>
           <FacetRow title="Condition" line={assessesCondition(node) ? `Satisfactory · Limitation · Finding${shortcuts ? ` · ${shortcuts} quick finding${shortcuts === 1 ? '' : 's'}` : ''}${ownLimits.length ? ` · ${ownLimits.length} limitation${ownLimits.length === 1 ? '' : 's'}` : ''}` : 'Off — not rated'} onOpen={() => setTab('condition')} />
           <FacetRow title="Details" line={detailsOn ? ((node.attributes ?? []).map(a => a.label).join(' · ') || 'On · nothing asked yet') : 'Off'} onOpen={() => setTab('details')} />
-          <FacetRow title="Requirements" line={reqs ? `${reqs} proof photo${reqs === 1 ? '' : 's'} or reading${reqs === 1 ? '' : 's'}` : reqsOn ? 'On · none yet' : 'Off'} count={reqs || undefined} onOpen={() => setTab('requirements')} />
-          <FacetRow title="Applies when" line={aw === undefined || aw === null ? 'Always, whenever its system is in the inspection' : 'Only when its rule holds'} onOpen={() => setTab('applicability')} />
+                {rowsReq}{rowWhen}
+              </>;
+          })()}
         </AboutRows>
         {nothing && <p className="rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">Nothing to record — inspectors won’t see this item.</p>}
         <AlsoShowIn tree={tree} systemId={system.id} node={node} onOps={onOps} disabled={disabled} />

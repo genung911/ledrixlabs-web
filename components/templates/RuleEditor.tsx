@@ -78,7 +78,7 @@ export function RuleEditor({ tree, forNodeId, rule, onSave, disabled, emptyText,
         </>}
       </div>
       {!fields.length && <p className="text-[11px] text-muted">No other item in this template has spec fields to test.</p>}
-      {!dirty && conds.length > 0 && <p className="text-[11px] text-muted">Applies when {conds.map(c => describeCondition(c, fields)).join(', and ')}.</p>}
+      {!dirty && conds.length > 0 && <p className="text-[11px] text-muted">Shows when {conds.map(c => describeCondition(c, fields)).join(', and ')}.</p>}
     </div>
   );
 }

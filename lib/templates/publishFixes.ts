@@ -39,7 +39,7 @@ export function publishFixes(tree: InspectionTemplate, issues: readonly Issue[],
   //     own default rules still do.
   const t = tree as InspectionTemplate & { requirementOverrides?: unknown; requirementDefaults?: unknown };
   if (t.requirementOverrides !== undefined && !(t.requirementOverrides && typeof t.requirementOverrides === 'object' && !Object.keys(t.requirementOverrides).length))
-    out.push({ key: 'req:overrides', blocks: true, where: 'Requirements', what: 'Changes to Ledrix default requirements', go: { section: 'requirements' } });
+    out.push({ key: 'req:overrides', blocks: true, where: 'Required photos & readings', what: 'Changes to Ledrix default requirements', go: { section: 'requirements' } });
 
   // 2 · building types
   building.errors.forEach((m, i) => out.push({ key: `b:e${i}`, blocks: true, where: 'Building types', what: m, go: { section: 'buildings' } }));

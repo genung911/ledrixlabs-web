@@ -327,15 +327,17 @@ export function ComponentCondition({ node, onOps, disabled }: { node: TemplateNo
 
 // ── a component: Details tab ─────────────────────────────────────────────────────────────────────────────────
 
-export function ComponentFields({ node, onOps, disabled }: { node: TemplateNode; onOps: OnOps; disabled: boolean }) {
+export function ComponentFields({ node, onOps, disabled, skip }: { node: TemplateNode; onOps: OnOps; disabled: boolean;
+  /** A field edited elsewhere — a materials item's material field, edited only on its Material type list (2026-11-14). */
+  skip?: string }) {
   const [newField, setNewField] = useState('');
   return (
     <div className="space-y-5 px-4 py-4">
       <div>
         <p className={label}>Details</p>
         <div className="space-y-3">
-          {(node.attributes ?? []).map(a => <AttrEditor key={a.id} node={node} a={a} onOps={onOps} disabled={disabled} />)}
-          {!node.attributes?.length && <p className="text-xs text-muted">No details yet — what it is (material, type, count), never a grade.</p>}
+          {(node.attributes ?? []).filter(a => a.id !== skip).map(a => <AttrEditor key={a.id} node={node} a={a} onOps={onOps} disabled={disabled} />)}
+          {!(node.attributes ?? []).filter(a => a.id !== skip).length && <p className="text-xs text-muted">{skip ? 'No other details.' : 'No details yet — what it is (material, type, count), never a grade.'}</p>}
         </div>
         <form className="mt-2 flex gap-1.5" onSubmit={e => { e.preventDefault(); if (newField.trim() && onOps(ops.addField(node, newField, [], false))) setNewField(''); }}>
           <input value={newField} onChange={e => setNewField(e.target.value)} placeholder="Add a detail, e.g. Material" aria-label="New detail" disabled={disabled} className={`${field} py-1.5`} />
