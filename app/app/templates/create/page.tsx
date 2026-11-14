@@ -9,7 +9,7 @@
 // lib/templates/api.startNewTemplateDraft — the same call the dialog made — and opens it in the Template Builder; it is
 // never published here. The company's answers are its own declaration (lib/templates/startingPoints honesty rules):
 // recommendations state facts only, requirements coverage reads "not evaluated", and no individual license is asked.
-import { propertyTypeLabel, propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
+import { propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
 import { PropertyTypePicker } from '@/components/templates/PropertyTypes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -38,7 +38,6 @@ type Loaded = {
   context: CompanyContext; rowVersion: number | null; contextSaving: 'server' | 'session';
   ledrixDefault: InspectionTemplate | null; ledrixFourPoint: InspectionTemplate | null;
 };
-const STEPS = ['Company requirements', 'Starting point', 'Create draft', 'Configure'];
 
 export default function CreateTemplatePage() {
   const { access } = useWorkspace();
@@ -59,6 +58,7 @@ export default function CreateTemplatePage() {
   const [ownBuilding, setOwnBuilding] = useState('');
   const [suggestAdv, setSuggestAdv] = useState(true);   // "Should Ledrix suggest advisories from the home's details?"
   const [problem, setProblem] = useState<string | null>(null);
+  const [note, setNote] = useState(false);   // "+ Add a note" on the last screen (the notes field, folded away)
 
   const load = useCallback(async () => {
     if (!access.companyId) { setState({ kind: 'blocked', message: 'Your account is not part of a company yet.' }); return; }
@@ -105,7 +105,7 @@ export default function CreateTemplatePage() {
       } catch (e) { setProblem(e instanceof Error ? e.message : 'Your company details could not be saved.'); setBusy(false); return; }
       setBusy(false);
     }
-    setStep(2);
+    setStep(s => s + 1);
   };
   const create = async () => {
     if (!chosen?.tree || !name.trim()) return;
@@ -133,156 +133,120 @@ export default function CreateTemplatePage() {
     } catch (e) { setProblem(e instanceof Error ? e.message : 'The draft could not be created.'); setBusy(false); }
   };
 
+  // ── ONE QUESTION PER SCREEN (owner 2026-11-14, mockup MgKsXQx2KDiXpyL4NfAAu9 → "approved": "make each screen quick, easy
+  // to read, not text heavy") ── the same answers as before, each on its own screen with Back · Skip · Next; the company's
+  // answers are saved when leaving the last company question (saveAndNext, unchanged); Create is unchanged.
+  type Screen = { id: string; q: string; sub?: string; skip?: boolean; body: React.ReactNode; next?: () => void; ok?: boolean };
+  const tile = (on: boolean, label: string, onClick: () => void, round = false) => (
+    <button key={label} type="button" role={round ? 'radio' : 'checkbox'} aria-checked={on} onClick={onClick}
+      className={`flex min-h-[50px] items-center gap-3 rounded-xl border px-4 text-left text-[15px] font-semibold text-ink ${on ? 'border-2 border-accent bg-accent/10' : 'border-hairline bg-surface hover:bg-ink/5'}`}>
+      <span aria-hidden className={`flex h-5 w-5 shrink-0 items-center justify-center border-2 text-[11px] text-white ${round ? 'rounded-full' : 'rounded-md'} ${on ? 'border-accent bg-accent' : 'border-muted'}`}>{on ? '✓' : ''}</span>{label}
+    </button>
+  );
+  const many = (opts: Option[], values: string[], set: (v: string[]) => void, short: Record<string, string> = {}) => (
+    <div className="grid max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-2">
+      {opts.map(o => tile(values.includes(o.id), short[o.id] ?? o.label, () => set(values.includes(o.id) ? values.filter(v => v !== o.id) : [...values, o.id])))}
+    </div>
+  );
+  const SHORT_SERVICE: Record<string, string> = { home: 'Home inspection', four_point: '4-Point', new_construction: 'New construction', commercial: 'Commercial', other: 'Other' };
+  const SHORT_STANDARD: Record<string, string> = { internachi_sop: 'InterNACHI', ashi_sop: 'ASHI', state_sop: 'Our state’s', company: 'Our own', other: 'Other' };
+  const SHORT_AFFIL: Record<string, string> = { internachi: 'InterNACHI', ashi: 'ASHI', state_association: 'A state association', other: 'Other', none: 'None' };
+  const SHORT_LICENSE: Record<string, string> = { licensed: 'Yes, the state requires one', varies: 'It varies by inspector', not_required: 'No license where we work' };
+  const defaultName = (p: StartingPoint) => {
+    const base = p.kind === 'company' ? `Copy of ${p.title}` : p.kind === 'blank' ? 'New template' : p.title;
+    const st = ctx.jurisdictions[0] ? labelOf(US_STATES, ctx.jurisdictions[0]) : '';
+    return st && p.kind !== 'company' ? `${base} · ${st}` : base;
+  };
+  const screens: Screen[] = [
+    { id: 'where', q: 'Where do you inspect?', skip: true, body: <MultiSelect options={US_STATES} values={ctx.jurisdictions} onChange={v => setCtx({ ...ctx, jurisdictions: v })} placeholder="+ Add a state" ariaLabel="States" /> },
+    { id: 'what', q: 'What do you inspect?', sub: 'Pick every one.', skip: true, body: many(SERVICES, ctx.services, v => setCtx({ ...ctx, services: v }), SHORT_SERVICE) },
+    { id: 'standards', q: 'Which standards do you follow?', skip: true, body: many(STANDARDS, ctx.standards, v => setCtx({ ...ctx, standards: v }), SHORT_STANDARD) },
+    { id: 'associations', q: 'Which associations do you belong to?', skip: true, body: many(AFFILIATIONS, ctx.affiliations, v => setCtx({ ...ctx, affiliations: v }), SHORT_AFFIL) },
+    { id: 'license', q: 'Do your inspectors need a license?', skip: true, body: (
+      <div className="flex max-w-md flex-col gap-2.5" role="radiogroup" aria-label="Licensing">
+        {LICENSING.map(o => tile(ctx.licensing === o.id, SHORT_LICENSE[o.id] ?? o.label, () => setCtx({ ...ctx, licensing: o.id }), true))}
+      </div>) },
+    { id: 'advisories', q: 'What do your reports recommend?', sub: 'Sewer scope, radon, asbestos… Tick the ones you use.', skip: true, next: () => void saveAndNext(),
+      body: <div className="max-w-2xl"><AdvisoriesEditor value={advisories} onChange={setAdvisories} suggest={suggestAdv} onSuggest={setSuggestAdv} /></div> },
+    { id: 'start', q: 'Start from', ok: !!chosen, next: () => { if (chosen && !name) setName(defaultName(chosen)); go(1); }, body: (
+      <div className="flex max-w-xl flex-col gap-2.5">
+        {points.map(p => (
+          <button key={p.key} type="button" role="radio" aria-checked={picked === p.key} onClick={() => setPicked(p.key)}
+            className={`flex flex-col items-start gap-0.5 rounded-xl border px-4 py-3 text-left ${picked === p.key ? 'border-2 border-accent bg-accent/10' : 'border-hairline bg-surface hover:bg-ink/5'}`}>
+            <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">{p.title}{p.recommended && <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-white">BEST FIT</span>}</span>
+            <span className="text-sm text-body">{p.subtitle}</span>
+          </button>
+        ))}
+        <p className="pt-1 text-xs text-muted">Import a template <Pill>Coming later</Pill> · from Spectora, HomeGauge or another tool, contact support.</p>
+      </div>) },
+    ...(chosen && asksKindOfHome(chosen.kind) && d.ledrixDefault ? [{ id: 'kind', q: 'What kind of home?', body: (
+      <KindOfHome point={chosen} source={d.ledrixDefault} props={props ?? propertyTypesOf(chosen.tree)} setProps={setProps}
+              choice={kindChoice} setChoice={setKindChoice} />) }] : []),
+    ...(chosen && chosen.kind !== 'company' ? [{ id: 'buildings', q: 'Other buildings you include?', sub: 'Pick every one.', skip: true, body: (
+      <div className="max-w-xl space-y-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          {LEDRIX_DEFAULT_STRUCTURE_TYPES.map(t => tile(otherBuildings.includes(t.id), t.name, () => setOtherBuildings(cur => cur.includes(t.id) ? cur.filter(x => x !== t.id) : [...cur, t.id])))}
+          {ownBuildings.map(b => tile(true, b, () => setOwnBuildings(ownBuildings.filter(x => x !== b))))}
+        </div>
+        <form className="flex gap-2" onSubmit={e => { e.preventDefault(); const v = ownBuilding.trim(); if (v && !ownBuildings.some(x => x.toLowerCase() === v.toLowerCase())) { setOwnBuildings([...ownBuildings, v]); setOwnBuilding(''); } }}>
+          <input value={ownBuilding} onChange={e => setOwnBuilding(e.target.value)} placeholder="+ Your own (e.g. Pole Barn)" aria-label="Your own building" className={field} />
+          <button className={btn.secondary} disabled={!ownBuilding.trim()}>Add</button>
+        </form>
+      </div>) }] : []),
+    { id: 'name', q: 'Name it', ok: !!name.trim() && !!chosen, body: (
+      <div className="max-w-xl space-y-3">
+        <input id="tpl-name" className={`${field} py-3 text-base font-semibold`} value={name} onChange={e => setName(e.target.value)} maxLength={120} placeholder="e.g. Home inspection · Idaho" aria-label="Template name" />
+        <div className="flex flex-wrap gap-1.5">
+          {[...ctx.jurisdictions.map(j => labelOf(US_STATES, j)), ...ctx.services.map(x => SHORT_SERVICE[x] ?? labelOf(SERVICES, x)), ...ctx.standards.map(x => SHORT_STANDARD[x] ?? labelOf(STANDARDS, x))].map(x => <Pill key={x}>{x}</Pill>)}
+        </div>
+        {note ? <textarea className={field + ' min-h-[70px]'} maxLength={2000} value={ctx.notes} onChange={e => setCtx({ ...ctx, notes: e.target.value })} aria-label="Anything else your company requires" placeholder="Anything else your company requires" />
+          : <button type="button" className={btn.ghost + ' px-0 text-sm'} onClick={() => setNote(true)}>+ Add a note</button>}
+        <p className="text-xs text-muted">A private draft. Nothing reaches inspectors until you publish.</p>
+      </div>) },
+  ];
+  const at = Math.min(step - 1, screens.length - 1);
+  const cur = step > 0 ? screens[at] : null;
+  function go(delta: number) { setProblem(null); setStep(s => Math.max(0, Math.min(screens.length, s + delta))); }
+  const isLast = cur?.id === 'name';
+  const onNext = () => { if (!cur) return; if (isLast) { void create(); return; } if (cur.next) cur.next(); else go(1); };
+
   return (
     <Page>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link href="/app/templates" className="text-sm text-muted hover:text-ink">← Templates</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink">{['Create a template', 'Company requirements', 'Starting point', 'Create your template draft'][step]}</h1>
-      <p className="mt-1 max-w-2xl text-sm text-body">{[
-        'Build an inspection template for your company’s workflow, requirements and reporting.',
-        'Tell Ledrix about your company so it can suggest where to start. These are your own answers — Ledrix doesn’t verify them.',
-        'Choose where your new template starts. You can change anything afterwards in the Template Builder.',
-        'Name your template. It is created as a private draft — nothing changes for your inspectors until you publish it.',
-      ][step]}</p>
-      <Stepper current={Math.max(step, 1)} started={step > 0} />
-      {problem && <div className="mt-4"><Banner tone="error" title={problem} /></div>}
-
-      {step === 0 && (
-        <section className="mt-6 grid gap-6 rounded-2xl border border-hairline bg-surface p-6 md:grid-cols-[1fr_1.2fr] md:p-8">
-          <div className="flex items-center justify-center rounded-2xl bg-accent/5 p-8" aria-hidden>
-            <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="text-accent"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M8.5 10l1.5 1.5L13 8.5M8.5 15.5l1.5 1.5L13 14M14.5 10.5H16M14.5 16H16" /></svg>
+      {problem && <div className="mb-4"><Banner tone="error" title={problem} /></div>}
+      <section className="mx-auto flex min-h-[460px] max-w-3xl flex-col gap-5 rounded-2xl border border-hairline bg-surface px-6 py-7 md:px-10"
+        onKeyDown={e => { const t = e.target as HTMLElement; if (e.key === 'Enter' && cur && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName) && (cur.ok ?? true)) { e.preventDefault(); onNext(); } }}>
+        {!cur ? (
+          <div className="my-auto flex flex-col items-start gap-4">
+            <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-accent"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M8.5 10l1.5 1.5L13 8.5M8.5 15.5l1.5 1.5L13 14M14.5 10.5H16M14.5 16H16" /></svg>
+            </span>
+            <h1 className="text-3xl font-extrabold text-ink">Create a template</h1>
+            <p className="-mt-2 text-[15px] text-body">A few quick questions. About two minutes.</p>
+            {d.contextSaving === 'session' && <p className="text-xs text-muted">Your answers are used for this template only.</p>}
+            <button className={`${btn.primary} mt-2 min-w-[200px]`} onClick={() => go(1)}>Start</button>
           </div>
-          <div className="flex flex-col justify-center gap-3">
-            <h2 className="text-lg font-semibold text-ink">Let’s set the foundation</h2>
-            <p className="text-sm text-body">A few details about your company help Ledrix suggest a starting template. Then you name a private draft and finish it in the Template Builder.</p>
-            <ul className="space-y-1.5 text-sm text-body">
-              <li>✓ Record where you work, what you inspect and the standards you follow</li>
-              <li>✓ See which starting points fit, and why</li>
-              <li>✓ Nothing is published until you choose to publish</li>
-            </ul>
-            <div><button className={btn.primary + ' mt-2'} onClick={() => setStep(1)}>Get started →</button></div>
-          </div>
-        </section>
-      )}
-
-      {step === 1 && (
-        <section className="mt-6 space-y-4">
-          {d.contextSaving === 'session' && <Banner tone="info" title="These answers are used for this template only.">Saving them for your whole company turns on with a database update (ledger #71).</Banner>}
-          <Panel title="Where do you operate?" sub="The states or jurisdictions your company works in.">
-            <MultiSelect options={US_STATES} values={ctx.jurisdictions} onChange={v => setCtx({ ...ctx, jurisdictions: v })} placeholder="Add a state…" ariaLabel="States" />
-          </Panel>
-          <Panel title="What types of inspections do you perform?">
-            <Checks options={SERVICES} values={ctx.services} onChange={v => setCtx({ ...ctx, services: v })} />
-          </Panel>
-          <Panel title="Professional associations" sub="Associations your company belongs to. Membership is not the same as following their standards.">
-            <Checks options={AFFILIATIONS} values={ctx.affiliations} onChange={v => setCtx({ ...ctx, affiliations: v })} />
-          </Panel>
-          <Panel title="Standards you follow" sub="The standards of practice your company says it inspects to. Ledrix doesn’t supply or check them.">
-            <Checks options={STANDARDS} values={ctx.standards} onChange={v => setCtx({ ...ctx, standards: v })} />
-          </Panel>
-          <Panel title="Licensing" sub="How licensing applies to your inspectors. Each inspector’s own license number stays on their profile — it isn’t collected here.">
-            <div className="space-y-1.5" role="radiogroup" aria-label="Licensing">
-              {LICENSING.map(o => (
-                <label key={o.id} className="flex items-center gap-2 text-sm text-body">
-                  <input type="radio" name="licensing" checked={ctx.licensing === o.id} onChange={() => setCtx({ ...ctx, licensing: o.id })} className="h-4 w-4" />{o.label}
-                </label>
-              ))}
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <button type="button" className="text-sm text-muted hover:text-ink" onClick={() => go(-1)}>‹ Back</button>
+              <span className="flex flex-1 gap-[3px]" aria-hidden>{screens.map((x, i) => <i key={x.id} className={`h-1 flex-1 rounded ${i <= at ? 'bg-accent' : 'bg-hairline'}`} />)}</span>
+              <span className="whitespace-nowrap text-xs text-muted">{at + 1} of {screens.length}</span>
             </div>
-          </Panel>
-          {/* Report advisories (owner 2026-11-06, mockup NH8eoefNScGrsemCdofANd, "looks great"): Ledrix's examples to pick,
-              each with when it applies and Suggest / Always add; the list goes on the new draft as its `advisories`. */}
-          <Panel title="Report advisories" sub="What your reports recommend or disclose beyond the inspection — sewer scope, asbestos, lead paint, radon. Tick the ones your company uses.">
-            <AdvisoriesEditor value={advisories} onChange={setAdvisories} suggest={suggestAdv} onSuggest={setSuggestAdv} />
-          </Panel>
-          <Panel title="Anything else your company requires (notes)" sub="Written in your words, for things that aren’t a report sentence. Ledrix doesn’t check templates against it.">
-            <textarea className={field + ' min-h-[80px]'} maxLength={2000} value={ctx.notes} onChange={e => setCtx({ ...ctx, notes: e.target.value })}
-              aria-label="Anything else your company requires" placeholder="e.g. Two inspectors on every home over 4,000 sq ft." />
-          </Panel>
-          <div className="flex items-center justify-between">
-            <button className={btn.secondary} onClick={() => setStep(0)}>Back</button>
-            <button className={btn.primary} disabled={busy} onClick={saveAndNext}>{busy ? 'Saving…' : 'Next: Starting point →'}</button>
-          </div>
-        </section>
-      )}
-
-      {step === 2 && (
-        <section className="mt-6 space-y-3">
-          {!points.some(p => p.recommended) && <p className="text-sm text-muted">No recommendation yet — choose the services you offer on the previous step, or pick any starting point below.</p>}
-          {points.map(p => <PointCard key={p.key} p={p} on={picked === p.key} onPick={() => setPicked(p.key)} />)}
-          {chosen && asksKindOfHome(chosen.kind) && d.ledrixDefault && (
-            <KindOfHome point={chosen} source={d.ledrixDefault} props={props ?? propertyTypesOf(chosen.tree)} setProps={setProps}
-              choice={kindChoice} setChoice={setKindChoice} />
-          )}
-          <div className="flex items-center gap-4 rounded-xl border border-dashed border-hairline px-4 py-3 opacity-70">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-ink">Import a template <Pill>Coming later</Pill></p>
-              <p className="text-xs text-muted">Bringing in a template from Spectora, HomeGauge or another tool isn’t available here yet. Ledrix can help you move one over — contact support.</p>
+            <h1 className="max-w-[24ch] text-3xl font-extrabold leading-tight text-ink">{cur.q}</h1>
+            {cur.sub && <p className="-mt-3 text-[15px] text-body">{cur.sub}</p>}
+            {cur.body}
+            <div className="mt-auto flex flex-wrap gap-2.5 pt-4">
+              {cur.skip && !isLast && <button className={btn.secondary} onClick={() => (cur.next ? cur.next() : go(1))}>Skip</button>}
+              <button className={`${btn.primary} min-w-[200px] flex-1 sm:flex-none`} disabled={busy || !(cur.ok ?? true)} onClick={onNext}>
+                {busy ? (isLast ? 'Creating…' : 'Saving…') : isLast ? 'Create and set it up ›' : 'Next'}
+              </button>
             </div>
-          </div>
-          <div className="flex items-center justify-between pt-2">
-            <button className={btn.secondary} onClick={() => setStep(1)}>Back</button>
-            <button className={btn.primary} disabled={!chosen} onClick={() => { if (!name && chosen && chosen.kind !== 'blank') setName(chosen.kind === 'company' ? `Copy of ${chosen.title}` : chosen.title); setStep(3); }}>Next: Create draft →</button>
-          </div>
-        </section>
-      )}
-
-      {step === 3 && chosen && (
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-          <div className="space-y-3 rounded-2xl border border-hairline bg-surface p-5">
-            <p className={label}>Starting point</p>
-            <p className="text-base font-semibold text-ink">{chosen.title}</p>
-            <p className="text-sm text-body">{chosen.subtitle}</p>
-            <p className="text-sm text-body">{chosen.kind === 'blank' ? 'No systems — you add your own.' : `${chosen.systems.length} systems covered by default · ${chosen.componentCount} items`}</p>
-            {!!chosen.systems.length && <p className="text-xs text-muted">{chosen.systems.join(' · ')}</p>}
-            <button className={btn.ghost + ' text-xs'} onClick={() => setStep(2)}>Change starting point</button>
-          </div>
-          <div className="space-y-4 rounded-2xl border border-hairline bg-surface p-5">
-            <div>
-              <label htmlFor="tpl-name" className={label}>Template name *</label>
-              <input id="tpl-name" className={field} value={name} onChange={e => setName(e.target.value)} maxLength={120} placeholder="e.g. Home inspection — Idaho" />
-            </div>
-            <div>
-              <p className={label}>Property types</p>
-              <PropertyTypePicker value={props ?? propertyTypesOf(chosen.tree)} onChange={setProps} />
-              <p className="mt-1 text-[11px] text-muted">What this template is for. You can change it later.</p>
-            </div>
-            {/* OTHER BUILDINGS (owner 2026-11-06, mockup HHfBh3wvLanc1CG4UcNxaU): asked about the home this template is for.
-                Each starts with Ledrix's sensible systems; the Template Builder's strip narrows them. */}
-            {chosen.kind !== 'company' && (
-              <div>
-                <p className={label}>What other buildings do you include with a {(() => { const p = (props ?? propertyTypesOf(chosen.tree))[0]; return p ? propertyTypeLabel(p) : 'home'; })()}?</p>
-                <div className="grid gap-1.5 sm:grid-cols-2" role="group" aria-label="Other buildings">
-                  {LEDRIX_DEFAULT_STRUCTURE_TYPES.map(t => (
-                    <label key={t.id} className="flex items-center gap-2 text-sm text-body">
-                      <input type="checkbox" className="h-4 w-4" checked={otherBuildings.includes(t.id)} onChange={e => setOtherBuildings(cur => e.target.checked ? [...cur, t.id] : cur.filter(x => x !== t.id))} />{t.name}
-                    </label>
-                  ))}
-                </div>
-                <form className="mt-1.5 flex flex-wrap gap-1.5" onSubmit={e => { e.preventDefault(); const v = ownBuilding.trim(); if (v && !ownBuildings.some(x => x.toLowerCase() === v.toLowerCase())) { setOwnBuildings([...ownBuildings, v]); setOwnBuilding(''); } }}>
-                  <input value={ownBuilding} onChange={e => setOwnBuilding(e.target.value)} placeholder="+ Your own (e.g. Pole Barn)" aria-label="Your own building" className={`${field} min-w-[10rem] flex-1 py-1.5 text-sm`} />
-                  <button className={btn.secondary + ' px-3 py-1.5 text-xs'} disabled={!ownBuilding.trim()}>Add</button>
-                </form>
-                {ownBuildings.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1.5">{ownBuildings.map(b => <button key={b} type="button" onClick={() => setOwnBuildings(ownBuildings.filter(x => x !== b))}><Pill>{b} ✕</Pill></button>)}</div>}
-                <p className="mt-1 text-[11px] text-muted">The home itself is always the first building. Pick what’s in each one in the Template Builder.</p>
-              </div>
-            )}
-            <div>
-              <p className={label}>Your company context</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[...ctx.jurisdictions, ...ctx.services.map(s => labelOf(SERVICES, s)), ...ctx.standards.map(s => labelOf(STANDARDS, s))].map(x => <Pill key={x}>{x}</Pill>)}
-                {!ctx.jurisdictions.length && !ctx.services.length && !ctx.standards.length && <span className="text-xs text-muted">None given.</span>}
-              </div>
-              <p className="mt-1 text-[11px] text-muted">For your reference — it isn’t written into the template.</p>
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <button className={btn.secondary} onClick={() => setStep(2)}>Back</button>
-              <button className={btn.primary} disabled={busy || !name.trim()} onClick={create}>{busy ? 'Creating…' : 'Create draft & open Template Builder →'}</button>
-            </div>
-            <p className="text-xs text-muted">A private draft. {chosen.kind === 'company' ? 'Your original template is not changed. ' : ''}Only the owner can publish it.</p>
-          </div>
-        </section>
-      )}
+          </>
+        )}
+      </section>
     </Page>
   );
 }
@@ -307,11 +271,7 @@ function KindOfHome({ point, source, props, setProps, choice, setChoice }: {
   const kindLabel = (k: string) => SPECIAL_KINDS.find(x => x.id === k)?.label ?? k;
   const sysLabel = (id: string) => (labelOfId.get(id) ?? id).replace(/\b\w+/g, w => w[0] + w.slice(1).toLowerCase());
   return (
-    <div className="space-y-4 rounded-2xl border-2 border-accent/40 bg-surface p-5" aria-label="What kind of home is this template for?">
-      <div>
-        <p className="text-sm font-semibold text-ink">What kind of home is this template for?</p>
-        <p className="text-xs text-muted">Ledrix adds the checkpoints each kind needs. Untick any you don’t want — you can change everything later in the Template Builder.</p>
-      </div>
+    <div className="max-w-2xl space-y-4" aria-label="What kind of home is this template for?">
       <div>
         <p className={label}>Property type</p>
         <PropertyTypePicker value={props} onChange={setProps} />
@@ -339,6 +299,10 @@ function KindOfHome({ point, source, props, setProps, choice, setChoice }: {
         )}
       </div>
 
+      {/* The checkpoints each kind adds, folded away (2026-11-14: "not text heavy") — open to untick any. */}
+      {plan.kinds.length > 0 && (<details className="rounded-xl border border-hairline">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-ink">Adds {plan.ticked.length} checkpoint{plan.ticked.length === 1 ? '' : 's'} · See them</summary>
+        <div className="space-y-2 p-2">
       {plan.kinds.map(k => {
         const rows = starterCheckpoints([k]);
         const n = rows.filter(r => !off.has(r.id)).length;
@@ -362,6 +326,8 @@ function KindOfHome({ point, source, props, setProps, choice, setChoice }: {
           </details>
         );
       })}
+        </div>
+      </details>)}
 
       {plan.condo && (
         <div className="space-y-2 rounded-xl bg-warn/10 px-3 py-2 text-sm text-body">
@@ -373,55 +339,12 @@ function KindOfHome({ point, source, props, setProps, choice, setChoice }: {
         </div>
       )}
 
-      <p className="border-t border-hairline pt-3 text-sm text-body">
-        {!plan.kinds.length && !plan.condo ? <>The {point.title} as it is — nothing added.</>
-          : <><strong className="text-ink">{point.title}</strong> + <strong className="text-ink">{plan.ticked.length}</strong> checkpoint{plan.ticked.length === 1 ? '' : 's'}{plan.kinds.length ? ` (${plan.kinds.map(kindLabel).join(', ')})` : ''}{plan.condo && choice.associationPremark ? ' · association pre-mark on' : ''}</>}
-      </p>
     </div>
   );
 }
 
-function Stepper({ current, started }: { current: number; started: boolean }) {
-  return (
-    <ol className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Progress">
-      {STEPS.map((s, i) => {
-        const n = i + 1, done = started && n < current, on = started && n === current;
-        return (
-          <li key={s} className="flex items-center gap-2 text-sm" aria-current={on ? 'step' : undefined}>
-            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${done ? 'bg-accent text-white' : on ? 'border-2 border-accent text-accent' : 'border border-hairline text-muted'}`}>{done ? '✓' : n}</span>
-            <span className={on ? 'font-semibold text-ink' : 'text-muted'}>{s}</span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
-function Panel({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-hairline bg-surface p-5">
-      <p className="text-sm font-semibold text-ink">{title}</p>
-      {sub && <p className="mb-3 mt-0.5 text-xs text-muted">{sub}</p>}
-      {!sub && <div className="mb-3" />}
-      {children}
-    </div>
-  );
-}
 
-function Checks({ options, values, onChange }: { options: Option[]; values: string[]; onChange: (v: string[]) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map(o => {
-        const on = values.includes(o.id);
-        return (
-          <label key={o.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${on ? 'border-accent bg-accent/5 text-ink' : 'border-hairline text-body'}`}>
-            <input type="checkbox" className="h-4 w-4" checked={on} onChange={() => onChange(on ? values.filter(v => v !== o.id) : [...values, o.id])} />{o.label}
-          </label>
-        );
-      })}
-    </div>
-  );
-}
 
 function MultiSelect({ options, values, onChange, placeholder, ariaLabel }: { options: Option[]; values: string[]; onChange: (v: string[]) => void; placeholder: string; ariaLabel: string }) {
   return (
@@ -439,37 +362,3 @@ function MultiSelect({ options, values, onChange, placeholder, ariaLabel }: { op
   );
 }
 
-function PointCard({ p, on, onPick }: { p: StartingPoint; on: boolean; onPick: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className={`rounded-2xl border p-4 ${on ? 'border-accent bg-accent/5' : 'border-hairline bg-surface'}`}>
-      <div className="flex flex-wrap items-start gap-3">
-        <button type="button" role="radio" aria-checked={on} onClick={onPick} className="flex min-w-0 flex-1 items-start gap-3 text-left">
-          <span className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${on ? 'border-accent' : 'border-hairline'}`}>{on && <span className="h-2 w-2 rounded-full bg-accent" />}</span>
-          <span className="min-w-0">
-            <span className="flex flex-wrap items-center gap-2">
-              {p.recommended && <Pill tone="accent">Recommended</Pill>}
-              <span className="text-sm font-semibold text-ink">{p.title}</span>
-              <span className="text-xs text-muted">{p.kind === 'company' ? 'Your template' : p.kind === 'blank' ? '' : 'From Ledrix'}</span>
-            </span>
-            <span className="mt-0.5 block text-xs text-body">{p.subtitle}</span>
-          </span>
-        </button>
-        {p.kind !== 'blank' && <button type="button" className={btn.ghost + ' text-xs'} aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Hide details' : 'Details'}</button>}
-      </div>
-      {(open || on) && (
-        <div className="ml-7 mt-3 grid gap-3 text-xs md:grid-cols-3">
-          <div><p className="font-semibold text-ink">Why it fits</p>
-            {p.reasons.length ? <ul className="mt-1 space-y-0.5 text-body">{p.reasons.map(r => <li key={r}>• {r}</li>)}</ul>
-              : <p className="mt-1 text-muted">Nothing Ledrix knows about your company points to it — it’s still available to choose.</p>}
-            {p.kind !== 'blank' && <p className="mt-2 text-muted">{p.systems.length} systems on by default · {p.componentCount} items</p>}
-          </div>
-          <div><p className="font-semibold text-ink">Requirements coverage</p><p className="mt-1 text-body">{p.coverage.text}</p></div>
-          <div><p className="font-semibold text-ink">Check yourself</p>
-            {p.review.length ? <ul className="mt-1 space-y-0.5 text-body">{p.review.map(r => <li key={r}>• {r}</li>)}</ul> : <p className="mt-1 text-muted">Nothing flagged from your answers.</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}

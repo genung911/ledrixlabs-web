@@ -1252,6 +1252,17 @@ const RULES = {
       && /\{!hostQ && sw\('Inspectors record details'/.test(ws) && /<ComponentFields node=\{node\} onOps=\{onOps\} disabled=\{disabled\} skip=\{hostQ\?\.attr\.id\} \/>/.test(ws)
       && /\(node\.attributes \?\? \[\]\)\.filter\(a => a\.id !== skip\)\.map\(a => <AttrEditor/.test(ep) ? [] : ['components/templates/Workspace.tsx'];
   },
+  // ONE QUESTION PER SCREEN (owner 2026-11-14, mockup MgKsXQx2KDiXpyL4NfAAu9 → "approved"): the create page asks its
+  // questions in order, one per screen with Back · Skip · Next; the company's answers are saved leaving the last company
+  // question; the last screen creates the private draft.
+  'create: one question per screen, in order; the company answers are saved before Start from; the last screen creates the draft': all => {
+    const cp = strip(all['app/app/templates/create/page.tsx'] ?? '');
+    const ids = [...cp.matchAll(/\{ id: '(\w+)', q: /g)].map(m => m[1]).join(',');
+    return ids === 'where,what,standards,associations,license,advisories,start,kind,buildings,name'
+      && /id: 'advisories'[^\n]*next: \(\) => void saveAndNext\(\),/.test(cp)
+      && /if \(isLast\) \{ void create\(\); return; \}/.test(cp) && /const isLast = cur\?\.id === 'name';/.test(cp)
+      && /\{cur\.skip && !isLast && <button/.test(cp) ? [] : ['app/app/templates/create/page.tsx'];
+  },
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
   'writes: only the three template tables, the company template context and the publish RPC': all => {
     const s = strip(all[API] ?? '');
@@ -1375,7 +1386,8 @@ const RULES = {
   'create: the kind of home is asked under a Ledrix card and the draft is built by buildStarterTree; the Overview edits both fields through ops': all => {
     const cr = strip(all['app/app/templates/create/page.tsx'] ?? ''), ov = strip(all['components/templates/Sections.tsx'] ?? '');
     const out = [];
-    if (!/chosen && asksKindOfHome\(chosen\.kind\) && d\.ledrixDefault && \(\s*<KindOfHome /.test(cr)) out.push('KindOfHome is not mounted under a Ledrix starting point');
+    // 2026-11-14 (owner, mockup MgKsXQx2KDiXpyL4NfAAu9): one question per screen — the kind of home is its own screen, after a Ledrix starting point.
+    if (!/chosen && asksKindOfHome\(chosen\.kind\) && d\.ledrixDefault \? \[\{ id: 'kind'[\s\S]{0,120}<KindOfHome /.test(cr)) out.push('KindOfHome is not mounted under a Ledrix starting point');
     if (!/buildStarterTree\(chosen\.kind, forked, d\.ledrixDefault, \{ \.\.\.kindChoice, propertyTypes: picked \}\)/.test(cr) || !/const tree = built\.tree;/.test(cr)) out.push('the draft is not built by buildStarterTree');
     if (!/onOps\(ops\.associationNotInspected\(/.test(ov) || !/onOps\(ops\.olderCutoffYear\(/.test(ov)) out.push('the Overview does not edit the pre-mark / cutoff year through ops');
     return out;
@@ -1521,7 +1533,7 @@ const RULES = {
       && /on=\{lens \? lens\.isIn\(node\.id\) : true\}/.test(ws) && /const kids = \(system\.children \?\? \[\]\)\.filter\(c => !lens \|\| lens\.isIn\(c\.id\)\);/.test(gl)
       && /lens\.offIn\(system\.id\)/.test(ep) && /const covered = lens \? lens\.isIn\(s\.id\) : isCovered\(tree, s\);/.test(tr)
       && /\(!lens \|\| lens\.isIn\(c\.id\)\)/.test(mb) && /if \(lens && !lens\.isIn\(n\.id\)\) return null;/.test(tb)
-      && /What other buildings do you include with a/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)
+      && /q: 'Other buildings you include\?'/.test(cp) && /tree\.structureTypes = \[\.\.\.seeded, \.\.\.own\];/.test(cp)   /* 2026-11-14: its own screen */
       ? [] : ['components/templates/BuildingLens.tsx'];
   },
   'limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there': all => {
@@ -1692,6 +1704,7 @@ const MUT = {
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
   'materials: a card comes and goes with its material (no switch of its own); its materials are edited only on the Material type list': rep('components/templates/Workspace.tsx', 'skip={hostQ?.attr.id} />', ' />'),
+  'create: one question per screen, in order; the company answers are saved before Start from; the last screen creates the draft': rep('app/app/templates/create/page.tsx', ", next: () => void saveAndNext(),", ","),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),
