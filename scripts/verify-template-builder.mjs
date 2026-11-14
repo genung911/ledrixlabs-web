@@ -114,7 +114,8 @@ function stage(files) {
   const alias = s => s
     .replace(/from '@\/lib\/scope\/core\/taxonomy\/([^']+)'/g, "from './scope/taxonomy/$1'")
     .replace(/from '@\/lib\/templateBuilder\/core\/([^']+)'/g, "from './core/$1'")
-    .replace(/from '@\/lib\/(?:templateBuilder|templates)\/([^']+)'/g, "from './$1'");
+    .replace(/from '@\/lib\/(?:templateBuilder|templates)\/([^']+)'/g, "from './$1'")
+    .replace(/from '@\/components\/templates\/([^']+)'/g, "from './$1'");   // 2026-11-14: guidedModel reads systemLabel / phonePreviewModel
   const fix = s => alias(s).replace(/from '(\.{1,2}\/[^']+)'/g, (m, p) => (p.endsWith('.ts') ? m : p.endsWith('.json') ? `from '${p}' with { type: 'json' }` : `from '${p}.ts'`));
   for (const [rel, src] of Object.entries(files)) writeFileSync(join(dir, rel), fix(src));
   return dir;
@@ -129,6 +130,8 @@ const sourceFiles = () => Object.fromEntries([
   // BUILT BY TYPE (2026-11-05): the layout, and the preview's own rule capture it reads (one source with the phone).
   ['typeLayout.ts', read('lib/templates/typeLayout.ts')],
   ['materialLayout.ts', read('lib/templates/materialLayout.ts')],
+  ['guidedModel.ts', read('lib/templates/guidedModel.ts')],   // 2026-11-14: guided template setup
+  ['systemLabel.ts', read('components/templates/systemLabel.ts')],
   ['moveModel.ts', read('lib/templates/moveModel.ts')],
   ['phonePreviewModel.ts', read('components/templates/phonePreviewModel.ts')],
   ['core/ledrixRules.json', read('lib/templateBuilder/core/ledrixRules.json')],
@@ -1134,6 +1137,60 @@ async function runTypes(files) {
   return results;
 }
 
+// ── GUIDED TEMPLATE SETUP (owner 2026-11-14, mockup CRnpRrr8VpZL4s9rzkj3ms → "Approved, start building it") ──────────
+// On the real Ledrix Default: the steps a system asks in the walk's order (a materials item asks its materials and its
+// photo; a material's own card is never asked on its own), the one-sentence rule, and every answer as the builder's own
+// edits — applied through the draft, so a walk can only make changes the builder already allows.
+async function runGuided(files) {
+  const dir = stage(files);
+  const E = await import(pathToFileURL(join(dir, 'editorModel.ts')).href);
+  const PM = await import(pathToFileURL(join(dir, 'phonePreviewModel.ts')).href);
+  const T = await import(pathToFileURL(join(dir, 'core/templateDraft.ts')).href);
+  const G = await import(pathToFileURL(join(dir, 'guidedModel.ts')).href);
+  const results = {};
+  const r = (k, v) => { results[k] = !!v; };
+  const OWNER = { userId: 'u1', role: 'owner' };
+  try {
+    let d = T.createDraft({ companyId: 'co_1', templateId: 'tpl_g', live: clone(DEFAULT_TREE), now: 7000 });
+    const apply = (o) => { const x = E.applyManual(d, o, OWNER, 7100 + Math.floor(Math.random() * 1000)); if (x.ok) d = x.draft; return x.ok; };
+    const plumbing = () => d.tree.systems.find(s => s.id === 'plumbing');
+    const steps = () => G.guidedStepsOf(d.tree, plumbing(), PM.rulesFor(d.tree));
+    const st0 = steps();
+    const kinds = st0.map(x => `${x.kind}:${x.node.id}`);
+    const mi = kinds.indexOf('materials:plumb_supply');
+    r('guided: a materials item asks its materials, then its photo — and its cards are never asked on their own',
+      mi >= 0 && kinds[mi + 1] === 'materialPhoto:plumb_supply' && !st0.some(x => /Copper Supply Piping|Polybutylene Supply Piping/.test(x.node.label)));
+    const meter = st0.find(x => x.node.id === 'plumb_gas_meter');
+    r('guided: an ordinary item asks whether to inspect it, in one plain sentence when a rule applies',
+      meter?.kind === 'item' && G.whenSentence(d.tree, PM.rulesFor(d.tree), meter.node) === 'Appears when the house has Natural gas.'
+      && G.whenSentence(d.tree, PM.rulesFor(d.tree), st0[mi].node) === null);
+    // Yes · Yes, and require a photo · No — each through the builder's own switch and requirements.
+    const m = () => steps().find(x => x.node.id === 'plumb_gas_meter').node;
+    const a1 = apply(G.itemAnswerOps(d.tree, m(), 'photo')), photo = G.itemAnswerOf(d.tree, m());
+    const a2 = apply(G.itemAnswerOps(d.tree, m(), 'no')), off = G.itemAnswerOf(d.tree, m()), stillAsked = steps().some(x => x.node.id === 'plumb_gas_meter');
+    const a3 = apply(G.itemAnswerOps(d.tree, m(), 'yes')), back = G.itemAnswerOf(d.tree, m());
+    r('guided: "require a photo", "leave it out" and back to "inspect it" are the builder\'s own edits, and a left-out item keeps its place in the walk',
+      a1 && a2 && a3 && photo === 'photo' && off === 'no' && stillAsked && back === 'yes' && !G.requiresPhoto(m()));
+    // Materials: off takes the choice and its card together; on brings both back.
+    const q = () => steps().find(x => x.kind === 'materials' && x.node.id === 'plumb_supply').q;
+    const pvc0 = G.materialChoices(q()).find(c => c.value === 'PVC');
+    const b1 = apply(G.toggleMaterialOps(q(), 'PVC', false)), pvcOff = G.materialChoices(q()).find(c => c.value === 'PVC'), offered = [...q().attr.values];
+    const b2 = apply(G.toggleMaterialOps(q(), 'PVC', true)), pvcOn = G.materialChoices(q()).find(c => c.value === 'PVC');
+    r('guided: switching a material off takes the choice and its card together; on brings both back',
+      pvc0?.on && b1 && pvcOff && !pvcOff.on && !offered.includes('PVC') && b2 && pvcOn?.on && !!pvcOn.card);
+    // A photo for one material sits on that material's card; "every time" moves it to the item.
+    const c1 = apply(G.materialPhotoOps(d.tree, q(), { mode: 'some', values: ['Polybutylene'] }));
+    const some = G.materialPhotoOf(q());
+    const poly = q().rows.find(x => x.value === 'Polybutylene').card;
+    const c2 = apply(G.materialPhotoOps(d.tree, q(), { mode: 'every', values: [] }));
+    const every = G.materialPhotoOf(q());
+    r('guided: a photo "only when it\'s Polybutylene" is required on that material\'s card; "every time" is required on the item and on no card',
+      c1 && some.mode === 'some' && some.values.join() === 'Polybutylene' && G.requiresPhoto(poly)
+      && c2 && every.mode === 'every' && G.requiresPhoto(q().node) && q().rows.every(x => !G.requiresPhoto(x.card)));
+  } catch (e) { r(`guided scenario completed (${e?.message})`, false); }
+  return results;
+}
+
 console.log('executed');
 const real = await runExecuted(sourceFiles());
 for (const [k, v] of Object.entries(real)) ok(k, v);
@@ -1141,6 +1198,8 @@ const desk = await runDesktop(sourceFiles());
 for (const [k, v] of Object.entries(desk)) ok(k, v);
 const typesRes = await runTypes(sourceFiles());
 for (const [k, v] of Object.entries(typesRes)) ok(k, v);
+const guidedRes = await runGuided(sourceFiles());
+for (const [k, v] of Object.entries(guidedRes)) ok(k, v);
 
 // ── 3. Static ─────────────────────────────────────────────────────────────────────────────────────────────
 const BUILDER_DIRS = ['lib/templateBuilder', 'lib/templates', 'components/templates', 'app/app/templates', 'app/api/template-assistant'];
@@ -1519,7 +1578,8 @@ const RULES = {
     return ids.every(id => new RegExp(`\\{ id: '${id}', label: `).test(e) && new RegExp(`section === '${id}' \\? 'flex'|section === '${id}' && `).test(e))
       && /section === 'overview' && \(/.test(e) && /<RequirementsSection tree=\{tree\} onGo=\{go\} \/>/.test(e) && !/CountsPanel/.test(e) ? [] : [EDIT];
   },
-  'workspace: the inspector preview renders the draft tree': all => /<PhonePreview tree=\{tree\} selection=\{sel\}/.test(strip(all[EDIT] ?? '')) ? [] : [EDIT],
+  // 2026-11-14: two previews on the page (Guided and All settings) — every one renders the draft tree.
+  'workspace: the inspector preview renders the draft tree': all => { const e = strip(all[EDIT] ?? ''); const n = (e.match(/<PhonePreview /g) ?? []).length; return n >= 1 && (e.match(/<PhonePreview tree=\{tree\} selection=\{sel\}/g) ?? []).length === n ? [] : [EDIT]; },
   'applicability: rules are written only in the runtime\'s shape (ruleModel.writeRule)': all => {
     const r = strip(all['components/templates/RuleEditor.tsx'] ?? '');
     return /const next = writeRule\(conds\);/.test(r) && /onSave\(next\)/.test(r) && !/appliesWhen/.test(r) ? [] : ['components/templates/RuleEditor.tsx'];
@@ -1528,6 +1588,7 @@ const RULES = {
     const page = strip(all[EDIT] ?? ''), parts = strip(all['components/templates/EditorParts.tsx'] ?? ''), tree = strip(all['components/templates/Tree.tsx'] ?? ''), pv = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return (/typeLayoutOf\(tree, s, defs\)/.test(page) && /const defs = rulesFor\(tree\)/.test(page) && /<PhonePreview tree=\{tree\} selection=\{sel\} onSelect=\{s => select\(s\)\} answer=\{answer\}/.test(page)
       && /typeView=\{selView\}/.test(page)
+      && (page.match(/<PhonePreview /g) ?? []).length === (page.match(/ answer=\{answer\} \/>/g) ?? []).length   /* every preview answers with the chosen type (2026-11-14: Guided too) */
       && /<TypeBuilder tree=\{tree\} system=\{system\} layout=\{typeView\.layout\}/.test(parts) && !/typeViewFor|typedRows/.test(tree)
       && /if \(answer\) next\[answer\.key\] = \[answer\.value\];/.test(pv)) ? [] : [EDIT, 'components/templates/EditorParts.tsx', 'components/templates/Tree.tsx', 'components/templates/PhonePreview.tsx'];
   },

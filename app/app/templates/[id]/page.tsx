@@ -39,6 +39,7 @@ import { validateTemplate } from '@/lib/templateBuilder/core/templateValidate';
 import { applyManual, locate, locateOff } from '@/lib/templates/editorModel';
 import { LEVEL_MEANING, REQUIREMENT_LEVELS, levelCounts, pinnedDefaultSet, requirementsOf, unpublishableRequirements } from '@/lib/templates/requirementModel';
 import { useDraft } from '@/lib/templates/useDraft';
+import { GuidedSetup } from '@/components/templates/GuidedSetup';
 import { previewAnswer, typeLayoutOf, type TypeLayout } from '@/lib/templates/typeLayout';
 import { rulesFor } from '@/components/templates/phonePreviewModel';
 import type { TypeView } from '@/components/templates/EditorParts';
@@ -104,6 +105,9 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
   const [typePick, setTypePick] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<'edit' | 'ledrix'>('edit');
   const [view, setView] = useState<'edit' | 'preview'>('edit');
+  // GUIDED SETUP (owner 2026-11-14, mockup CRnpRrr8VpZL4s9rzkj3ms): "What you inspect" opens on the guided walk; All
+  // settings is today's full editor. Same draft, same edits.
+  const [walk, setWalk] = useState<'guided' | 'all'>('guided');
   const [problem, setProblem] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | 'publish' | 'discard' | 'replace'>(null);
   const [busy, setBusy] = useState(false);
@@ -290,6 +294,12 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
         {/* Edit / Preview at the end of the tab row (2026-11-06, mockup 28zjLMm9yntyJYgbKHcPbZ) — only where the preview
             column doesn't fit beside the editor, as before. */}
         {section === 'systems' && (
+          <div role="tablist" aria-label="How to edit" className="mb-[-6px] inline-flex shrink-0 rounded-lg border border-hairline bg-ground p-0.5">
+            {(['guided', 'all'] as const).map(v => <button key={v} role="tab" aria-selected={walk === v} onClick={() => setWalk(v)}
+              className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${walk === v ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{v === 'guided' ? 'Guided' : 'All settings'}</button>)}
+          </div>
+        )}
+        {section === 'systems' && walk === 'all' && (
           <div role="tablist" aria-label="View" className="mb-[-6px] inline-flex shrink-0 rounded-lg border border-hairline bg-ground p-0.5 2xl:hidden">
             {(['edit', 'preview'] as const).map(v => <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
               className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-body'}`}>{v === 'edit' ? 'Edit' : 'Preview'}</button>)}
@@ -343,6 +353,14 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
           {/* Systems & Components stays mounted (hidden) so Ask Ledrix keeps its conversation across sections. */}
           <div className={`${section === 'systems' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
             <BuildingLensProvider tree={tree} buildingId={building}>
+            {walk === 'guided' ? (
+              <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-4 py-3 lg:px-6 xl:grid-cols-[minmax(0,1fr)_350px]">
+                <GuidedSetup tree={tree} onOps={onOps} disabled={!!readOnly} onFocus={s => setSel(s)} onAllSettings={() => setWalk('all')} />
+                <aside aria-label="Inspector preview" className="flex min-h-0 flex-col items-center gap-3">
+                  <PhonePreview tree={tree} selection={sel} onSelect={s => setSel(s)} answer={answer} />
+                </aside>
+              </div>
+            ) : (
             <div className="grid min-h-0 flex-1 gap-3 px-4 py-3 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-6 2xl:grid-cols-[250px_minmax(0,1fr)_350px]">
               <div className={`${view === 'edit' ? 'flex' : 'hidden'} max-h-[45vh] min-h-0 flex-col lg:max-h-none 2xl:flex`}>
                 {/* THE BUILDING, at the top of the column it acts on (2026-11-06): its systems list is right under it. */}
@@ -370,6 +388,7 @@ function Editor({ companyId, templateId, draftId, owner, me, onDone }: {
                 <CompletionCard tree={tree} nodeId={sel.nodeId} />
               </aside>
             </div>
+            )}
             </BuildingLensProvider>
           </div>
           {/* BACK / NEXT (2026-11-06): a convenience through the steps, never a gate. */}
