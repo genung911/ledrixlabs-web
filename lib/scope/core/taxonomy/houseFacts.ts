@@ -24,7 +24,10 @@ export type HouseFactSource =
  *  garage's None is one of its Details choices. A foundation is never none. */
 /** `question` / `hint`: the wizard's page for this fact (owner 2026-11-13, mockup 79T4… boards 8–10: "a full page for each
  *  one … options larger, easy to read"). `multi`: pick every one that applies. */
-export type HouseFact = { id: string; label: string; group: HouseFactGroup; source: HouseFactSource; none?: true; question?: string; hint?: string; multi?: true };
+export type HouseFact = { id: string; label: string; group: HouseFactGroup; source: HouseFactSource; none?: true; question?: string; hint?: string; multi?: true;
+  /** ASKED ONLY WHEN another fact's answer names one of these (owner 2026-11-14: "When we select heat pump for heating,
+   *  should the next question … be what the backup heat is?") — the same words the item's own rule reads. */
+  askWhen?: { fact: string; includesAny: readonly string[] } };
 
 /** The facts, in the page's order (board 6). */
 export const HOUSE_FACTS: readonly HouseFact[] = [
@@ -32,6 +35,7 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
   { id: 'water',        label: 'Water',        group: 'utilities', source: { kind: 'extras', key: 'waterSource' }, multi: true, question: 'Where does the water come from?', hint: 'Pick every one. A well has a well head and a pressure tank.' },
   { id: 'sewer',        label: 'Sewer',        group: 'utilities', source: { kind: 'extras', key: 'sewerType' }, multi: true, question: 'Where does the sewer go?', hint: 'Pick every one. Septic shows a tank lid or cleanouts in the yard.' },
   { id: 'heats',        label: 'What heats',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_heating', attr: 'fuel_source' }, none: true, question: 'What heats the house?', hint: 'Pick every one.', multi: true },
+  { id: 'backup_heat',  label: 'Backup heat',  group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_backup_heat', attr: 'spec' }, question: 'What is the backup heat?', hint: 'A heat pump or mini-split usually has one: heat strips in the air handler, or a gas furnace (dual fuel).', askWhen: { fact: 'heats', includesAny: ['heat pump', 'mini-split'] } },
   { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true, question: 'What cools the house?', hint: 'Pick every one.', multi: true },
   { id: 'water_heater', label: 'Water heater', group: 'equipment', source: { kind: 'spec', nodeId: 'plumb_wh_type', attr: 'type' }, none: true, question: 'What kind of water heater?', hint: 'The data plate on its side says.' },
   { id: 'fireplace',    label: 'Fireplace',    group: 'equipment', source: { kind: 'spec', nodeId: 'fp_type', attr: 'spec' }, none: true, question: 'Is there a fireplace?', hint: 'Pick its type, or None.' },
@@ -49,6 +53,17 @@ export const HOUSE_FACT_GROUPS: readonly { id: HouseFactGroup; label: string }[]
  *  Fireplace system is never asked what the fireplace is). The extras facts are always asked. */
 export function factsFor(hasNode: (nodeId: string) => boolean): HouseFact[] {
   return HOUSE_FACTS.filter(f => f.source.kind === 'extras' || hasNode(f.source.nodeId));
+}
+
+/** The facts asked NOW, with the answers so far: a fact with `askWhen` only while the fact it follows names one of its
+ *  words (Backup heat while What heats includes Heat Pump or a Mini-Split). The wizard's pages and the count read this. */
+export function factsAsked(facts: readonly HouseFact[], valueOf: (f: HouseFact) => string | null | undefined): HouseFact[] {
+  return facts.filter(f => {
+    if (!f.askWhen) return true;
+    const dep = facts.find(x => x.id === f.askWhen!.fact);
+    const v = String((dep ? valueOf(dep) : '') ?? '').toLowerCase();
+    return f.askWhen.includesAny.some(w => v.includes(w.toLowerCase()));
+  });
 }
 
 /** The absence a None records — applicability's NOT_PRESENT, spelled here because this module imports nothing (the guard
@@ -97,5 +112,6 @@ export function houseSpecValue(extras: Readonly<Record<string, unknown>> | null 
 /** The type questions every other item of their system waits for (type first, phase 2): host id → its field. Read by the
  *  report's verdict — a system whose type is unanswered is never Satisfactory (verify:system-verdict). */
 export const TYPE_HOST_FIELDS: Readonly<Record<string, string>> = Object.fromEntries(
-  HOUSE_FACTS.flatMap(f => (f.source.kind === 'spec' ? [[f.source.nodeId, f.source.attr]] : [])),
+  // A follow-up (Backup heat) is not a type its system waits for (2026-11-14).
+  HOUSE_FACTS.flatMap(f => (f.source.kind === 'spec' && !f.askWhen ? [[f.source.nodeId, f.source.attr]] : [])),
 );

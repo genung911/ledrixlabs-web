@@ -5,6 +5,7 @@
 // HITL: a PROPOSED finding is shown as a proposal, with Ledrix's original wording beside it, and only a person
 // confirms, adjusts or rejects it — in the app, or here (2026-11-02, components/workspace/FindingEditor.tsx) under the
 // app's own rules: the job's lead or the finding's inspector, holding the job's edit lock, through versioned saves.
+import { HouseFactsPanel } from '@/components/workspace/HouseFactsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
@@ -23,7 +24,7 @@ import {
 import { eventLine, loadJobTeam, loadLeaseEvents, teamStrip, type JobTeam, type LeaseEvent } from '@/lib/workspace/team';
 import { inspectionPhase, isPriorityUnset, isPrioritySuggested, normalizeFindingStatus, parseSeverity, photoRef, SEVERITIES_IN_ORDER, type InspectionRow, type ReportRow } from '@/lib/workspace/model';
 
-type Section = 'review' | 'findings' | 'rejected' | 'scope' | 'specs' | 'photos' | 'reports' | 'seal';
+type Section = 'facts' | 'review' | 'findings' | 'rejected' | 'scope' | 'specs' | 'photos' | 'reports' | 'seal';
 type Data = {
   inspection: InspectionRow;
   findings: FindingRow[];
@@ -46,6 +47,8 @@ export default function InspectionPage() {
   const findingsVisible = access.role !== 'office';
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [section, setSection] = useState<Section>('review');
+  // BEFORE YOU START (owner 2026-11-14): the house facts' unanswered count, from the panel once it has loaded.
+  const [factsLeftN, setFactsLeftN] = useState<number | undefined>(undefined);
   const [selected, setSelected] = useState<string | null>(null);
   // Seal & send → Scope at one item (owner 2026-11-04). `n` makes a second click on the same item scroll to it again.
   const [scopeFocus, setScopeFocus] = useState<{ nodeId: string; n: number } | null>(null);
@@ -140,6 +143,7 @@ export default function InspectionPage() {
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
+    { id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },
     { id: 'review', label: 'Review queue', count: groups.review.length, show: findingsVisible },
     { id: 'findings', label: 'Confirmed findings', count: groups.findings.length, show: findingsVisible },
     { id: 'rejected', label: 'Rejected', count: groups.rejected.length, show: findingsVisible && groups.rejected.length > 0 },
@@ -207,7 +211,7 @@ export default function InspectionPage() {
       )}
       {/* When two devices disagree (2026-11-03): only when something does; the job's team settles it. */}
       <ConflictsCard inspectionId={id} lock={lock} canEdit={!!team && team.people.some(p => p.user_id === team.me)} onSettled={load} />
-      <p className="-mt-3 mb-6 text-xs text-muted">Scope checklists, limitations, notes and intake details are kept on the phone and aren’t shown here yet. Photos are. Findings are confirmed, adjusted or rejected here or in the Ledrix app.</p>
+      <p className="-mt-3 mb-6 text-xs text-muted">Notes and the rest of the intake details are kept on the phone and aren’t shown here yet. Before you start, Scope and photos are. Findings are confirmed, adjusted or rejected here or in the Ledrix app.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -242,6 +246,11 @@ export default function InspectionPage() {
           </>
         )}
 
+        {activeSection === 'facts' && (
+          <HouseFactsPanel inspectionId={id} lock={lock} findings={scopeCounts.findings} onLeft={setFactsLeftN}
+            // The job's own people change it (the phone's rule); the Office role and anyone else sees it.
+            canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))} />
+        )}
         {activeSection === 'scope' && (
           <ScopePanel inspectionId={id} team={team} names={names} lock={lock} counts={scopeCounts}
             onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }}

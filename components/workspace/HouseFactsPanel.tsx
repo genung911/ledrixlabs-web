@@ -1,0 +1,138 @@
+'use client';
+
+// Before you start on the website (owner 2026-11-14, mockup 4NAix7t4exh6Lg9CymodEP → "Approved"). "This house has": the
+// house facts the phone asks first, in its order and groups, each answer with Change. Change opens the phone's own choices
+// inline — pick every one where the phone allows several, None where it offers it, "No gas service" / "No garage" alone —
+// and Save writes the same record the phone and Inspection Details use (lib/houseFacts). A change that would take an item
+// with recorded work off the checklist is refused and named, as on the phone. Backup heat shows only while What heats
+// names a heat pump or a mini-split. View only for someone not on the job, or while one of your phones holds it.
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Card, Empty, Loading } from './ui';
+import type { EditLock } from './FindingEditor';
+import { loadTemplate, loadValues, putValue } from '@/lib/scope/api';
+import { valueId, valueMapOf, type ServerValue, type ValueMap } from '@/lib/scope/model';
+import { loadFactsRow, saveFactColumn } from '@/lib/houseFacts/api';
+import { blockedBy, blockedSentence, factsView, nextAnswer, picksOf, NONE_ANSWER, type FactView, type FactsRow } from '@/lib/houseFacts/model';
+import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
+
+type Props = { inspectionId: string; lock: EditLock; canEdit: boolean; findings: Record<string, number>;
+  /** The menu's count follows what is still unanswered. */
+  onLeft?: (n: number) => void };
+
+export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft }: Props) {
+  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; systems: TemplateNode[]; values: ValueMap; row: FactsRow | null }>({ kind: 'loading' });
+  const [open, setOpen] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [template, rows, row] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId), loadFactsRow(inspectionId)]);
+      setState({ kind: 'ready', systems: ((template?.systems ?? []) as TemplateNode[]), values: valueMapOf(rows), row });
+    } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The house facts could not be loaded.' }); }
+  }, [inspectionId]);
+  useEffect(() => { void load(); }, [load]);
+
+  const views = useMemo(() => (state.kind === 'ready' && state.row ? factsView(state.systems, state.values, state.row) : []), [state]);
+  const left = views.filter(v => !v.value).length;
+  useEffect(() => { if (state.kind === 'ready') onLeft?.(left); }, [left, state.kind]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (state.kind === 'loading') return <Card className="xl:col-span-2"><Loading label="Loading the house facts…" /></Card>;
+  if (state.kind === 'error') return <Card className="xl:col-span-2"><Empty>{state.message}</Empty></Card>;
+  if (!state.row) return <Card title="Before you start" className="xl:col-span-2"><Empty>This job isn’t on the server yet.</Empty></Card>;
+  const row = state.row;
+  const editable = canEdit && !lock.heldBy;
+
+  const start = (v: FactView) => { setOpen(v.fact.id); setDraft(v.value); setNote(null); };
+  const save = async (v: FactView) => {
+    if (draft === v.value) { setOpen(null); return; }
+    const blocked = blockedBy(v, draft, state.systems, state.values, row, id => findings[id] ?? 0);
+    if (blocked.length) { setNote({ tone: 'bad', text: blockedSentence(blocked) }); return; }
+    setBusy(true); setNote(null);
+    try {
+      const lease = await lock.ensure();
+      if (!lease) return;
+      if (v.target.kind === 'extras') {
+        const r = await saveFactColumn(row, v.target.column, draft || null, lease);
+        if (r.kind === 'saved') { setState(s => s.kind === 'ready' ? { ...s, row: r.row } : s); setOpen(null); }
+        else if (r.kind === 'changed') { setState(s => s.kind === 'ready' ? { ...s, row: r.row } : s); setNote({ tone: 'warn', text: `${v.fact.label} changed on a phone first. Your change wasn’t saved. Theirs is showing now.` }); setOpen(null); }
+        else if (r.kind === 'locked') { lock.lost(); setNote({ tone: 'warn', text: 'Your phone has this job open. Use “Edit here instead” to change it here.' }); }
+        else setNote({ tone: 'bad', text: r.message });
+        return;
+      }
+      const t = v.target;
+      const prev = (state.values.get(valueId('spec', t.key))?.value as Record<string, unknown> | null) ?? {};
+      const value = { ...prev, label: (prev as { label?: string }).label ?? `${t.node.label}`, value: draft };
+      const r = await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });
+      if (r.kind === 'saved') {
+        setState(s => {
+          if (s.kind !== 'ready') return s;
+          const m = new Map(s.values);
+          m.set(valueId('spec', t.key), { structure_id: 'main', node_key: t.key, kind: 'spec', section_key: t.section, value, updated_by: null, updated_at: new Date().toISOString(), seq: r.seq } as ServerValue);
+          return { ...s, values: m };
+        });
+        setOpen(null);
+      } else if (r.kind === 'refused' && r.reason === 'changed') {
+        await load(); setOpen(null);
+        setNote({ tone: 'warn', text: `${v.fact.label} changed on a phone first. Your change wasn’t saved. Theirs is showing now.` });
+      } else if (r.kind === 'refused') {
+        setNote({ tone: 'bad', text: r.reason === 'not_your_section' ? 'This section belongs to someone else on the team. Only they or the lead can change it.' : 'The server didn’t take that change. Reload and try again.' });
+      } else setNote({ tone: 'bad', text: r.message });
+    } finally { setBusy(false); }
+  };
+
+  const groups = [...new Set(views.map(v => v.group))];
+  const chip = (on: boolean, extra = '') => `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-accent bg-accent font-semibold text-white' : `border-hairline bg-surface text-ink hover:bg-ink/5 ${extra}`}`;
+  return (
+    <Card title="This house has" className="xl:col-span-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-hairline px-4 py-2.5 text-xs text-muted">
+        <span>{views.length - left} of {views.length} answered · Scope is built from these</span>
+        {!canEdit ? <span>View only. You aren’t on this job.</span> : lock.heldBy ? <span>View only while {lock.heldBy} has this job open.</span> : null}
+      </div>
+      {note ? <div role="status" className={`mx-4 mt-3 rounded-xl px-3 py-2.5 text-sm text-ink ${note.tone === 'warn' ? 'bg-amber-600/10' : 'bg-safety/10'}`}>{note.text}</div> : null}
+      {groups.map(g => (
+        <div key={g}>
+          <div className="px-4 pb-1.5 pt-4 font-mono text-[10.5px] font-bold tracking-[0.14em] text-muted">{g}</div>
+          {views.filter(v => v.group === g).map(v => {
+            const isOpen = open === v.fact.id;
+            const picks = picksOf(v, isOpen ? draft : v.value);
+            return (
+              <div key={v.fact.id} className={`border-t border-hairline first:border-t-0 ${isOpen ? 'bg-accent/10' : ''}`}>
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
+                  <span className="text-sm text-body">{v.fact.label}</span>
+                  <span className={`order-3 col-span-2 min-w-0 text-sm font-semibold sm:order-none sm:col-span-1 ${v.display ? 'text-ink' : 'text-amber-700 dark:text-amber-400'}`}>{v.display || 'Not answered'}</span>
+                  {editable ? (
+                    <button type="button" onClick={() => (isOpen ? setOpen(null) : start(v))} className="text-sm font-semibold text-accent-ink hover:underline">
+                      {isOpen ? 'Close' : v.display ? 'Change' : 'Answer'}
+                    </button>
+                  ) : <span />}
+                </div>
+                {isOpen ? (
+                  <div className="px-4 pb-4">
+                    <p className="mb-2.5 text-sm text-body">{v.fact.question ?? v.fact.label}{v.fact.multi ? ' Pick every one.' : ''}</p>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label={v.fact.label}>
+                      {v.options.map(o => {
+                        const on = picks.includes(o);
+                        return <button key={o} type="button" aria-pressed={on} className={chip(on)} onClick={() => setDraft(d => nextAnswer(v, d, o))}>{on ? `✓ ${o}` : o}</button>;
+                      })}
+                      {v.absence ? (() => { const on = picks.includes(v.absence); const word = v.absence === 'None' ? 'No garage' : v.absence;
+                        return <button type="button" aria-pressed={on} className={chip(on, 'border-dashed')} onClick={() => setDraft(d => nextAnswer(v, d, v.absence!))}>{on ? `✓ ${word}` : word}</button>; })() : null}
+                      {v.allowsNone ? (() => { const on = picks.includes(NONE_ANSWER);
+                        return <button type="button" aria-pressed={on} className={chip(on, 'border-dashed')} onClick={() => setDraft(d => nextAnswer(v, d, NONE_ANSWER))}>{on ? '✓ None, this house has none' : 'None, this house has none'}</button>; })() : null}
+                    </div>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <button type="button" onClick={() => setOpen(null)} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5">Cancel</button>
+                      <button type="button" disabled={busy || draft === v.value} onClick={() => void save(v)} className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Saving…' : 'Save'}</button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <p className="border-t border-hairline px-4 py-2.5 text-xs text-muted">Saved to this job. The phone picks a change up on its next sync. A change that would take an item with recorded work off the checklist isn’t made, the same rule as on the phone.</p>
+    </Card>
+  );
+}
