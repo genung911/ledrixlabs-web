@@ -36,12 +36,16 @@ import {
 import { previewNeeds } from '@/lib/templates/requirementModel';
 import { displayLabel } from './systemLabel';
 import { shotsFor } from '@/lib/scope/core/taxonomy/systemShots';
+import { hvacFold } from '@/lib/scope/core/taxonomy/hvacUnits';
+import { HOUSE_FACTS } from '@/lib/scope/core/taxonomy/houseFacts';
+import { COLOR_ICONS, COLOR_SVGS } from './colorIcons';
+import { groupIconFor } from './groupIcons';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
 
 // The app's screens (2026-10-24): the Coverage grid, a system's item list, a guided step, and the system-boundary
 // card that Next / Back stops on between two systems — a state of the walk, never a step.
-type Screen = { kind: 'landing' } | { kind: 'system'; systemId: string; group?: string } | { kind: 'step'; key: string }
+type Screen = { kind: 'landing' } | { kind: 'facts' } | { kind: 'system'; systemId: string; group?: string } | { kind: 'step'; key: string }
   | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' };
 type Sheet = { kind: 'limit' | 'finding' | 'camera'; nodeId: string } | null;
 
@@ -82,6 +86,16 @@ function Glyph({ d, size = 16, color }: { d: string; size?: number; color?: stri
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}><path d={d} /></svg>
   );
 }
+
+/** A tile's icon (app TileIcon, 2026-11-14): Ledrix's own color drawing (colorIcons.ts, a byte-identical copy) when there is
+ *  one and the switch is on, else the white glyph. The drawings are this app's own constants, never user content. */
+function TileIco({ name, size = 24, color }: { name: string; size?: number; color?: string }) {
+  const xml = COLOR_ICONS ? COLOR_SVGS[name] : undefined;
+  if (!xml) return <Icon name={name} size={size} color={color} />;
+  const s = Math.round(size * 1.4);
+  return <span className="pv-ci" style={{ width: s, height: s }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: xml }} />;
+}
+const UNIT_SYSTEMS = ['mini_split', 'heat_pump'];
 
 const toneOf = (p: { met: number; total: number; finding: boolean; limited: boolean }) =>
   p.finding ? '#ff5a5a' : p.limited ? '#f0a020' : p.total && p.met >= p.total ? '#7dc9a0' : p.met ? '#217BE8' : '#8fa0ad';
@@ -126,7 +140,20 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (id: string) => itemApplies(rules, id, sv);
   }, [rules, index, picks, typed]);
   // THE WALK — the app's step list for this draft and these answers (guidedOrder, the app's own module).
-  const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);
+  // THE HEAT PUMP / MINI SPLIT FOLD (app hvacUnits + ScopeScreen, 2026-11-13/14): Heating and Cooling whose only type is the
+  // unit fold into its tile — off the grid, walked right after it, listed on its page with their Photos & details.
+  const fold = useMemo(() => {
+    const sv = previewSpecValue(index, picks, typed);
+    return hvacFold({ heating: sv('hvac_heating::fuel_source'), cooling: sv('hvac_cooling::spec') });
+  }, [index, picks, typed]);
+  const folded = fold.folded as string[];
+  const tileOf = (sysId: string) => (fold.into && folded.includes(sysId) ? fold.into : sysId);
+  const tileSystems = useMemo(() => systems.filter(s => !(fold.into && folded.includes(s.id)) && (!UNIT_SYSTEMS.includes(s.id) || fold.into === s.id)),
+    [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const walkSystems = useMemo(() => (fold.into
+    ? systems.filter(s => !folded.includes(s.id)).flatMap(s => (s.id === fold.into ? [s, ...systems.filter(x => folded.includes(x.id))] : [s]))
+    : systems), [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);
   // DESCRIBED IN DETAILS (app 2026-11-08): the spec fields Details asks — a description step made only of them leaves the
   // walk and folds into one line on its system page; on a card they show as one line, not a grid.
   const detailsKeys = useMemo(() => previewDetailsKeys(tree, rules), [tree, rules]);
@@ -243,7 +270,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const go = (s: Screen) => { setScreen(s); setSheet(null); setAdding(null); if (scrollRef.current) scrollRef.current.scrollTop = 0; };
   const back = () => {
     if (sheet) { setSheet(null); return; }
-    if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: st.systemId } : { kind: 'landing' }); }
+    if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: tileOf(st.systemId) } : { kind: 'landing' }); }
+    else if (screen.kind === 'facts') go({ kind: 'landing' });
     else if (screen.kind === 'cross') go({ kind: 'step', key: screen.from });
     else if (screen.kind === 'system') go(screen.group ? { kind: 'system', systemId: screen.systemId } : { kind: 'landing' });
   };
@@ -290,21 +318,27 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         {/* The count as metadata under the building (app 2026-11-08 — the card moved to Finalize). */}
         <div className="pv-bmeta">{tot.met} of {tot.total} checkpoint{tot.total === 1 ? '' : 's'}</div>
         {systems.length === 0 ? <p className="pv-empty">No system starts in scope. Inspectors would add each one with Add system.</p> : null}
+        {/* THE TILES (app CoverageGrid, 2026-11-13/14): four across, the icon in a square, the name below; Before you start
+            pinned first; a unit tile counts what folded into it. */}
         <div className="pv-tiles">
-          {systems.map(sys => {
-            const p = progressOfSystem(sys);
+          <button type="button" className="pv-cell" onClick={() => go({ kind: 'facts' })} aria-label="Before you start, the house facts. Open">
+            <span className="pv-sq pv-pin"><TileIco name="clipboard-text-outline" /></span>
+            <span className="pv-tl">Before you start</span>
+          </button>
+          {tileSystems.map(sys => {
+            const p = [sys, ...(fold.into === sys.id ? systems.filter(x => folded.includes(x.id)) : [])].map(progressOfSystem)
+              .reduce((a, q) => ({ met: a.met + q.met, total: a.total + q.total }), { met: 0, total: 0 });
             const done = p.total > 0 && p.met >= p.total;
             return (
-              <button key={sys.id} type="button" data-pv-id={sys.id} className={`pv-tile${hl === sys.id ? ' pv-hit' : ''}`}
-                onClick={() => openSystem(sys)} aria-label={`${sys.label}, ${p.met} of ${p.total}`}>
-                <Icon name={sys.icon ?? 'shape-outline'} size={24} />
-                <span className="pv-tl">{sys.label}</span>
-                {describeBy[sys.id]?.left ? <span className="pv-iv2" style={{ color: '#9cc4f2' }}>✦ {describeBy[sys.id].left} to describe</span> : null}
-                <span className="pv-prog" aria-hidden="true"><i className={done ? 'g' : ''} style={{ width: `${p.total > 0 ? Math.round((p.met / p.total) * 100) : 0}%` }} /></span>
+              <button key={sys.id} type="button" data-pv-id={sys.id} className={`pv-cell${hl === sys.id ? ' pv-hit' : ''}`}
+                onClick={() => openSystem(sys)} aria-label={`${displayLabel(sys.label)}, ${p.met} of ${p.total}`}>
+                <span className="pv-sq"><TileIco name={sys.icon ?? 'shape-outline'} />
+                  <span className="pv-prog" aria-hidden="true"><i className={done ? 'g' : ''} style={{ width: `${p.total > 0 ? Math.round((p.met / p.total) * 100) : 0}%` }} /></span></span>
+                <span className="pv-tl">{displayLabel(sys.label)}</span>
               </button>
             );
           })}
-          <div className="pv-tile pv-add" aria-hidden="true"><Glyph d={G.plain} size={24} /><span className="pv-tl">Add system</span></div>
+          <div className="pv-cell pv-add" aria-hidden="true"><span className="pv-sq"><Glyph d={G.plain} size={24} /></span><span className="pv-tl">Add system</span></div>
         </div>
         {spaces.length ? (
           <>
@@ -312,18 +346,48 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-bmeta">Walk with the camera. Shows the systems&apos; items that live there.</div>
             <div className="pv-tiles">
               {spaces.map(sp => (
-                <div key={sp.id} data-pv-id={sp.id} className="pv-tile" style={{ background: 'rgba(33,123,232,0.10)', borderColor: 'rgba(33,123,232,0.45)' }}
-                  aria-label={`${sp.label}, space`}>
-                  <Icon name={sp.icon ?? 'door'} size={22} />
+                <div key={sp.id} data-pv-id={sp.id} className="pv-cell" aria-label={`${sp.label}, space`}>
+                  <span className="pv-sq pv-sp"><TileIco name={sp.icon ?? 'door'} /></span>
                   <span className="pv-tl">{displayLabel(sp.label)}</span>
                 </div>
               ))}
             </div>
           </>
         ) : null}
+        {/* GUIDED / REVIEW & SEND above the rail (app 2026-11-13/14): Guided names the TILE it picks up at (a folded Heating
+            reads Heat Pump); once nothing is left, the bar is Review & send — on the phone it opens Post-Inspect. */}
+        {(() => {
+          const nx = steps.length ? steps[resumeIndex(steps, stepDone, 0)] : null;
+          if (!nx || steps.every(stepDone)) return steps.length ? (
+            <button type="button" className="pv-gbar pv-review" onClick={() => say('On the phone, Review & send opens Post-Inspect.')}><b>Review &amp; send</b><small>everything here is covered</small><span aria-hidden="true">›</span></button>
+          ) : null;
+          const tile = systems.find(x => x.id === tileOf(nx.systemId));
+          return (
+            <button type="button" className="pv-gbar" onClick={() => openStep(nx)} aria-label={`Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}`}>
+              <span className="pv-gplay">▶</span><b>Guided coverage</b><small>picks up at {displayLabel(tile?.label ?? nx.systemLabel)}</small><span aria-hidden="true">›</span>
+            </button>
+          );
+        })()}
       </>
     );
   };
+
+  // ── BEFORE YOU START (app BeforeYouStart, 2026-11-13/14): the house facts, asked first, one page each on the phone ──
+  const factsPage = () => (
+    <>
+      <div className="pv-sysrow">
+        <button type="button" className="pv-iconbtn" onClick={back} aria-label="Back to all systems"><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
+        <span className="pv-big1">Before you start</span>
+      </div>
+      <div className="pv-syssub">Asked first, one question per page, Next to move on. Scope is built from these.</div>
+      <div className="pv-group">
+        {HOUSE_FACTS.map(f => (
+          <div key={f.id} className="pv-fact"><b>{f.question ?? f.label}</b><span>{f.multi ? 'Pick every one. ' : ''}{(f.hint ?? '').replace(/^Pick every one\.?\s*/, '')}</span></div>
+        ))}
+      </div>
+    </>
+  );
+
 
   // ── A SYSTEM'S PAGE: ITS ITEMS (ScopeWorkspace, 2026-10-24) ──
   // ── A SYSTEM'S PAGE: ITS GROUPS AS TILES; A GROUP OPENS ITS CARDS (app ScopeWorkspace, 2026-11-08) ──
@@ -331,15 +395,18 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // item's cards (the same leafCard a guided step draws).
   const systemPage = (sysId: string, openGroup?: string) => {
     const sys = index.allSystems[sysId]; if (!sys) return null;
-    const mine = allSteps.filter(st => st.systemId === sysId);
-    const shots = shotsFor(sysId);
+    // A unit tile's page lists what folded into it too (app ScopeScreen ofSys, 2026-11-14).
+    const mine = allSteps.filter(st => tileOf(st.systemId) === sysId);
+    const parts = [sysId, ...(fold.into === sysId ? folded : [])];
+    const shots = parts.flatMap(id => shotsFor(id));
     // Photos & details (app 2026-11-08): shots or questions give the tile; its line is what is still needed.
-    const dsc = describeBy[sysId] ?? { left: 0, total: 0 };
+    const dsc = parts.map(id => describeBy[id] ?? { left: 0, total: 0 }).reduce((a, d) => ({ left: a.left + d.left, total: a.total + d.total }), { left: 0, total: 0 });
     const hasTile = shots.length > 0 || dsc.total > 0;
     // app 2026-11-09 ("Shoot a system"): a preview has no photos — the tile says Start here, as the phone does before any photo.
     const tileMeta = 'Start here';
     const photosOpen = hasTile && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
-    const p = progressOfSystem(sys);
+    const p = parts.map(id => index.allSystems[id]).filter(Boolean).map(x => progressOfSystem(x as TemplateNode))
+      .reduce((a, q) => ({ ...q, met: a.met + q.met, total: a.total + q.total }));
     const isDone = (st: GuidedStep) => { const q = stepStat(st); return q.total > 0 && q.met >= q.total; };
     const isDescribed = (st: GuidedStep) => { const q = stepStat(st); const n = index.byId[st.key]?.node;
       return !!describedStep(st) && !q.finding && !q.limited && !(n && previewNeeds(n)); };
@@ -381,22 +448,23 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         ) : null}
         {photosOpen ? null : !active ? (
           <div className="pv-tiles">
+            {/* PHOTOS & DETAILS pinned first, then each group as the Coverage tile: its own icon, the name below (app 2026-11-13/14). */}
             {hasTile ? (
-              <button type="button" className="pv-tile pv-itile pv-phototile" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos and details, ${tileMeta}. Open`}>
+              <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos and details, ${tileMeta}. Open`}>
+                <span className="pv-sq pv-photo"><TileIco name="camera-outline" color="#9cc4f2" /></span>
                 <span className="pv-tl">Photos & details</span>
                 <span className="pv-iv2">{tileMeta}</span>
               </button>
             ) : null}
             {groups.map(g => {
-              const qs = g.items.map(stepStat);
               const d = g.items.filter(isDone).length;
               const all = g.items.length > 0 && d === g.items.length;
               return (
-                <button key={g.id} type="button" data-pv-id={g.id !== sysId ? g.id : undefined} className={`pv-tile pv-itile${hl === g.id ? ' pv-hit' : ''}`}
+                <button key={g.id} type="button" data-pv-id={g.id !== sysId ? g.id : undefined} className={`pv-cell${hl === g.id ? ' pv-hit' : ''}`}
                   onClick={() => go({ kind: 'system', systemId: sysId, group: g.id })} aria-label={`${g.label}, ${d} of ${g.items.length} complete. Open its checklist`}>
+                  <span className="pv-sq"><TileIco name={groupIconFor(g.label, () => 'shape-outline')} />
+                    <span className="pv-prog" aria-hidden="true"><i className={all ? 'g' : ''} style={{ width: `${g.items.length ? Math.round((d / g.items.length) * 100) : 0}%` }} /></span></span>
                   <span className="pv-tl">{displayLabel(g.label)}</span>
-                  <span className="pv-iv2" style={{ color: '#8a959c' }}>{d} of {g.items.length}</span>
-                  <span className="pv-prog" aria-hidden="true"><i className={all ? 'g' : ''} style={{ width: `${g.items.length ? Math.round((d / g.items.length) * 100) : 0}%` }} /></span>
                 </button>
               );
             })}
@@ -703,6 +771,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
 
   let body: JSX.Element | null;
   if (screen.kind === 'landing') body = landing();
+  else if (screen.kind === 'facts') body = factsPage();
   else if (screen.kind === 'system') body = systemPage(screen.systemId, screen.group);
   else if (screen.kind === 'step') body = stepPage(screen.key);
   else body = crossPage(screen.from, screen.to, screen.dir);
@@ -772,10 +841,19 @@ const CSS_TEXT = `
 .ldx-pv .pv-bar6 i{display:block;height:5px;background:#EAF1FB}
 .ldx-pv .pv-n{color:#eef3f5;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
-.ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
+.ldx-pv .pv-cell{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.ldx-pv .pv-sq{position:relative;width:100%;aspect-ratio:1/1;border-radius:15px;background:#11171b;border:1px solid #2a3439;display:flex;align-items:center;justify-content:center;color:#eef3f5;box-sizing:border-box}
+.ldx-pv .pv-sq .pv-prog{position:absolute;left:5px;right:5px;bottom:7px;margin:0}
+.ldx-pv .pv-sq > svg,.ldx-pv .pv-sq > .pv-ci{margin-bottom:6px}
+.ldx-pv .pv-ci{display:inline-flex;flex:none}.ldx-pv .pv-ci svg{width:100%;height:100%}
+.ldx-pv .pv-pin{background:#0f1a24;border-color:#2b4a6a}.ldx-pv .pv-photo{border-color:rgba(33,123,232,0.55);background:rgba(33,123,232,0.12)}.ldx-pv .pv-sp{background:rgba(33,123,232,0.10);border-color:rgba(33,123,232,0.45)}
+.ldx-pv .pv-add .pv-sq{border-style:dashed;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.03);color:#8a959c}
+.ldx-pv .pv-cell .pv-tl{font-size:10.5px;line-height:1.25}.ldx-pv .pv-cell .pv-iv2{font-size:9.5px;color:#9cc4f2;margin-top:-3px}
+.ldx-pv .pv-review{background:#217BE8;border-color:#217BE8;animation:none}.ldx-pv .pv-review b,.ldx-pv .pv-review small,.ldx-pv .pv-review span{color:#fff}
+.ldx-pv .pv-fact{display:flex;flex-direction:column;gap:2px;padding:9px 2px;border-top:1px solid #1b252d}.ldx-pv .pv-fact:first-child{border-top:0}.ldx-pv .pv-fact b{color:#eef3f5;font-size:12.5px}.ldx-pv .pv-fact span{color:#8a99a6;font-size:11px}
 .ldx-pv .pv-tile{position:relative;min-height:88px;border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#11171b;border:1px solid #2a3439;color:#eef3f5;min-width:0}
 .ldx-pv .pv-tl{color:#e6ebee;font-size:11.5px;font-weight:600;text-align:center;line-height:1.2;overflow-wrap:anywhere}
-.ldx-pv .pv-add{border-style:dashed;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.03)}
 .ldx-pv .pv-add .pv-tl{color:#8a959c}
 /* THE PROGRESS LINE (app 2026-11-11, replaces the three lights): a 3px line filled with the reviewed share, green when done. */
 .ldx-pv .pv-prog{display:block;align-self:stretch;margin:0 10px;height:3px;border-radius:2px;background:#2a333a;overflow:hidden}

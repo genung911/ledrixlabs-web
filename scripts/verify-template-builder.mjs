@@ -1163,13 +1163,26 @@ const RULES = {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
       && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => !describedStep\(st\)\)/.test(p)
-      && /const mine = allSteps\.filter\(st => st\.systemId === sysId\);/.test(p) && /active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(/.test(p)
+      && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(/.test(p)
       && /DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': all => {
     const r = strip(all['components/templates/ItemRow.tsx'] ?? '');
     return /const inDetails = \(node\.attributes \?\? \[\]\)\.some\(a => detailsKeysFor\(tree\)\.has\(/.test(r) && /const inInspect = !node\.pointsTo && assessesCondition\(node\);/.test(r)
       && /\{inDetails \? <span[^>]*>Details<\/span> : null\}/.test(r) && /\{inInspect \? <span[^>]*>Condition<\/span> : null\}/.test(r) ? [] : ['components/templates/ItemRow.tsx'];
+  },
+  // THE PREVIEW FOLLOWS THE APP'S TILES (owner 2026-11-14: "Can that parity gap be fixed"): four across with the name below,
+  // Before you start pinned first, Photos & details pinned on a system page, the app's color icons (colorIcons.ts copy),
+  // the Heat Pump / Mini Split fold (Heating and Cooling on the unit's tile and page, walked right after it), and
+  // Guided / Review & send above the rail naming the tile.
+  'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': all => {
+    const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    return /\.pv-tiles\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/.test(p)
+      && /onClick=\{\(\) => go\(\{ kind: 'facts' \}\)\} aria-label="Before you start, the house facts\. Open"/.test(p) && /\{HOUSE_FACTS\.map\(f => \(/.test(p)
+      && /const xml = COLOR_ICONS \? COLOR_SVGS\[name\] : undefined;/.test(p) && /<TileIco name=\{groupIconFor\(g\.label, \(\) => 'shape-outline'\)\} \/>/.test(p)
+      && /<TileIco name="camera-outline"/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
+      && /const allSteps = useMemo\(\(\) => previewSteps\(walkSystems, applies\), \[walkSystems, applies\]\);/.test(p)
+      && /const tile = systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\);/.test(p) && /<b>Review &amp; send<\/b>/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
   'writes: only lib/templates/api.ts writes to the database': all => Object.entries(all).filter(([f, s]) => f !== API && f !== ROUTE && WRITE.test(strip(s))).map(([f]) => f),
   'writes: only the three template tables, the company template context and the publish RPC': all => {
@@ -1598,6 +1611,7 @@ const MUT = {
   'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and folds into one line on its page': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
+  'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
   'writes: only the three template tables, the company template context and the publish RPC': add(API, "\nworkspace.from('anomalies').select('id');"),
   'writes: every update names the next version (row_version)': rep(API, "update({ name: name.trim(), row_version: t.rowVersion + 1 })", "update({ name: name.trim() })"),
