@@ -14,6 +14,9 @@ import { valueId, valueMapOf, type ServerValue, type ValueMap } from '@/lib/scop
 import { loadFactsRow, saveFactColumn } from '@/lib/houseFacts/api';
 import { blockedBy, blockedSentence, factsView, nextAnswer, picksOf, NONE_ANSWER, type FactView, type FactsRow } from '@/lib/houseFacts/model';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
+import { conditionValues } from '@/lib/scope/model';
+import { sectionsOfTemplate } from '@/lib/scope/core/taxonomy/scopeRules';
+import { applianceItems, applianceStates, applianceTap, appliancesDisplay, type ApplianceState } from '@/lib/scope/core/taxonomy/appliancesHere';
 
 type Props = { inspectionId: string; lock: EditLock; canEdit: boolean; findings: Record<string, number>;
   /** The menu's count follows what is still unanswered. */
@@ -82,6 +85,56 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
     } finally { setBusy(false); }
   };
 
+  // "WHICH APPLIANCES ARE HERE?" (2026-11-15, the phone's Option A — appliancesHere.ts): each appliance not here carries its
+  // row's "Not Present" limitation, saved the way the Scope panel saves a row; recorded work is never overwritten.
+  const appliances = applianceStates(applianceItems(state.systems), id => conditionValues(state.values, id), id => findings[id] ?? 0);
+  const applianceSectionOf = sectionsOfTemplate(state.systems);
+  const tapAppliance = async (st: ApplianceState) => {
+    const next = applianceTap(st, conditionValues(state.values, st.item.id));
+    if (!next) { if (st.locked) setNote({ tone: 'warn', text: `${st.item.label} has ${st.locked}, so it stays on the checklist.` }); return; }
+    setBusy(true); setNote(null);
+    try {
+      const lease = await lock.ensure();
+      if (!lease) return;
+      const key = st.item.id, section = applianceSectionOf(key);
+      const value = { label: st.item.label, values: next };
+      const r = await putValue(inspectionId, { key, kind: 'condition', section, value, baseSeq: state.values.get(valueId('condition', key))?.seq ?? null });
+      if (r.kind === 'saved') setState(s => {
+        if (s.kind !== 'ready') return s;
+        const m = new Map(s.values);
+        m.set(valueId('condition', key), { structure_id: 'main', node_key: key, kind: 'condition', section_key: section, value, updated_by: null, updated_at: new Date().toISOString(), seq: r.seq } as ServerValue);
+        return { ...s, values: m };
+      });
+      else if (r.kind === 'refused' && r.reason === 'changed') { await load(); setNote({ tone: 'warn', text: `${st.item.label} changed on a phone first. Theirs is showing now.` }); }
+      else if (r.kind === 'refused') setNote({ tone: 'bad', text: r.reason === 'not_your_section' ? 'This section belongs to someone else on the team. Only they or the lead can change it.' : 'The server didn’t take that change. Reload and try again.' });
+      else setNote({ tone: 'bad', text: r.message });
+    } finally { setBusy(false); }
+  };
+  const appliancesOpen = open === 'appliances';
+  const appliancesRow = appliances.length ? (
+    <div className={`border-t border-hairline ${appliancesOpen ? 'bg-accent/10' : ''}`}>
+      <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
+        <span className="text-sm text-body">Appliances</span>
+        <span className="order-3 col-span-2 min-w-0 text-sm font-semibold text-ink sm:order-none sm:col-span-1">{appliancesDisplay(appliances)}</span>
+        {editable ? <button type="button" onClick={() => setOpen(appliancesOpen ? null : 'appliances')} className="text-sm font-semibold text-accent-ink hover:underline">{appliancesOpen ? 'Close' : 'Change'}</button> : <span />}
+      </div>
+      {appliancesOpen ? (
+        <div className="px-4 pb-4">
+          <p className="mb-2.5 text-sm text-body">Which appliances are here? Tap off any that aren’t. Each one off is marked Not present on its row.</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Appliances">
+            {appliances.map(st => (
+              <button key={st.item.id} type="button" aria-pressed={st.here} disabled={busy || !!st.locked} onClick={() => void tapAppliance(st)}
+                title={st.locked ? `Has ${st.locked}, so it stays` : undefined}
+                className={`rounded-full border px-3 py-1.5 text-sm disabled:opacity-60 ${st.here ? 'border-accent bg-accent font-semibold text-white' : 'border-dashed border-hairline bg-surface text-muted line-through'}`}>
+                {st.here ? `✓ ${st.item.label}` : st.item.label}{st.locked ? ` · has ${st.locked}` : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
   const groups = [...new Set(views.map(v => v.group))];
   const chip = (on: boolean, extra = '') => `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-accent bg-accent font-semibold text-white' : `border-hairline bg-surface text-ink hover:bg-ink/5 ${extra}`}`;
   return (
@@ -130,6 +183,8 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
               </div>
             );
           })}
+          {/* The appliances close the equipment questions, as on the phone. */}
+          {g === 'EQUIPMENT TYPES' ? appliancesRow : null}
         </div>
       ))}
       <p className="border-t border-hairline px-4 py-2.5 text-xs text-muted">Saved to this job. The phone picks a change up on its next sync. A change that would take an item with recorded work off the checklist isn’t made, the same rule as on the phone.</p>
