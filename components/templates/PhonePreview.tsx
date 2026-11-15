@@ -511,12 +511,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 </div>
               );
             })()}
-            {/* ITEM TILES, GUIDED FIRST (app 2026-11-15, mockup 5q8piHyZQ94xGoxZK6d7ss "Approved"): lit by state, the next open one
-                outlined; a tap opens that item's walk. */}
+            {/* ITEM TILES (app 2026-11-15, owner: "4 tiles across like the main page … we do not need the guided button here"): lit
+                by state, the next open one outlined; a tap opens that item's walk. */}
             <div className="pv-itiles">
-              <button type="button" className="pv-itile pv-iguided" onClick={start} aria-label={`Guided, picks up at ${nextUp?.label ?? 'nothing left'}. Start`}>
-                <b>▶ Guided</b><small>{nextUp ? `AT ${nextUp.label.toUpperCase()}` : 'ALL DONE'}</small>
-              </button>
               {active.items.filter(st => !isDescribed(st)).map(st => {
                 const q = stepStat(st);
                 const state = q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : nextUp?.key === st.key ? 'next' : '';
@@ -855,14 +852,13 @@ const CSS_TEXT = `
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
 .ldx-pv .pv-guided{background:#217BE8;border-color:#217BE8;display:flex;align-items:center;justify-content:center;font-size:22px}
-.ldx-pv .pv-itiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:6px 0 10px}
+.ldx-pv .pv-itiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 10px}
 .ldx-pv .pv-itile{display:flex;flex-direction:column;justify-content:space-between;min-height:72px;text-align:left;border:1px solid #1d2a31;border-radius:11px;background:#0c1117;padding:8px 8px 7px;color:#e6ecef;font:inherit;cursor:pointer}
-.ldx-pv .pv-itile b{font-size:11px;line-height:1.25;font-weight:700}.ldx-pv .pv-itile small{font-size:8.5px;font-weight:800;letter-spacing:.7px;color:#5f7378;margin-top:5px}
+.ldx-pv .pv-itile b{font-size:9.5px;line-height:1.25;font-weight:700}.ldx-pv .pv-itile small{font-size:8.5px;font-weight:800;letter-spacing:.7px;color:#5f7378;margin-top:5px}
 .ldx-pv .pv-itile.ok{border-color:rgba(47,197,110,.45)}.ldx-pv .pv-itile.ok small{color:#4fd88a}
 .ldx-pv .pv-itile.fnd{border-color:rgba(232,90,79,.55)}.ldx-pv .pv-itile.fnd small{color:#f07a6e}
 .ldx-pv .pv-itile.lim{border-color:rgba(245,166,35,.55)}.ldx-pv .pv-itile.lim small{color:#f5b94a}
 .ldx-pv .pv-itile.next{border-color:#217BE8;background:rgba(33,123,232,.12)}.ldx-pv .pv-itile.next small{color:#9cc4f2}
-.ldx-pv .pv-iguided{background:#217BE8;border-color:#217BE8}.ldx-pv .pv-iguided small{color:#dbe9fb}
 .ldx-pv .pv-cell{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .ldx-pv .pv-sq{position:relative;width:100%;aspect-ratio:1/1;border-radius:15px;background:#11171b;border:1px solid #2a3439;display:flex;align-items:center;justify-content:center;color:#eef3f5;box-sizing:border-box}
 .ldx-pv .pv-sq .pv-prog{position:absolute;left:5px;right:5px;bottom:7px;margin:0}
