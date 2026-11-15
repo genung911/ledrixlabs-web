@@ -450,7 +450,14 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         ) : null}
         {photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            {/* PHOTOS & DETAILS pinned first, then each group as the Coverage tile: its own icon, the name below (app 2026-11-13/14). */}
+            {/* GUIDED, FIRST (app 2026-11-15, mockup 5q8piHyZQ94xGoxZK6d7ss): Photos & details first, then each group. */}
+            <button type="button" className="pv-cell" onClick={() => { if (hasTile) setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); else start(); }}
+              aria-label={`Guided, picks up at ${hasTile ? 'Photos & details' : nextUp?.tileLabel ?? 'nothing left'}. Start`}>
+              <span className="pv-sq pv-guided"><span className="pv-gplay" style={{ color: '#fff' }}>▶</span></span>
+              <span className="pv-tl">Guided</span>
+              <span className="pv-iv2">{hasTile ? 'Photos & details' : displayLabel(nextUp?.tileLabel ?? 'All done')}</span>
+            </button>
+            {/* PHOTOS & DETAILS pinned next, then each group as the Coverage tile: its own icon, the name below (app 2026-11-13/14). */}
             {hasTile ? (
               <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos and details, ${tileMeta}. Open`}>
                 <span className="pv-sq pv-photo"><TileIco name="camera-outline" color="#9cc4f2" /></span>
@@ -504,24 +511,27 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 </div>
               );
             })()}
-            {active.items.filter(st => !isDescribed(st)).map(st => {
-              const n = index.byId[st.key]?.node;
-              return (
-                <div key={st.key} data-pv-id={st.key} className={hl === st.key ? 'pv-hit' : undefined}>
-                  {n && previewNeeds(n) ? <small className="pv-needs">{st.label} — Needs {previewNeeds(n)}  ·  <u>Take photo</u></small> : null}
-                  {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r) : null; })}
-                </div>
-              );
-            })}
+            {/* ITEM TILES, GUIDED FIRST (app 2026-11-15, mockup 5q8piHyZQ94xGoxZK6d7ss "Approved"): lit by state, the next open one
+                outlined; a tap opens that item's walk. */}
+            <div className="pv-itiles">
+              <button type="button" className="pv-itile pv-iguided" onClick={start} aria-label={`Guided, picks up at ${nextUp?.label ?? 'nothing left'}. Start`}>
+                <b>▶ Guided</b><small>{nextUp ? `AT ${nextUp.label.toUpperCase()}` : 'ALL DONE'}</small>
+              </button>
+              {active.items.filter(st => !isDescribed(st)).map(st => {
+                const q = stepStat(st);
+                const state = q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : nextUp?.key === st.key ? 'next' : '';
+                const sub = state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : state === 'next' ? 'NEXT' : 'NOT YET';
+                return (
+                  <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
+                    aria-label={`${st.label}, ${sub.toLowerCase()}. Open`}>
+                    <b>{st.label}</b><small>{sub}</small>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
-        {/* No GUIDED chip in the header (owner 2026-11-08): the thin bar, as above the app's rail, with its slow pulse. */}
-        {nextUp ? (
-          <button type="button" className="pv-gbar" onClick={start}
-            aria-label={`Guided coverage, picking up at ${nextUp.label}`}>
-            <span className="pv-gplay">▶</span><b>Guided coverage</b><small>picks up at {nextUp.label}</small><span aria-hidden="true">›</span>
-          </button>
-        ) : null}
+        {/* Off the grid Guided is the first tile (app 2026-11-15); the thin bar is the grid's only. */}
       </>
     );
   };
@@ -844,6 +854,15 @@ const CSS_TEXT = `
 .ldx-pv .pv-n{color:#eef3f5;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
+.ldx-pv .pv-guided{background:#217BE8;border-color:#217BE8;display:flex;align-items:center;justify-content:center;font-size:22px}
+.ldx-pv .pv-itiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:6px 0 10px}
+.ldx-pv .pv-itile{display:flex;flex-direction:column;justify-content:space-between;min-height:72px;text-align:left;border:1px solid #1d2a31;border-radius:11px;background:#0c1117;padding:8px 8px 7px;color:#e6ecef;font:inherit;cursor:pointer}
+.ldx-pv .pv-itile b{font-size:11px;line-height:1.25;font-weight:700}.ldx-pv .pv-itile small{font-size:8.5px;font-weight:800;letter-spacing:.7px;color:#5f7378;margin-top:5px}
+.ldx-pv .pv-itile.ok{border-color:rgba(47,197,110,.45)}.ldx-pv .pv-itile.ok small{color:#4fd88a}
+.ldx-pv .pv-itile.fnd{border-color:rgba(232,90,79,.55)}.ldx-pv .pv-itile.fnd small{color:#f07a6e}
+.ldx-pv .pv-itile.lim{border-color:rgba(245,166,35,.55)}.ldx-pv .pv-itile.lim small{color:#f5b94a}
+.ldx-pv .pv-itile.next{border-color:#217BE8;background:rgba(33,123,232,.12)}.ldx-pv .pv-itile.next small{color:#9cc4f2}
+.ldx-pv .pv-iguided{background:#217BE8;border-color:#217BE8}.ldx-pv .pv-iguided small{color:#dbe9fb}
 .ldx-pv .pv-cell{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .ldx-pv .pv-sq{position:relative;width:100%;aspect-ratio:1/1;border-radius:15px;background:#11171b;border:1px solid #2a3439;display:flex;align-items:center;justify-content:center;color:#eef3f5;box-sizing:border-box}
 .ldx-pv .pv-sq .pv-prog{position:absolute;left:5px;right:5px;bottom:7px;margin:0}
