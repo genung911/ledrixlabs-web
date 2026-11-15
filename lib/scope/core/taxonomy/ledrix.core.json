@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.14.6",
+  "packVersion": "2026.11.15.1",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -11691,6 +11691,25 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "house::stories",
+              "includes": [],
+              "unlisted": [
+                "1 story"
+              ],
+              "exact": true,
+              "orOnlyWhenAnswered": true,
+              "orSpec": [
+                {
+                  "specNodeId": "found_type::type",
+                  "includes": [
+                    "Basement"
+                  ]
+                }
+              ]
+            }
           ]
         },
         {
@@ -11724,6 +11743,23 @@
               "specNodeId": "int_stairs",
               "includes": [],
               "unlisted": []
+            },
+            {
+              "specNodeId": "house::stories",
+              "includes": [],
+              "unlisted": [
+                "1 story"
+              ],
+              "exact": true,
+              "orOnlyWhenAnswered": true,
+              "orSpec": [
+                {
+                  "specNodeId": "found_type::type",
+                  "includes": [
+                    "Basement"
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -11745,6 +11781,23 @@
               "specNodeId": "int_stairs",
               "includes": [],
               "unlisted": []
+            },
+            {
+              "specNodeId": "house::stories",
+              "includes": [],
+              "unlisted": [
+                "1 story"
+              ],
+              "exact": true,
+              "orOnlyWhenAnswered": true,
+              "orSpec": [
+                {
+                  "specNodeId": "found_type::type",
+                  "includes": [
+                    "Basement"
+                  ]
+                }
+              ]
             }
           ]
         },

@@ -20,16 +20,18 @@ import { conditionValues, specValue, valueId, type ValueMap } from '@/lib/scope/
 export const GARAGE_OPTIONS = ['None', 'Attached', 'Detached', 'Carport'] as const;
 /** The app's FRONT_FACES_OPTIONS (2026-11-14, #127) — which way the front of the home faces; one answer. */
 export const FRONT_FACES_OPTIONS = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'] as const;
-export const EXTRAS_COLUMN = { gasSupply: 'gas_supply', waterSource: 'water_source', sewerType: 'sewer_type', garageType: 'garage_type', frontFaces: 'front_faces' } as const;
+/** The app's STORIES_OPTIONS (2026-11-15, #128) — how many stories, above grade; one answer. Replaces the stairs question. */
+export const STORIES_OPTIONS = ['1 story', '1½ stories', '2 stories', '3+ stories', 'Split-level'] as const;
+export const EXTRAS_COLUMN = { gasSupply: 'gas_supply', waterSource: 'water_source', sewerType: 'sewer_type', garageType: 'garage_type', frontFaces: 'front_faces', stories: 'stories' } as const;
 export type ExtrasKey = keyof typeof EXTRAS_COLUMN;
 export const EXTRAS_OPTIONS: Record<ExtrasKey, readonly string[]> = {
   gasSupply: GAS_SUPPLY_OPTIONS, waterSource: WATER_SOURCE_OPTIONS, sewerType: SEWER_TYPE_OPTIONS, garageType: GARAGE_OPTIONS,
-  frontFaces: FRONT_FACES_OPTIONS,
+  frontFaces: FRONT_FACES_OPTIONS, stories: STORIES_OPTIONS,
 };
 /** An absence a pick stands alone with — the app's ABSENCE_PICKS. */
 export const ABSENCE_PICKS = new Set(['No gas service', 'None — all electric', 'None']);
 /** The job row's own fields the page reads and writes. */
-export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null; front_faces: string | null };
+export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null; front_faces: string | null; stories: string | null };
 
 export type FactView = {
   fact: HouseFact;
@@ -66,7 +68,9 @@ export function factNode(systems: readonly TemplateNode[], nodeId: string): Temp
 /** Every fact this job asks now, in the phone's order and groups, with its answer and where it is written. */
 export function factsView(systems: readonly TemplateNode[], values: ValueMap, row: FactsRow): FactView[] {
   const sectionOf = sectionsOfTemplate(systems);
-  const inTemplate = HOUSE_FACTS.filter(f => f.source.kind === 'extras' || !!factNode(systems, f.source.nodeId));
+  // Only a fact with something to answer: the item AND its field (the phone's factsFor, 2026-11-15).
+  const inTemplate = HOUSE_FACTS.filter(f => f.source.kind === 'extras'
+    || ((factNode(systems, f.source.nodeId)?.attributes ?? []) as { id: string }[]).some(a => a.id === (f.source as { attr: string }).attr));
   const valueOf = (f: HouseFact): string => {
     if (f.source.kind === 'extras') return String(row[EXTRAS_COLUMN[f.source.key as ExtrasKey] as keyof FactsRow] ?? '');
     const n = factNode(systems, f.source.nodeId);

@@ -17,7 +17,7 @@
 export type HouseFactGroup = 'property' | 'utilities' | 'equipment' | 'building';
 /** Where a fact already lives: a key of the job's report extras (Details), or a spec field (`node id`, `attribute id`). */
 export type HouseFactSource =
-  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'frontFaces' }
+  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'frontFaces' | 'stories' }
   | { kind: 'spec'; nodeId: string; attr: string };
 /** `none`: the house may have none of it (owner 2026-11-13, build 811: "Fireplace made me realize we need a 'none' option").
  *  A spec fact's None records applicability's NOT_PRESENT ('Not present'), the absence every rule already reads; the
@@ -48,7 +48,11 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
   // WHAT IS THERE AT ALL (owner 2026-11-14, coverage review → "Use suggestion and recommendations"): None takes the
   // items that need it off the checklist (scripts/add-presence-rules.mjs) — an unanswered question hides nothing.
   { id: 'attic',        label: 'Attic',        group: 'building',  source: { kind: 'spec', nodeId: 'attic_access', attr: 'spec' }, none: true, question: 'Is there an attic? How do you get in?', hint: 'None for a flat or cathedral roof with no attic space.' },
-  { id: 'stairs',       label: 'Stairs',       group: 'building',  source: { kind: 'spec', nodeId: 'int_stairs', attr: 'spec' }, none: true, question: 'Are there interior stairs?', hint: 'Pick the finish, or None for a single level.' },
+  // STORIES, NOT STAIRS (owner 2026-11-15: "Should this question actually be home levels or stories?" → "Go ahead"): how
+  // many stories is what the report states, and the stairs follow from it — one story with no basement takes the interior
+  // stairs off the checklist (the pack's rule on int_stairs, its handrails and headroom). The stair finish is a detail
+  // photos fill in Details, not a question to answer first.
+  { id: 'stories',      label: 'Stories',      group: 'building',  source: { kind: 'extras', key: 'stories' }, question: 'How many stories?', hint: 'Above grade. A basement is not a story: the foundation question records it.' },
   { id: 'deck',         label: 'Deck / porch', group: 'building',  source: { kind: 'spec', nodeId: 'ext_deck', attr: 'spec' }, none: true, question: 'Is there a deck or porch?', hint: 'Pick what it is built of, or None.' },
   { id: 'gutters',      label: 'Gutters',      group: 'building',  source: { kind: 'spec', nodeId: 'roof_gutters', attr: 'material' }, none: true, question: 'Are there gutters?', hint: 'Pick the material, or None.' },
   { id: 'garage',       label: 'Garage',       group: 'building',  source: { kind: 'extras', key: 'garageType' }, multi: true, question: 'What garage does the house have?', hint: 'Pick every one. Detached adds a Detached Garage building.' },
@@ -63,8 +67,10 @@ export const HOUSE_FACT_GROUPS: readonly { id: HouseFactGroup; label: string }[]
 
 /** The facts this inspection asks: a spec fact only when its item is in the template (a company that removed its
  *  Fireplace system is never asked what the fireplace is). The extras facts are always asked. */
-export function factsFor(hasNode: (nodeId: string) => boolean): HouseFact[] {
-  return HOUSE_FACTS.filter(f => f.source.kind === 'extras' || hasNode(f.source.nodeId));
+export function factsFor(hasNode: (nodeId: string, attr: string) => boolean): HouseFact[] {
+  // A PAGE ONLY WITH SOMETHING TO ANSWER (owner 2026-11-15, build 854: "This template has no stairs field to answer" on a
+  // page with nothing to tap): a spec fact is asked only when the job's item has that field, not merely the item.
+  return HOUSE_FACTS.filter(f => f.source.kind === 'extras' || hasNode(f.source.nodeId, f.source.attr));
 }
 
 /** The facts asked NOW, with the answers so far: a fact with `askWhen` only while the fact it follows names one of its
@@ -109,8 +115,10 @@ export function houseFactsStatus(p: { answered: number; total: number; left: rea
 // answered from the job's report extras — the same record, never copied into the spec store. A house fact is about the
 // main building: in any other building (a Detached Garage, an ADU) these keys are unanswered, so a rule that reads one
 // never hides that building's own items.
-export const HOUSE_SPEC_KEYS: Readonly<Record<string, 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'yearBuilt'>> = {
+export const HOUSE_SPEC_KEYS: Readonly<Record<string, 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'stories' | 'yearBuilt'>> = {
   'house::gas': 'gasSupply', 'house::water': 'waterSource', 'house::sewer': 'sewerType', 'house::garage': 'garageType',
+  // 2026-11-15 (#128): how many stories — read by the interior stairs' rule.
+  'house::stories': 'stories',
   // x2 (2026-11-14): the job's YEAR BUILT, which the era rules compare (applicability `before` / `from` / `through`). The
   // caller supplies it beside the extras (the inspection record holds it, not the extras).
   'house::built': 'yearBuilt',

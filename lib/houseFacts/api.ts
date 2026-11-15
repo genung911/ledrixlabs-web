@@ -6,7 +6,7 @@ import { workspace } from '@/lib/workspace/client';
 import { webDevice, type Lease } from '@/lib/findings/edit';
 import type { FactsRow } from './model';
 
-const COLS = 'id, row_version, gas_supply, water_source, sewer_type, garage_type, front_faces';   // front_faces: #127, 2026-11-14
+const COLS = 'id, row_version, gas_supply, water_source, sewer_type, garage_type, front_faces, stories';   // front_faces: #127, 2026-11-14; stories: #128, 2026-11-15
 
 export async function loadFactsRow(inspectionId: string): Promise<FactsRow | null> {
   const { data, error } = await workspace.from('inspections').select(COLS).eq('id', inspectionId).maybeSingle();

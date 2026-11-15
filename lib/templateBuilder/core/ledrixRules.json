@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.14.6",
+ "packVersion": "2026.11.15.1",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -3510,12 +3510,50 @@
     }
    ]
   },
+  "int_stairs": {
+   "requires": [
+    {
+     "specNodeId": "house::stories",
+     "includes": [],
+     "unlisted": [
+      "1 story"
+     ],
+     "exact": true,
+     "orOnlyWhenAnswered": true,
+     "orSpec": [
+      {
+       "specNodeId": "found_type::type",
+       "includes": [
+        "Basement"
+       ]
+      }
+     ]
+    }
+   ]
+  },
   "int_handrails": {
    "requires": [
     {
      "specNodeId": "int_stairs",
      "includes": [],
      "unlisted": []
+    },
+    {
+     "specNodeId": "house::stories",
+     "includes": [],
+     "unlisted": [
+      "1 story"
+     ],
+     "exact": true,
+     "orOnlyWhenAnswered": true,
+     "orSpec": [
+      {
+       "specNodeId": "found_type::type",
+       "includes": [
+        "Basement"
+       ]
+      }
+     ]
     }
    ]
   },
@@ -3525,6 +3563,23 @@
      "specNodeId": "int_stairs",
      "includes": [],
      "unlisted": []
+    },
+    {
+     "specNodeId": "house::stories",
+     "includes": [],
+     "unlisted": [
+      "1 story"
+     ],
+     "exact": true,
+     "orOnlyWhenAnswered": true,
+     "orSpec": [
+      {
+       "specNodeId": "found_type::type",
+       "includes": [
+        "Basement"
+       ]
+      }
+     ]
     }
    ]
   },

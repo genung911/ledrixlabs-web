@@ -76,7 +76,11 @@ export type SpecPredicate    = { specNodeId: string; includes: readonly string[]
   /** AN ERA (owner 2026-11-14, x2 — mockup V5QHLXYzFcCuFF4RduCqb7 "Era items follow the year built"): the answer is a YEAR
    *  (`house::built`, the job's year built) and holds when it is before `before`, from `from`, through `through` (any set
    *  bound must hold). An unanswered year is unanswered (Rule 2 — everything shows); a value with no year in it never holds. */
-  before?: number; from?: number; through?: number };
+  before?: number; from?: number; through?: number;
+  /** `orOnlyWhenAnswered` (2026-11-15, the stories rule): the alternatives (`orSpec`) are read only once the predicate's
+   *  OWN field is answered — unanswered, it is Rule 2 whatever they say. "Stairs unless 1 story, or a basement": a slab
+   *  house whose stories are not yet answered still shows its stairs. Absent = `orSpec` as before. */
+  orOnlyWhenAnswered?: true };
 export type UtilityPredicate = { utility: Utility };
 export type Predicate = SpecPredicate | UtilityPredicate;
 
@@ -320,7 +324,8 @@ export function resolveApplicability(
     if (isSpecPredicate(p)) {
       // The predicate's own field, then any alternative (orSpec): the ANSWERED ones decide; all unanswered is Rule 2.
       const fields: { f: { includes?: readonly string[]; unlisted?: readonly string[]; exact?: true }; v: string }[] = [];
-      for (const f of [p, ...(Array.isArray(p.orSpec) ? p.orSpec : [])]) {
+      const ownUnanswered = p.orOnlyWhenAnswered === true && !norm(facts.specValue(p.specNodeId));
+      for (const f of ownUnanswered ? [p] : [p, ...(Array.isArray(p.orSpec) ? p.orSpec : [])]) {
         const v = norm(facts.specValue(f.specNodeId));
         if (v) fields.push({ f, v });
       }
