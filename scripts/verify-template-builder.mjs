@@ -534,11 +534,13 @@ async function runDesktop(files) {
         !!ncCard && ncCard.recommended && ncCard.componentCount === defCard.componentCount + 10 && !realPts(ctx({ services: ['home'] })).find(p => p.key === 'ledrix_new_construction').recommended && !realPts(ctx()).find(p => p.key === 'ledrix_new_construction').recommended);
       const activeSpecial = (t) => SH.SPECIAL_HOMES.filter(e => SH.specialRows(t, { id: e.system }, DEF).find(x => x.id === e.id)?.inTemplate).map(e => e.id).sort();
       const choice = (o = {}) => ({ ...S.EMPTY_KIND_CHOICE, ...o });
-      const p1 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['manufactured'], also: ['older'], unticked: ['hvac_older_steam_boiler', 'foundation_manufactured_marriage_line'] }));
-      const b1 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Manufactured'), DEF, choice({ propertyTypes: ['manufactured'], also: ['older'], unticked: ['hvac_older_steam_boiler', 'foundation_manufactured_marriage_line'] }));
-      r('kind of home: Manufactured + Older with two unticked → the draft is the base plus exactly the other 20, and the cutoff year is stored',
-        p1.kinds.join() === 'manufactured,older' && p1.ticked.length === 20 && b1.ok && JSON.stringify(activeSpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort())
-        && b1.tree.olderCutoffYear === 1950 && !b1.tree.associationNotInspected && JSON.stringify(DEF) === defBytes);
+      // AMENDED 2026-11-14 (app x2 phase 2): Older is no kind — the older-home items follow each job's year built. The pair
+      // here is Manufactured + Log, and no cutoff year is stored.
+      const p1 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['manufactured'], also: ['log'], unticked: ['hvac_manufactured_crossover_duct', 'foundation_manufactured_marriage_line'] }));
+      const b1 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Manufactured'), DEF, choice({ propertyTypes: ['manufactured'], also: ['log'], unticked: ['hvac_manufactured_crossover_duct', 'foundation_manufactured_marriage_line'] }));
+      r('kind of home: Manufactured + Log with two unticked → the draft is the base plus exactly the other 21, and no cutoff year',
+        p1.kinds.join() === 'manufactured,log' && p1.ticked.length === 21 && b1.ok && JSON.stringify(activeSpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort())
+        && b1.tree.olderCutoffYear === undefined && !b1.tree.associationNotInspected && JSON.stringify(DEF) === defBytes);
       const b2 = S.buildStarterTree('ledrix_new_construction', S.forkTree(DEF, 'NC'), DEF, choice());
       r('kind of home: the New Construction card → the base plus exactly its 10', b2.ok && JSON.stringify(activeSpecial(b2.tree)) === JSON.stringify(SH.starterCheckpoints(['new_construction']).map(e => e.id).sort()));
       const b3 = S.buildStarterTree('ledrix_default', S.forkTree(DEF, 'Condo'), DEF, choice({ propertyTypes: ['condo_townhome'], associationPremark: true }));
@@ -547,21 +549,21 @@ async function runDesktop(files) {
       r('kind of home: Condo adds no checkpoints; the association pre-mark is stored only when the company ticks it, and only for a condo template',
         b3.ok && activeSpecial(b3.tree).length === 0 && JSON.stringify(b3.tree.associationNotInspected) === JSON.stringify(['roofing', 'foundation', 'exterior'])
         && b4.ok && !b4.tree.associationNotInspected && b5.ok && !b5.tree.associationNotInspected);
-      const b6 = S.buildStarterTree('company', S.forkTree(DEF, 'Mine'), DEF, choice({ propertyTypes: ['manufactured'], also: ['older', 'log'] }));
+      const b6 = S.buildStarterTree('company', S.forkTree(DEF, 'Mine'), DEF, choice({ propertyTypes: ['manufactured'], also: ['log'] }));
       r('kind of home: a copy of the company’s own template is not asked (nothing added)', b6.ok && activeSpecial(b6.tree).length === 0 && !b6.tree.olderCutoffYear);
       // ── strictly what was picked (owner 2026-11-05, mockup HANP7FdGGVT542cfPt4YaU) ──
       const anySpecial = (t) => { const out = []; const w = (n) => { if (SH.SPECIAL_HOMES.some(e => e.id === n.id)) out.push(n.id); (n.children ?? []).forEach(w); (n.trimmed ?? []).forEach(w); }; t.systems.forEach(w); (t.trimmedSystems ?? []).forEach(w); return out.sort(); };
       const specialGroups = (t) => { let n = 0; const w = (x) => { if (x.kind !== 'component' && /special/i.test(x.label ?? '')) n++; (x.children ?? []).forEach(w); (x.trimmed ?? []).forEach(w); }; t.systems.forEach(w); return n; };
       r('only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group',
         b5.ok && anySpecial(b5.tree).length === 0 && specialGroups(b5.tree) === 0 && SH.templateKinds(b5.tree).length === 0 && b5.tree.alsoKinds === undefined, anySpecial(b5.ok ? b5.tree : DEF).slice(0, 4).join());
-      r('only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older',
-        b1.ok && JSON.stringify(anySpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort()) && JSON.stringify(b1.tree.alsoKinds) === JSON.stringify(['older'])
-        && SH.templateKinds({ ...b1.tree, propertyTypes: ['manufactured'] }).join() === 'manufactured,older');   // the page stores propertyTypes on the fork first
-      r('only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older',
-        b2.ok && JSON.stringify(b2.tree.alsoKinds) === JSON.stringify(['new_construction']) && SH.templateKinds({ olderCutoffYear: 1950 }).join() === 'older'
+      r('only what you pick: Manufactured + Log holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Log',
+        b1.ok && JSON.stringify(anySpecial(b1.tree)) === JSON.stringify([...p1.ticked].sort()) && JSON.stringify(b1.tree.alsoKinds) === JSON.stringify(['log'])
+        && SH.templateKinds({ ...b1.tree, propertyTypes: ['manufactured'] }).join() === 'manufactured,log');   // the page stores propertyTypes on the fork first
+      r('only what you pick: the New Construction card remembers new construction; a legacy cutoff year (or Older pick) names no kind now',
+        b2.ok && JSON.stringify(b2.tree.alsoKinds) === JSON.stringify(['new_construction']) && SH.templateKinds({ olderCutoffYear: 1950 }).length === 0 && SH.templateKinds({ alsoKinds: ['older'] }).length === 0
         && SH.templateKinds({}).length === 0 && SH.templateKinds({ propertyTypes: ['multi_unit_many'], alsoKinds: ['log'] }).join() === 'multi_unit,log');
-      r('only what you pick: switching a kind off names exactly its active checkpoints', b1.ok && SH.activeKindCheckpoints(b1.tree, 'older').length > 0
-        && SH.activeKindCheckpoints(b1.tree, 'older').every(id => SH.SPECIAL_HOMES.find(e => e.id === id)?.kind === 'older') && SH.activeKindCheckpoints(b1.tree, 'log').length === 0);
+      r('only what you pick: switching a kind off names exactly its active checkpoints', b1.ok && SH.activeKindCheckpoints(b1.tree, 'log').length > 0
+        && SH.activeKindCheckpoints(b1.tree, 'log').every(id => SH.SPECIAL_HOMES.find(e => e.id === id)?.kind === 'log') && SH.activeKindCheckpoints(b1.tree, 'new_construction').length === 0);
       const p7 = S.kindPlan('ledrix_default', choice({ propertyTypes: ['multi_unit_one'], also: ['log'] }));
       r('kind of home: multi-unit + log → those two kinds, every checkpoint ticked to start', p7.kinds.join() === 'multi_unit,log' && p7.ticked.length === 20);
       r('create: the blank start has no systems; every card reports real counts from its tree',
@@ -805,7 +807,9 @@ async function runTypes(files) {
     const everyRuled = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; if (!x) return true; if (x.dependsOnSpec) return false;
       // AMENDED 2026-11-14 (app: Before you start's presence questions): a PRESENCE rule on another question (no exact, no
       // typeFirst — any answer keeps the item, None takes it off) is every-home too, as TL.isPresencePred reads it.
-      return (x.requires ?? []).every(p => String(p.specNodeId).startsWith('house::') || TL.isPresencePred(p) || (p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0)); };
+      // …and an ERA (app x2) — a year bound on the job's year built, no template question; and the type question named by
+      // its bare key (fp_type) is the same field as fp_type::spec (the older-home chimney liner, x2 phase 2)
+      return (x.requires ?? []).every(p => String(p.specNodeId).startsWith('house::') || TL.isPresencePred(p) || TL.isEraPred(p) || ((p.specNodeId === field || `${p.specNodeId}::spec` === field) && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0)); };
     const SPECIAL_IDS = new Set((await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href)).SPECIAL_HOMES.map(x => x.id));
     const everyGated = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return (x?.requires ?? []).some(p => p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0); };
     const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);
@@ -828,9 +832,9 @@ async function runTypes(files) {
         // items, then those two and nothing else.
         // AMENDED 2026-11-14 (app x2, the eras): + the three plumbing era items — their year bound is the job's, no question
         // the template asks (typeLayout.isEraPred), so the builder lists them with what every home gets.
-        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure|Well Equipment|Pressure Tank|Suspected Asbestos Pipe Insulation|Suspected Lead Supply / Service Pipe|Polybutylene Era — Check Supply Piping'   /* 2026-11-09: valve + location split */
+        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure|Well Equipment|Pressure Tank|Suspected Asbestos Pipe Insulation|Suspected Lead Supply / Service Pipe|Polybutylene Era — Check Supply Piping|Galvanized Supply (Older Home)'   /* + Galvanized Supply, an era item in Supply (x2 phase 2) · 2026-11-09: valve + location split */
         // …the house-fact ones: Well Equipment and the Pressure Tank (house::water), and the three era items (house::built, x2)
-        && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank|plumb_era_asbestos_pipe_wrap|plumb_era_lead_pipe|plumb_era_polybutylene'
+        && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank|plumb_era_asbestos_pipe_wrap|plumb_era_lead_pipe|plumb_era_polybutylene|plumbing_older_galvanized_supply'
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
       const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
@@ -982,7 +986,8 @@ async function runTypes(files) {
         !!oc && row(oc, 'Circuit Breakers') === '' && row(oc, 'Fuses — Edison / Type S') === 'elec_fuses' && row(oc, 'Cartridge Fuses') === 'elec_fuses'
         && !pnl.every.some(n => n.id === 'elec_fuses')
         // RE-ANCHORED 2026-11-14 (app x44, pack 2026.11.14.2): Dead Front and Breakers carry a photo detail now (circuit labels, panel brand), so they are described items
-        && ids(pnl.every) === '' && ids(pnl.materials) === 'elec_panel|elec_deadfront|elec_breakers|elec_bonding'
+        // AMENDED 2026-11-14 (app x2 phase 2): the Fuse Panel, an era item now in Panel, is what every (old enough) home gets
+        && ids(pnl.every) === 'electrical_older_fuse_panel' && ids(pnl.materials) === 'elec_panel|elec_deadfront|elec_breakers|elec_bonding'
         // 2026-11-09 (panels as units): the Sub-Panel row is retired; a panel's Role brings the sub-only check
         && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Sub-Panel') === 'elec_sub_separation' && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Main') === '');
       const wq = bw?.questions[0];
@@ -1480,7 +1485,8 @@ const RULES = {
     // RE-ANCHORED 2026-11-14 (owner): the kinds are asked as one screen per home type under What it's for.
     if (!/\.\.\.\(homes && types\.includes\('manufactured'\) \? \[\{ id: 'manufactured'/.test(cr) || !/const picked = chosen \? \(homes \? propertyTypesFor\(types, layouts\)/.test(cr)) out.push('the home types are not asked per type');
     if (!/buildStarterTree\(chosen\.kind, forked, d\.ledrixDefault, \{ \.\.\.kindChoice, propertyTypes: picked \}\)/.test(cr) || !/let tree = built\.tree;/.test(cr)) out.push('the draft is not built by buildStarterTree');
-    if (!/onOps\(ops\.associationNotInspected\(/.test(ov) || !/onOps\(ops\.olderCutoffYear\(/.test(ov)) out.push('the Overview does not edit the pre-mark / cutoff year through ops');
+    // AMENDED 2026-11-14 (app x2 phase 2): no cutoff year — the Overview shows the Era items card instead.
+    if (!/onOps\(ops\.associationNotInspected\(/.test(ov) || !/<EraItemsCard tree=\{tree\} onOps=\{onOps\} disabled=\{disabled\} \/>/.test(ov) || /olderCutoffYear/.test(ov)) out.push('the Overview does not edit the pre-mark through ops, or lacks the Era items card');
     return out;
   },
   'create: New template opens the creation page, which only starts a private draft and opens it in the builder': all => {
@@ -1931,7 +1937,7 @@ const EXEC_MUT = [
   { name: 'show in links into the item\'s own system', file: 'editorModel.ts', from: "homeId: node.id, parentId: systemId }]", to: "homeId: node.id, parentId: tree.systems[0].id }]", check: 'show in: the item appears in the other system as a link — one record, no copy of its answers', run: runDesktop },
   { name: 'a rule problem opens the wrong tab', file: 'publishFixes.ts', from: "rule_unsupported: 'applicability', rule_missing_item: 'applicability',", to: "rule_unsupported: 'applicability', rule_missing_item: 'overview',", check: 'publish fixes: a broken rule opens its item on the Applicability tab, and blocks', run: runDesktop },
   { name: 'property types accept any value', file: 'core/propertyTypes.ts', from: "if (v.some(x => typeof x !== 'string' || !IDS.has(x)))", to: "if (v.some(x => typeof x !== 'string'))", check: 'property types: an unknown property type is refused', run: runDesktop },
-  { name: 'unticked checkpoints still land', file: 'startingPoints.ts', from: "const off = new Set(c.unticked);", to: "const off = new Set<string>();", check: 'kind of home: Manufactured + Older with two unticked → the draft is the base plus exactly the other 20, and the cutoff year is stored', run: runDesktop },
+  { name: 'unticked checkpoints still land', file: 'startingPoints.ts', from: "const off = new Set(c.unticked);", to: "const off = new Set<string>();", check: 'kind of home: Manufactured + Log with two unticked → the draft is the base plus exactly the other 21, and no cutoff year', run: runDesktop },
   { name: 'the association pre-mark without a condo', file: 'startingPoints.ts', from: "if (plan.condo && c.associationPremark)", to: "if (c.associationPremark)", check: 'kind of home: Condo adds no checkpoints; the association pre-mark is stored only when the company ticks it, and only for a condo template', run: runDesktop },
   { name: 'New Construction recommended for everyone', file: 'startingPoints.ts', from: "reasons: svc.has('new_construction') ? ['Built for new construction, a service you selected.'] : []", to: "reasons: ['Built for new construction, a service you selected.']", check: 'kind of home: "Ledrix New Construction" is its own card — the base plus 10 — recommended when the company offers new construction', run: runDesktop },
   { name: 'a company copy gets kinds added', file: 'startingPoints.ts', from: "export const asksKindOfHome = (k: StartKind): boolean => k === 'ledrix_default' || k === 'ledrix_new_construction';", to: "export const asksKindOfHome = (k: StartKind): boolean => k !== 'blank';", check: 'kind of home: a copy of the company’s own template is not asked (nothing added)', run: runDesktop },
@@ -1947,9 +1953,8 @@ const EXEC_MUT = [
   { name: 'a copied system is offered as a destination', file: 'moveModel.ts', from: "return (tree.systems ?? []).filter(s => !isCopy(s.id)).map(s => {", to: "return (tree.systems ?? []).map(s => {", check: 'move: a copied system is never a destination, a system with groups takes items only inside a group, and items in a copy stay', run: runTypes },
   { name: '"after X" lands one place off', file: 'moveModel.ts', from: "const at = afterId ? list.findIndex(c => c.id === afterId) + 1 : 0;", to: "const at = afterId ? list.findIndex(c => c.id === afterId) : 0;", check: 'move: the fan moves into Attic › Ventilation right after the fan termination, as ONE change, carrying everything it had', run: runTypes },
   { name: 'a starting point keeps the unpicked kinds switched off', file: 'startingPoints.ts', from: "const base = withoutSetAsideSpecials(tree);", to: "const base = tree;", check: 'only what you pick: a single-family template holds no special-home checkpoint at all — none active, none switched off, no Special homes group', run: runDesktop },
-  { name: 'Older / Log are forgotten after creation', file: 'startingPoints.ts', from: "if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });", to: "", check: 'only what you pick: Manufactured + Older holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Older', run: runDesktop },
-  { name: 'a legacy cutoff year no longer means Older', file: 'core/specialHomes.ts', from: "const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';", to: "const legacyOlder = false;", check: 'only what you pick: the New Construction card remembers new construction; a legacy cutoff year still counts as Older', run: runDesktop },
-  { name: 'switching Older off also switches off other kinds', file: 'core/specialHomes.ts', from: "return SPECIAL_HOMES.filter(s => s.kind === kind && isActive(tpl, s.id)).map(s => s.id);", to: "return SPECIAL_HOMES.filter(s => isActive(tpl, s.id)).map(s => s.id);", check: 'only what you pick: switching a kind off names exactly its active checkpoints', run: runDesktop },
+  { name: 'Log is forgotten after creation', file: 'startingPoints.ts', from: "if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });", to: "", check: 'only what you pick: Manufactured + Log holds exactly its ticked checkpoints (the unticked are not kept switched off) and remembers Log', run: runDesktop },
+  { name: 'switching a kind off also switches off other kinds', file: 'core/specialHomes.ts', from: "return SPECIAL_HOMES.filter(s => s.kind === kind && isActive(tpl, s.id)).map(s => s.id);", to: "return SPECIAL_HOMES.filter(s => isActive(tpl, s.id)).map(s => s.id);", check: 'only what you pick: switching a kind off names exactly its active checkpoints', run: runDesktop },
   { name: 'an If-present suggestion is added switched on', file: 'catalogModel.ts', from: "if (o.op === 'addNode' && o.node.kind === 'component' && o.node.catalogRef && off.includes(o.node.catalogRef)) trims.push", to: "if (false) trims.push", check: 'suggest: a Typical part is added switched on, an If-present part switched off (offered on site) — one change set, with the equipment rule', run: runDesktop },
   { name: 'a switched-off part is suggested again', file: 'catalogModel.ts', from: "[...(x.children ?? []), ...(x.trimmed ?? [])].forEach", to: "[...(x.children ?? [])].forEach", check: 'suggest: a switched-off part is still in the template, so it is not suggested again', run: runDesktop },
   { name: 'Heating suggests the heads Cooling checks', file: 'catalogModel.ts', from: "if (r.present || r.evidenceOnly || r.component.checkedIn) continue;", to: "if (r.present || r.evidenceOnly) continue;", check: 'suggest: under the mini-split chip Heating suggests only what Cooling does not check (the outdoor defrost drain)', run: runDesktop },

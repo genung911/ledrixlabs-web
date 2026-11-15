@@ -18,7 +18,7 @@ let shipped: Promise<InspectionTemplate | null> | null = null;
 export const loadShipped = () => (shipped ??= import('@/lib/templates/baselines/ledrixDefault.json')
   .then(m => m.default as unknown as InspectionTemplate).catch(() => { shipped = null; return null; }));
 
-const KIND_NOUN: Record<SpecialKind, string> = { manufactured: 'manufactured homes', older: 'older homes', multi_unit: 'multi-unit homes', log: 'log homes', new_construction: 'new construction' };
+const KIND_NOUN: Record<SpecialKind, string> = { manufactured: 'manufactured homes', multi_unit: 'multi-unit homes', log: 'log homes', new_construction: 'new construction' };
 
 export function SpecialHomesPanel({ tree, system, onOps, disabled }: {
   tree: InspectionTemplate; system: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean;

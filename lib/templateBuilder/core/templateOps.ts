@@ -119,6 +119,16 @@ function checkAdvisories(v: unknown): string | null {
 /** Fields `setNodeField` may write. Everything else on a node is structural (id, kind, children, pockets,
  *  instanceOf), owned by its own op (attributes, pointsTo), snapshot-only (inScope), or deprecated (options,
  *  facet, limitationOptions — "never write them", S4). */
+/** An era: whole years 1600–2200, at least one bound, `from` ≤ `through`, nothing else. */
+function checkEra(v: unknown): string | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return 'must be { before?, from?, through? }';
+  const o = v as Record<string, unknown>;
+  const keys = Object.keys(o);
+  if (!keys.length || keys.some(k => !['before', 'from', 'through'].includes(k))) return 'must name before, from or through';
+  for (const k of keys) { const y = o[k]; if (!Number.isInteger(y) || (y as number) < 1600 || (y as number) > 2200) return `${k} must be a year from 1600 to 2200`; }
+  if (typeof o.from === 'number' && typeof o.through === 'number' && o.from > o.through) return 'from must not be after through';
+  return null;
+}
 export const NODE_FIELDS: Record<string, FieldSpec> = {
   label:            { check: nonEmpty, class: 'content', why: 'wording' },
   description:      { check: str, class: 'content', why: 'guidance wording' },
@@ -145,6 +155,8 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   equipmentTypes:   { check: (v) => (Array.isArray(v) && v.every(t => obj(t) && !onlyKeys(t, ['id', 'label', 'matchKeywords']) && !nonEmpty(t.id) && !nonEmpty(t.label) && !strList(t.matchKeywords)) ? null : 'must be a list of {id, label, matchKeywords}'), class: 'policy', why: 'when items are inspected (legacy Equipment Types)' },
   // LIVE since 2026-10-21 (one rule model): compiled into the inspection's frozen rules at creation (templateRules.ts).
   appliesWhen:      { check: (v) => checkPredicate(v), class: 'policy', why: 'when this item is inspected' },
+  // x2 phase 2 (2026-11-14): the item's era — shown only for a house built in it (the job's year built)
+  era:              { check: (v) => checkEra(v), class: 'policy', why: 'the years of house it is inspected in' },
   whenUnknown:      { check: oneOf('show', 'hide'), class: 'policy', why: 'whether an unanswered rule shows the item' },
   methodPrompt:     { check: nonEmpty, class: 'content', pending: true, why: 'the method question wording' },
   findingShortcuts: { check: checkShortcuts, class: 'content', pending: true, why: 'finding shortcuts' },

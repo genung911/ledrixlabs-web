@@ -254,16 +254,10 @@ export default function CreateTemplatePage() {
     ...(homes ? [{ id: 'also', q: 'Anything else about the homes?', skip: true, body: (
       <div className="max-w-xl space-y-3">
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {tile(kindChoice.also.includes('older'), 'Older homes', () => setKindChoice({ ...kindChoice, also: flip([...kindChoice.also], 'older') }))}
           {tile(kindChoice.also.includes('log'), 'Log homes', () => setKindChoice({ ...kindChoice, also: flip([...kindChoice.also], 'log') }))}
         </div>
-        {kindChoice.also.includes('older') && (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <label htmlFor="older-cutoff" className="text-body">Older means built before</label>
-            <input id="older-cutoff" type="number" min={1800} max={2100} className={field + ' w-24 py-1'} value={kindChoice.olderCutoffYear ?? ''}
-              onChange={e => { const n = parseInt(e.target.value, 10); setKindChoice({ ...kindChoice, olderCutoffYear: Number.isFinite(n) ? n : null }); }} />
-          </div>
-        )}
+        {/* x2 phase 2 (2026-11-14): no "Older homes" — the older-home items follow each job's year built. */}
+        <p className="text-sm text-muted">Older-home items (galvanized pipe, fuse panels, asbestos and lead) are already in: each shows only for a house built in its years.</p>
       </div>) }] : []),
     { id: 'addons', q: 'Which add-on services do you offer?', sub: 'Each brings its own short section when it’s booked.', skip: true, body: (
       <div className="max-w-xl space-y-3">

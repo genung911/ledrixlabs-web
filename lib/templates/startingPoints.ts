@@ -165,7 +165,7 @@ export function startingPoints(args: {
 
 export type KindChoice = {
   propertyTypes: readonly string[];
-  also: readonly string[];               // ALSO_KINDS picked: 'older' | 'log'
+  also: readonly string[];               // ALSO_KINDS picked: 'log' (x2 phase 2: Older retired — the era decides)
   unticked: readonly string[];           // checkpoint ids the company unticked
   olderCutoffYear: number | null;        // asked when 'older' is picked
   associationPremark: boolean;           // asked when Condo / Townhome is a property type
@@ -191,9 +191,8 @@ export function buildStarterTree(kind: StartKind, tree: InspectionTemplate, sour
   const r = starterOps(base, plan.ticked, source);
   if (!r.ok) return { ok: false, error: r.error };
   const fields: TemplateOp[] = [];
-  const also = plan.kinds.filter((k): k is 'older' | 'log' | 'new_construction' => k === 'older' || k === 'log' || k === 'new_construction');
+  const also = plan.kinds.filter((k): k is 'log' | 'new_construction' => k === 'log' || k === 'new_construction');
   if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });
-  if (c.also.includes('older') && c.olderCutoffYear !== null) fields.push({ op: 'setTemplateField', field: 'olderCutoffYear', value: c.olderCutoffYear });
   if (plan.condo && c.associationPremark) fields.push({ op: 'setTemplateField', field: 'associationNotInspected', value: [...ASSOCIATION_SYSTEMS] });
   const all = [...r.ops, ...fields];
   if (!all.length) return { ok: true, tree: base };

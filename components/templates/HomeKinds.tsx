@@ -18,9 +18,10 @@ import { PropertyTypePicker } from './PropertyTypes';
 import { loadShipped } from './SpecialHomesPanel';
 import { btn } from './ui';
 
-type Also = 'older' | 'log' | 'new_construction';
+// x2 phase 2 (2026-11-14): no Older home — the older-home items follow each job's year built (the Era items card).
+type Also = 'log' | 'new_construction';
 const ALSO: ReadonlyArray<{ id: Also; label: string }> = [
-  { id: 'older', label: 'Older home' }, { id: 'log', label: 'Log home' }, { id: 'new_construction', label: 'New construction' },
+  { id: 'log', label: 'Log home' }, { id: 'new_construction', label: 'New construction' },
 ];
 const kindLabel = (k: SpecialKind) => SPECIAL_KINDS.find(x => x.id === k)?.label ?? k;
 type Pending = { fields: TemplateOp[]; added: SpecialKind[]; removed: SpecialKind[] };
@@ -33,7 +34,7 @@ export function HomeKindsCard({ tree, onOps, disabled }: { tree: InspectionTempl
   const [problem, setProblem] = useState<string | null>(null);
 
   const pts = propertyTypesOf(tree);
-  const also: Also[] = Array.isArray(tree.alsoKinds) ? tree.alsoKinds : templateKinds(tree).filter((k): k is Also => k === 'older');
+  const also: Also[] = (Array.isArray(tree.alsoKinds) ? tree.alsoKinds : []).filter((k): k is Also => k === 'log' || k === 'new_construction');
   const now = templateKinds(tree);
 
   const propose = (nextPts: PropertyTypeId[], nextAlso: Also[]) => {

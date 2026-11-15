@@ -158,7 +158,7 @@ export type RuleDefinitions = { version: number; nodes: Record<string, RuleDefin
 /** The two pack fields a definition inherits. */
 export type PackRules = { requires?: unknown; dependsOnSpec?: { nodeId: string; includes: readonly string[] } };
 
-type RuleNode = { id: string; requires?: unknown; dependsOnSpec?: unknown; appliesWhen?: unknown; whenUnknown?: unknown; children?: readonly RuleNode[]; trimmed?: readonly RuleNode[] };
+type RuleNode = { id: string; requires?: unknown; dependsOnSpec?: unknown; appliesWhen?: unknown; whenUnknown?: unknown; era?: unknown; children?: readonly RuleNode[]; trimmed?: readonly RuleNode[] };
 
 const baseOf = (id: string) => String(id).replace(/~i\d+$/, '');
 const own = (n: object, k: string) => Object.prototype.hasOwnProperty.call(n, k);
@@ -175,6 +175,16 @@ export function definitionFor(node: RuleNode, pack: PackRules | undefined, field
     const c = compileAppliesWhen(node.appliesWhen, node.whenUnknown, fields);
     if ('requires' in c) requires.push(...c.requires);
     else def.error = c.reason;
+  }
+  // THE COMPANY'S ERA (x2 phase 2, 2026-11-14): replaces Ledrix's year bound on the job's year built — or gives the item one.
+  const era = isObj(node.era) ? node.era as Record<string, unknown> : null;
+  if (era) {
+    const bound: Record<string, number> = {};
+    for (const k of ['before', 'from', 'through']) if (Number.isInteger(era[k])) bound[k] = era[k] as number;
+    if (Object.keys(bound).length) {
+      for (let i = requires.length - 1; i >= 0; i--) if (isObj(requires[i]) && (requires[i] as any).specNodeId === 'house::built') requires.splice(i, 1);
+      requires.push({ specNodeId: 'house::built', includes: [], ...bound });
+    }
   }
   def.requires = requires.length ? requires : null;
   return def;

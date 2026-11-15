@@ -41,12 +41,13 @@
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import type { TemplateOp } from './templateOps';
 
-export type SpecialKind = 'manufactured' | 'older' | 'multi_unit' | 'log' | 'new_construction';
+// x2 phase 2 (owner 2026-11-14, mockup V5QHLXYzFcCuFF4RduCqb7: "'Older homes' and its year box go"): Older is no longer a kind —
+// its nine checkpoints follow the job's year built (an era, applicability `before`), in their trades' groups.
+export type SpecialKind = 'manufactured' | 'multi_unit' | 'log' | 'new_construction';
 
 /** The kinds, with the template property types (propertyTypes.ts) that say a template is for that kind. */
 export const SPECIAL_KINDS: ReadonlyArray<{ id: SpecialKind; label: string; propertyTypes: readonly string[] }> = [
   { id: 'manufactured', label: 'Manufactured', propertyTypes: ['manufactured'] },
-  { id: 'older',        label: 'Older homes',  propertyTypes: [] },
   { id: 'multi_unit',   label: 'Multi-unit',   propertyTypes: ['multi_unit_one', 'multi_unit_many'] },
   { id: 'log',          label: 'Log home',     propertyTypes: [] },
   { id: 'new_construction', label: 'New construction', propertyTypes: [] },
@@ -64,27 +65,19 @@ export const SPECIAL_HOMES: readonly SpecialCheckpoint[] = [
   { id: 'hvac_manufactured_furnace',                system: 'heating',    kind: 'manufactured', why: 'Label shows it is approved for a manufactured home' },
   { id: 'hvac_manufactured_crossover_duct',         system: 'heating',    kind: 'manufactured', why: 'Duct joining the two halves, under the home' },
   { id: 'attic_manufactured_bellywood_ductwork',    system: 'heating',    kind: 'manufactured', why: 'Supply ducts inside the belly' },
-  { id: 'hvac_older_gravity_furnace',               system: 'heating',    kind: 'older',        why: 'No blower; large ducts rising from the basement' },
-  { id: 'hvac_older_oil_furnace',                   system: 'heating',    kind: 'older',        why: 'Tank, lines and burner' },
-  { id: 'hvac_older_steam_boiler',                  system: 'heating',    kind: 'older',        why: 'Sight glass, pressure and safety controls' },
-  { id: 'attic_older_asbestos_ductwrap',            system: 'heating',    kind: 'older',        why: 'Observed only; never identified' },
   { id: 'hvac_multi_unit_shared_plant',             system: 'heating',    kind: 'multi_unit',   why: 'Central boiler or chiller serving several units' },
 
   { id: 'plumbing_manufactured_water_heater_vent',  system: 'plumbing',   kind: 'manufactured', why: 'Vent through the roof, not the wall' },
   { id: 'plumbing_manufactured_plumbing_tie_downs', system: 'plumbing',   kind: 'manufactured', why: 'Pipe hangers under the belly' },
-  { id: 'plumbing_older_galvanized_supply',         system: 'plumbing',   kind: 'older',        why: 'Corrosion and low flow' },
-  { id: 'plumbing_older_oil_fired_water_heater',    system: 'plumbing',   kind: 'older',        why: 'Burner, flue and tank' },
   { id: 'plumbing_multi_unit_shared_water_heater',  system: 'plumbing',   kind: 'multi_unit',   why: 'One heater serving several units' },
   { id: 'plumbing_multi_unit_per_unit_water_meter', system: 'plumbing',   kind: 'multi_unit',   why: 'Whether each unit has its own' },
 
   { id: 'electrical_manufactured_skirt_electrical', system: 'electrical', kind: 'manufactured', why: 'Where wiring passes through the skirting' },
-  { id: 'electrical_older_fuse_panel',              system: 'electrical', kind: 'older',        why: 'Fuse sizes and signs of over-fusing' },
   { id: 'electrical_multi_unit_metering',           system: 'electrical', kind: 'multi_unit',   why: 'One meter per unit' },
   { id: 'electrical_multi_unit_shared_systems',     system: 'electrical', kind: 'multi_unit',   why: 'Lights and outlets in shared areas' },
 
   { id: 'roofing_manufactured_roof_tie_downs',      system: 'roofing',    kind: 'manufactured', why: 'Straps across the roof' },
   { id: 'roofing_manufactured_roof_skirts',         system: 'roofing',    kind: 'manufactured', why: 'Trim where the roof meets the walls' },
-  { id: 'roofing_older_roof_built_up_layers',       system: 'roofing',    kind: 'older',        why: 'Number of layers and condition' },
   { id: 'roofing_multi_unit_roof_drainage',         system: 'roofing',    kind: 'multi_unit',   why: 'Gutters and drains serving several units' },
 
   { id: 'exterior_multi_unit_fire_separation',      system: 'exterior',   kind: 'multi_unit',   why: 'Walls and penetrations between units' },
@@ -92,7 +85,6 @@ export const SPECIAL_HOMES: readonly SpecialCheckpoint[] = [
   { id: 'attic_multi_unit_shared_attic',            system: 'attic',      kind: 'multi_unit',   why: 'Fire separation across a shared attic' },
 
   { id: 'fireplace_manufactured_fireplace_venting', system: 'fireplace',  kind: 'manufactured', why: 'Listed unit, outside air, chimney' },
-  { id: 'fireplace_older_fireplace_chimney',        system: 'fireplace',  kind: 'older',        why: 'Unlined or deteriorated flue' },
   { id: 'fireplace_multi_unit_shared_chimney',      system: 'fireplace',  kind: 'multi_unit',   why: 'One chimney serving several units' },
 
   // ── Log home (owner-approved draft, 2026-11-05) ──
@@ -179,8 +171,8 @@ export function specialRows(tpl: InspectionTemplate, system: Pick<TemplateNode, 
 export function templateKinds(tpl: Pick<InspectionTemplate, 'propertyTypes' | 'alsoKinds' | 'olderCutoffYear'>): SpecialKind[] {
   const own = new Set<string>(Array.isArray(tpl.propertyTypes) ? tpl.propertyTypes : []);
   const also = new Set<string>(Array.isArray(tpl.alsoKinds) ? tpl.alsoKinds : []);
-  const legacyOlder = !Array.isArray(tpl.alsoKinds) && typeof tpl.olderCutoffYear === 'number';
-  return SPECIAL_KINDS.filter(k => k.propertyTypes.some(p => own.has(p)) || also.has(k.id) || (k.id === 'older' && legacyOlder)).map(k => k.id);
+  // An old template's 'older' pick (or its legacy cutoff year) names no kind now (x2 phase 2) — it is simply ignored.
+  return SPECIAL_KINDS.filter(k => k.propertyTypes.some(p => own.has(p)) || also.has(k.id)).map(k => k.id);
 }
 
 /** A starting point's copy WITHOUT Ledrix's set-aside special-home checkpoints (and any set-aside group holding one), so a template carries nothing for a home it is not for — the phone offers set-aside items on site. The kinds
@@ -295,7 +287,7 @@ export function specialHomeOps(tpl: InspectionTemplate, systemId: string, pickId
 // ── starting points: a kind of home picked on Templates › New template (2026-11-05) ──────────────────────────────
 
 /** The kinds offered under "Also" (how the home was built), apart from property type (ruling 2). */
-export const ALSO_KINDS: readonly SpecialKind[] = ['older', 'log'];
+export const ALSO_KINDS: readonly SpecialKind[] = ['log'];   // x2 phase 2: Older retired (the era decides)
 
 /** The kinds a new template starts with: the property types' kinds, then the "Also" picks, then new construction when
  *  the New Construction starting point was chosen. Each kind once, in SPECIAL_KINDS order. */

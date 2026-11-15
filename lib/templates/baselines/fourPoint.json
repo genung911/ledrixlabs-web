@@ -431,6 +431,20 @@
        "kind": "component",
        "keywords": [],
        "condition": true
+      },
+      {
+       "id": "hvac_older_gravity_furnace",
+       "label": "Gravity Furnace",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
+       "id": "hvac_older_oil_furnace",
+       "label": "Oil Furnace",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
       }
      ]
     },
@@ -562,6 +576,13 @@
         }
        ],
        "condition": true
+      },
+      {
+       "id": "attic_older_asbestos_ductwrap",
+       "label": "Suspected Asbestos Duct Wrap",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
       }
      ]
     },
@@ -617,27 +638,6 @@
        "condition": true
       },
       {
-       "id": "hvac_older_gravity_furnace",
-       "label": "Gravity Furnace",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "hvac_older_oil_furnace",
-       "label": "Oil Furnace",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "hvac_older_steam_boiler",
-       "label": "Steam Boiler",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
        "id": "hvac_multi_unit_shared_plant",
        "label": "Shared HVAC Plant",
        "kind": "component",
@@ -650,13 +650,6 @@
        "kind": "component",
        "keywords": [],
        "condition": true
-      },
-      {
-       "id": "attic_older_asbestos_ductwrap",
-       "label": "Suspected Asbestos Duct Wrap",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
       }
      ]
     },
@@ -665,6 +658,13 @@
      "label": "Boiler · Electric · Radiant",
      "kind": "subsystem",
      "children": [
+      {
+       "id": "hvac_older_steam_boiler",
+       "label": "Steam Boiler",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
       {
        "id": "hvac_boiler_expansion",
        "label": "Boiler Expansion Tank",
@@ -2098,6 +2098,13 @@
        "freeFormValue": true
       },
       {
+       "id": "plumbing_older_galvanized_supply",
+       "label": "Galvanized Supply (Older Home)",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
        "id": "plumb_well",
        "label": "Well Equipment",
        "kind": "component",
@@ -2774,6 +2781,13 @@
        "condition": true
       },
       {
+       "id": "plumbing_older_oil_fired_water_heater",
+       "label": "Oil-Fired Water Heater",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
        "id": "plumb_gas_meter",
        "label": "Gas Meter / Main Shutoff",
        "kind": "component",
@@ -2849,20 +2863,6 @@
       {
        "id": "plumbing_manufactured_plumbing_tie_downs",
        "label": "Plumbing Supports",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "plumbing_older_galvanized_supply",
-       "label": "Galvanized Supply (Older Home)",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "plumbing_older_oil_fired_water_heater",
-       "label": "Oil-Fired Water Heater",
        "kind": "component",
        "keywords": [],
        "condition": true
@@ -3735,6 +3735,13 @@
        ]
       },
       {
+       "id": "electrical_older_fuse_panel",
+       "label": "Fuse Panel",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      },
+      {
        "id": "elec_sub_separation",
        "label": "Neutrals & Grounds Separated",
        "kind": "component",
@@ -4079,13 +4086,6 @@
        "condition": true
       },
       {
-       "id": "electrical_older_fuse_panel",
-       "label": "Fuse Panel",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
        "id": "electrical_multi_unit_metering",
        "label": "Unit Metering",
        "kind": "component",
@@ -4372,6 +4372,13 @@
         "Drone",
         "Binoculars"
        ]
+      },
+      {
+       "id": "roofing_older_roof_built_up_layers",
+       "label": "Built-Up Roof Layers",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
       }
      ]
     },
@@ -4695,13 +4702,6 @@
       {
        "id": "roofing_manufactured_roof_skirts",
        "label": "Roof Skirts",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "roofing_older_roof_built_up_layers",
-       "label": "Built-Up Roof Layers",
        "kind": "component",
        "keywords": [],
        "condition": true
@@ -7682,6 +7682,13 @@
        "limitations": [
         "Not Visible"
        ]
+      },
+      {
+       "id": "fireplace_older_fireplace_chimney",
+       "label": "Chimney Liner (Older Home)",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
       }
      ]
     },
@@ -7774,13 +7781,6 @@
       {
        "id": "fireplace_manufactured_fireplace_venting",
        "label": "Fireplace Venting (Manufactured Home)",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      },
-      {
-       "id": "fireplace_older_fireplace_chimney",
-       "label": "Chimney Liner (Older Home)",
        "kind": "component",
        "keywords": [],
        "condition": true

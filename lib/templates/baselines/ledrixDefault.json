@@ -407,6 +407,18 @@
               "keywords": [],
               "trimmed": [],
               "condition": true
+            },
+            {
+              "id": "hvac_older_gravity_furnace",
+              "label": "Gravity Furnace",
+              "kind": "component",
+              "keywords": []
+            },
+            {
+              "id": "hvac_older_oil_furnace",
+              "label": "Oil Furnace",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -541,6 +553,12 @@
                 }
               ],
               "condition": true
+            },
+            {
+              "id": "attic_older_asbestos_ductwrap",
+              "label": "Suspected Asbestos Duct Wrap",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -754,6 +772,12 @@
               "limitations": [
                 "Not Tested"
               ]
+            },
+            {
+              "id": "hvac_older_steam_boiler",
+              "label": "Steam Boiler",
+              "kind": "component",
+              "keywords": []
             }
           ]
         },
@@ -821,58 +845,6 @@
               "label": "Belly Ductwork",
               "kind": "component",
               "keywords": []
-            },
-            {
-              "id": "hvac_older_gravity_furnace",
-              "label": "Gravity Furnace",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1950
-                }
-              ]
-            },
-            {
-              "id": "hvac_older_oil_furnace",
-              "label": "Oil Furnace",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
-              ]
-            },
-            {
-              "id": "hvac_older_steam_boiler",
-              "label": "Steam Boiler",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1950
-                }
-              ]
-            },
-            {
-              "id": "attic_older_asbestos_ductwrap",
-              "label": "Suspected Asbestos Duct Wrap",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
-              ]
             },
             {
               "id": "hvac_multi_unit_shared_plant",
@@ -2344,13 +2316,6 @@
                 "aircell",
                 "asbestos pipe insulation",
                 "boiler pipe wrap"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
               ]
             },
             {
@@ -2362,13 +2327,6 @@
                 "lead service line",
                 "soft gray pipe",
                 "wiped joint"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1986
-                }
               ]
             },
             {
@@ -2378,15 +2336,13 @@
               "keywords": [
                 "polybutylene era",
                 "poly b era"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "from": 1978,
-                  "through": 1995
-                }
               ]
+            },
+            {
+              "id": "plumbing_older_galvanized_supply",
+              "label": "Galvanized Supply (Older Home)",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -2651,13 +2607,6 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "laundry_dryer",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -2950,13 +2899,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "laundry_dryer",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -3080,6 +3022,12 @@
                   "optional": true
                 }
               ]
+            },
+            {
+              "id": "plumbing_older_oil_fired_water_heater",
+              "label": "Oil-Fired Water Heater",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -3102,32 +3050,6 @@
               "label": "Plumbing Supports",
               "kind": "component",
               "keywords": []
-            },
-            {
-              "id": "plumbing_older_galvanized_supply",
-              "label": "Galvanized Supply (Older Home)",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1960
-                }
-              ]
-            },
-            {
-              "id": "plumbing_older_oil_fired_water_heater",
-              "label": "Oil-Fired Water Heater",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
-              ]
             },
             {
               "id": "plumbing_multi_unit_shared_water_heater",
@@ -4105,6 +4027,12 @@
               "limitations": [
                 "Not Visible"
               ]
+            },
+            {
+              "id": "electrical_older_fuse_panel",
+              "label": "Fuse Panel",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -4468,19 +4396,6 @@
               "keywords": []
             },
             {
-              "id": "electrical_older_fuse_panel",
-              "label": "Fuse Panel",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1965
-                }
-              ]
-            },
-            {
               "id": "electrical_multi_unit_metering",
               "label": "Unit Metering",
               "kind": "component",
@@ -4791,6 +4706,12 @@
                 "Too high"
               ],
               "limitLabel": "Not walked / not inspected"
+            },
+            {
+              "id": "roofing_older_roof_built_up_layers",
+              "label": "Built-Up Roof Layers",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -4981,13 +4902,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "roof_gutters",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -5018,13 +4932,6 @@
               "walkZones": [
                 "roof",
                 "exterior"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "roof_gutters",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -5134,13 +5041,6 @@
                     "Board Sheathing (Solid)"
                   ]
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -5187,19 +5087,6 @@
               "label": "Roof Skirts",
               "kind": "component",
               "keywords": []
-            },
-            {
-              "id": "roofing_older_roof_built_up_layers",
-              "label": "Built-Up Roof Layers",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1990
-                }
-              ]
             },
             {
               "id": "roofing_multi_unit_roof_drainage",
@@ -6125,13 +6012,6 @@
                 "transite siding",
                 "cement shingle siding",
                 "asbestos cement shingles"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
               ]
             }
           ],
@@ -6455,13 +6335,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "ext_deck",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -6711,13 +6584,6 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -6776,13 +6642,6 @@
               "condition": true,
               "limitations": [
                 "Not Determined"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -6813,13 +6672,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -6830,18 +6682,6 @@
                 "vermiculite",
                 "zonolite",
                 "loose fill pebbles"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1990
-                },
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -6880,13 +6720,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -6912,14 +6745,7 @@
                   ]
                 }
               ],
-              "condition": true,
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
-              ]
+              "condition": true
             },
             {
               "id": "attic_powered",
@@ -6947,13 +6773,6 @@
                     "Solar"
                   ],
                   "optional": true
-                }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
                 }
               ]
             },
@@ -6986,13 +6805,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -7015,14 +6827,7 @@
                 "mold attic",
                 "leak stain"
               ],
-              "condition": true,
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
-              ]
+              "condition": true
             },
             {
               "id": "attic_pests",
@@ -7040,13 +6845,6 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ],
@@ -7066,13 +6864,6 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ]
@@ -7118,13 +6909,6 @@
               "options": [
                 "Dry",
                 "Old Stains (Monitor)"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -7144,13 +6928,6 @@
                 "No Evidence",
                 "Old Droppings (Monitor)",
                 "Not Visible (Limitation)"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "attic_access::spec",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             }
           ]
@@ -7517,13 +7294,6 @@
                 "asbestos tile",
                 "vinyl asbestos tile",
                 "black mastic"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1980
-                }
               ]
             },
             {
@@ -7535,13 +7305,6 @@
                 "peeling paint",
                 "chipping paint",
                 "alligatored paint"
-              ],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1978
-                }
               ]
             }
           ],
@@ -8353,13 +8116,6 @@
                   ],
                   "optional": true
                 }
-              ],
-              "requires": [
-                {
-                  "specNodeId": "int_stairs",
-                  "includes": [],
-                  "unlisted": []
-                }
               ]
             },
             {
@@ -8374,14 +8130,7 @@
                 "low beam"
               ],
               "trimmed": [],
-              "condition": true,
-              "requires": [
-                {
-                  "specNodeId": "int_stairs",
-                  "includes": [],
-                  "unlisted": []
-                }
-              ]
+              "condition": true
             }
           ],
           "trimmed": []
@@ -8842,6 +8591,12 @@
               "limitations": [
                 "Not Visible"
               ]
+            },
+            {
+              "id": "fireplace_older_fireplace_chimney",
+              "label": "Chimney Liner (Older Home)",
+              "kind": "component",
+              "keywords": []
             }
           ],
           "trimmed": []
@@ -8944,19 +8699,6 @@
               "label": "Fireplace Venting (Manufactured Home)",
               "kind": "component",
               "keywords": []
-            },
-            {
-              "id": "fireplace_older_fireplace_chimney",
-              "label": "Chimney Liner (Older Home)",
-              "kind": "component",
-              "keywords": [],
-              "requires": [
-                {
-                  "specNodeId": "house::built",
-                  "includes": [],
-                  "before": 1950
-                }
-              ]
             },
             {
               "id": "fireplace_multi_unit_shared_chimney",

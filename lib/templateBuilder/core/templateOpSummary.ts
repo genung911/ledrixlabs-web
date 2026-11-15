@@ -4,6 +4,7 @@
 // there is one, and the section it belongs to. Labels are resolved against the tree AS IT WILL BE when that
 // change runs (summarizeChangeSet walks the change set in order), so a field added to a component the same
 // proposal creates still reads by name rather than by id.
+import { eraWords } from './eraItems';
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import { applyOp, type TemplateOp, type Predicate } from './templateOps';
 import type { ChangeSet, ChangeEntry } from './templateChangeSets';
@@ -80,6 +81,8 @@ export function summarizeOp(op: TemplateOp, tpl: InspectionTemplate): OpSummary 
       const section = sectionOf(tpl, op.nodeId);
       if (op.field === 'label') return { title: `Rename ${q(String(prev ?? name))}`, before: String(prev ?? ''), after: String(op.value ?? ''), section };
       if (op.field === 'condition') return { title: `${op.value ? 'Assess' : 'Stop assessing'} ${q(name)}`, detail: op.value ? 'Gets OK · Finding · Limitation' : 'Described only', section };
+      // x2 phase 2 (2026-11-14): the item's era, in words
+      if (op.field === 'era') return { title: op.value ? `Show ${q(name)} by year built` : `Show ${q(name)} for every year`, before: prev ? eraWords(prev as any) : 'Ledrix\'s years', after: op.value ? eraWords(op.value as any) : 'Ledrix\'s years', section };
       if (op.field === 'appliesWhen') return { title: op.value ? `Load ${q(name)} only when…` : `Always load ${q(name)}`, before: prev ? describeRule(tpl, prev) : 'always', after: op.value ? describeRule(tpl, op.value as Predicate) : 'always', section };
       if (op.field === 'requirements') return { title: `Requirements on ${q(name)}`, before: list((prev ?? []).map((r: any) => `${r.label} (${r.level})`)), after: list(((op.value as any[]) ?? []).map((r: any) => `${r.label} (${r.level})`)), section };
       if (op.field === 'findingShortcuts') return { title: `Shortcuts on ${q(name)}`, before: list((prev ?? []).map((s: any) => s.label)), after: list(((op.value as any[]) ?? []).map((s: any) => s.label + (s.defaultPriority ? ` (${s.defaultPriority})` : ''))), section };

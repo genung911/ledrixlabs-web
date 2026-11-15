@@ -82,6 +82,8 @@ export type TemplateNode = {
   requirements?: import('./requirementsContract').RequirementDef[];
   /** Equipment component catalog entry this item or group was picked from (app equipmentCatalog.ts). Provenance only. */
   catalogRef?: string;
+  /** The company's era (app x2 phase 2, 2026-11-14): when this item shows by the job's year built; replaces Ledrix's. */
+  era?: { before?: number; from?: number; through?: number };
   /** Setup switched off on this item (Details fields, Requirements), kept so switching back on restores it (app). */
   parked?: { attributes?: ComponentAttribute[]; requirements?: import('./requirementsContract').RequirementDef[] };
   children?: TemplateNode[];
