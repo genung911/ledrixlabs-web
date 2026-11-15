@@ -76,7 +76,11 @@ export function unitBuildingNames(record: Record<string, unknown>): string[] {
 // The old intake Add-ons list is split by what each one is: a building (ADU, Detached Garage, Guest House, Well House) is
 // one of the template's building types; a feature stays a feature (below); Pool/Spa is the Pool & spa add-on service.
 // Everything picked is kept, by name, in the job's `addOns` field, as before — the Home Profile and the report read it.
-export const PROPERTY_FEATURES: readonly string[] = ['Crawlspace', 'Solar', 'Radon Mitigation', 'Dual-Fuel Zones'];
+// NO FEATURES AT INTAKE (owner 2026-11-14, of build 842's Add Job: "Remove the features options. These all are
+// inspector/ledrix decisions to add at the inspection from the template"). Crawlspace, Solar, Radon Mitigation and
+// Dual-Fuel Zones are answered at the inspection (Before you start / the template), not when the job is booked. Kept as an
+// empty list so every reader stays one shape; a feature an older job already picked still shows (and can be unpicked).
+export const PROPERTY_FEATURES: readonly string[] = [];
 export const NOTHING_ELSE = 'None';
 
 /** The building types whose names are among the picks — the buildings a new job is made with. */
