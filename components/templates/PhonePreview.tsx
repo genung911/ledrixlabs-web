@@ -739,10 +739,22 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const at = pool.findIndex(x => x.key === screen.key);
     const last = at >= pool.length - 1;
     const sysHasPhotos = scoped && [walkScope!, ...(fold.into === walkScope ? folded : [])].some(id => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0);
+    // THE WALK'S KEYS (app WalkKeys, 2026-11-15): ⚠ + the item's camera (on the phone), then Back · Skip · Next — Next
+    // dim until the item is addressed, Skip moves on and leaves it open.
+    const here = i >= 0 ? steps[i] : null;
+    const done = here ? stepDone(here) : true;
     return (
-      <div className="pv-nav">
-        <button type="button" className="pv-nb" disabled={at <= 0 && !sysHasPhotos} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
-        <button type="button" className="pv-nn" onClick={() => move(1)} aria-label={last ? 'Finish guided coverage' : 'Next step'}>{last ? 'FINISH' : 'NEXT'}<Glyph d={G.chevR} size={16} /></button>
+      <div className="pv-walk">
+        <div className="pv-keys">
+          <button type="button" className="pv-klim" disabled aria-label="Limitation on the whole system (on the phone)">⚠</button>
+          <button type="button" className="pv-kcam" disabled aria-label="The item's camera (on the phone)">📷 Camera · {displayLabel(here?.label ?? '')}</button>
+        </div>
+        <div className="pv-nav">
+          <button type="button" className="pv-nb" disabled={at <= 0 && !sysHasPhotos} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
+          <button type="button" className="pv-nb" onClick={() => move(1)} aria-label="Skip: leave this one open and move on">SKIP</button>
+          <button type="button" className={`pv-nn${done ? '' : ' pv-dim'}`} onClick={() => (done ? move(1) : say('Mark it OK, a finding or a limitation — or Skip.'))}
+            aria-label={!done ? 'Not done yet' : last ? 'Finish guided coverage' : 'Next step'}>{last ? 'FINISH' : 'NEXT'}<Glyph d={G.chevR} size={16} /></button>
+        </div>
       </div>
     );
   };
@@ -1031,6 +1043,12 @@ const CSS_TEXT = `
 .ldx-pv .pv-xcard b{color:#eef3f5;font-size:15px;font-weight:700}
 .ldx-pv .pv-xleave{color:#7f9197;font-size:11px;line-height:1.5;margin-top:14px}
 .ldx-pv .pv-nav{flex:none;display:flex;gap:8px;padding:8px 12px;background:#05070b;border-top:1px solid rgba(38,50,62,.55)}
+.ldx-pv .pv-walk{flex:none;background:#05070b;border-top:1px solid rgba(38,50,62,.55)}
+.ldx-pv .pv-walk .pv-nav{border-top:0}
+.ldx-pv .pv-keys{display:flex;gap:8px;padding:8px 12px 0}
+.ldx-pv .pv-klim{width:44px;border-radius:11px;border:1px solid #5a4520;color:#f5c46a;background:transparent;padding:9px 0}
+.ldx-pv .pv-kcam{flex:1;border-radius:11px;border:1px solid #26363b;background:#0d151b;color:#eef3f5;font-size:11.5px;font-weight:800;padding:9px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ldx-pv .pv-dim{background:#13283f!important;color:#7fa6d2!important}
 .ldx-pv .pv-nb,.ldx-pv .pv-nn{display:flex;align-items:center;justify-content:center;gap:4px;border-radius:11px;padding:11px 6px;font-size:11px;font-weight:900;letter-spacing:.6px;white-space:nowrap;overflow:hidden}
 .ldx-pv .pv-nb{flex:1;border:1px solid #26363b;background:#0d151b;color:#c7d0d6}
 .ldx-pv .pv-nb:disabled{opacity:.35;cursor:default}

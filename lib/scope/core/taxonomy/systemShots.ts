@@ -254,6 +254,14 @@ export const CROSS_TRADE: Readonly<Record<string, readonly string[]>> = {
 };
 export const crossTradeMatch = (systemId: string, nodeId: string): boolean =>
   (CROSS_TRADE[baseOf(systemId)] ?? []).some(p => (p.endsWith('*') ? baseOf(nodeId).startsWith(p.slice(0, -1)) : baseOf(nodeId) === p));
+/** WHERE A FOUNDATION PHOTO WAS TAKEN, IN WORDS (owner 2026-11-15: "in the crawlspace … see ducting loose"): a finding
+ *  another trade's item files from a Foundation photo prints "observed in the crawlspace", not "in Foundation". The
+ *  house's own answer (found_type) names it; both a crawlspace and a basement → "crawlspace or basement"; a slab or an
+ *  unanswered type → null (the caller keeps the system's label). */
+export const foundationAreaOf = (types: readonly string[]): string | null => {
+  const crawl = types.some(t => /crawl/i.test(t)), base = types.some(t => /basement/i.test(t));
+  return crawl && base ? 'Crawlspace or basement' : crawl ? 'Crawlspace' : base ? 'Basement' : null;
+};
 /** The photo's role, stored on the evidence item: `heating:plate`. */
 export const shotRole = (systemId: string, shotId: string) => `${baseOf(systemId)}:${shotId}`;
 
