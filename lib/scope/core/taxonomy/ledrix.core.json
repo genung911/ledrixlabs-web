@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.14.3",
+  "packVersion": "2026.11.14.5",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -1011,6 +1011,11 @@
               "includes": [],
               "unlisted": [],
               "typeFirst": true
+            },
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1950
             }
           ]
         },
@@ -1030,6 +1035,11 @@
               "includes": [],
               "unlisted": [],
               "typeFirst": true
+            },
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
             }
           ]
         },
@@ -1049,6 +1059,11 @@
               "includes": [],
               "unlisted": [],
               "typeFirst": true
+            },
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1950
             }
           ]
         },
@@ -1464,6 +1479,11 @@
               "includes": [],
               "unlisted": [],
               "typeFirst": true
+            },
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
             }
           ]
         },
@@ -4250,7 +4270,14 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1960
+            }
+          ]
         },
         {
           "id": "plumbing_older_oil_fired_water_heater",
@@ -4261,7 +4288,14 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
+            }
+          ]
         },
         {
           "id": "plumbing_multi_unit_shared_water_heater",
@@ -4692,6 +4726,65 @@
               "optional": true
             }
           ]
+        },
+        {
+          "id": "plumb_era_asbestos_pipe_wrap",
+          "label": "Suspected Asbestos Pipe Insulation",
+          "keywords": [
+            "pipe wrap",
+            "aircell",
+            "asbestos pipe insulation",
+            "boiler pipe wrap"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
+            }
+          ]
+        },
+        {
+          "id": "plumb_era_lead_pipe",
+          "label": "Suspected Lead Supply / Service Pipe",
+          "keywords": [
+            "lead pipe",
+            "lead service line",
+            "soft gray pipe",
+            "wiped joint"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1986
+            }
+          ]
+        },
+        {
+          "id": "plumb_era_polybutylene",
+          "label": "Polybutylene Era — Check Supply Piping",
+          "keywords": [
+            "polybutylene era",
+            "poly b era"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "from": 1978,
+              "through": 1995
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -4711,7 +4804,10 @@
             "plumb_flow",
             "plumb_pressure",
             "plumb_well",
-            "plumb_pressure_tank"
+            "plumb_pressure_tank",
+            "plumb_era_asbestos_pipe_wrap",
+            "plumb_era_lead_pipe",
+            "plumb_era_polybutylene"
           ]
         },
         {
@@ -6446,7 +6542,14 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1965
+            }
+          ]
         },
         {
           "id": "electrical_multi_unit_metering",
@@ -7492,7 +7595,14 @@
           "appliesTo": [
             "older"
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1990
+            }
+          ]
         },
         {
           "id": "roofing_multi_unit_roof_drainage",
@@ -9402,6 +9512,26 @@
             "new_construction"
           ],
           "condition": true
+        },
+        {
+          "id": "ext_era_asbestos_siding",
+          "label": "Suspected Asbestos-Cement Siding",
+          "keywords": [
+            "asbestos siding",
+            "transite siding",
+            "cement shingle siding",
+            "asbestos cement shingles"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -9422,7 +9552,8 @@
             "ext_sid_metal",
             "ext_sid_other",
             "ext_trim",
-            "ext_paint"
+            "ext_paint",
+            "ext_era_asbestos_siding"
           ]
         },
         {
@@ -9886,6 +10017,30 @@
             "new_construction"
           ],
           "condition": true
+        },
+        {
+          "id": "attic_era_vermiculite",
+          "label": "Suspected Vermiculite Insulation",
+          "keywords": [
+            "vermiculite",
+            "zonolite",
+            "loose fill pebbles"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1990
+            },
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -9902,7 +10057,8 @@
           "name": "Insulation",
           "nodeIds": [
             "attic_instype",
-            "attic_coverage"
+            "attic_coverage",
+            "attic_era_vermiculite"
           ]
         },
         {
@@ -11740,6 +11896,46 @@
             "new_construction"
           ],
           "condition": true
+        },
+        {
+          "id": "int_era_asbestos_tile",
+          "label": "Suspected Asbestos Floor Tile (9×9)",
+          "keywords": [
+            "9x9 tile",
+            "asbestos tile",
+            "vinyl asbestos tile",
+            "black mastic"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
+            }
+          ]
+        },
+        {
+          "id": "int_era_lead_paint",
+          "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
+          "keywords": [
+            "lead paint",
+            "peeling paint",
+            "chipping paint",
+            "alligatored paint"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1978
+            }
+          ]
         }
       ],
       "subsystems": [
@@ -11764,7 +11960,9 @@
             "wall_paneling",
             "wall_wood",
             "wall_tile",
-            "wall_other"
+            "wall_other",
+            "int_era_asbestos_tile",
+            "int_era_lead_paint"
           ]
         },
         {
@@ -12647,6 +12845,11 @@
               "includes": [],
               "unlisted": [],
               "typeFirst": true
+            },
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1950
             }
           ]
         },

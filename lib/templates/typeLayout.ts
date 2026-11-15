@@ -75,13 +75,16 @@ function normKey(key: string, byId: Map<string, TemplateNode>): string {
 /** `{ includes: [], unlisted: [] }` with no `exact` / `typeFirst`: shows for any real answer, goes on None (Not present). */
 export const isPresencePred = (p: any): boolean => Array.isArray(p?.includes) && p.includes.length === 0 && Array.isArray(p?.unlisted)
   && p.unlisted.length === 0 && !p.exact && !p.typeFirst && !p.whenUnanswered;
+/** A year bound on the job's year built (`before` / `from` / `through`, app applicability.isEraPredicate). */
+export const isEraPred = (p: any): boolean => typeof p?.before === 'number' || typeof p?.from === 'number' || typeof p?.through === 'number';
 export function predsOf(defs: RuleDefinitions, id: string, byId: Map<string, TemplateNode>): Array<{ key: string; p: Pred; dep: boolean }> {
   const d = defs.nodes[baseOf(id)];
   if (!d) return [];
   const out: Array<{ key: string; p: Pred; dep: boolean }> = [];
   // A PRESENCE rule (app 2026-11-14, Before you start's Attic / Deck / Laundry / Gutters / Stairs): any answer keeps the
   // item, only None takes it off — it never decides WHICH items apply, so it is no type or material question here.
-  for (const p of (d.requires ?? []) as Pred[]) if (p && typeof p.specNodeId === 'string' && !isPresencePred(p)) out.push({ key: normKey(p.specNodeId, byId), p, dep: false });
+  // …nor an ERA (app 2026-11-14, x2): a year bound on the job's year built is no question the template asks.
+  for (const p of (d.requires ?? []) as Pred[]) if (p && typeof p.specNodeId === 'string' && !isPresencePred(p) && !isEraPred(p)) out.push({ key: normKey(p.specNodeId, byId), p, dep: false });
   if (d.dependsOnSpec) out.push({ key: normKey(d.dependsOnSpec.nodeId, byId), p: { specNodeId: d.dependsOnSpec.nodeId, includes: d.dependsOnSpec.includes }, dep: true });
   return out;
 }

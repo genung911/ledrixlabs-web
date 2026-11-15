@@ -826,25 +826,53 @@
               "id": "hvac_older_gravity_furnace",
               "label": "Gravity Furnace",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1950
+                }
+              ]
             },
             {
               "id": "hvac_older_oil_furnace",
               "label": "Oil Furnace",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
             },
             {
               "id": "hvac_older_steam_boiler",
               "label": "Steam Boiler",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1950
+                }
+              ]
             },
             {
               "id": "attic_older_asbestos_ductwrap",
               "label": "Suspected Asbestos Duct Wrap",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
             },
             {
               "id": "hvac_multi_unit_shared_plant",
@@ -2306,6 +2334,59 @@
                   "optional": true
                 }
               ]
+            },
+            {
+              "id": "plumb_era_asbestos_pipe_wrap",
+              "label": "Suspected Asbestos Pipe Insulation",
+              "kind": "component",
+              "keywords": [
+                "pipe wrap",
+                "aircell",
+                "asbestos pipe insulation",
+                "boiler pipe wrap"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
+            },
+            {
+              "id": "plumb_era_lead_pipe",
+              "label": "Suspected Lead Supply / Service Pipe",
+              "kind": "component",
+              "keywords": [
+                "lead pipe",
+                "lead service line",
+                "soft gray pipe",
+                "wiped joint"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1986
+                }
+              ]
+            },
+            {
+              "id": "plumb_era_polybutylene",
+              "label": "Polybutylene Era — Check Supply Piping",
+              "kind": "component",
+              "keywords": [
+                "polybutylene era",
+                "poly b era"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "from": 1978,
+                  "through": 1995
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -3026,13 +3107,27 @@
               "id": "plumbing_older_galvanized_supply",
               "label": "Galvanized Supply (Older Home)",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1960
+                }
+              ]
             },
             {
               "id": "plumbing_older_oil_fired_water_heater",
               "label": "Oil-Fired Water Heater",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
             },
             {
               "id": "plumbing_multi_unit_shared_water_heater",
@@ -4376,7 +4471,14 @@
               "id": "electrical_older_fuse_panel",
               "label": "Fuse Panel",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1965
+                }
+              ]
             },
             {
               "id": "electrical_multi_unit_metering",
@@ -5090,7 +5192,14 @@
               "id": "roofing_older_roof_built_up_layers",
               "label": "Built-Up Roof Layers",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1990
+                }
+              ]
             },
             {
               "id": "roofing_multi_unit_roof_drainage",
@@ -6006,6 +6115,24 @@
               ],
               "trimmed": [],
               "condition": true
+            },
+            {
+              "id": "ext_era_asbestos_siding",
+              "label": "Suspected Asbestos-Cement Siding",
+              "kind": "component",
+              "keywords": [
+                "asbestos siding",
+                "transite siding",
+                "cement shingle siding",
+                "asbestos cement shingles"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -6694,6 +6821,28 @@
                   "unlisted": []
                 }
               ]
+            },
+            {
+              "id": "attic_era_vermiculite",
+              "label": "Suspected Vermiculite Insulation",
+              "kind": "component",
+              "keywords": [
+                "vermiculite",
+                "zonolite",
+                "loose fill pebbles"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1990
+                },
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -7357,6 +7506,42 @@
               "condition": true,
               "limitations": [
                 "Not Inspected"
+              ]
+            },
+            {
+              "id": "int_era_asbestos_tile",
+              "label": "Suspected Asbestos Floor Tile (9×9)",
+              "kind": "component",
+              "keywords": [
+                "9x9 tile",
+                "asbestos tile",
+                "vinyl asbestos tile",
+                "black mastic"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1980
+                }
+              ]
+            },
+            {
+              "id": "int_era_lead_paint",
+              "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
+              "kind": "component",
+              "keywords": [
+                "lead paint",
+                "peeling paint",
+                "chipping paint",
+                "alligatored paint"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1978
+                }
               ]
             }
           ],
@@ -8764,7 +8949,14 @@
               "id": "fireplace_older_fireplace_chimney",
               "label": "Chimney Liner (Older Home)",
               "kind": "component",
-              "keywords": []
+              "keywords": [],
+              "requires": [
+                {
+                  "specNodeId": "house::built",
+                  "includes": [],
+                  "before": 1950
+                }
+              ]
             },
             {
               "id": "fireplace_multi_unit_shared_chimney",

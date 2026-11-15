@@ -72,7 +72,11 @@ export type SpecAlternative = { specNodeId: string; includes: readonly string[];
  *  the item waits for this answer — unanswered, it does not apply (the same verdict as `whenUnanswered`). It is a
  *  SEPARATE marker on purpose: `whenUnanswered` is how a per-type condition card is recognised (typeConditions, the
  *  classifier's pool, the type-change guard), and an ordinary item that merely waits for its system's type is not a card. */
-export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; typeFirst?: true; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string; orSpec?: readonly SpecAlternative[] };
+export type SpecPredicate    = { specNodeId: string; includes: readonly string[]; whenUnanswered?: 'not_applicable'; typeFirst?: true; unlisted?: readonly string[]; exact?: true; origin?: 'template'; attr?: string; orSpec?: readonly SpecAlternative[];
+  /** AN ERA (owner 2026-11-14, x2 — mockup V5QHLXYzFcCuFF4RduCqb7 "Era items follow the year built"): the answer is a YEAR
+   *  (`house::built`, the job's year built) and holds when it is before `before`, from `from`, through `through` (any set
+   *  bound must hold). An unanswered year is unanswered (Rule 2 — everything shows); a value with no year in it never holds. */
+  before?: number; from?: number; through?: number };
 export type UtilityPredicate = { utility: Utility };
 export type Predicate = SpecPredicate | UtilityPredicate;
 
@@ -208,8 +212,18 @@ export function unlistedEntries(value: string | null | undefined, claimed: reado
   return String(value ?? '').split(',').map(v => v.trim()).filter(v => v && !isAbsence(v) && !specHolds(v, claimed));
 }
 
+/** An era predicate: a year bound on the job's year built (x2). */
+export const isEraPredicate = (p: { before?: unknown; from?: unknown; through?: unknown } | null | undefined): boolean =>
+  !!p && (typeof p.before === 'number' || typeof p.from === 'number' || typeof p.through === 'number');
+
 /** Does one spec predicate hold for an answered value? `includes`, or — when authored — `unlisted`. */
-export function specPredicateHolds(value: string, p: { includes?: readonly string[]; unlisted?: readonly string[]; exact?: true }): boolean {
+export function specPredicateHolds(value: string, p: { includes?: readonly string[]; unlisted?: readonly string[]; exact?: true; before?: number; from?: number; through?: number }): boolean {
+  if (isEraPredicate(p)) {
+    const m = /\b(1[6-9]\d\d|2[01]\d\d)\b/.exec(String(value ?? ''));
+    if (!m) return false;
+    const y = Number(m[1]);
+    return (p.before === undefined || y < p.before) && (p.from === undefined || y >= p.from) && (p.through === undefined || y <= p.through);
+  }
   if (p.exact === true) {
     // WHOLE ENTRIES, either way round: an entry equal to a listed value, or (when `unlisted` is authored) an entry
     // equal to none of the field's choices — what the inspector typed under Other. Same SPEC_DELIM split as

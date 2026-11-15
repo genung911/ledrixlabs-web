@@ -109,8 +109,11 @@ export function houseFactsStatus(p: { answered: number; total: number; left: rea
 // answered from the job's report extras — the same record, never copied into the spec store. A house fact is about the
 // main building: in any other building (a Detached Garage, an ADU) these keys are unanswered, so a rule that reads one
 // never hides that building's own items.
-export const HOUSE_SPEC_KEYS: Readonly<Record<string, 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType'>> = {
+export const HOUSE_SPEC_KEYS: Readonly<Record<string, 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'yearBuilt'>> = {
   'house::gas': 'gasSupply', 'house::water': 'waterSource', 'house::sewer': 'sewerType', 'house::garage': 'garageType',
+  // x2 (2026-11-14): the job's YEAR BUILT, which the era rules compare (applicability `before` / `from` / `through`). The
+  // caller supplies it beside the extras (the inspection record holds it, not the extras).
+  'house::built': 'yearBuilt',
 };
 export const isHouseKey = (key: string): boolean => typeof key === 'string' && key.startsWith('house::');
 /** A `house::` key's answer: the extras field it names, only in the main building. Undefined for any other key. */
@@ -118,6 +121,7 @@ export function houseSpecValue(extras: Readonly<Record<string, unknown>> | null 
   const field = HOUSE_SPEC_KEYS[key];
   if (!field || !inMain || !extras) return undefined;
   const v = extras[field];
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);   // the year built
   return typeof v === 'string' && v.trim() ? v : undefined;
 }
 

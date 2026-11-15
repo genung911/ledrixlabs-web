@@ -826,8 +826,11 @@ async function runTypes(files) {
         // Pressure Tank now follow house::water, a house fact the website does not read yet (DECISIONS "Not yet: … Web
         // parity is a follow-up"), so the builder lists them with what every home gets. Pinned exactly: the three every-home
         // items, then those two and nothing else.
-        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure|Well Equipment|Pressure Tank'   /* 2026-11-09: valve + location split */
-        && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank'
+        // AMENDED 2026-11-14 (app x2, the eras): + the three plumbing era items — their year bound is the job's, no question
+        // the template asks (typeLayout.isEraPred), so the builder lists them with what every home gets.
+        && q.typed?.label === 'Other Supply Piping' && sup.every.map(n => n.label).join('|') === 'Main Shutoff|Functional Flow|Water Pressure|Well Equipment|Pressure Tank|Suspected Asbestos Pipe Insulation|Suspected Lead Supply / Service Pipe|Polybutylene Era — Check Supply Piping'   /* 2026-11-09: valve + location split */
+        // …the house-fact ones: Well Equipment and the Pressure Tank (house::water), and the three era items (house::built, x2)
+        && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank|plumb_era_asbestos_pipe_wrap|plumb_era_lead_pipe|plumb_era_polybutylene'
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
       const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
       const A = mat('attic'), ins = grp(A, 'Insulation');
@@ -844,7 +847,8 @@ async function runTypes(files) {
         globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: lab(surf?.every), kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
         r('interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings; Trim moved to Doors & Windows), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card',
           I.map(g => g.node.label).join('|') === 'Walls, Ceilings & Floors|Countertops & Cabinets|Doors & Windows|Stairs & Railings|Ventilation'
-          && !!surf && surf.every.length === 0 &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
+          // AMENDED 2026-11-14 (app x2): the surfaces' every-home items are the two era items (asbestos tile, lead paint) only
+          && !!surf && surf.every.map(n => n.id).join('|') === 'int_era_asbestos_tile|int_era_lead_paint' &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
           && !!vent && vent.every.length === 0 && !wm);
         // The answer lists themselves are the app's verify:interior-surfaces (pack, Ledrix Default, 4-Point; byte copies here).
       }

@@ -230,7 +230,10 @@ export function specialHomeOps(tpl: InspectionTemplate, systemId: string, pickId
   const ops: TemplateOp[] = [];
   const picked = new Set(picks);
   const relabel = (g: TemplateNode) => { if (LEGACY_GROUP_LABELS.has(g.label)) ops.push({ op: 'setNodeField', nodeId: g.id, field: 'label', value: SPECIAL_GROUP_LABEL }); };
-  const fromSource = (id: string): TemplateNode | null => { const n = shippedNode(source, id); return n ? clone(n) : null; };
+  // A copy carries no `requires` (2026-11-14, x2): Ledrix's rules — an era's year, a type — are the pack's (the inspection's
+  // frozen ruleDefinitions), never a template node's own field, and the template ops refuse the key.
+  const noRules = (n: TemplateNode): TemplateNode => { const { requires: _r, ...rest } = n as TemplateNode & { requires?: unknown }; return { ...rest, ...(rest.children ? { children: rest.children.map(noRules) } : {}) } as TemplateNode; };
+  const fromSource = (id: string): TemplateNode | null => { const n = shippedNode(source, id); return n ? noRules(clone(n)) : null; };
 
   const g = shipped ? find(tpl, shipped.id) : null;
   let home: string | null = null;   // the active group new checkpoints go into

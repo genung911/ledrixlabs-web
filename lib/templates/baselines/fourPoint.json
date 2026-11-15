@@ -210,6 +210,19 @@
        "label": "Furnace Condensate Drain",
        "kind": "component",
        "keywords": [],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Condensate Drain",
+         "values": [
+          "To floor drain",
+          "Condensate pump",
+          "To exterior",
+          "Other"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -221,6 +234,19 @@
         "pvc intake",
         "air intake pipe"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Intake",
+         "values": [
+          "PVC sidewall",
+          "PVC roof",
+          "Room air",
+          "Other"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -228,6 +254,19 @@
        "label": "Draft Hood / Vent Connector",
        "kind": "component",
        "keywords": [],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Vent Connector",
+         "values": [
+          "Single-wall metal",
+          "Double-wall (B-vent)",
+          "PVC",
+          "Other"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -244,6 +283,15 @@
         "btu",
         "rating plate"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Brand",
+         "values": [],
+         "freeText": true,
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -259,6 +307,18 @@
         "ignitor",
         "igniter",
         "flame sensor"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Ignition",
+         "values": [
+          "Hot surface",
+          "Standing pilot",
+          "Spark"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -614,6 +674,18 @@
         "hydronic expansion tank",
         "waterlogged expansion tank"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Expansion Tank",
+         "values": [
+          "Diaphragm",
+          "Compression",
+          "None seen"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -638,6 +710,19 @@
         "circulator pump",
         "boiler circulator",
         "hydronic pump"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Circulator Pumps",
+         "values": [
+          "1",
+          "2",
+          "3",
+          "4+"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -685,6 +770,17 @@
         "heating element",
         "electric heat element"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Control",
+         "values": [
+          "Line-voltage thermostat",
+          "Built-in knob"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Tested"
@@ -730,6 +826,19 @@
         "zone valve",
         "radiant zone",
         "pex manifold heating"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Zones",
+         "values": [
+          "1",
+          "2",
+          "3",
+          "4+"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -859,6 +968,17 @@
      "label": "Window / Wall AC",
      "kind": "component",
      "keywords": [],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Mount",
+       "values": [
+        "Window",
+        "Through-wall sleeve"
+       ],
+       "optional": true
+      }
+     ],
      "condition": true,
      "limitations": [
       "Not Operated"
@@ -869,6 +989,18 @@
      "label": "Evaporative Cooler",
      "kind": "component",
      "keywords": [],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Location",
+       "values": [
+        "Roof",
+        "Ground",
+        "Window"
+       ],
+       "optional": true
+      }
+     ],
      "condition": true,
      "limitations": [
       "Not Operated"
@@ -1035,6 +1167,17 @@
       "dedicated outlet",
       "extension cord ac"
      ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Outlet",
+       "values": [
+        "120V",
+        "240V"
+       ],
+       "optional": true
+      }
+     ],
      "condition": true
     },
     {
@@ -1078,285 +1221,649 @@
      "limitations": [
       "Not Operated"
      ]
+    }
+   ]
+  },
+  {
+   "id": "mini_split",
+   "label": "MINI SPLIT",
+   "kind": "system",
+   "icon": "air-conditioner",
+   "defaultActive": false,
+   "locationAxis": "room",
+   "children": [
+    {
+     "id": "mini_split__outdoor_unit",
+     "label": "Outdoor Unit",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "hvac_ms_unit",
+       "label": "Outdoor Unit",
+       "kind": "component",
+       "keywords": [
+        "mini-split outdoor unit",
+        "ductless condenser",
+        "mini split condenser",
+        "outdoor unit",
+        "multi-zone outdoor"
+       ],
+       "attributes": [
+        {
+         "id": "refrigerant",
+         "label": "Refrigerant",
+         "values": [
+          "R-410A",
+          "R-32",
+          "R-454B",
+          "R-22"
+         ],
+         "optional": true
+        },
+        {
+         "id": "size",
+         "label": "Size",
+         "values": [
+          "9000 BTU",
+          "12000 BTU",
+          "18000 BTU",
+          "24000 BTU",
+          "30000 BTU",
+          "36000 BTU",
+          "42000 BTU",
+          "48000 BTU"
+         ],
+         "optional": true
+        },
+        {
+         "id": "max_breaker",
+         "label": "Max Breaker (Plate)",
+         "values": [
+          "15 A",
+          "20 A",
+          "25 A",
+          "30 A",
+          "35 A",
+          "40 A"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_unit_age",
+       "label": "Mini-Split Age",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
+        {
+         "id": "age",
+         "label": "Age",
+         "values": [
+          "Under 5 years old",
+          "5–10 years old",
+          "10–15 years old",
+          "15–20 years old",
+          "20–25 years old",
+          "Over 25 years old",
+          "Not determined"
+         ]
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "hvac_ms_dataplate",
+       "label": "Data Plate (Make/Model)",
+       "kind": "component",
+       "keywords": [
+        "mini-split data plate",
+        "outdoor unit label",
+        "model number",
+        "serial number"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Brand",
+         "values": [],
+         "freeText": true,
+         "optional": true
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_disconnect",
+       "label": "Mini-Split Disconnect",
+       "kind": "component",
+       "keywords": [
+        "mini-split disconnect",
+        "outdoor unit disconnect",
+        "service disconnect"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Disconnect Type",
+         "values": [
+          "Fused",
+          "Non-fused",
+          "Breaker"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_condensate",
+       "label": "Condensate Line",
+       "kind": "component",
+       "keywords": [
+        "mini-split condensate",
+        "head condensate line",
+        "condensate pump"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Condensate Discharge",
+         "values": [
+          "Gravity to exterior",
+          "Condensate pump",
+          "Other"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true
+      }
+     ]
     },
     {
-     "id": "hvac_ms_heads",
+     "id": "mini_split__indoor_heads",
      "label": "Indoor Heads",
-     "kind": "component",
-     "keywords": [
-      "indoor heads",
-      "how many heads",
-      "mini-split heads",
-      "number of heads"
-     ],
-     "attributes": [
+     "kind": "subsystem",
+     "children": [
       {
-       "id": "count",
+       "id": "hvac_ms_heads",
        "label": "Indoor Heads",
-       "values": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8"
+       "kind": "component",
+       "keywords": [
+        "indoor heads",
+        "how many heads",
+        "mini-split heads",
+        "number of heads"
+       ],
+       "attributes": [
+        {
+         "id": "count",
+         "label": "Indoor Heads",
+         "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8"
+         ]
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_1",
+       "label": "Indoor Head 1",
+       "kind": "component",
+       "keywords": [
+        "indoor head",
+        "air handler head",
+        "wall cassette",
+        "ceiling cassette",
+        "ductless head"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_2",
+       "label": "Indoor Head 2",
+       "kind": "component",
+       "keywords": [
+        "head 2",
+        "indoor head 2"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_3",
+       "label": "Indoor Head 3",
+       "kind": "component",
+       "keywords": [
+        "head 3",
+        "indoor head 3"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_4",
+       "label": "Indoor Head 4",
+       "kind": "component",
+       "keywords": [
+        "head 4",
+        "indoor head 4"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_5",
+       "label": "Indoor Head 5",
+       "kind": "component",
+       "keywords": [
+        "head 5",
+        "indoor head 5"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_6",
+       "label": "Indoor Head 6",
+       "kind": "component",
+       "keywords": [
+        "head 6",
+        "indoor head 6"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_7",
+       "label": "Indoor Head 7",
+       "kind": "component",
+       "keywords": [
+        "head 7",
+        "indoor head 7"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_ms_head_8",
+       "label": "Indoor Head 8",
+       "kind": "component",
+       "keywords": [
+        "head 8",
+        "indoor head 8"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      }
+     ]
+    },
+    {
+     "id": "mini_split__controls",
+     "label": "Controls",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "hvac_ms_remote",
+       "label": "Remote / Wall Controller",
+       "kind": "component",
+       "keywords": [
+        "remote",
+        "wall controller",
+        "mini-split remote",
+        "handheld controller"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Controller",
+         "values": [
+          "Handheld remote",
+          "Wall controller",
+          "App"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Present",
+        "Not Operated"
        ]
       }
-     ],
-     "condition": true
-    },
+     ]
+    }
+   ]
+  },
+  {
+   "id": "heat_pump",
+   "label": "HEAT PUMP",
+   "kind": "system",
+   "icon": "sun-snowflake",
+   "defaultActive": false,
+   "locationAxis": "room",
+   "children": [
     {
-     "id": "hvac_ms_head_1",
-     "label": "Indoor Head 1",
+     "id": "hvac_hp_operation",
+     "label": "Heat Pump Operation",
      "kind": "component",
      "keywords": [
-      "indoor head",
-      "air handler head",
-      "wall cassette",
-      "ceiling cassette",
-      "ductless head"
+      "heat pump operation",
+      "supply temperature",
+      "return temperature",
+      "heat pump test",
+      "defrost"
      ],
      "attributes": [
       {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
+       "id": "heat_supply",
+       "label": "Heat supply",
+       "values": [],
        "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_2",
-     "label": "Indoor Head 2",
-     "kind": "component",
-     "keywords": [
-      "head 2",
-      "indoor head 2"
-     ],
-     "attributes": [
+       "input": "temperature"
+      },
       {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
+       "id": "cool_supply",
+       "label": "Cool supply",
+       "values": [],
        "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_3",
-     "label": "Indoor Head 3",
-     "kind": "component",
-     "keywords": [
-      "head 3",
-      "indoor head 3"
-     ],
-     "attributes": [
+       "input": "temperature"
+      },
       {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
+       "id": "return_temp",
+       "label": "Return",
+       "values": [],
        "optional": true,
-       "emptyLabel": "Unknown"
+       "input": "temperature"
       }
      ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_4",
-     "label": "Indoor Head 4",
-     "kind": "component",
-     "keywords": [
-      "head 4",
-      "indoor head 4"
-     ],
-     "attributes": [
-      {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
-       "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_5",
-     "label": "Indoor Head 5",
-     "kind": "component",
-     "keywords": [
-      "head 5",
-      "indoor head 5"
-     ],
-     "attributes": [
-      {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
-       "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_6",
-     "label": "Indoor Head 6",
-     "kind": "component",
-     "keywords": [
-      "head 6",
-      "indoor head 6"
-     ],
-     "attributes": [
-      {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
-       "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_7",
-     "label": "Indoor Head 7",
-     "kind": "component",
-     "keywords": [
-      "head 7",
-      "indoor head 7"
-     ],
-     "attributes": [
-      {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
-       "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
-    },
-    {
-     "id": "hvac_ms_head_8",
-     "label": "Indoor Head 8",
-     "kind": "component",
-     "keywords": [
-      "head 8",
-      "indoor head 8"
-     ],
-     "attributes": [
-      {
-       "id": "location",
-       "label": "Location",
-       "values": [
-        "Living Room",
-        "Primary Bedroom",
-        "Bedroom",
-        "Kitchen",
-        "Dining Room",
-        "Family Room",
-        "Office",
-        "Bonus Room",
-        "Basement",
-        "Garage"
-       ],
-       "freeText": true,
-       "optional": true,
-       "emptyLabel": "Unknown"
-      }
-     ],
-     "condition": true
+     "condition": true,
+     "limitations": [
+      "Not Operated — outdoor temperature",
+      "Not Operated"
+     ]
     }
    ]
   },
@@ -1575,11 +2082,110 @@
         "low pressure",
         "prv"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Pressure (psi)",
+         "values": [],
+         "freeText": true,
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Measured"
        ],
        "freeFormValue": true
+      },
+      {
+       "id": "plumb_well",
+       "label": "Well Equipment",
+       "kind": "component",
+       "keywords": [
+        "well",
+        "well head",
+        "well cap",
+        "well pump",
+        "pump control"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Well Pump",
+         "values": [
+          "Submersible",
+          "Jet",
+          "Not determined"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Located",
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "plumb_pressure_tank",
+       "label": "Pressure Tank",
+       "kind": "component",
+       "keywords": [
+        "pressure tank",
+        "well tank",
+        "bladder tank",
+        "pressure switch"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Pressure Tank",
+         "values": [
+          "Bladder",
+          "Galvanized"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Located",
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "plumb_era_asbestos_pipe_wrap",
+       "label": "Suspected Asbestos Pipe Insulation",
+       "kind": "component",
+       "keywords": [
+        "pipe wrap",
+        "aircell",
+        "asbestos pipe insulation",
+        "boiler pipe wrap"
+       ],
+       "condition": true
+      },
+      {
+       "id": "plumb_era_lead_pipe",
+       "label": "Suspected Lead Supply / Service Pipe",
+       "kind": "component",
+       "keywords": [
+        "lead pipe",
+        "lead service line",
+        "soft gray pipe",
+        "wiped joint"
+       ],
+       "condition": true
+      },
+      {
+       "id": "plumb_era_polybutylene",
+       "label": "Polybutylene Era — Check Supply Piping",
+       "kind": "component",
+       "keywords": [
+        "polybutylene era",
+        "poly b era"
+       ],
+       "condition": true
       }
      ]
     },
@@ -1791,6 +2397,19 @@
        "label": "Drain Traps",
        "kind": "component",
        "keywords": [],
+       "attributes": [
+        {
+         "id": "drain",
+         "label": "Drain / Trap",
+         "values": [
+          "PVC",
+          "ABS",
+          "Chrome / Metal",
+          "Other"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -1847,6 +2466,34 @@
         "lav",
         "vanity sink"
        ],
+       "attributes": [
+        {
+         "id": "sink_material",
+         "label": "Sink Material",
+         "values": [
+          "Stainless Steel",
+          "Composite / Granite",
+          "Porcelain / Cast Iron",
+          "Fireclay",
+          "Vitreous China",
+          "Cultured Marble",
+          "Other"
+         ],
+         "optional": true
+        },
+        {
+         "id": "faucet",
+         "label": "Faucet Type",
+         "values": [
+          "Single Handle",
+          "Two Handle",
+          "Pull-Down / Pull-Out",
+          "Touchless",
+          "Other Faucet"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Tested"
@@ -1865,6 +2512,18 @@
         "rocking",
         "rocking toilet",
         "commode"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Toilet Type",
+         "values": [
+          "Tank",
+          "One-piece",
+          "Wall-hung"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -1923,6 +2582,18 @@
         "sillcock exterior",
         "frost-free bib"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Hose Bib Type",
+         "values": [
+          "Frost-free",
+          "Standard",
+          "Anti-siphon"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Winterized",
@@ -1945,6 +2616,30 @@
         "supply valve bath",
         "drain leak bath",
         "under vanity"
+       ],
+       "attributes": [
+        {
+         "id": "drain",
+         "label": "Drain / Trap",
+         "values": [
+          "PVC",
+          "ABS",
+          "Chrome / Metal",
+          "Other"
+         ],
+         "optional": true
+        },
+        {
+         "id": "supply",
+         "label": "Supply Lines",
+         "values": [
+          "Braided Stainless",
+          "Plastic",
+          "Copper",
+          "Other Supply"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -2002,6 +2697,18 @@
         "washer box",
         "laundry drain",
         "240v"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Washer Valves",
+         "values": [
+          "Separate valves",
+          "Single-lever",
+          "Outlet box"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -2065,6 +2772,65 @@
         }
        ],
        "condition": true
+      },
+      {
+       "id": "plumb_gas_meter",
+       "label": "Gas Meter / Main Shutoff",
+       "kind": "component",
+       "keywords": [
+        "gas meter",
+        "meter shutoff",
+        "main gas shutoff",
+        "gas service",
+        "regulator"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Meter Location",
+         "values": [
+          "Exterior side",
+          "Front",
+          "Rear",
+          "Interior"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Located",
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "plumb_propane_tank",
+       "label": "Propane Tank / Regulator",
+       "kind": "component",
+       "keywords": [
+        "propane tank",
+        "lp tank",
+        "propane regulator",
+        "tank gauge",
+        "propane"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Tank",
+         "values": [
+          "Above ground",
+          "Buried",
+          "Cylinders"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Located",
+        "Not Accessible"
+       ]
       }
      ]
     },
@@ -2336,6 +3102,20 @@
       "overflow tube",
       "t&p valve"
      ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Discharge Pipe",
+       "values": [
+        "Copper",
+        "CPVC",
+        "PEX",
+        "Galvanized",
+        "Missing"
+       ],
+       "optional": true
+      }
+     ],
      "condition": true,
      "limitations": [
       "Not Operated"
@@ -2375,6 +3155,17 @@
       "expansion tank",
       "thermal expansion",
       "closed system"
+     ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Expansion Tank",
+       "values": [
+        "Present",
+        "Not present"
+       ],
+       "optional": true
+      }
      ],
      "condition": true
     },
@@ -2442,6 +3233,18 @@
       "seismic bracing",
       "strapped"
      ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Straps",
+       "values": [
+        "Two straps",
+        "One strap",
+        "None"
+       ],
+       "optional": true
+      }
+     ],
      "condition": true,
      "limitations": [
       "Not Visible"
@@ -2456,6 +3259,17 @@
       "gas shutoff",
       "sediment trap",
       "drip leg"
+     ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Sediment Trap",
+       "values": [
+        "Present",
+        "Not present"
+       ],
+       "optional": true
+      }
      ],
      "condition": true
     },
@@ -2495,6 +3309,17 @@
       "isolation valves",
       "service valves",
       "flush valves"
+     ],
+     "attributes": [
+      {
+       "id": "spec",
+       "label": "Service Valves",
+       "values": [
+        "Present",
+        "Not present"
+       ],
+       "optional": true
+      }
      ],
      "condition": true
     },
@@ -2614,6 +3439,17 @@
         "drop height",
         "tree contact service"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Service",
+         "values": [
+          "Overhead",
+          "Underground"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -2629,6 +3465,17 @@
         "service mast",
         "mast strap",
         "mast flashing"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Mast",
+         "values": [
+          "Through-roof",
+          "Side-mounted"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -2660,6 +3507,18 @@
         "meter base",
         "meter can",
         "meter socket"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Meter Location",
+         "values": [
+          "Exterior side",
+          "Front",
+          "Rear"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -2786,6 +3645,18 @@
         "removed cover",
         "panel opened"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Circuit Labels",
+         "values": [
+          "Labeled",
+          "Partly labeled",
+          "Not labeled"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Removed",
@@ -2804,6 +3675,15 @@
         "oversized breaker",
         "overfused",
         "tandem"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Panel Brand",
+         "values": [],
+         "freeText": true,
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -3116,6 +3996,18 @@
         "ungrounded",
         "three prong"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Receptacles",
+         "values": [
+          "Grounded 3-prong",
+          "2-prong",
+          "Mixed"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -3154,6 +4046,18 @@
         "soffit light",
         "landscape lighting",
         "motion light"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Exterior Lights",
+         "values": [
+          "Wall",
+          "Motion sensor",
+          "Post"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -3269,20 +4173,20 @@
       },
       {
        "id": "roof_material_age",
-       "label": "Roof Age",
+       "label": "Roof Remaining Life",
        "kind": "component",
        "keywords": [],
        "attributes": [
         {
-         "id": "estimated_age",
-         "label": "Estimated Age",
+         "id": "remaining_life",
+         "label": "Remaining Life",
+         "optional": true,
          "values": [
-          "Under 5 years old",
-          "5–10 years old",
-          "10–15 years old",
-          "15–20 years old",
-          "20–25 years old",
-          "Over 25 years old",
+          "More than 10 years",
+          "5–10 years",
+          "2–5 years",
+          "Less than 2 years",
+          "At or past end of life",
           "Not determined"
          ]
         }
@@ -3488,6 +4392,19 @@
         "kickout",
         "counter flashing"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Flashing",
+         "values": [
+          "Step",
+          "Counter",
+          "Kick-out",
+          "Kick-out missing"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -3505,6 +4422,18 @@
         "neoprene boot",
         "cracked boot"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Boots",
+         "values": [
+          "Rubber",
+          "Lead",
+          "Metal"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -3520,6 +4449,19 @@
         "sun tunnel",
         "solar tube",
         "curb mount"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Skylights",
+         "values": [
+          "1",
+          "2",
+          "3",
+          "4+"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -3585,6 +4527,19 @@
         "conductor",
         "disconnected downspout"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Discharge",
+         "values": [
+          "Splash blocks",
+          "Extensions",
+          "Underground",
+          "To grade"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -3621,9 +4576,48 @@
         "eave flashing",
         "gravel stop"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Drip Edge",
+         "values": [
+          "Present",
+          "Not present"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
+       ]
+      },
+      {
+       "id": "roof_scuppers",
+       "label": "Scuppers / Roof Drains",
+       "kind": "component",
+       "keywords": [
+        "scupper",
+        "roof drain",
+        "interior drain",
+        "overflow scupper",
+        "flat roof drain"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Drains",
+         "values": [
+          "Scuppers",
+          "Internal drains"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible",
+        "Not Accessible"
        ]
       }
      ]
@@ -3847,6 +4841,18 @@
         "main beam",
         "support beam"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Beams",
+         "values": [
+          "Wood",
+          "Steel",
+          "LVL"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -3868,6 +4874,18 @@
         "spongy floor bath",
         "rot at toilet",
         "water-damaged subfloor bath"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Subfloor",
+         "values": [
+          "Plywood",
+          "OSB",
+          "Plank"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -4010,6 +5028,19 @@
         "crawl support",
         "settling pier"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Piers",
+         "values": [
+          "Concrete",
+          "CMU block",
+          "Wood posts",
+          "Steel"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -4066,6 +5097,18 @@
         "sump pit",
         "pump crawl",
         "drainage pump"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Sump Pump",
+         "values": [
+          "Submersible",
+          "Pedestal",
+          "Battery backup"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -4168,6 +5211,17 @@
         "floor drain",
         "garage drain",
         "trench drain"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Floor Drain",
+         "values": [
+          "Present",
+          "Not present"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       }
@@ -4408,6 +5462,19 @@
         "rotted trim",
         "open soffit"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Soffit",
+         "values": [
+          "Vented vinyl",
+          "Aluminum",
+          "Wood",
+          "Closed"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -4424,6 +5491,18 @@
         "peeling paint",
         "exposed wood",
         "failed caulk"
+       ],
+       "condition": true
+      },
+      {
+       "id": "ext_era_asbestos_siding",
+       "label": "Suspected Asbestos-Cement Siding",
+       "kind": "component",
+       "keywords": [
+        "asbestos siding",
+        "transite siding",
+        "cement shingle siding",
+        "asbestos cement shingles"
        ],
        "condition": true
       }
@@ -4444,6 +5523,18 @@
         "site drainage",
         "slope away",
         "negative grade"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Slope",
+         "values": [
+          "Away from house",
+          "Flat",
+          "Toward house"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -4530,6 +5621,19 @@
         "weep holes",
         "tieback"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Wall Material",
+         "values": [
+          "Concrete",
+          "Block",
+          "Timber",
+          "Stone"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       }
      ]
@@ -4590,6 +5694,20 @@
         "spacing",
         "4 inch sphere"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Railing Material",
+         "values": [
+          "Wood",
+          "Metal",
+          "Vinyl",
+          "Composite",
+          "Glass"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -4603,6 +5721,18 @@
         "lag bolt",
         "nailed ledger",
         "deck attachment"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Ledger Attachment",
+         "values": [
+          "Bolted",
+          "Nailed only",
+          "Not visible"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -4620,6 +5750,19 @@
         "stringer",
         "riser exterior",
         "handrail exterior"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Stair Material",
+         "values": [
+          "Concrete",
+          "Wood",
+          "Composite",
+          "Masonry"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       }
@@ -4644,6 +5787,18 @@
         "vent termination",
         "foil vent",
         "vinyl vent"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Termination",
+         "values": [
+          "Louvered hood",
+          "Flap",
+          "Screen"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -4700,7 +5855,8 @@
          "label": "Attic Access",
          "values": [
           "Scuttle / Hatch",
-          "Pull-Down Stair"
+          "Pull-Down Stair",
+          "Walk-Up Stair"
          ]
         }
        ],
@@ -4809,10 +5965,33 @@
         "uneven coverage",
         "voids"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Coverage",
+         "values": [
+          "Full",
+          "Partial",
+          "Gaps seen"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
        ]
+      },
+      {
+       "id": "attic_era_vermiculite",
+       "label": "Suspected Vermiculite Insulation",
+       "kind": "component",
+       "keywords": [
+        "vermiculite",
+        "zonolite",
+        "loose fill pebbles"
+       ],
+       "condition": true
       }
      ]
     },
@@ -4832,6 +6011,18 @@
         "baffle",
         "blocked soffit",
         "continuous soffit"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Intake Vents",
+         "values": [
+          "Continuous",
+          "Individual",
+          "None seen"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -4873,6 +6064,18 @@
         "solar vent",
         "thermostat vent"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Powered Fan",
+         "values": [
+          "Roof",
+          "Gable",
+          "Solar"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Present — Not Tested"
@@ -4890,6 +6093,18 @@
         "fan dumps in attic",
         "terminates exterior",
         "ducting"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Fan Termination",
+         "values": [
+          "To exterior",
+          "Into attic",
+          "Not visible"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -5303,6 +6518,30 @@
        "limitations": [
         "Not Inspected"
        ]
+      },
+      {
+       "id": "int_era_asbestos_tile",
+       "label": "Suspected Asbestos Floor Tile (9×9)",
+       "kind": "component",
+       "keywords": [
+        "9x9 tile",
+        "asbestos tile",
+        "vinyl asbestos tile",
+        "black mastic"
+       ],
+       "condition": true
+      },
+      {
+       "id": "int_era_lead_paint",
+       "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
+       "kind": "component",
+       "keywords": [
+        "lead paint",
+        "peeling paint",
+        "chipping paint",
+        "alligatored paint"
+       ],
+       "condition": true
       }
      ]
     },
@@ -5444,6 +6683,19 @@
         "splash guard",
         "caulk backsplash"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Backsplash",
+         "values": [
+          "Tile",
+          "Stone",
+          "Laminate",
+          "None"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -5459,6 +6711,18 @@
         "water damage cabinet",
         "cabinets",
         "cupboard"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Cabinets",
+         "values": [
+          "Wood",
+          "Painted",
+          "Laminate / Thermofoil"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       }
@@ -5634,6 +6898,20 @@
         "fogged window",
         "broken window"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Window Operation",
+         "values": [
+          "Single-hung",
+          "Double-hung",
+          "Slider",
+          "Casement",
+          "Fixed"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Sampled"
@@ -5788,6 +7066,19 @@
         "rubbing door",
         "hollow core"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Interior Doors",
+         "values": [
+          "Hollow core",
+          "Solid core",
+          "Pocket",
+          "Barn"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Tested"
@@ -5846,6 +7137,19 @@
         "genie",
         "belt drive",
         "chain drive"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Opener Drive",
+         "values": [
+          "Chain",
+          "Belt",
+          "Screw",
+          "Wall-mount"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -5925,6 +7229,18 @@
         "uneven riser",
         "tread"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Stair Finish",
+         "values": [
+          "Carpeted",
+          "Wood",
+          "Tile"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -5938,6 +7254,18 @@
         "loose handrail",
         "graspable",
         "spindle spacing"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Handrail Material",
+         "values": [
+          "Wood",
+          "Metal",
+          "Missing"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -5963,7 +7291,7 @@
      "children": [
       {
        "id": "primary_bathroom_exhaust_fan",
-       "label": "Exhaust Fan (Bath / Laundry)",
+       "label": "Exhaust Fan",
        "kind": "component",
        "keywords": [
         "exhaust fan",
@@ -6124,6 +7452,19 @@
         "spalling",
         "combustible clearance"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Hearth",
+         "values": [
+          "Brick",
+          "Stone",
+          "Tile",
+          "Concrete"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -6138,6 +7479,18 @@
         "flue damper",
         "throat damper",
         "top-mount damper"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Damper",
+         "values": [
+          "Throat",
+          "Top-sealing",
+          "None"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -6256,6 +7609,18 @@
         "cap missing",
         "flashing crown"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Cap / Crown",
+         "values": [
+          "Metal cap",
+          "Masonry crown",
+          "None"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Visible"
@@ -6361,6 +7726,18 @@
         "gas valve fireplace",
         "key valve",
         "log lighter valve"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Gas Shutoff",
+         "values": [
+          "Key valve",
+          "In-line valve",
+          "Not seen"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       }
@@ -6486,6 +7863,17 @@
         "entry door to house",
         "door to house"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Self-Closer",
+         "values": [
+          "Self-closing",
+          "Not self-closing"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true
       },
       {
@@ -6521,6 +7909,17 @@
         "sealed gap",
         "gap to attic",
         "unsealed penetration"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Penetrations",
+         "values": [
+          "Sealed",
+          "Openings seen"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
@@ -6586,6 +7985,31 @@
         "freezer",
         "built-in fridge"
        ],
+       "attributes": [
+        {
+         "id": "fridge_type",
+         "label": "Refrigerator Type",
+         "values": [
+          "Top Freezer",
+          "Bottom Freezer",
+          "Side-by-Side",
+          "French Door",
+          "Built-In",
+          "Not Present"
+         ],
+         "optional": true
+        },
+        {
+         "id": "water_ice",
+         "label": "Water / Ice",
+         "values": [
+          "Water & Ice",
+          "Ice Only",
+          "None"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Tested"
@@ -6634,6 +8058,18 @@
         "dishwasher drain",
         "dish washer"
        ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Air Gap / High Loop",
+         "values": [
+          "Air gap",
+          "High loop",
+          "Neither seen"
+         ],
+         "optional": true
+        }
+       ],
        "condition": true,
        "limitations": [
         "Not Tested"
@@ -6650,6 +8086,17 @@
         "disposal leak",
         "disposal jammed",
         "insinkerator"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Disposal",
+         "values": [
+          "Present",
+          "Not Present"
+         ],
+         "optional": true
+        }
        ],
        "condition": true
       },
@@ -6700,6 +8147,19 @@
         "otr microwave",
         "built-in microwave",
         "microwave drawer"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Microwave",
+         "values": [
+          "Over-range vented",
+          "Over-range recirculating",
+          "Countertop",
+          "Built-in"
+         ],
+         "optional": true
+        }
        ],
        "condition": true,
        "limitations": [
