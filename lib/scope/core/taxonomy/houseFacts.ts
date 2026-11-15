@@ -133,6 +133,17 @@ export function houseSpecValue(extras: Readonly<Record<string, unknown>> | null 
   return typeof v === 'string' && v.trim() ? v : undefined;
 }
 
+/** THE GARAGE SPACE FOLLOWS THE GARAGE ANSWER (owner 2026-11-14, test run x15: "the Main Structure still shows the Garage
+ *  space tile though the garage is a Detached Garage building"). The main building's Garage space is for a garage AT the
+ *  house — Attached, or a Carport (its slab still applies). Answered with neither (Detached only, None), it is not shown;
+ *  unanswered, it shows (Rule 2). Its outlets, lighting and walls rows carry no garage rule, so counting its items could
+ *  never hide it. */
+export const GARAGE_SPACE_ID = 'space_garage';
+export function garageSpaceHere(garage: string | null | undefined): boolean {
+  const picks = String(garage ?? '').split(',').map(x => x.trim()).filter(Boolean);
+  return picks.length === 0 || picks.some(p => p === 'Attached' || p === 'Carport');
+}
+
 /** The type questions every other item of their system waits for (type first, phase 2): host id → its field. Read by the
  *  report's verdict — a system whose type is unanswered is never Satisfactory (verify:system-verdict). */
 export const TYPE_HOST_FIELDS: Readonly<Record<string, string>> = Object.fromEntries(
