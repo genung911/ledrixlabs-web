@@ -20,6 +20,13 @@ export const MINI_SPLIT = 'Ductless Mini-Split';
  *  A gas or propane furnace beside the heat pump is dual fuel: it stays on the Heat Pump page, as its backup heat. */
 export const HEAT_PUMP = 'Heat Pump', HEAT_PUMP_AC = 'Heat Pump AC';
 const DUAL_FUEL = ['Gas Furnace', 'Propane'];
+/** HEATING & COOLING (owner 2026-11-14, mockup https://claude.ai/artifact/4Df15Ji47hKYYea1JDvb2h → "Approved use
+ *  recommendations"): a furnace and a split / package AC share the air handler — the ducts, filter, registers, thermostat
+ *  and condensate — so they are ONE system: Cooling folds into the Heating tile, which reads "Heating & Cooling", its page
+ *  ordered Furnace · Cooling · Shared. Only one of each (which furnace pairs with which AC is not known for two). */
+export const FURNACES = ['Gas Furnace', 'Electric Furnace', 'Propane', 'Oil Furnace'];
+export const DUCTED_AC = ['Split System', 'Package Unit'];
+export const COMBINED_LABEL = 'Heating & Cooling';
 
 const entries = (v: string | null | undefined): string[] => String(v ?? '').split(',').map(x => x.trim()).filter(Boolean);
 const isMs = (e: string) => e.toLowerCase() === MINI_SPLIT.toLowerCase();
@@ -27,8 +34,8 @@ const isMs = (e: string) => e.toLowerCase() === MINI_SPLIT.toLowerCase();
 export type HvacFold = {
   /** The systems folded into the unit tile: 'heating', 'cooling', both or none. */
   folded: ('heating' | 'cooling')[];
-  /** The unit system they fold into: the Mini Split, the Heat Pump, or none. */
-  into: 'mini_split' | 'heat_pump' | null;
+  /** The unit system they fold into: the Mini Split, the Heat Pump, Heating (a furnace + a split AC, 2026-11-14), or none. */
+  into: 'mini_split' | 'heat_pump' | 'heating' | null;
   /** What the mini-split does at this house, from the answers. */
   heat: boolean; cool: boolean;
   /** The tile's note: "Heat + cool", "Cool only", "Heat only", or null when no answer names a mini-split. */
@@ -50,5 +57,9 @@ export function hvacFold(x: { heating: string | null | undefined; cooling: strin
   const hp = h.some(e => eq(e, HEAT_PUMP)) && h.every(e => eq(e, HEAT_PUMP) || DUAL_FUEL.some(d => eq(e, d)))
     && c.length > 0 && c.every(e => eq(e, HEAT_PUMP_AC)) && (x.heatingUnits ?? 1) <= 1 && (x.coolingUnits ?? 1) <= 1;
   if (hp) return { folded: ['heating', 'cooling'], into: 'heat_pump', heat: false, cool: false, note: null };
+  // A FURNACE + A DUCTED AC: one air handler, one system — Cooling folds into Heating (Heating & Cooling).
+  const combined = h.length > 0 && h.every(e => FURNACES.some(f => eq(e, f))) && c.length > 0 && c.every(e => DUCTED_AC.some(d => eq(e, d)))
+    && (x.heatingUnits ?? 1) <= 1 && (x.coolingUnits ?? 1) <= 1;
+  if (combined) return { folded: ['cooling'], into: 'heating', heat: false, cool: false, note: null };
   return { folded: [], into: null, heat, cool, note: null };
 }

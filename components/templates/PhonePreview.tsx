@@ -36,7 +36,7 @@ import {
 import { previewNeeds } from '@/lib/templates/requirementModel';
 import { displayLabel } from './systemLabel';
 import { shotsFor } from '@/lib/scope/core/taxonomy/systemShots';
-import { hvacFold } from '@/lib/scope/core/taxonomy/hvacUnits';
+import { hvacFold, COMBINED_LABEL } from '@/lib/scope/core/taxonomy/hvacUnits';
 import { HOUSE_FACTS } from '@/lib/scope/core/taxonomy/houseFacts';
 import { COLOR_ICONS, COLOR_SVGS } from './colorIcons';
 import { groupIconFor } from './groupIcons';
@@ -148,6 +148,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   }, [index, picks, typed]);
   const folded = fold.folded as string[];
   const tileOf = (sysId: string) => (fold.into && folded.includes(sysId) ? fold.into : sysId);
+  // HEATING & COOLING (app 2026-11-14, hvacUnits): a furnace + a split AC fold into the Heating tile, named as the phone names it.
+  const sysName = (x: { id: string; label: string }) => (fold.into === 'heating' && x.id === 'heating' ? COMBINED_LABEL : displayLabel(x.label));
   const tileSystems = useMemo(() => systems.filter(s => !(fold.into && folded.includes(s.id)) && (!UNIT_SYSTEMS.includes(s.id) || fold.into === s.id)),
     [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
   const walkSystems = useMemo(() => (fold.into
@@ -331,10 +333,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             const done = p.total > 0 && p.met >= p.total;
             return (
               <button key={sys.id} type="button" data-pv-id={sys.id} className={`pv-cell${hl === sys.id ? ' pv-hit' : ''}`}
-                onClick={() => openSystem(sys)} aria-label={`${displayLabel(sys.label)}, ${p.met} of ${p.total}`}>
+                onClick={() => openSystem(sys)} aria-label={`${sysName(sys)}, ${p.met} of ${p.total}`}>
                 <span className="pv-sq"><TileIco name={sys.icon ?? 'shape-outline'} />
                   <span className="pv-prog" aria-hidden="true"><i className={done ? 'g' : ''} style={{ width: `${p.total > 0 ? Math.round((p.met / p.total) * 100) : 0}%` }} /></span></span>
-                <span className="pv-tl">{displayLabel(sys.label)}</span>
+                <span className="pv-tl">{sysName(sys)}</span>
               </button>
             );
           })}
@@ -424,10 +426,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
-        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE{inGroup ? ` · ${displayLabel(sys.label).toUpperCase()}` : ''}</div>
+        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE{inGroup ? ` · ${sysName(sys).toUpperCase()}` : ''}</div>
         <div className="pv-sysrow">
-          <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${displayLabel(sys.label)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
-          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : displayLabel(sys.label)}</span>
+          <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${sysName(sys)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
+          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : sysName(sys)}</span>
           <span className="pv-c">{met}<small> / {total}</small></span>
         </div>
         <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
