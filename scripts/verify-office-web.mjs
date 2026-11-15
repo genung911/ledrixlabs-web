@@ -38,7 +38,7 @@ const mod = async (text, rewrite = (s) => s) => { const f = join(dir, `m${++run}
 const UID = '00000000-0000-4000-8000-00000000a001', CO = '00000000-0000-4000-8000-0000000c0a00', OTHER = '00000000-0000-4000-8000-0000000c0b00';
 const TPL = '00000000-0000-4000-8000-0000000e0001', LEAD = '00000000-0000-4000-8000-00000000a004';
 const RECORD = { address: '1 Main St', city: 'Boise', state: 'ID', zip: '83702', sqft: '2400', yearBuilt: '1978', homeType: 'Site-Built', deltas: 'None',
-  inspectionType: 'Full Home Inspection', scheduledTime: '9:00 AM', clientName: 'Ann Buyer', clientEmail: 'ann@example.com' };
+  inspectionType: 'Single Family Home Inspection', scheduledTime: '9:00 AM', clientName: 'Ann Buyer', clientEmail: 'ann@example.com' };
 
 /** A stand-in server for create.ts: answers by URL, records every request. */
 function server({ addInspections = true, templateCompany = CO, insertRows = 1 } = {}) {
@@ -175,8 +175,8 @@ async function suite(S) {
   ok('§6 home types and “also on the property” are the phone’s', JSON.stringify(I.HOME_TYPES) === lit(appHome, 'HOME_TYPES') && JSON.stringify(I.DELTA_OPTIONS) === lit(appHome, 'DELTA_OPTIONS'));
   ok('§6 water, sewer and gas are the phone’s', JSON.stringify(I.WATER_SOURCE_OPTIONS) === lit(appExtras, 'WATER_SOURCE_OPTIONS')
     && JSON.stringify(I.SEWER_TYPE_OPTIONS) === lit(appExtras, 'SEWER_TYPE_OPTIONS') && JSON.stringify(I.GAS_SUPPLY_OPTIONS) === lit(appExtras, 'GAS_SUPPLY_OPTIONS'));
-  ok('§6 the stock template per type is the phone’s', /'Full Home Inspection': 'internachi',\s*'4-Point':\s*'fourpoint',/.test(appScreen)
-    && I.TYPE_DEFAULT_TEMPLATE['Full Home Inspection'] === 'internachi' && I.TYPE_DEFAULT_TEMPLATE['4-Point'] === 'fourpoint');
+  ok('§6 the stock template per type is the phone’s', /'Single Family Home Inspection': 'internachi',\s*'4-Point':\s*'fourpoint',/.test(appScreen)
+    && I.TYPE_DEFAULT_TEMPLATE['Single Family Home Inspection'] === 'internachi' && I.TYPE_DEFAULT_TEMPLATE['4-Point'] === 'fourpoint');
   return out;
 }
 

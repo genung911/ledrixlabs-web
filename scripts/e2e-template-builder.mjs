@@ -51,7 +51,7 @@ const db = {
   company_templates: [{ id: LIVE_ID, company_id: CO, name: 'Standard', base: 'internachi', template: { id: LIVE_ID, name: 'Standard', ...clone(def) }, row_version: 3, updated_at: now(), created_at: now(), deleted_at: null }],
   company_template_drafts: [],
   company_template_context: [],   // ledger #71 (ledrix-app supabase_company_template_context.sql)
-  company_inspection_types: [{ id: randomUUID(), company_id: CO, name: 'Full Home Inspection', template_id: LIVE_ID, row_version: 1, sort_order: 0, deleted_at: null }],
+  company_inspection_types: [{ id: randomUUID(), company_id: CO, name: 'Single Family Home Inspection', template_id: LIVE_ID, row_version: 1, sort_order: 0, deleted_at: null }],
   calls: [],
 };
 const roleOf = () => db.inspector_profiles.find(p => p.id === OWNER)?.role;
@@ -239,7 +239,7 @@ try {
   await page.goto(`${BASE}/app/templates`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   ok('1 · the list shows the live template, its version and the type that uses it',
     await waitFor(async () => (await page.getByRole('link', { name: 'Standard', exact: true }).count()) > 0, 120000)
-    && await page.getByText('Live · v3').isVisible() && await page.getByText('Full Home Inspection').first().isVisible());
+    && await page.getByText('Live · v3').isVisible() && await page.getByText('Single Family Home Inspection').first().isVisible());
 
   // ── 2 · duplicate → draft ──
   step = '2'; console.log('\n2 · duplicate into a new draft\n');

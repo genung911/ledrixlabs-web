@@ -90,7 +90,7 @@ export default function ServicesPage() {
       {edit && (
         <Card title={edit.id ? 'Edit service' : 'New service'} className="mt-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className={LABEL} htmlFor="sv-name">Name *</label><input id="sv-name" className={FIELD} value={edit.v.name} onChange={e => setEdit({ ...edit, v: { ...edit.v, name: e.target.value } })} placeholder="Full Home Inspection" /></div>
+            <div><label className={LABEL} htmlFor="sv-name">Name *</label><input id="sv-name" className={FIELD} value={edit.v.name} onChange={e => setEdit({ ...edit, v: { ...edit.v, name: e.target.value } })} placeholder="Single Family Home Inspection" /></div>
             <div><label className={LABEL} htmlFor="sv-price">Price ($) *</label><input id="sv-price" className={FIELD} inputMode="decimal" value={edit.priceText} onChange={e => setEdit({ ...edit, priceText: e.target.value })} placeholder="0.00" /></div>
             <div><label className={LABEL} htmlFor="sv-dur">Time on site (minutes)</label><input id="sv-dur" className={FIELD} inputMode="numeric" value={edit.v.duration_minutes ?? ''} onChange={e => setEdit({ ...edit, v: { ...edit.v, duration_minutes: e.target.value ? Number(e.target.value) : null } })} /></div>
             <label className="flex items-center gap-2 self-end text-sm text-ink"><input type="checkbox" checked={edit.v.active} onChange={e => setEdit({ ...edit, v: { ...edit.v, active: e.target.checked } })} /> Show on the booking page</label>

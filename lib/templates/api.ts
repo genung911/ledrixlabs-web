@@ -23,7 +23,7 @@ export type Backend = 'server' | 'local';
 
 /** The inspection types every company has in the app even before it names its own (ledrix-app
  *  templateLibraryService STOCK types). They exist as rows only once a template is assigned to them. */
-export const STOCK_TYPES = ['Full Home Inspection', '4-Point'] as const;
+export const STOCK_TYPES = ['Single Family Home Inspection', '4-Point'] as const;
 
 export type ApiErrorKind = 'conflict' | 'forbidden' | 'missing' | 'invalid' | 'failed';
 export class TemplateApiError extends Error {

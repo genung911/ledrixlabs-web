@@ -21,6 +21,6 @@ export function togglePick(current: string | null | undefined, opt: string, opti
   return [...options.filter(o => next.includes(o)), ...next.filter(x => !options.includes(x))].join(', ');
 }
 /** The phone's stock fallback when a company type has no template of its own (AddInspectionScreen TYPE_DEFAULT_TEMPLATE). */
-export const TYPE_DEFAULT_TEMPLATE: Record<string, string> = { 'Full Home Inspection': 'internachi', '4-Point': 'fourpoint' };
+export const TYPE_DEFAULT_TEMPLATE: Record<string, string> = { 'Single Family Home Inspection': 'internachi', '4-Point': 'fourpoint' };
 /** Dollars → invoice cents (whole cents, never negative). */
 export const cents = (dollars: number) => Math.max(0, Math.round((Number(dollars) || 0) * 100));
