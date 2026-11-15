@@ -115,6 +115,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const spaces = useMemo(() => shownSpaces(tree), [tree]);
 
   const [screen, setScreen] = useState<Screen>({ kind: 'landing' });
+  // A walk entered inside a system stays in it (app ScopeScreen walkScope, 2026-11-15); null = the whole inspection.
+  const [walkScope, setWalkScope] = useState<string | null>(null);
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
@@ -290,6 +292,13 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const move = (dir: 1 | -1) => {
     if (screen.kind !== 'step') return;
     const i = steps.findIndex(x => x.key === screen.key);
+    if (i >= 0 && walkScope && tileOf(steps[i].systemId) === walkScope) {
+      // THIS SYSTEM'S WALK: Back from its first item to Photos & details, Next from its last back to its page.
+      const pool = steps.filter(x => tileOf(x.systemId) === walkScope), k = pool.findIndex(x => x.key === screen.key) + dir;
+      if (k < 0) { setOpened(o => ({ ...o, [`photos:${walkScope}`]: true })); go({ kind: 'system', systemId: walkScope }); return; }
+      if (k >= pool.length) { go({ kind: 'system', systemId: walkScope }); say(`End of ${displayLabel(steps[i].systemLabel)}.`); return; }
+      openStep(pool[k]); return;
+    }
     const j = i + dir;
     if (i < 0 || j < 0) return;
     if (j >= steps.length) { go({ kind: 'landing' }); say('End of guided coverage.'); return; }
@@ -365,7 +374,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           ) : null;
           const tile = systems.find(x => x.id === tileOf(nx.systemId));
           return (
-            <button type="button" className="pv-gbar" onClick={() => openStep(nx)} aria-label={`Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}`}>
+            <button type="button" className="pv-gbar" onClick={() => { setWalkScope(null); openStep(nx); }} aria-label={`Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}`}>
               <span className="pv-gplay">▶</span><b>Guided coverage</b><small>picks up at {displayLabel(tile?.label ?? nx.systemLabel)}</small><span className="pv-gsend" aria-hidden="true">Review & send ›</span>
             </button>
           );
@@ -405,7 +414,6 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const dsc = parts.map(id => describeBy[id] ?? { left: 0, total: 0 }).reduce((a, d) => ({ left: a.left + d.left, total: a.total + d.total }), { left: 0, total: 0 });
     const hasTile = shots.length > 0 || dsc.total > 0;
     // app 2026-11-09 ("Shoot a system"): a preview has no photos — the tile says Start here, as the phone does before any photo.
-    const tileMeta = 'Start here';
     const photosOpen = hasTile && !!opened[`photos:${sysId}`];   // the page lists every item; the walk passes the described ones by
     const p = parts.map(id => index.allSystems[id]).filter(Boolean).map(x => progressOfSystem(x as TemplateNode))
       .reduce((a, q) => ({ ...q, met: a.met + q.met, total: a.total + q.total }));
@@ -422,7 +430,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const done = items.filter(isDone).length;
     const pool = inGroup ? items : mine;
     const nextUp = pool.length ? pool[resumeIndex(pool, stepDone, 0)] : null;
-    const start = () => { if (nextUp) openStep(nextUp); };
+    const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } };
+    // Start here's line (app 2026-11-15): what is still needed, then where the walk picks up.
+    const tileMeta = dsc.left ? `✦ ${dsc.left} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.tileLabel)}` : 'All done';
     const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
@@ -446,25 +456,30 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>
             <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm; whatever they don't settle is listed under Still needed.</div>
+            {/* The walk's first step: Back to the system page, Next to its first open item (app 2026-11-15). */}
+            <div className="pv-nav">
+              <button type="button" className="pv-nb" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))} aria-label="Back to the system page"><Glyph d={G.chevL} size={16} />BACK</button>
+              <button type="button" className="pv-nn" onClick={() => { setOpened(o => ({ ...o, [`photos:${sysId}`]: false })); start(); }} aria-label="Next step">NEXT<Glyph d={G.chevR} size={16} /></button>
+            </div>
           </div>
         ) : null}
         {photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            {/* GUIDED, FIRST (app 2026-11-15, mockup 5q8piHyZQ94xGoxZK6d7ss): Photos & details first, then each group. */}
-            <button type="button" className="pv-cell" onClick={() => { if (hasTile) setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); else start(); }}
-              aria-label={`Guided, picks up at ${hasTile ? 'Photos & details' : nextUp?.tileLabel ?? 'nothing left'}. Start`}>
-              <span className="pv-sq pv-guided"><span className="pv-gplay" style={{ color: '#fff' }}>▶</span></span>
-              <span className="pv-tl">Guided</span>
-              <span className="pv-iv2">{hasTile ? 'Photos & details' : displayLabel(nextUp?.tileLabel ?? 'All done')}</span>
-            </button>
-            {/* PHOTOS & DETAILS pinned next, then each group as the Coverage tile: its own icon, the name below (app 2026-11-13/14). */}
+            {/* START HERE (app 2026-11-15, mockup E9XqkdjBebCUjsX1uH5B3m): Guided folded into Photos & details — one first
+                tile that opens the system's walk at that page. A system with no Photos & details keeps a plain Guided tile. */}
             {hasTile ? (
-              <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Photos and details, ${tileMeta}. Open`}>
-                <span className="pv-sq pv-photo"><TileIco name="camera-outline" color="#9cc4f2" /></span>
-                <span className="pv-tl">Photos & details</span>
+              <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Start here: photos and details, then the guided walk. ${tileMeta}`}>
+                <span className="pv-sq pv-guided"><TileIco name="camera-outline" color="#ffffff" /></span>
+                <span className="pv-tl">Start here</span>
                 <span className="pv-iv2">{tileMeta}</span>
               </button>
-            ) : null}
+            ) : (
+              <button type="button" className="pv-cell" onClick={() => start()} aria-label={`Guided, picks up at ${nextUp?.tileLabel ?? 'nothing left'}. Start`}>
+                <span className="pv-sq pv-guided"><span className="pv-gplay" style={{ color: '#fff' }}>▶</span></span>
+                <span className="pv-tl">Guided</span>
+                <span className="pv-iv2">{displayLabel(nextUp?.tileLabel ?? 'All done')}</span>
+              </button>
+            )}
             {groups.map(g => {
               const d = g.items.filter(isDone).length;
               const all = g.items.length > 0 && d === g.items.length;
@@ -519,7 +534,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 const state = q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : nextUp?.key === st.key ? 'next' : '';
                 const sub = state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : state === 'next' ? 'NEXT' : 'NOT YET';
                 return (
-                  <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={() => openStep(st)}
+                  <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={() => { setWalkScope(sysId); openStep(st); }}
                     aria-label={`${st.label}, ${sub.toLowerCase()}. Open`}>
                     <b>{st.label}</b><small>{sub}</small>
                   </button>
@@ -719,10 +734,14 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     }
     if (screen.kind !== 'step') return null;
     const i = steps.findIndex(x => x.key === screen.key);
-    const last = i >= steps.length - 1;
+    const scoped = i >= 0 && !!walkScope && tileOf(steps[i].systemId) === walkScope;
+    const pool = scoped ? steps.filter(x => tileOf(x.systemId) === walkScope) : steps;
+    const at = pool.findIndex(x => x.key === screen.key);
+    const last = at >= pool.length - 1;
+    const sysHasPhotos = scoped && [walkScope!, ...(fold.into === walkScope ? folded : [])].some(id => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0);
     return (
       <div className="pv-nav">
-        <button type="button" className="pv-nb" disabled={i <= 0} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
+        <button type="button" className="pv-nb" disabled={at <= 0 && !sysHasPhotos} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
         <button type="button" className="pv-nn" onClick={() => move(1)} aria-label={last ? 'Finish guided coverage' : 'Next step'}>{last ? 'FINISH' : 'NEXT'}<Glyph d={G.chevR} size={16} /></button>
       </div>
     );
