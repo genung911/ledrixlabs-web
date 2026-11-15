@@ -803,7 +803,9 @@ async function runTypes(files) {
     // the type-first "every type" gate (`{includes: [], unlisted: []}` on the system's type field — any real answer) and a
     // house:: fact (house::garage on the garage slab and drain), which the website does not read yet (DECISIONS "Not yet").
     const everyRuled = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; if (!x) return true; if (x.dependsOnSpec) return false;
-      return (x.requires ?? []).every(p => String(p.specNodeId).startsWith('house::') || (p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0)); };
+      // AMENDED 2026-11-14 (app: Before you start's presence questions): a PRESENCE rule on another question (no exact, no
+      // typeFirst — any answer keeps the item, None takes it off) is every-home too, as TL.isPresencePred reads it.
+      return (x.requires ?? []).every(p => String(p.specNodeId).startsWith('house::') || TL.isPresencePred(p) || (p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0)); };
     const SPECIAL_IDS = new Set((await import(pathToFileURL(join(dir, 'core/specialHomes.ts')).href)).SPECIAL_HOMES.map(x => x.id));
     const everyGated = (id, field) => { const x = fdefs.nodes[String(id).replace(/~i\d+$/, '')]; return (x?.requires ?? []).some(p => p.specNodeId === field && p.includes.length === 0 && Array.isArray(p.unlisted) && p.unlisted.length === 0); };
     const typedSystems = fresh.systems.map(s => [s, TL.typeLayoutOf(fresh, s, fdefs)]).filter(([, L]) => L);

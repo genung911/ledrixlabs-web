@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.14.2",
+ "packVersion": "2026.11.14.3",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -1527,6 +1527,11 @@
    "requires": [
     {
      "utility": "water"
+    },
+    {
+     "specNodeId": "laundry_dryer",
+     "includes": [],
+     "unlisted": []
     }
    ]
   },
@@ -1534,6 +1539,11 @@
    "requires": [
     {
      "utility": "water"
+    },
+    {
+     "specNodeId": "laundry_dryer",
+     "includes": [],
+     "unlisted": []
     }
    ]
   },
@@ -2189,6 +2199,24 @@
     }
    ]
   },
+  "roof_downspouts": {
+   "requires": [
+    {
+     "specNodeId": "roof_gutters",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "roof_discharge": {
+   "requires": [
+    {
+     "specNodeId": "roof_gutters",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
   "roof_scuppers": {
    "requires": [
     {
@@ -2199,6 +2227,15 @@
       "Modified Bitumen"
      ],
      "exact": true
+    }
+   ]
+  },
+  "roof_sheath": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
     }
    ]
   },
@@ -2666,6 +2703,105 @@
       "Stone Veneer"
      ],
      "attr": "spec"
+    }
+   ]
+  },
+  "ext_ledger": {
+   "requires": [
+    {
+     "specNodeId": "ext_deck",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_framing": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_instype": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_coverage": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_intake": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_exhaust": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_powered": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_fan_term": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_moisture": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_pests": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_wiring": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
     }
    ]
   },
@@ -3264,6 +3400,24 @@
       "Attached"
      ],
      "exact": true
+    }
+   ]
+  },
+  "int_handrails": {
+   "requires": [
+    {
+     "specNodeId": "int_stairs",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "int_headroom": {
+   "requires": [
+    {
+     "specNodeId": "int_stairs",
+     "includes": [],
+     "unlisted": []
     }
    ]
   },

@@ -72,11 +72,16 @@ function normKey(key: string, byId: Map<string, TemplateNode>): string {
 }
 
 /** Every predicate of an item's effective rule, with its normalised key. */
+/** `{ includes: [], unlisted: [] }` with no `exact` / `typeFirst`: shows for any real answer, goes on None (Not present). */
+export const isPresencePred = (p: any): boolean => Array.isArray(p?.includes) && p.includes.length === 0 && Array.isArray(p?.unlisted)
+  && p.unlisted.length === 0 && !p.exact && !p.typeFirst && !p.whenUnanswered;
 export function predsOf(defs: RuleDefinitions, id: string, byId: Map<string, TemplateNode>): Array<{ key: string; p: Pred; dep: boolean }> {
   const d = defs.nodes[baseOf(id)];
   if (!d) return [];
   const out: Array<{ key: string; p: Pred; dep: boolean }> = [];
-  for (const p of (d.requires ?? []) as Pred[]) if (p && typeof p.specNodeId === 'string') out.push({ key: normKey(p.specNodeId, byId), p, dep: false });
+  // A PRESENCE rule (app 2026-11-14, Before you start's Attic / Deck / Laundry / Gutters / Stairs): any answer keeps the
+  // item, only None takes it off — it never decides WHICH items apply, so it is no type or material question here.
+  for (const p of (d.requires ?? []) as Pred[]) if (p && typeof p.specNodeId === 'string' && !isPresencePred(p)) out.push({ key: normKey(p.specNodeId, byId), p, dep: false });
   if (d.dependsOnSpec) out.push({ key: normKey(d.dependsOnSpec.nodeId, byId), p: { specNodeId: d.dependsOnSpec.nodeId, includes: d.dependsOnSpec.includes }, dep: true });
   return out;
 }

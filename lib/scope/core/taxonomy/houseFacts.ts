@@ -42,8 +42,15 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
   { id: 'backup_heat',  label: 'Backup heat',  group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_backup_heat', attr: 'spec' }, question: 'What is the backup heat?', hint: 'A heat pump or mini-split usually has one: heat strips in the air handler, or a gas furnace (dual fuel).', askWhen: { fact: 'heats', includesAny: ['heat pump', 'mini-split'] } },
   { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true, question: 'What cools the house?', hint: 'Pick every one.', multi: true },
   { id: 'water_heater', label: 'Water heater', group: 'equipment', source: { kind: 'spec', nodeId: 'plumb_wh_type', attr: 'type' }, none: true, question: 'What kind of water heater?', hint: 'The data plate on its side says.' },
+  { id: 'laundry',      label: 'Laundry',      group: 'equipment', source: { kind: 'spec', nodeId: 'laundry_dryer', attr: 'spec' }, none: true, question: 'Are there laundry hookups?', hint: 'The dryer hookup: electric, gas or both — or None.' },
   { id: 'fireplace',    label: 'Fireplace',    group: 'equipment', source: { kind: 'spec', nodeId: 'fp_type', attr: 'spec' }, none: true, question: 'Is there a fireplace?', hint: 'Pick its type, or None.' },
   { id: 'foundation',   label: 'Foundation',   group: 'building',  source: { kind: 'spec', nodeId: 'found_type', attr: 'type' }, question: 'What does the house sit on?', hint: 'Pick every one: a basement with a crawlspace addition is two.', multi: true },
+  // WHAT IS THERE AT ALL (owner 2026-11-14, coverage review → "Use suggestion and recommendations"): None takes the
+  // items that need it off the checklist (scripts/add-presence-rules.mjs) — an unanswered question hides nothing.
+  { id: 'attic',        label: 'Attic',        group: 'building',  source: { kind: 'spec', nodeId: 'attic_access', attr: 'spec' }, none: true, question: 'Is there an attic? How do you get in?', hint: 'None for a flat or cathedral roof with no attic space.' },
+  { id: 'stairs',       label: 'Stairs',       group: 'building',  source: { kind: 'spec', nodeId: 'int_stairs', attr: 'spec' }, none: true, question: 'Are there interior stairs?', hint: 'Pick the finish, or None for a single level.' },
+  { id: 'deck',         label: 'Deck / porch', group: 'building',  source: { kind: 'spec', nodeId: 'ext_deck', attr: 'spec' }, none: true, question: 'Is there a deck or porch?', hint: 'Pick what it is built of, or None.' },
+  { id: 'gutters',      label: 'Gutters',      group: 'building',  source: { kind: 'spec', nodeId: 'roof_gutters', attr: 'material' }, none: true, question: 'Are there gutters?', hint: 'Pick the material, or None.' },
   { id: 'garage',       label: 'Garage',       group: 'building',  source: { kind: 'extras', key: 'garageType' }, multi: true, question: 'What garage does the house have?', hint: 'Pick every one. Detached adds a Detached Garage building.' },
 ];
 

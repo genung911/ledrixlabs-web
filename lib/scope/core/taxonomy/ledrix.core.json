@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.14.2",
+  "packVersion": "2026.11.14.3",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -4020,7 +4020,7 @@
                 "Two Handle",
                 "Pull-Down / Pull-Out",
                 "Touchless",
-                "Other"
+                "Other Faucet"
               ],
               "optional": true
             }
@@ -4326,7 +4326,7 @@
                 "Braided Stainless",
                 "Plastic",
                 "Copper",
-                "Other"
+                "Other Supply"
               ],
               "optional": true
             }
@@ -4416,6 +4416,11 @@
           "requires": [
             {
               "utility": "water"
+            },
+            {
+              "specNodeId": "laundry_dryer",
+              "includes": [],
+              "unlisted": []
             }
           ],
           "attributes": [
@@ -4459,6 +4464,11 @@
           "requires": [
             {
               "utility": "water"
+            },
+            {
+              "specNodeId": "laundry_dryer",
+              "includes": [],
+              "unlisted": []
             }
           ]
         },
@@ -7247,6 +7257,13 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "roof_gutters",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -7277,6 +7294,13 @@
           "walkZones": [
             "roof",
             "exterior"
+          ],
+          "requires": [
+            {
+              "specNodeId": "roof_gutters",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -7393,6 +7417,13 @@
                 "Board Sheathing (Spaced)",
                 "Board Sheathing (Solid)"
               ]
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
             }
           ]
         },
@@ -9096,6 +9127,13 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "ext_deck",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9463,7 +9501,8 @@
               "label": "Attic Access",
               "values": [
                 "Scuttle / Hatch",
-                "Pull-Down Stair"
+                "Pull-Down Stair",
+                "Walk-Up Stair"
               ]
             }
           ],
@@ -9503,6 +9542,13 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9553,6 +9599,13 @@
           "condition": true,
           "limitations": [
             "Not Determined"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9582,6 +9635,13 @@
                 "Gaps seen"
               ],
               "optional": true
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
             }
           ]
         },
@@ -9613,6 +9673,13 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9638,7 +9705,14 @@
               ]
             }
           ],
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
         },
         {
           "id": "attic_powered",
@@ -9666,6 +9740,13 @@
                 "Solar"
               ],
               "optional": true
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
             }
           ]
         },
@@ -9698,6 +9779,13 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9713,7 +9801,14 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
         },
         {
           "id": "attic_pests",
@@ -9732,6 +9827,13 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -9750,6 +9852,13 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -11477,6 +11586,13 @@
               ],
               "optional": true
             }
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_stairs",
+              "includes": [],
+              "unlisted": []
+            }
           ]
         },
         {
@@ -11491,7 +11607,14 @@
           ],
           "kind": "spec",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "int_stairs",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
         },
         {
           "id": "primary_bathroom_exhaust_fan",

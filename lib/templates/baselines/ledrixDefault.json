@@ -2570,6 +2570,13 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "laundry_dryer",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ],
@@ -2630,7 +2637,7 @@
                     "Two Handle",
                     "Pull-Down / Pull-Out",
                     "Touchless",
-                    "Other"
+                    "Other Faucet"
                   ],
                   "optional": true
                 }
@@ -2785,7 +2792,7 @@
                     "Braided Stainless",
                     "Plastic",
                     "Copper",
-                    "Other"
+                    "Other Supply"
                   ],
                   "optional": true
                 }
@@ -2861,6 +2868,13 @@
                     "Outlet box"
                   ],
                   "optional": true
+                }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "laundry_dryer",
+                  "includes": [],
+                  "unlisted": []
                 }
               ]
             }
@@ -4865,6 +4879,13 @@
                   ],
                   "optional": true
                 }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "roof_gutters",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -4895,6 +4916,13 @@
               "walkZones": [
                 "roof",
                 "exterior"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "roof_gutters",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -5003,6 +5031,13 @@
                     "Board Sheathing (Spaced)",
                     "Board Sheathing (Solid)"
                   ]
+                }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
                 }
               ]
             },
@@ -6293,6 +6328,13 @@
                   ],
                   "optional": true
                 }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "ext_deck",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -6501,7 +6543,8 @@
                   "label": "Attic Access",
                   "values": [
                     "Scuttle / Hatch",
-                    "Pull-Down Stair"
+                    "Pull-Down Stair",
+                    "Walk-Up Stair"
                   ]
                 }
               ],
@@ -6541,6 +6584,13 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ],
@@ -6599,6 +6649,13 @@
               "condition": true,
               "limitations": [
                 "Not Determined"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -6628,6 +6685,13 @@
                     "Gaps seen"
                   ],
                   "optional": true
+                }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
                 }
               ]
             }
@@ -6667,6 +6731,13 @@
                   ],
                   "optional": true
                 }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -6692,7 +6763,14 @@
                   ]
                 }
               ],
-              "condition": true
+              "condition": true,
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
+              ]
             },
             {
               "id": "attic_powered",
@@ -6720,6 +6798,13 @@
                     "Solar"
                   ],
                   "optional": true
+                }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
                 }
               ]
             },
@@ -6752,6 +6837,13 @@
                   ],
                   "optional": true
                 }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ],
@@ -6774,7 +6866,14 @@
                 "mold attic",
                 "leak stain"
               ],
-              "condition": true
+              "condition": true,
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
+              ]
             },
             {
               "id": "attic_pests",
@@ -6792,6 +6891,13 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ],
@@ -6811,6 +6917,13 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ]
@@ -6856,6 +6969,13 @@
               "options": [
                 "Dry",
                 "Old Stains (Monitor)"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -6875,6 +6995,13 @@
                 "No Evidence",
                 "Old Droppings (Monitor)",
                 "Not Visible (Limitation)"
+              ],
+              "requires": [
+                {
+                  "specNodeId": "attic_access::spec",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             }
           ]
@@ -8041,6 +8168,13 @@
                   ],
                   "optional": true
                 }
+              ],
+              "requires": [
+                {
+                  "specNodeId": "int_stairs",
+                  "includes": [],
+                  "unlisted": []
+                }
               ]
             },
             {
@@ -8055,7 +8189,14 @@
                 "low beam"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "requires": [
+                {
+                  "specNodeId": "int_stairs",
+                  "includes": [],
+                  "unlisted": []
+                }
+              ]
             }
           ],
           "trimmed": []
