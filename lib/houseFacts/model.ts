@@ -18,15 +18,18 @@ import { conditionValues, specValue, valueId, type ValueMap } from '@/lib/scope/
 
 /** The app's GARAGE_OPTIONS (InspectionExtrasService) — None, the absence, stands alone. */
 export const GARAGE_OPTIONS = ['None', 'Attached', 'Detached', 'Carport'] as const;
-export const EXTRAS_COLUMN = { gasSupply: 'gas_supply', waterSource: 'water_source', sewerType: 'sewer_type', garageType: 'garage_type' } as const;
+/** The app's FRONT_FACES_OPTIONS (2026-11-14, #127) — which way the front of the home faces; one answer. */
+export const FRONT_FACES_OPTIONS = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'] as const;
+export const EXTRAS_COLUMN = { gasSupply: 'gas_supply', waterSource: 'water_source', sewerType: 'sewer_type', garageType: 'garage_type', frontFaces: 'front_faces' } as const;
 export type ExtrasKey = keyof typeof EXTRAS_COLUMN;
 export const EXTRAS_OPTIONS: Record<ExtrasKey, readonly string[]> = {
   gasSupply: GAS_SUPPLY_OPTIONS, waterSource: WATER_SOURCE_OPTIONS, sewerType: SEWER_TYPE_OPTIONS, garageType: GARAGE_OPTIONS,
+  frontFaces: FRONT_FACES_OPTIONS,
 };
 /** An absence a pick stands alone with — the app's ABSENCE_PICKS. */
 export const ABSENCE_PICKS = new Set(['No gas service', 'None — all electric', 'None']);
 /** The job row's own fields the page reads and writes. */
-export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null };
+export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null; front_faces: string | null };
 
 export type FactView = {
   fact: HouseFact;
@@ -77,7 +80,7 @@ export function factsView(systems: readonly TemplateNode[], values: ValueMap, ro
       const all = [...EXTRAS_OPTIONS[key]];
       const absence = all.find(o => ABSENCE_PICKS.has(o)) ?? null;
       return { fact: f, group, value, display: isAnswered(value) ? factDisplay(value) : '', options: all.filter(o => o !== absence), absence,
-        multi: true, allowsNone: false, target: { kind: 'extras', key, column: EXTRAS_COLUMN[key] } };
+        multi: !!f.multi, allowsNone: false, target: { kind: 'extras', key, column: EXTRAS_COLUMN[key] } };   // Front faces is one answer (2026-11-14)
     }
     const node = factNode(systems, f.source.nodeId)!;
     const attr = ((node.attributes ?? []) as { id: string; values?: string[] }[]).find(a => a.id === (f.source as { attr: string }).attr);
@@ -91,6 +94,8 @@ export function factsView(systems: readonly TemplateNode[], values: ValueMap, ro
 /** The answer after a tap — the phone's rules: an extras fact picks every one with its absence alone (togglePick); a type
  *  picks every one, and None ("Not present") stands alone too. */
 export function nextAnswer(v: FactView, current: string, opt: string): string {
+  // One answer for a single fact (Front faces, 2026-11-14): a tap picks it, a tap on it clears it — the phone's rule.
+  if (v.target.kind === 'extras' && !v.fact.multi) return current === opt ? '' : opt;
   if (v.target.kind === 'extras') return togglePick(current, opt, [...v.options, ...(v.absence ? [v.absence] : [])]);
   const now = splitSpecValue(current).filter(x => x !== NONE_ANSWER);
   if (opt === NONE_ANSWER) return splitSpecValue(current).includes(NONE_ANSWER) ? '' : NONE_ANSWER;

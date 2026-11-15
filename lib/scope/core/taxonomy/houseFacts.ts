@@ -14,10 +14,10 @@
 //
 // NO IMPORTS, so `verify:house-facts` can execute it.
 
-export type HouseFactGroup = 'utilities' | 'equipment' | 'building';
+export type HouseFactGroup = 'property' | 'utilities' | 'equipment' | 'building';
 /** Where a fact already lives: a key of the job's report extras (Details), or a spec field (`node id`, `attribute id`). */
 export type HouseFactSource =
-  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' }
+  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'frontFaces' }
   | { kind: 'spec'; nodeId: string; attr: string };
 /** `none`: the house may have none of it (owner 2026-11-13, build 811: "Fireplace made me realize we need a 'none' option").
  *  A spec fact's None records applicability's NOT_PRESENT ('Not present'), the absence every rule already reads; the
@@ -31,6 +31,10 @@ export type HouseFact = { id: string; label: string; group: HouseFactGroup; sour
 
 /** The facts, in the page's order (board 6). */
 export const HOUSE_FACTS: readonly HouseFact[] = [
+  // ORIENTATION FIRST (owner 2026-11-14: "Before you start needs a front facing direction or however internachi says we
+  // state the orientation of home"): InterNACHI practice — the report states which way the front faces; left, right and
+  // rear are read standing in front of the home, facing it. The same eight directions Ledrix Home records.
+  { id: 'front',        label: 'Front faces',  group: 'property',  source: { kind: 'extras', key: 'frontFaces' }, question: 'Which way does the front of the home face?', hint: 'The side with the front door, by compass. Left, right and rear in the report are read standing in front, facing the home.' },
   { id: 'gas',          label: 'Gas',          group: 'utilities', source: { kind: 'extras', key: 'gasSupply' }, multi: true, question: 'What gas does the house have?', hint: 'Pick every one. Look for a meter at the side of the house, or a tank in the yard.' },
   { id: 'water',        label: 'Water',        group: 'utilities', source: { kind: 'extras', key: 'waterSource' }, multi: true, question: 'Where does the water come from?', hint: 'Pick every one. A well has a well head and a pressure tank.' },
   { id: 'sewer',        label: 'Sewer',        group: 'utilities', source: { kind: 'extras', key: 'sewerType' }, multi: true, question: 'Where does the sewer go?', hint: 'Pick every one. Septic shows a tank lid or cleanouts in the yard.' },
@@ -44,6 +48,7 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
 ];
 
 export const HOUSE_FACT_GROUPS: readonly { id: HouseFactGroup; label: string }[] = [
+  { id: 'property',  label: 'THE PROPERTY' },
   { id: 'utilities', label: 'UTILITIES' },
   { id: 'equipment', label: 'EQUIPMENT TYPES' },
   { id: 'building',  label: 'THE BUILDING' },

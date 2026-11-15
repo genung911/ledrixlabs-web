@@ -42,9 +42,10 @@ function suite() {
   ]);
   const ids = (vals, row = ROW) => M.factsView(SYSTEMS, vals, row).map(v => v.fact.id).join(',');
   ok('§1 the facts this job asks, in the app\'s order — the types only where their item is in the checklist',
-    ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace' })) === 'gas,water,sewer,heats,cools,garage');
+    // RE-ANCHORED 2026-11-14 (app 6f9f84020, #127): Front faces is the first fact
+    ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace' })) === 'front,gas,water,sewer,heats,cools,garage');
   ok('§1 Backup heat follows What heats only for a heat pump or a mini-split',
-    ids(vm({ 'hvac_heating::fuel_source': 'Heat Pump' })) === 'gas,water,sewer,heats,backup_heat,cools,garage'
+    ids(vm({ 'hvac_heating::fuel_source': 'Heat Pump' })) === 'front,gas,water,sewer,heats,backup_heat,cools,garage'
     && ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace, Ductless Mini-Split' })).includes('backup_heat'));
   const v = M.factsView(SYSTEMS, vm({ 'hvac_heating::fuel_source': 'Heat Pump' }), ROW);
   const by = (id) => v.find(x => x.fact.id === id);
