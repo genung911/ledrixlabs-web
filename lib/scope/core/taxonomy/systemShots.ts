@@ -154,8 +154,11 @@ Object.assign(SYSTEM_SHOTS, {
     { id: 'house_door', label: 'Door to the house', hint: 'The door into the house, closed: the door, its hinges and a self-closer if it has one.', documents: ['gar_firedoor'] },
   ],
   space_kitchen: [
-    { id: 'kitchen_view', label: 'Kitchen view', hint: 'Wide: the counters, cabinets, range and hood, and the sink.', answers: ['kit_counter|spec', 'kit_range|spec', 'kit_hood|spec'], documents: ['kit_cabinets', 'kit_counter'] },
-    { id: 'under_sink', label: 'Under the sink', hint: 'The cabinet open: the supply valves, the drain and trap, the disposal and the dishwasher line.', documents: ['kit_supplydrain', 'kit_leaks', 'kit_disposal'] },
+    { id: 'kitchen_view', label: 'Kitchen view', hint: 'Wide: the counters, cabinets, range and hood, and the sink.', answers: ['kit_counter|spec', 'kit_range|spec', 'kit_hood|spec', 'kit_fridge|fridge_type', 'kit_fridge|water_ice'], documents: ['kit_cabinets', 'kit_counter'] },
+    // A CLOSE LOOK AT THE COUNTER (owner 2026-11-14, "Yes add the photo recommendation"): a wide view left the countertop
+    // material unread; up close, the edge and the surface tell quartz from solid surface, granite from laminate.
+    { id: 'countertop', label: 'Countertop close-up', hint: 'Close on the counter: the surface and its front edge, with the sink and faucet.', answers: ['kit_counter|spec', 'plumb_sinks|sink_material', 'plumb_sinks|faucet'], documents: ['kit_counter', 'plumb_sinks'] },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The cabinet open: the supply valves, the drain and trap, the disposal and the dishwasher line.', answers: ['kit_supplydrain|drain', 'kit_supplydrain|supply', 'kit_disposal|spec'], documents: ['kit_supplydrain', 'kit_leaks', 'kit_disposal'] },
     SPACE_TAG,
   ],
   space_laundry: [
@@ -165,7 +168,8 @@ Object.assign(SYSTEM_SHOTS, {
   ],
   space_bathroom: [
     { id: 'bath_view', label: 'Bathroom view', hint: 'Wide: the tub or shower, the toilet, the counter and the floor.', answers: ['plumb_tubshower|spec'], documents: ['plumb_tubshower', 'plumb_toilets', 'plumb_sinks'] },
-    { id: 'under_sink', label: 'Under the sink', hint: 'The vanity open: the supply valves, the drain and trap.', documents: ['primary_bathroom_drain_traps', 'plumb_sinks'] },
+    { id: 'vanity', label: 'Counter & sink close-up', hint: 'Close on the vanity top and the sink: the surface, the edge and the faucet.', answers: ['plumb_sinks|sink_material', 'plumb_sinks|faucet'], documents: ['plumb_sinks'] },
+    { id: 'under_sink', label: 'Under the sink', hint: 'The vanity open: the supply valves, the drain and trap.', answers: ['primary_bathroom_drain_traps|drain'], documents: ['primary_bathroom_drain_traps', 'plumb_sinks'] },
     { id: 'fan', label: 'Exhaust fan', hint: 'The fan in the ceiling, with its grille.', optional: true, answers: ['primary_bathroom_exhaust_fan|spec'], documents: ['primary_bathroom_exhaust_fan'] },
   ],
 });
@@ -201,7 +205,9 @@ export function planShots(shots: readonly Shot[], f: {
   for (const shot of shots) {
     if (f.takenCount(shot.id) > 0) { plan.taken.push(shot); continue; }
     if (shot.gas && f.noGas) { plan.notAsked.push({ shot, why: 'no_gas' }); continue; }
-    const keys = shot.answers ?? [];
+    // A SHOT NAMES THE SOURCE ITEM; A ROOM ASKS ITS OWN COPY (owner 2026-11-14): `kit_counter|spec` is the Kitchen's
+    // `space_kitchen__link_kit_counter|spec` on a room's page, so the shot answers whichever this page asks.
+    const keys = (shot.answers ?? []).flatMap(k => [k, ...[...f.asked].filter(a => a.endsWith(`__link_${k}`))]);
     const docs = shot.documents ?? [];
     const open = keys.filter(k => f.asked.has(k) && !f.answered(k));
     if (open.length || docs.some(f.inChecklist) || (!keys.length && !docs.length)) { plan.needed.push({ shot, open }); continue; }

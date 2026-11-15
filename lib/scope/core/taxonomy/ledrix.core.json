@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.13.5",
+  "packVersion": "2026.11.14.1",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -3799,6 +3799,34 @@
             {
               "utility": "water"
             }
+          ],
+          "attributes": [
+            {
+              "id": "sink_material",
+              "label": "Sink Material",
+              "values": [
+                "Stainless Steel",
+                "Composite / Granite",
+                "Porcelain / Cast Iron",
+                "Fireclay",
+                "Vitreous China",
+                "Cultured Marble",
+                "Other"
+              ],
+              "optional": true
+            },
+            {
+              "id": "faucet",
+              "label": "Faucet Type",
+              "values": [
+                "Single Handle",
+                "Two Handle",
+                "Pull-Down / Pull-Out",
+                "Touchless",
+                "Other"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -4057,6 +4085,30 @@
           "condition": true,
           "limitations": [
             "Not Visible"
+          ],
+          "attributes": [
+            {
+              "id": "drain",
+              "label": "Drain / Trap",
+              "values": [
+                "PVC",
+                "ABS",
+                "Chrome / Metal",
+                "Other"
+              ],
+              "optional": true
+            },
+            {
+              "id": "supply",
+              "label": "Supply Lines",
+              "values": [
+                "Braided Stainless",
+                "Plastic",
+                "Copper",
+                "Other"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -4103,7 +4155,20 @@
           "keywords": [],
           "kind": "equipment",
           "origin": "core",
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "drain",
+              "label": "Drain / Trap",
+              "values": [
+                "PVC",
+                "ABS",
+                "Chrome / Metal",
+                "Other"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "laundry_washer",
@@ -11969,7 +12034,32 @@
           "limitations": [
             "Not Tested"
           ],
-          "establishesAs": "appl_fridge"
+          "establishesAs": "appl_fridge",
+          "attributes": [
+            {
+              "id": "fridge_type",
+              "label": "Refrigerator Type",
+              "values": [
+                "Top Freezer",
+                "Bottom Freezer",
+                "Side-by-Side",
+                "French Door",
+                "Built-In",
+                "Not Present"
+              ],
+              "optional": true
+            },
+            {
+              "id": "water_ice",
+              "label": "Water / Ice",
+              "values": [
+                "Water & Ice",
+                "Ice Only",
+                "None"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "kit_oven",
@@ -12039,7 +12129,18 @@
           "kind": "spec",
           "origin": "core",
           "condition": true,
-          "establishesAs": "appl_disposal"
+          "establishesAs": "appl_disposal",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Disposal",
+              "values": [
+                "Present",
+                "Not Present"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "kit_hood",
