@@ -1,8 +1,8 @@
 {
   "generatedBy": "ledrix-app scripts/export-report-bundle.mjs",
-  "appCommit": "3d4ea799272c8de2fa8f04b739b096a7488e65bf",
+  "appCommit": "cc567ecded59c0f54dedb29373742d105a05c5be",
   "appSourcesDirty": false,
-  "sourcesSha256": "40a79d9a00df80facf44c68bfebb87879edf8142ad9d489b76afdf2d88547d24",
+  "sourcesSha256": "93b5302d2164fb1c7123b1365caff7269901dd590544929931372fa5564bf874",
   "sourceFiles": 302,
   "packVersion": "2026.11.14.2",
   "frozenRecordSchema": 1,
