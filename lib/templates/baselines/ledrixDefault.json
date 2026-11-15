@@ -193,7 +193,20 @@
               "kind": "component",
               "keywords": [],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Condensate Drain",
+                  "values": [
+                    "To floor drain",
+                    "Condensate pump",
+                    "To exterior",
+                    "Other"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "hvac_furnace_pvc_vent",
@@ -205,7 +218,20 @@
                 "air intake pipe"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Intake",
+                  "values": [
+                    "PVC sidewall",
+                    "PVC roof",
+                    "Room air",
+                    "Other"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "hvac_furnace_draft_hood",
@@ -213,7 +239,20 @@
               "kind": "component",
               "keywords": [],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Vent Connector",
+                  "values": [
+                    "Single-wall metal",
+                    "Double-wall (B-vent)",
+                    "PVC",
+                    "Other"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "hvac_dataplate",
@@ -230,7 +269,16 @@
                 "rating plate"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Brand",
+                  "values": [],
+                  "freeText": true,
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "hvac_burner",
@@ -250,6 +298,18 @@
               "condition": true,
               "limitations": [
                 "Not Operated"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Ignition",
+                  "values": [
+                    "Hot surface",
+                    "Standing pilot",
+                    "Spark"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -500,7 +560,19 @@
                 "waterlogged expansion tank"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Expansion Tank",
+                  "values": [
+                    "Diaphragm",
+                    "Compression",
+                    "None seen"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "hvac_boiler_relief",
@@ -530,6 +602,19 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Circulator Pumps",
+                  "values": [
+                    "1",
+                    "2",
+                    "3",
+                    "4+"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -579,6 +664,17 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Control",
+                  "values": [
+                    "Line-voltage thermostat",
+                    "Built-in knob"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -628,6 +724,19 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Zones",
+                  "values": [
+                    "1",
+                    "2",
+                    "3",
+                    "4+"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -870,6 +979,17 @@
           "condition": true,
           "limitations": [
             "Not Operated"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Mount",
+              "values": [
+                "Window",
+                "Through-wall sleeve"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -881,6 +1001,18 @@
           "condition": true,
           "limitations": [
             "Not Operated"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Location",
+              "values": [
+                "Roof",
+                "Ground",
+                "Window"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -1113,7 +1245,18 @@
             "extension cord ac"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Outlet",
+              "values": [
+                "120V",
+                "240V"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "hvac_evap_pads",
@@ -1263,7 +1406,16 @@
             "serial number"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Brand",
+              "values": [],
+              "freeText": true,
+              "optional": true
+            }
+          ]
         },
         {
           "id": "hvac_ms_disconnect",
@@ -1279,6 +1431,18 @@
           "walkZone": "exterior",
           "walkZones": [
             "exterior"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Disconnect Type",
+              "values": [
+                "Fused",
+                "Non-fused",
+                "Breaker"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -1291,7 +1455,19 @@
             "condensate pump"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Condensate Discharge",
+              "values": [
+                "Gravity to exterior",
+                "Condensate pump",
+                "Other"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "hvac_ms_heads",
@@ -1756,6 +1932,18 @@
           "limitations": [
             "Not Present",
             "Not Operated"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Controller",
+              "values": [
+                "Handheld remote",
+                "Wall controller",
+                "App"
+              ],
+              "optional": true
+            }
           ]
         }
       ],
@@ -2050,6 +2238,15 @@
               "condition": true,
               "limitations": [
                 "Not Measured"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Pressure (psi)",
+                  "values": [],
+                  "freeText": true,
+                  "optional": true
+                }
               ]
             },
             {
@@ -2068,6 +2265,18 @@
               "limitations": [
                 "Not Located",
                 "Not Accessible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Well Pump",
+                  "values": [
+                    "Submersible",
+                    "Jet",
+                    "Not determined"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -2085,6 +2294,17 @@
               "limitations": [
                 "Not Located",
                 "Not Accessible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Pressure Tank",
+                  "values": [
+                    "Bladder",
+                    "Galvanized"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -2434,6 +2654,18 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Toilet Type",
+                  "values": [
+                    "Tank",
+                    "One-piece",
+                    "Wall-hung"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -2498,6 +2730,18 @@
               "walkZone": "exterior",
               "walkZones": [
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Hose Bib Type",
+                  "values": [
+                    "Frost-free",
+                    "Standard",
+                    "Anti-siphon"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -2606,6 +2850,18 @@
               "condition": true,
               "limitations": [
                 "Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Washer Valves",
+                  "values": [
+                    "Separate valves",
+                    "Single-lever",
+                    "Outlet box"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -2685,6 +2941,19 @@
               "limitations": [
                 "Not Located",
                 "Not Accessible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Meter Location",
+                  "values": [
+                    "Exterior side",
+                    "Front",
+                    "Rear",
+                    "Interior"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -2703,6 +2972,18 @@
               "limitations": [
                 "Not Located",
                 "Not Accessible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Tank",
+                  "values": [
+                    "Above ground",
+                    "Buried",
+                    "Cylinders"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -2999,6 +3280,20 @@
               "reason": "Not Operated",
               "sentence": "The temperature and pressure relief valve was not operated. Older valves may not reseat once lifted; testing by a qualified plumber is recommended."
             }
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Discharge Pipe",
+              "values": [
+                "Copper",
+                "CPVC",
+                "PEX",
+                "Galvanized",
+                "Missing"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -3030,7 +3325,18 @@
             "closed system"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Expansion Tank",
+              "values": [
+                "Present",
+                "Not present"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_flue",
@@ -3116,6 +3422,18 @@
               "id": "fs_wh_seismic_loose",
               "label": "Loose / improper"
             }
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Straps",
+              "values": [
+                "Two straps",
+                "One strap",
+                "None"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -3129,7 +3447,18 @@
             "drip leg"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Sediment Trap",
+              "values": [
+                "Present",
+                "Not present"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_combustion",
@@ -3171,7 +3500,18 @@
             "flush valves"
           ],
           "trimmed": [],
-          "condition": true
+          "condition": true,
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Service Valves",
+              "values": [
+                "Present",
+                "Not present"
+              ],
+              "optional": true
+            }
+          ]
         },
         {
           "id": "plumb_wh_hp_condensate",
@@ -3316,6 +3656,17 @@
               "walkZone": "exterior",
               "walkZones": [
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Service",
+                  "values": [
+                    "Overhead",
+                    "Underground"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -3337,6 +3688,17 @@
               "walkZone": "exterior",
               "walkZones": [
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Mast",
+                  "values": [
+                    "Through-roof",
+                    "Side-mounted"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -3376,6 +3738,18 @@
               "walkZones": [
                 "exterior",
                 "mechanical"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Meter Location",
+                  "values": [
+                    "Exterior side",
+                    "Front",
+                    "Rear"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -3517,6 +3891,18 @@
               "limitations": [
                 "Not Removed",
                 "Painted / Stuck"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Circuit Labels",
+                  "values": [
+                    "Labeled",
+                    "Partly labeled",
+                    "Not labeled"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -3533,7 +3919,16 @@
                 "tandem"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Panel Brand",
+                  "values": [],
+                  "freeText": true,
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "elec_fuses",
@@ -3869,6 +4264,18 @@
               "walkZone": "interior",
               "walkZones": [
                 "interior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Receptacles",
+                  "values": [
+                    "Grounded 3-prong",
+                    "2-prong",
+                    "Mixed"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -3921,6 +4328,18 @@
               "walkZone": "exterior",
               "walkZones": [
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Exterior Lights",
+                  "values": [
+                    "Wall",
+                    "Motion sensor",
+                    "Post"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -4281,6 +4700,19 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Flashing",
+                  "values": [
+                    "Step",
+                    "Counter",
+                    "Kick-out",
+                    "Kick-out missing"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -4299,6 +4731,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Boots",
+                  "values": [
+                    "Rubber",
+                    "Lead",
+                    "Metal"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -4316,6 +4760,19 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Skylights",
+                  "values": [
+                    "1",
+                    "2",
+                    "3",
+                    "4+"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -4395,6 +4852,19 @@
               "walkZones": [
                 "roof",
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Discharge",
+                  "values": [
+                    "Splash blocks",
+                    "Extensions",
+                    "Underground",
+                    "To grade"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -4446,6 +4916,17 @@
               "walkZones": [
                 "roof",
                 "exterior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Drip Edge",
+                  "values": [
+                    "Present",
+                    "Not present"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -4464,6 +4945,17 @@
               "limitations": [
                 "Not Visible",
                 "Not Accessible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Drains",
+                  "values": [
+                    "Scuppers",
+                    "Internal drains"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -4793,7 +5285,20 @@
                   "crawlspace",
                   "pier & beam"
                 ]
-              }
+              },
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Piers",
+                  "values": [
+                    "Concrete",
+                    "CMU block",
+                    "Wood posts",
+                    "Steel"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "found_cs_ins_type",
@@ -4874,7 +5379,19 @@
                   "crawlspace",
                   "pier & beam"
                 ]
-              }
+              },
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Sump Pump",
+                  "values": [
+                    "Submersible",
+                    "Pedestal",
+                    "Battery backup"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ],
           "walkZone": "crawlspace",
@@ -5024,6 +5541,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Beams",
+                  "values": [
+                    "Wood",
+                    "Steel",
+                    "LVL"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -5047,6 +5576,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Subfloor",
+                  "values": [
+                    "Plywood",
+                    "OSB",
+                    "Plank"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -5081,7 +5622,18 @@
                 "garage drain",
                 "trench drain"
               ],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Floor Drain",
+                  "values": [
+                    "Present",
+                    "Not present"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ],
           "walkZone": "garage",
@@ -5390,6 +5942,19 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Soffit",
+                  "values": [
+                    "Vented vinyl",
+                    "Aluminum",
+                    "Wood",
+                    "Closed"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -5507,7 +6072,19 @@
                 "negative grade"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Slope",
+                  "values": [
+                    "Away from house",
+                    "Flat",
+                    "Toward house"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "ext_clearance",
@@ -5596,7 +6173,20 @@
                 "tieback"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Wall Material",
+                  "values": [
+                    "Concrete",
+                    "Block",
+                    "Timber",
+                    "Stone"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -5659,7 +6249,21 @@
                 "4 inch sphere"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Railing Material",
+                  "values": [
+                    "Wood",
+                    "Metal",
+                    "Vinyl",
+                    "Composite",
+                    "Glass"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "ext_ledger",
@@ -5677,6 +6281,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Ledger Attachment",
+                  "values": [
+                    "Bolted",
+                    "Nailed only",
+                    "Not visible"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -5692,7 +6308,20 @@
                 "handrail exterior"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Stair Material",
+                  "values": [
+                    "Concrete",
+                    "Wood",
+                    "Composite",
+                    "Masonry"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -5736,6 +6365,18 @@
               "walkZones": [
                 "exterior",
                 "interior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Termination",
+                  "values": [
+                    "Louvered hood",
+                    "Flap",
+                    "Screen"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -5976,6 +6617,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Coverage",
+                  "values": [
+                    "Full",
+                    "Partial",
+                    "Gaps seen"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -6002,6 +6655,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Intake Vents",
+                  "values": [
+                    "Continuous",
+                    "Individual",
+                    "None seen"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -6044,6 +6709,18 @@
               "condition": true,
               "limitations": [
                 "Present — Not Tested"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Powered Fan",
+                  "values": [
+                    "Roof",
+                    "Gable",
+                    "Solar"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -6063,6 +6740,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Fan Termination",
+                  "values": [
+                    "To exterior",
+                    "Into attic",
+                    "Not visible"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ],
@@ -6695,7 +7384,20 @@
                 "caulk backsplash"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Backsplash",
+                  "values": [
+                    "Tile",
+                    "Stone",
+                    "Laminate",
+                    "None"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "kit_cabinets",
@@ -6712,7 +7414,19 @@
                 "cupboard"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Cabinets",
+                  "values": [
+                    "Wood",
+                    "Painted",
+                    "Laminate / Thermofoil"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ]
         },
@@ -6903,6 +7617,20 @@
               "walkZone": "interior",
               "walkZones": [
                 "interior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Window Operation",
+                  "values": [
+                    "Single-hung",
+                    "Double-hung",
+                    "Slider",
+                    "Casement",
+                    "Fixed"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7083,6 +7811,19 @@
               "walkZone": "interior",
               "walkZones": [
                 "interior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Interior Doors",
+                  "values": [
+                    "Hollow core",
+                    "Solid core",
+                    "Pocket",
+                    "Barn"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7156,6 +7897,19 @@
               "walkZone": "garage",
               "walkZones": [
                 "garage"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Opener Drive",
+                  "values": [
+                    "Chain",
+                    "Belt",
+                    "Screw",
+                    "Wall-mount"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7248,7 +8002,19 @@
                 "tread"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Stair Finish",
+                  "values": [
+                    "Carpeted",
+                    "Wood",
+                    "Tile"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "int_handrails",
@@ -7263,7 +8029,19 @@
                 "spindle spacing"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Handrail Material",
+                  "values": [
+                    "Wood",
+                    "Metal",
+                    "Missing"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "int_headroom",
@@ -7502,6 +8280,19 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Hearth",
+                  "values": [
+                    "Brick",
+                    "Stone",
+                    "Tile",
+                    "Concrete"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7515,7 +8306,19 @@
                 "top-mount damper"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Damper",
+                  "values": [
+                    "Throat",
+                    "Top-sealing",
+                    "None"
+                  ],
+                  "optional": true
+                }
+              ]
             },
             {
               "id": "fp_operation",
@@ -7640,6 +8443,18 @@
               "condition": true,
               "limitations": [
                 "Not Visible"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Cap / Crown",
+                  "values": [
+                    "Metal cap",
+                    "Masonry crown",
+                    "None"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7749,7 +8564,19 @@
                 "log lighter valve"
               ],
               "trimmed": [],
-              "condition": true
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Gas Shutoff",
+                  "values": [
+                    "Key valve",
+                    "In-line valve",
+                    "Not seen"
+                  ],
+                  "optional": true
+                }
+              ]
             }
           ],
           "trimmed": []
@@ -7883,6 +8710,17 @@
               "walkZone": "garage",
               "walkZones": [
                 "garage"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Self-Closer",
+                  "values": [
+                    "Self-closing",
+                    "Not self-closing"
+                  ],
+                  "optional": true
+                }
               ]
             },
             {
@@ -7930,6 +8768,17 @@
               "walkZone": "garage",
               "walkZones": [
                 "garage"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Penetrations",
+                  "values": [
+                    "Sealed",
+                    "Openings seen"
+                  ],
+                  "optional": true
+                }
               ]
             }
           ]
@@ -8070,6 +8919,18 @@
           "condition": true,
           "limitations": [
             "Not Tested"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Air Gap / High Loop",
+              "values": [
+                "Air gap",
+                "High loop",
+                "Neither seen"
+              ],
+              "optional": true
+            }
           ]
         },
         {
@@ -8142,6 +9003,19 @@
           "condition": true,
           "limitations": [
             "Not Tested"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Microwave",
+              "values": [
+                "Over-range vented",
+                "Over-range recirculating",
+                "Countertop",
+                "Built-in"
+              ],
+              "optional": true
+            }
           ]
         }
       ],

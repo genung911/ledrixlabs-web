@@ -974,7 +974,9 @@ async function runTypes(files) {
       const oc = pnl?.brought.find(b => b.label === 'Panel › Overcurrent Protection');
       r('electrical: Fuses / Fuse Holders is brought by the fuse answers of Overcurrent Protection — never "every home"; breakers bring nothing extra',
         !!oc && row(oc, 'Circuit Breakers') === '' && row(oc, 'Fuses — Edison / Type S') === 'elec_fuses' && row(oc, 'Cartridge Fuses') === 'elec_fuses'
-        && !pnl.every.some(n => n.id === 'elec_fuses') && ids(pnl.every) === 'elec_deadfront|elec_breakers' && ids(pnl.materials) === 'elec_panel|elec_bonding'
+        && !pnl.every.some(n => n.id === 'elec_fuses')
+        // RE-ANCHORED 2026-11-14 (app x44, pack 2026.11.14.2): Dead Front and Breakers carry a photo detail now (circuit labels, panel brand), so they are described items
+        && ids(pnl.every) === '' && ids(pnl.materials) === 'elec_panel|elec_deadfront|elec_breakers|elec_bonding'
         // 2026-11-09 (panels as units): the Sub-Panel row is retired; a panel's Role brings the sub-only check
         && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Sub-Panel') === 'elec_sub_separation' && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Main') === '');
       const wq = bw?.questions[0];
@@ -983,7 +985,8 @@ async function runTypes(files) {
         !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 4 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
         && bw.questions[1]?.field === 'elec_wiring::method' && bw.questions[1].rows.filter(x => x.card).map(x => x.card.id).join('|') === 'elec_wir_conduit|elec_wir_mc'
         && ids(bw.every) === 'kit_circuits|laundry_dryer' && !bw.brought.length
-        && ids(dev?.materials) === 'elec_grounding' && ids(dev?.every) === 'elec_receptacles|int_lighting|elec_ext_lighting');
+        // RE-ANCHORED 2026-11-14 (app x44): Receptacles and Exterior Lighting carry a photo detail now
+        && ids(dev?.materials) === 'elec_grounding|elec_receptacles|elec_ext_lighting' && ids(dev?.every) === 'int_lighting');
       // A list where one material question decides most of the system is still not a type (several(k)): Plumbing's Supply alone.
       const sup1 = clone(fresh); const plS = sup1.systems.find(x => x.id === 'plumbing'); plS.children = plS.children.filter(c => c.label === 'Supply');
       r('types: a material question that decides most of a system is still a material list, not type chips (Plumbing Supply on its own)',
