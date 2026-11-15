@@ -27,6 +27,13 @@ const DUAL_FUEL = ['Gas Furnace', 'Propane'];
 export const FURNACES = ['Gas Furnace', 'Electric Furnace', 'Propane', 'Oil Furnace'];
 export const DUCTED_AC = ['Split System', 'Package Unit'];
 export const COMBINED_LABEL = 'Heating & Cooling';
+/** THE SHARED PARTS of a Heating & Cooling system (the approved mockup's "Shared · Air handling & controls"): the items both
+ *  the furnace and the AC use — printed under Shared in the report, by their library id. Everything else of Heating is the
+ *  furnace's, everything else of Cooling is the AC's. */
+export const SHARED_HVAC_NODES: readonly string[] = ['hvac_distribution', 'hvac_ducts', 'hvac_filter', 'hvac_nc_registers', 'hvac_temp_rise', 'hvac_thermostat', 'hvac_condensate'];
+/** Which part of a Heating & Cooling chapter an item prints under. */
+export const hvacPartOf = (systemId: string, nodeLibraryId: string | null | undefined): 'Furnace' | 'Cooling' | 'Shared' =>
+  nodeLibraryId && SHARED_HVAC_NODES.includes(nodeLibraryId) ? 'Shared' : systemId === 'cooling' ? 'Cooling' : 'Furnace';
 
 const entries = (v: string | null | undefined): string[] => String(v ?? '').split(',').map(x => x.trim()).filter(Boolean);
 const isMs = (e: string) => e.toLowerCase() === MINI_SPLIT.toLowerCase();
