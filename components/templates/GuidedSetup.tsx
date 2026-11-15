@@ -17,6 +17,7 @@ import {
   materialPhotoOf, materialPhotoOps, type GuidedStep, type ItemAnswer, type MaterialPhoto,
 } from '@/lib/templates/guidedModel';
 import { btn, field } from './ui';
+import { RuleEditor } from './RuleEditor';
 import { COLOR_ICONS, COLOR_SVGS } from './colorIcons';
 
 /** A system's icon, in the app's own color drawing (colorIcons.ts) — none when it has no drawing. Our own constants, never user content. */
@@ -229,7 +230,25 @@ function StepBody({ step, tree, defs, onOps, disabled }: { step: GuidedStep; tre
         {ITEM_CHOICES.map(c => <Opt key={c.a} on={a === c.a} disabled={disabled} onClick={() => { if (a !== c.a) onOps(itemAnswerOps(tree, step.node, c.a)); }}>{c.label}</Opt>)}
       </div>
       {a !== 'no' ? <GuidedAlsoShowIn tree={tree} node={step.node} onOps={onOps} disabled={disabled} /> : null}
+      {a !== 'no' ? <GuidedOnlySometimes tree={tree} node={step.node} onOps={onOps} disabled={disabled} /> : null}
     </>
+  );
+}
+
+/** "+ ONLY SOMETIMES…" (owner 2026-11-14, mockup T3Vyt8FwMq4tKCTck6Eao7 approved): the same "Shows when…" picker the full
+ *  editor has (RuleEditor), for the item on screen — a house fact (Water is Well), another item's answer, "is not", or
+ *  "any answer except None". Saved as one change, exactly as the full editor saves it (ops.applicability). */
+function GuidedOnlySometimes({ tree, node, onOps, disabled }: { tree: InspectionTemplate; node: TemplateNode; onOps: (o: TemplateOp[]) => boolean; disabled: boolean }) {
+  const rule = (node as TemplateNode & { appliesWhen?: unknown }).appliesWhen;
+  const [open, setOpen] = useState(rule !== undefined);
+  if (!open) return <button type="button" className="self-start text-sm font-semibold text-accent" disabled={disabled} onClick={() => setOpen(true)}>+ Only sometimes…</button>;
+  return (
+    <div className="max-w-xl rounded-xl border border-hairline p-3">
+      <p className="mb-2 text-sm font-semibold text-ink">Shows when…</p>
+      <RuleEditor tree={tree} forNodeId={node.id} rule={rule} idPrefix={`gs-${node.id}`} disabled={disabled}
+        emptyText="Always, whenever its system is in the inspection."
+        onSave={r => onOps(ops.applicability(node, r, null))} />
+    </div>
   );
 }
 

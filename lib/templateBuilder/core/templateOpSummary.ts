@@ -42,8 +42,12 @@ export function describeRule(tpl: InspectionTemplate, p: Predicate): string {
   const [nid, aid] = p.field.split('::');
   const n = find(tpl, nid)?.node;
   const a = n?.attributes?.find(x => x.id === aid);
-  const field = n ? `${n.label}${a && a.label !== n.label ? ` ${a.label}` : ''}` : p.field;
-  return 'typed' in p ? `${field} is typed under Other` : `${field} is ${p.anyOf.join(' or ')}`;
+  // a house fact reads by its own name (2026-11-14): "Water", "Gas"…
+  const field = n ? `${n.label}${a && a.label !== n.label ? ` ${a.label}` : ''}` : nid === 'house' ? aid.charAt(0).toUpperCase() + aid.slice(1) : p.field;
+  if ('typed' in p) return `${field} is typed under Other`;
+  if ('present' in p) return `${field} has any answer except None`;
+  if ('noneOf' in p) return `${field} is not ${p.noneOf.join(' or ')}`;
+  return `${field} is ${p.anyOf.join(' or ')}`;
 }
 
 const FIELD_WORDS: Record<string, string> = {

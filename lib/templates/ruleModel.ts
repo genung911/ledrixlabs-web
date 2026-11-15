@@ -2,18 +2,22 @@
 //
 // The editor offers exactly what an inspection can run and nothing more. core/templateRules (clausesOf, the compiler
 // the app runs at inspection creation) accepts an AND of clauses where each clause is ONE spec field whose answer is
-// one of some choices, optionally "or an answer typed in". There is no OR across fields, no presence atom and no
+// one of some choices, optionally "or an answer typed in" — and since 2026-11-14 (app: the "Shows when…" picker, mockup
+// T3Vyt8FwMq4tKCTck6Eao7) NOT one of some choices, or ANY answer except None, on an item's field or a HOUSE FACT (Gas,
+// Water, Sewer, Garage — lib/templateBuilder/core/houseRuleFields.ts). There is no OR across fields and no
 // accessibility atom (ADR 2026-10-25 §4 M2: an item that can't be reached is a LIMITATION, recorded by the inspector,
 // never a rule that hides it). So a condition here is { field, values, typed } and a rule is a list of them.
 //
 // PURE: no React, no store, no clock.
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
+import { HOUSE_RULE_FIELDS } from '@/lib/templateBuilder/core/houseRuleFields';
 
-export type Condition = { field: string; values: string[]; typed: boolean };
+/** `op`: is one of `values` (or typed) · is NOT one of `values` · has any answer except None. Absent = 'is'. */
+export type Condition = { field: string; values: string[]; typed: boolean; op?: 'is' | 'isNot' | 'present' };
 /** `ok: false` = the stored rule has a shape this editor can't show as conditions (it is shown as-is, never rewritten). */
 export type RuleView = { ok: true; conditions: Condition[] } | { ok: false; reason: string };
 
-type Leaf = { field: string; anyOf?: string[]; typed?: true };
+type Leaf = { field: string; anyOf?: string[]; typed?: true; noneOf?: string[]; present?: true };
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 function leavesOf(p: unknown): Leaf[] | string {
@@ -27,6 +31,8 @@ function leavesOf(p: unknown): Leaf[] | string {
   if ('all' in p) return 'an "all" inside an "any"';
   if (typeof p.field !== 'string') return 'a condition with no field';
   if (p.typed === true) return [{ field: p.field, typed: true }];
+  if (p.present === true) return [{ field: p.field, present: true }];
+  if (Array.isArray(p.noneOf) && p.noneOf.every(v => typeof v === 'string')) return [{ field: p.field, noneOf: p.noneOf as string[] }];
   if (Array.isArray(p.anyOf) && p.anyOf.every(v => typeof v === 'string')) return [{ field: p.field, anyOf: p.anyOf as string[] }];
   return 'a condition with no answers';
 }
@@ -49,18 +55,20 @@ export function readRule(rule: unknown): RuleView {
   if (typeof clauses === 'string') return { ok: false, reason: clauses };
   return {
     ok: true,
-    conditions: clauses.map(leaves => ({
-      field: leaves[0].field,
-      values: [...new Set(leaves.flatMap(l => l.anyOf ?? []))],
-      typed: leaves.some(l => l.typed === true),
-    })),
+    conditions: clauses.map((leaves): Condition => (leaves.some(l => l.present)
+      ? { field: leaves[0].field, values: [], typed: false, op: 'present' }
+      : leaves.some(l => l.noneOf)
+        ? { field: leaves[0].field, values: [...new Set(leaves.flatMap(l => l.noneOf ?? []))], typed: false, op: 'isNot' }
+        : { field: leaves[0].field, values: [...new Set(leaves.flatMap(l => l.anyOf ?? []))], typed: leaves.some(l => l.typed === true) })),
   };
 }
 
 /** Conditions → the stored rule, in the smallest shape the runtime accepts. `null` = no rule (removes the field).
  *  A condition with nothing picked is incomplete and is left out. */
 export function writeRule(conditions: readonly Condition[]): unknown | null {
-  const clauses = conditions.filter(c => c.field && (c.values.length || c.typed)).map(c => {
+  const clauses = conditions.filter(c => c.field && (c.op === 'present' || c.values.length || (c.typed && c.op !== 'isNot'))).map(c => {
+    if (c.op === 'present') return { field: c.field, present: true as const };
+    if (c.op === 'isNot') return { field: c.field, noneOf: [...c.values] };
     const leaves: Leaf[] = [
       ...(c.values.length ? [{ field: c.field, anyOf: [...c.values] }] : []),
       ...(c.typed ? [{ field: c.field, typed: true as const }] : []),
@@ -79,7 +87,9 @@ const baseOf = (id: string) => id.replace(/~i\d+$/, '');
 /** Every spec field in the template's active items, in template order. `except`: the item the rule is for — an item
  *  can't load on its own answer (templateValidate `rule_self`). Set-aside items are not offered. */
 export function ruleFields(tree: InspectionTemplate, except?: string): RuleField[] {
-  const out: RuleField[] = [];
+  // The HOUSE FACTS first (2026-11-14): the job's own answers from Before you start, e.g. "Shows when Water is Well".
+  const out: RuleField[] = HOUSE_RULE_FIELDS.map(h => ({ field: h.field, nodeId: 'house', attrId: h.field.slice('house::'.length),
+    label: h.label, path: 'House facts', values: [...h.options], typed: false }));
   const walk = (n: TemplateNode, trail: string[]) => {
     const here = [...trail, n.label];
     if (n.kind === 'component' && !n.pointsTo && (!except || baseOf(n.id) !== baseOf(except))) {
@@ -99,7 +109,8 @@ export function ruleFields(tree: InspectionTemplate, except?: string): RuleField
 /** One condition in words, for summaries: "Heating System — Fuel Source is Gas or Oil". */
 export function describeCondition(c: Condition, fields: readonly RuleField[]): string {
   const f = fields.find(x => x.field === c.field);
-  const name = f ? `${f.path.split(' › ').slice(-1)[0]} — ${f.label}` : c.field;
-  const answers = [...c.values.map(v => `“${v}”`), ...(c.typed ? ['an answer typed in'] : [])];
-  return `${name} is ${answers.length ? answers.join(' or ') : '(nothing picked)'}`;
+  const name = f ? (f.nodeId === 'house' ? f.label : `${f.path.split(' › ').slice(-1)[0]} — ${f.label}`) : c.field;
+  if (c.op === 'present') return `${name} has any answer except None`;
+  const answers = [...c.values.map(v => `“${v}”`), ...(c.typed && c.op !== 'isNot' ? ['an answer typed in'] : [])];
+  return `${name} is ${c.op === 'isNot' ? 'not ' : ''}${answers.length ? answers.join(' or ') : '(nothing picked)'}`;
 }

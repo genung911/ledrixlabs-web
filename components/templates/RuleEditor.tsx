@@ -20,7 +20,7 @@ export function RuleEditor({ tree, forNodeId, rule, onSave, disabled, emptyText,
   useEffect(() => { setConds(view.ok ? view.conditions : []); }, [stored]);   // eslint-disable-line react-hooks/exhaustive-deps
   const next = writeRule(conds);
   const dirty = JSON.stringify(next) !== stored;
-  const incomplete = conds.some(c => !c.field || (!c.values.length && !c.typed));
+  const incomplete = conds.some(c => !c.field || (c.op !== 'present' && !c.values.length && !(c.typed && c.op !== 'isNot')));
 
   if (!view.ok) {
     return (
@@ -44,26 +44,34 @@ export function RuleEditor({ tree, forNodeId, rule, onSave, disabled, emptyText,
               <span className="w-12 shrink-0 text-xs font-semibold text-muted">{i === 0 ? 'When' : 'and'}</span>
               <select id={`${idPrefix}-f${i}`} aria-label={`Condition ${i + 1}: spec field`} value={c.field} disabled={disabled}
                 onChange={e => set(i, { field: e.target.value, values: [], typed: false })} className={`${field} min-w-0 py-1.5`}>
-                <option value="">Pick a spec field…</option>
-                {fields.map(x => <option key={x.field} value={x.field}>{x.path} — {x.label}</option>)}
+                <option value="">Pick a field…</option>
+                {/* 2026-11-14: the house facts first, then every item's spec fields */}
+                <optgroup label="House facts">{fields.filter(x => x.nodeId === 'house').map(x => <option key={x.field} value={x.field}>{x.label}</option>)}</optgroup>
+                <optgroup label="Items">{fields.filter(x => x.nodeId !== 'house').map(x => <option key={x.field} value={x.field}>{x.path} — {x.label}</option>)}</optgroup>
                 {c.field && !f && <option value={c.field}>{c.field} (not in the template)</option>}
               </select>
               <button aria-label={`Remove condition ${i + 1}`} className={btn.icon} disabled={disabled} onClick={() => setConds(cs => cs.filter((_, k) => k !== i))}>×</button>
             </div>
             {f && (
               <div className="mt-2 pl-14">
-                <p className="mb-1 text-[11px] text-muted">is any of</p>
-                <div className="flex flex-wrap gap-1.5">
+                {/* 2026-11-14 (the "Shows when…" picker): is any of · is not any of · has any answer except None */}
+                <select aria-label={`Condition ${i + 1}: how`} value={c.op ?? 'is'} disabled={disabled} className={`${field} mb-1.5 w-auto py-1 text-xs`}
+                  onChange={e => set(i, { op: e.target.value as Condition['op'], values: e.target.value === 'present' ? [] : c.values, typed: e.target.value === 'is' ? c.typed : false })}>
+                  <option value="is">is any of</option>
+                  <option value="isNot">is not any of</option>
+                  <option value="present">has any answer except None</option>
+                </select>
+                {c.op !== 'present' && <div className="flex flex-wrap gap-1.5">
                   {f.values.map(v => {
                     const on = c.values.includes(v);
                     return <button key={v} type="button" aria-pressed={on} disabled={disabled} onClick={() => set(i, { values: on ? c.values.filter(x => x !== v) : [...c.values, v] })}
                       className={`rounded-full border px-2.5 py-1 text-xs font-medium ${on ? 'border-accent bg-accent/15 text-accent-ink' : 'border-hairline text-body hover:bg-ink/5'}`}>{v}</button>;
                   })}
                   {!f.values.length && <span className="text-xs text-muted">This field has no choices yet — add them in its Fields tab.</span>}
-                </div>
-                <label className="mt-2 flex items-center gap-2 text-xs text-body">
+                </div>}
+                {(c.op ?? 'is') === 'is' && f.nodeId !== 'house' && <label className="mt-2 flex items-center gap-2 text-xs text-body">
                   <input type="checkbox" checked={c.typed} disabled={disabled} onChange={e => set(i, { typed: e.target.checked })} /> or an answer typed in (not one of the choices)
-                </label>
+                </label>}
               </div>
             )}
           </div>
@@ -72,7 +80,7 @@ export function RuleEditor({ tree, forNodeId, rule, onSave, disabled, emptyText,
       <div className="flex flex-wrap items-center gap-2">
         <button className={btn.ghost} disabled={disabled || !fields.length} onClick={() => setConds(cs => [...cs, { field: '', values: [], typed: false }])}>+ Add condition</button>
         {dirty && <>
-          <button className={btn.primary + ' py-1.5'} disabled={disabled || incomplete} title={incomplete ? 'Pick a field and at least one answer for every condition.' : undefined}
+          <button className={btn.primary + ' py-1.5'} disabled={disabled || incomplete} title={incomplete ? 'Pick a field and, unless it is "any answer except None", at least one answer for every condition.' : undefined}
             onClick={() => { onSave(next); }}>Save rule</button>
           <button className={btn.secondary + ' py-1.5'} onClick={() => setConds(view.conditions)}>Cancel</button>
         </>}

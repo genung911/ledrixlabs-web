@@ -5,6 +5,7 @@
 //
 // The rules are the Ledrix Inspect app's, ported (not imported — the app's modules pull in React Native and the
 // taxonomy runtime). Each helper names the app file it follows.
+import { houseRuleField } from '@/lib/templateBuilder/core/houseRuleFields';
 import type { ComponentAttribute, InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import { DEFAULT_COVERED, isCovered, recordsNothingHere } from '@/lib/templates/editorModel';
 import { captureRuleDefinitions, frozenRuleNode, type PackRules, type RuleDefinitions } from '@/lib/templateBuilder/core/templateRules';
@@ -93,8 +94,9 @@ export function rulesFor(tree: InspectionTemplate): RuleDefinitions {
   (tree.systems ?? []).forEach(walk);
   const attrOf = (nodeId: string, attrId: string) => axesOf(byId[nodeId] ?? ({} as TemplateNode)).attributes.find(a => a.id === attrId);
   return captureRuleDefinitions(tree.systems as never, (b) => PACK[b], {
-    keyFor: (nodeId, attrId) => (byId[nodeId] && attrOf(nodeId, attrId) ? pickKey(nodeId, attrId) : null),
-    optionsFor: (nodeId, attrId) => attrOf(nodeId, attrId)?.values ?? null,
+    // A house fact (2026-11-14): the job's own key; the preview answers none yet (unanswered → the item shows).
+    keyFor: (nodeId, attrId) => (nodeId === 'house' ? houseRuleField(`house::${attrId}`)?.field ?? null : byId[nodeId] && attrOf(nodeId, attrId) ? pickKey(nodeId, attrId) : null),
+    optionsFor: (nodeId, attrId) => (nodeId === 'house' ? houseRuleField(`house::${attrId}`)?.options ?? null : attrOf(nodeId, attrId)?.values ?? null),
   });
 }
 

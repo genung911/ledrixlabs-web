@@ -11,6 +11,7 @@
 import type { InspectionTemplate, TemplateNode } from './InspectionTemplate';
 import { parseOp, applyOp, runtimePendingFields, classifyOp, allIds, storageFields, type TemplateOp, type Predicate, type OpClass } from './templateOps';
 import { ruleShapeError } from './templateRules';
+import { houseRuleField } from './houseRuleFields';
 import { validateStructureTypes } from './structureTypes';
 import { validateTemplateRequirements } from './requirementsContract';
 
@@ -34,7 +35,8 @@ function walk(tpl: InspectionTemplate): Walked[] {
 const fieldsOf = (p: Predicate): string[] =>
   'all' in p ? p.all.flatMap(fieldsOf) : 'any' in p ? p.any.flatMap(fieldsOf) : [p.field];
 const valuesOf = (p: Predicate): Array<{ field: string; value: string }> =>
-  'all' in p ? p.all.flatMap(valuesOf) : 'any' in p ? p.any.flatMap(valuesOf) : 'anyOf' in p ? p.anyOf.map(value => ({ field: p.field, value })) : [];
+  'all' in p ? p.all.flatMap(valuesOf) : 'any' in p ? p.any.flatMap(valuesOf) : 'anyOf' in p ? p.anyOf.map(value => ({ field: p.field, value }))
+    : 'noneOf' in p ? p.noneOf.map(value => ({ field: p.field, value })) : [];   // + "is not one of" (2026-11-14)
 
 /** Base id of an instance id (`plumb_wh_flue~i2` → `plumb_wh_flue`). Duplicated from taxonomy/instances so
  *  this module stays import-free for guards; verify:template-ops checks the two agree. */
@@ -102,6 +104,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
       const shape = ruleShapeError(p);
       if (shape) add('error', 'rule_unsupported', `"${n.label}": this rule can't be used in inspections — ${shape}.`, n.id);
       for (const f of fieldsOf(p)) {
+        // A HOUSE FACT (2026-11-14): the job's own answer, not an item — known names only.
+        if (f.startsWith('house::')) { if (!houseRuleField(f)) add('error', 'rule_missing_item', `"${n.label}" loads on "${f}", which is no house fact.`, n.id); continue; }
         const { w, a } = attrOf(f);
         if (!w) { add('error', 'rule_missing_item', `"${n.label}" loads on "${f}", which is not in the template.`, n.id); continue; }
         if (!a) { add('error', 'rule_missing_field', `"${n.label}" loads on "${f}", but that item has no such field.`, n.id); continue; }
@@ -110,6 +114,8 @@ export function validateTemplate(tpl: InspectionTemplate): Issue[] {
         deps.push(baseOf(w.node.id));
       }
       for (const { field, value } of valuesOf(p)) {
+        const h = houseRuleField(field);
+        if (h) { if (!h.options.includes(value)) add('warning', 'rule_unknown_value', `"${n.label}" loads on "${value}", which ${h.label} does not offer.`, n.id); continue; }
         const { a } = attrOf(field);
         if (a && !a.values.includes(value)) add('warning', 'rule_unknown_value', `"${n.label}" loads on "${value}", which "${a.label}" does not offer.`, n.id);
       }

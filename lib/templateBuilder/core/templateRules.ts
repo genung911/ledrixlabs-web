@@ -40,7 +40,8 @@ export type AuthoredRule =
 export type CompiledPredicate = {
   specNodeId: string;
   includes: string[];
-  exact: true;
+  /** Absent on a presence rule ("any answer except None", 2026-11-14) — any real answer holds. */
+  exact?: true;
   origin: 'template';
   unlisted?: string[];
   whenUnanswered?: 'not_applicable';
@@ -63,7 +64,7 @@ const splitField = (f: unknown): [string, string] | null => {
   return m ? [m[1], m[2]] : null;
 };
 
-type Leaf = { field: string; anyOf?: string[]; typed?: true };
+type Leaf = { field: string; anyOf?: string[]; typed?: true; noneOf?: string[]; present?: true };
 
 /** An `all` clause: one or more leaves on ONE field, OR-ed (a leaf, or an `any` of leaves sharing a field). */
 function clauseOf(p: unknown): Leaf[] | string {
@@ -84,8 +85,11 @@ function clauseOf(p: unknown): Leaf[] | string {
   if ('all' in p) return 'an "all" rule cannot sit inside an "any"';
   if (typeof p.field !== 'string') return 'rule field missing';
   if (p.typed === true) return [{ field: p.field, typed: true }];
+  // 2026-11-14 (the "Shows when…" picker): "any answer except None", "is not one of"
+  if (p.present === true) return [{ field: p.field, present: true }];
+  if (Array.isArray(p.noneOf) && p.noneOf.length && p.noneOf.every(v => typeof v === 'string')) return [{ field: p.field, noneOf: p.noneOf as string[] }];
   if (Array.isArray(p.anyOf) && p.anyOf.length && p.anyOf.every(v => typeof v === 'string')) return [{ field: p.field, anyOf: p.anyOf as string[] }];
-  return 'rule must name values (anyOf) or typed';
+  return 'rule must name values (anyOf / noneOf), present or typed';
 }
 
 /** The AND-ed clauses of a rule: `all` flattens (nested `all` too); anything else is one clause. */
@@ -123,8 +127,25 @@ export function compileAppliesWhen(rule: unknown, whenUnknown: unknown, fields: 
   for (const leaves of clauses) {
     const parts = splitField(leaves[0].field);
     if (!parts) return { ok: false, reason: `field must be "<nodeId>::<attrId>" (${String(leaves[0].field)})` };
+    // A HOUSE FACT (2026-11-14) is a field like any other here: the caller's resolver answers `house` / `water` with the
+    // job's key (`house::water`) and its choices (houseRuleFields), exactly as it answers an item's field.
     const key = fields.keyFor(parts[0], parts[1]);
     if (!key) return { ok: false, reason: `the template has no field ${leaves[0].field}` };
+    // "any answer except None" — the presence rule (any real answer holds, Not present never does)
+    if (leaves.some(l => l.present)) {
+      const pred: CompiledPredicate = { specNodeId: key, includes: [], unlisted: [], origin: 'template' };
+      if (whenUnknown === 'hide') pred.whenUnanswered = 'not_applicable';
+      out.push(pred);
+      continue;
+    }
+    // "is not one of" — exact entries: holds when some answer is none of them (Not present is never one)
+    const none = leaves.flatMap(l => l.noneOf ?? []);
+    if (none.length) {
+      const pred: CompiledPredicate = { specNodeId: key, includes: [], unlisted: [...new Set(none)], exact: true, origin: 'template' };
+      if (whenUnknown === 'hide') pred.whenUnanswered = 'not_applicable';
+      out.push(pred);
+      continue;
+    }
     const includes = [...new Set(leaves.flatMap(l => l.anyOf ?? []))];
     const typed = leaves.some(l => l.typed);
     const pred: CompiledPredicate = { specNodeId: key, includes, exact: true, origin: 'template' };

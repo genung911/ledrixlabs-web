@@ -48,6 +48,9 @@ export const SHORTCUT_PRIORITIES = ['critical', 'deficiency', 'maintenance', 'ch
  *  inspector typed under Other — the only way a value outside the list can drive a rule. */
 export type Predicate =
   | { field: string; anyOf: string[] }
+  // 2026-11-14 (the "Shows when…" picker): "is not one of" and "any answer except None"
+  | { field: string; noneOf: string[] }
+  | { field: string; present: true }
   | { field: string; typed: true }
   | { all: Predicate[] }
   | { any: Predicate[] };
@@ -67,6 +70,8 @@ export function checkPredicate(p: unknown, depth = 0): string | null {
   }
   if (typeof p.field !== 'string' || !/^[^:]+::[^:]+$/.test(p.field)) return 'field must be "<nodeId>::<attrId>"';
   if ('typed' in p) return onlyKeys(p, ['field', 'typed']) ?? (p.typed === true ? null : 'typed must be true');
+  if ('present' in p) return onlyKeys(p, ['field', 'present']) ?? (p.present === true ? null : 'present must be true');
+  if ('noneOf' in p) return onlyKeys(p, ['field', 'noneOf']) ?? strList(p.noneOf) ?? ((p.noneOf as unknown[]).length ? null : 'noneOf must not be empty');
   return onlyKeys(p, ['field', 'anyOf']) ?? strList(p.anyOf) ?? ((p.anyOf as unknown[]).length ? null : 'anyOf must not be empty');
 }
 
