@@ -2963,6 +2963,20 @@
               "condition": true
             },
             {
+              "id": "plumb_dryer_gas_shutoff",
+              "label": "Dryer Gas Shutoff",
+              "kind": "component",
+              "keywords": [
+                "dryer gas shutoff",
+                "dryer gas valve",
+                "laundry gas valve",
+                "gas dryer shutoff",
+                "dryer flex connector"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
               "id": "plumb_gas_meter",
               "label": "Gas Meter / Main Shutoff",
               "kind": "component",
@@ -9510,12 +9524,12 @@
               }
             },
             {
-              "id": "space_laundry__link_plumb_gas_shutoff",
-              "label": "Gas Shutoffs",
+              "id": "space_laundry__link_plumb_dryer_gas_shutoff",
+              "label": "Dryer Gas Shutoff",
               "kind": "component",
               "pointsTo": {
                 "systemId": "plumbing",
-                "nodeId": "plumb_gas_shutoff"
+                "nodeId": "plumb_dryer_gas_shutoff"
               }
             }
           ]

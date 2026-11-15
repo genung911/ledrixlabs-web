@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.15.1",
+ "packVersion": "2026.11.15.2",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -1540,6 +1540,25 @@
       "Propane"
      ],
      "exact": true
+    }
+   ]
+  },
+  "plumb_dryer_gas_shutoff": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas",
+      "Propane"
+     ],
+     "exact": true
+    },
+    {
+     "specNodeId": "laundry_dryer",
+     "includes": [
+      "Gas",
+      "Both Available"
+     ]
     }
    ]
   },

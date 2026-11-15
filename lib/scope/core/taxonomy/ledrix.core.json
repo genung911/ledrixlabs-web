@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.15.1",
+  "packVersion": "2026.11.15.2",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -4228,6 +4228,37 @@
           ]
         },
         {
+          "id": "plumb_dryer_gas_shutoff",
+          "label": "Dryer Gas Shutoff",
+          "keywords": [
+            "dryer gas shutoff",
+            "dryer gas valve",
+            "laundry gas valve",
+            "gas dryer shutoff",
+            "dryer flex connector"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::gas",
+              "includes": [
+                "Natural gas",
+                "Propane"
+              ],
+              "exact": true
+            },
+            {
+              "specNodeId": "laundry_dryer",
+              "includes": [
+                "Gas",
+                "Both Available"
+              ]
+            }
+          ]
+        },
+        {
           "id": "plumbing_manufactured_water_heater_vent",
           "label": "Water Heater Vent (Manufactured Home)",
           "keywords": [],
@@ -4834,6 +4865,7 @@
           "nodeIds": [
             "plumb_gas",
             "plumb_gas_shutoff",
+            "plumb_dryer_gas_shutoff",
             "plumb_gas_meter",
             "plumb_propane_tank",
             "plumbing_older_oil_fired_water_heater"
