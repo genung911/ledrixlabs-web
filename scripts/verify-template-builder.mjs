@@ -1296,7 +1296,7 @@ const RULES = {
   'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and is a tile on its page that opens Photos & details (2026-11-15, after the group Start here)': all => {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
-      && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => !describedStep\(st\)\)/.test(p)
+      && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => onSpot\(st\) && !describedStep\(st\)\)/.test(p)
       && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /const shown = active\.items\.filter\(st => !isDescribed\(st\)\);/.test(p)
       && /const desc = isDescribed\(st\);/.test(p) && /if \(desc\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\); go\(\{ kind: 'system', systemId: sysId \}\); \}/.test(p)
       && !/DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
@@ -1315,7 +1315,8 @@ const RULES = {
     return /\.pv-tiles\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/.test(p)
       && /onClick=\{\(\) => go\(\{ kind: 'facts' \}\)\} aria-label="Before you start, the house facts\. Open"/.test(p) && /\{HOUSE_FACTS\.map\(f => \(/.test(p)
       && /const xml = COLOR_ICONS \? COLOR_SVGS\[name\] : undefined;/.test(p) && /<TileIco name=\{groupIconFor\(g\.label, \(\) => 'shape-outline'\)\} \/>/.test(p)
-      && /<TileIco name="camera-outline"/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
+      /* 2026-11-15 (app 2b9ee2d27): Photos & details is no grid tile — Start here is the bottom pair's right key */
+      && /className="pv-pstart"/.test(p) && /if \(hasPage\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\); return; \}/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
       && /const allSteps = useMemo\(\(\) => previewSteps\(walkSystems, applies\), \[walkSystems, applies\]\);/.test(p)
       && /const tile = systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\);/.test(p) && /<b>Review &amp; send<\/b>/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },

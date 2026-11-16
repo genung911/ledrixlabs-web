@@ -172,7 +172,11 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (!fields.length || !fields.every(x => detailsKeys.has(`${x.n.id}|${x.a.id}`))) return null;
     return { set: fields.every(x => (picks[pickKey(x.n.id, x.a.id)] ?? []).length > 0) };
   };
-  const steps = useMemo(() => allSteps.filter(st => !describedStep(st)), [allSteps, detailsKeys, index]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // ON THE SPOT (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): the walk is the items with a choice made there — a field
+  // Details does not ask, a method, a reading. Condition alone is on the system's Condition page.
+  const onSpot = (st: GuidedStep) => st.rowIds.some(id => { const r = index.byId[id]?.node; if (!r) return false; const ax = axesOf(r);
+    return ax.attributes.some(a => !detailsKeys.has(`${r.id}|${a.id}`)) || ax.method.length > 0 || !!r.freeFormValue; });
+  const steps = useMemo(() => allSteps.filter(st => onSpot(st) && !describedStep(st)), [allSteps, detailsKeys, index]);   // eslint-disable-line react-hooks/exhaustive-deps
   const prevSteps = useRef<GuidedStep[]>([]);
   const [limReason, setLimReason] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState<Record<string, string>>({});
@@ -287,7 +291,14 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   };
   // Every system opens its item list — a flat system too (the app's one-card system page is gone).
   const openSystem = (sys: TemplateNode) => { go({ kind: 'system', systemId: sys.id }); emit({ systemId: sys.id, nodeId: null }); };
-  const openStep = (st: GuidedStep) => { go({ kind: 'step', key: st.key }); emit({ systemId: st.systemId, nodeId: st.key }); };
+  const openStep = (st: GuidedStep) => {
+    if (!steps.some(x => x.key === st.key)) {   // condition alone (app 2026-11-15): its system's Condition page, on that row
+      const row = st.rowIds.find(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; });
+      if (row) setCamPick({ id: row, keep: true });
+      go({ kind: 'system', systemId: tileOf(st.systemId), group: '__condition__' }); return;
+    }
+    go({ kind: 'step', key: st.key }); emit({ systemId: st.systemId, nodeId: st.key });
+  };
   // THE APP'S NEXT / BACK (ScopeScreen guidedNext / guidedBack): the next or previous applicable step of the same
   // sequence; a move that crosses into another system stops on the boundary card first; Next on the last step ends
   // the walk on the Coverage grid. Nothing is written by moving.
@@ -426,23 +437,22 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const groups: Array<{ id: string; label: string; items: GuidedStep[] }> = [];
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
     // Every system like Heating (app ScopeWorkspace, owner 2026-11-10): tiles first, one group or many.
+    const condOpen = openGroup === '__condition__';
     const active = groups.find(g => g.id === openGroup);
     const inGroup = !!active;
     const items = active ? active.items : mine;
     const done = items.filter(isDone).length;
-    const pool = inGroup ? items : mine;
+    const pool = (inGroup ? items : mine).filter(st => steps.some(x => x.key === st.key));   // the walk (app 2026-11-15: on-the-spot items)
     const nextUp = pool.length ? pool[resumeIndex(pool, stepDone, 0)] : null;
     const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } };
-    // Start here's line (app 2026-11-15): what is still needed, then where the walk picks up.
-    const tileMeta = dsc.left ? `✦ ${dsc.left} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.tileLabel)}` : 'All done';
     const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE{inGroup ? ` · ${sysName(sys).toUpperCase()}` : ''}</div>
         <div className="pv-sysrow">
           <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${sysName(sys)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
-          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : sysName(sys)}</span>
-          <span className="pv-c">{met}<small> / {total}</small></span>
+          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : condOpen ? 'Condition' : sysName(sys)}</span>
+          {condOpen ? null : <span className="pv-c">{met}<small> / {total}</small></span>}
         </div>
         <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-syssub">{!active
@@ -465,23 +475,37 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             </div>
           </div>
         ) : null}
-        {photosOpen ? null : !active ? (
+        {/* THE CONDITION PAGE (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): every row of the system that takes condition,
+            named by what was picked; ✓ = OK, ALL OK; the bar's camera follows the picked row. */}
+        {condOpen ? (() => {
+          const rows = condRowsOf(sysId);
+          const doneN = rows.filter(id => !!cond[id]).length;
+          return (
+            <div className="pv-group">
+              <div className="pv-ghead"><span>CONDITION · {doneN} OF {rows.length}</span>
+                {doneN < rows.length ? <button type="button" className="pv-linkbtn" onClick={() => setCond(p => { const o = { ...p }; rows.forEach(id => { if (!o[id]) o[id] = 'ok'; }); return o; })}>✓ {doneN ? 'REMAINING OK' : 'ALL OK'}</button> : null}</div>
+              {!rows.length ? <p className="pv-empty">Nothing to judge yet: pick what the system has in Photos &amp; details.</p> : null}
+              {rows.map(id => {
+                const r = index.byId[id]!.node;
+                const picked = axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []).join(', ');
+                const c = cond[id];
+                return (
+                  <div key={id} data-pv-id={id} role="button" tabIndex={0} className={`pv-crow${camTarget === id ? ' campick' : ''}`} onClick={() => setCamPick({ id, keep: !!c })}>
+                    <div style={{ flex: 1, minWidth: 0 }}><b>{picked || r.label}</b>{picked ? <small>{r.label}</small> : null}
+                      {c === 'lim' ? <small className="lim">⚠ {limReason[id] ?? 'Limited'}</small> : null}</div>
+                    {c === 'fnd' ? <span className="pv-verdict fnd">⚑ Finding</span> : null}
+                    <button type="button" className={`pv-ibtn${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' dis' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'} aria-label={`OK: ${picked || r.label}`}
+                      onClick={e => { e.stopPropagation(); setCond(p => { const o = { ...p }; if (o[id] === 'ok') delete o[id]; else o[id] = 'ok'; return o; }); }}>
+                      <Glyph d={G.check} size={26} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })() : photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            {/* START HERE (app 2026-11-15, mockup E9XqkdjBebCUjsX1uH5B3m): Guided folded into Photos & details — one first
-                tile that opens the system's walk at that page. A system with no Photos & details keeps a plain Guided tile. */}
-            {hasTile ? (
-              <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label={`Start here: photos and details, then the guided walk. ${tileMeta}`}>
-                <span className="pv-sq pv-guided"><TileIco name="camera-outline" color="#ffffff" /></span>
-                <span className="pv-tl">Start here</span>
-                <span className="pv-iv2">{tileMeta}</span>
-              </button>
-            ) : (
-              <button type="button" className="pv-cell" onClick={() => start()} aria-label={`Guided, picks up at ${nextUp?.tileLabel ?? 'nothing left'}. Start`}>
-                <span className="pv-sq pv-guided"><span className="pv-gplay" style={{ color: '#fff' }}>▶</span></span>
-                <span className="pv-tl">Guided</span>
-                <span className="pv-iv2">{displayLabel(nextUp?.tileLabel ?? 'All done')}</span>
-              </button>
-            )}
+            <div className="pv-areacap">SYSTEM COMPONENTS</div>
             {groups.map(g => {
               const d = g.items.filter(isDone).length;
               const all = g.items.length > 0 && d === g.items.length;
@@ -578,8 +602,12 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // THE BAR CAMERA'S TARGET (app ScopeRowList walkCam, 2026-11-15): the picked row while still open (one picked when already
   // addressed stays), else the first open row of the step, else its first row.
   const camStep = screen.kind === 'step' ? steps.find(x => x.key === screen.key) ?? null : null;
-  const camRows = camStep ? camStep.rowIds.filter(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; }) : [];
-  const camTarget = !camStep ? null
+  const onCond = screen.kind === 'system' && screen.group === '__condition__';
+  const condRowsOf = (sysId: string) => allSteps.filter(st => tileOf(st.systemId) === sysId).flatMap(st => st.rowIds)
+    .filter((id, i, all) => all.indexOf(id) === i && (() => { const r = index.byId[id]?.node; return !!r && !r.pointsTo && axesOf(r).condition; })());
+  const camRows = camStep ? camStep.rowIds.filter(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; })
+    : screen.kind === 'system' && onCond ? condRowsOf(screen.systemId) : [];
+  const camTarget = !camStep && !onCond ? null
     : camPick && camRows.includes(camPick.id) && (camPick.keep || !cond[camPick.id]) ? camPick.id
     : camRows.find(id => !cond[id]) ?? camRows[0] ?? null;
   const camLabel = camTarget ? (index.byId[camTarget]?.node.label ?? '') : (camStep?.label ?? '');
@@ -733,6 +761,38 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         </div>
       );
     }
+    // THE CONDITION PAGE (app 2026-11-15): ⚠ + the camera on the picked row — no Back · Skip · Next.
+    if (screen.kind === 'system' && screen.group === '__condition__') return (
+      <div className="pv-walk"><div className="pv-keys">
+        <button type="button" className="pv-klim" disabled aria-label="Limitation on the whole system (on the phone)">⚠</button>
+        <button type="button" className="pv-kcam" disabled={!camTarget} onClick={() => camTarget && setSheet({ kind: 'camera', nodeId: camTarget })}
+          aria-label={`Camera for ${camLabel}`}>📷 Camera · {displayLabel(camLabel)}</button>
+      </div></div>
+    );
+    // THE GUIDED WALK PAIR on a system page (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): Condition on the left, Start
+    // here on the right — Photos & details, then the system's walk, else Condition.
+    if (screen.kind === 'system' && !screen.group && !opened[`photos:${screen.systemId}`] && index.allSystems[screen.systemId]) {
+      const sysId = screen.systemId;
+      const parts = [sysId, ...(fold.into === sysId ? folded : [])];
+      const hasPage = parts.some(id => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0);
+      const dLeft = parts.reduce((n, id) => n + (describeBy[id]?.left ?? 0), 0);
+      const pool = steps.filter(x => tileOf(x.systemId) === sysId);
+      const nextUp = pool.length && !pool.every(stepDone) ? pool[resumeIndex(pool, stepDone, 0)] : null;
+      const startMeta = hasPage && dLeft ? `✦ ${dLeft} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
+      const rows = condRowsOf(sysId), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
+      const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length}` : finds ? `${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
+      return (
+        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>GUIDED WALK</div><div className="pv-pair">
+          <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => go({ kind: 'system', systemId: sysId, group: '__condition__' })}
+            aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
+          <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
+            if (hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); return; }
+            if (pool.length) { setWalkScope(sysId); openStep(nextUp ?? pool[0]); return; }
+            go({ kind: 'system', systemId: sysId, group: '__condition__' });
+          }}><span><b>Start here</b><small>{startMeta}</small></span><i>▶</i></button>
+        </div></div>
+      );
+    }
     if (screen.kind !== 'step') return null;
     const i = steps.findIndex(x => x.key === screen.key);
     const scoped = i >= 0 && !!walkScope && tileOf(steps[i].systemId) === walkScope;
@@ -839,16 +899,11 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
               <div className="pv-addr"><i />{address}</div>
               <div className="pv-sub1">{tree.name}</div>
             </div>
-            <span style={{ color: '#8a8f93' }} aria-hidden="true"><Glyph d={G.dots} size={18} /></span>
+            {/* The tab rail is the ▦ grid menu on every page (app 2026-11-15): Coverage · Findings · Evidence · Camera. */}
+            <span className="pv-gridkey" title="Coverage · Findings · Evidence · Camera" aria-label="Menu: Coverage, Findings, Evidence, Camera (on the phone)"><Glyph d={G.grid} size={16} /></span>
           </div>
           <div className="pv-scroll" ref={scrollRef}>{body}</div>
           {navBar()}
-          <div className="pv-tabs" aria-hidden="true">
-            <div className="on"><Glyph d={G.grid} size={20} />Coverage</div>
-            <div><Glyph d={G.flag} size={20} />Findings</div>
-            <div><Glyph d={G.images} size={20} />Evidence</div>
-            <div><Glyph d={G.camera} size={20} />Camera</div>
-          </div>
           {sheetView()}
           {note ? <div className="pv-toast" role="status">{note}</div> : null}
         </div>
@@ -886,6 +941,18 @@ const CSS_TEXT = `
 .ldx-pv .pv-n{color:#eef3f5;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
+.ldx-pv .pv-areacap{grid-column:1/-1;color:#6f8088;font-size:9.5px;font-weight:800;letter-spacing:1.4px;margin-bottom:-4px}
+.ldx-pv .pv-pair{display:flex;gap:7px}
+.ldx-pv .pv-pcond,.ldx-pv .pv-pstart{display:flex;align-items:center;justify-content:space-between;gap:6px;border-radius:12px;padding:9px 11px;font:inherit;text-align:left;cursor:pointer}
+.ldx-pv .pv-pcond{flex:1;flex-direction:column;align-items:flex-start;border:1px solid #26363b;background:#0d151b;color:#fff}
+.ldx-pv .pv-pcond.ok{border-color:rgba(47,197,110,.5)}.ldx-pv .pv-pcond.fnd{border-color:rgba(232,90,79,.55)}
+.ldx-pv .pv-pstart{flex:1.25;border:0;background:#217BE8;color:#fff}.ldx-pv .pv-pstart span{display:flex;flex-direction:column}
+.ldx-pv .pv-pcond b,.ldx-pv .pv-pstart b{font-size:12.5px;font-weight:800}.ldx-pv .pv-pcond small{font-size:9.5px;color:#8fa0ad}.ldx-pv .pv-pstart small{font-size:9.5px;color:#d6e7fb}
+.ldx-pv .pv-pstart i{font-style:normal;font-size:14px}
+.ldx-pv .pv-gridkey{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid #26363b;border-radius:8px;color:#c7d0d6}
+.ldx-pv .pv-crow{display:flex;align-items:center;gap:8px;border:1px solid #1f2d37;border-radius:11px;background:#0d151b;padding:8px 10px;margin-bottom:6px;cursor:pointer}
+.ldx-pv .pv-crow b{display:block;font-size:12px;color:#eef2f4}.ldx-pv .pv-crow small{display:block;font-size:10px;color:#8a959c}.ldx-pv .pv-crow small.lim{color:#f5c46a}
+.ldx-pv .pv-crow.campick{border-color:#217BE8;box-shadow:inset 0 0 0 1px #217BE8}
 .ldx-pv .pv-guided{background:#217BE8;border-color:#217BE8;display:flex;align-items:center;justify-content:center;font-size:22px}
 .ldx-pv .pv-itiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 10px}
 .ldx-pv .pv-itile{display:flex;flex-direction:column;justify-content:space-between;min-height:72px;text-align:left;border:1px solid #1d2a31;border-radius:11px;background:#0c1117;padding:8px 8px 7px;color:#e6ecef;font:inherit;cursor:pointer}
