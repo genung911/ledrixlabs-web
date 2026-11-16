@@ -1296,7 +1296,7 @@ const RULES = {
   'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and its group page (2026-11-15: it belongs to Photos & details)': all => {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
-      && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => onSpot\(st\) && !describedStep\(st\)\)/.test(p)
+      && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => !describedStep\(st\)\)/.test(p) && !/onSpot/.test(p)   /* 2026-11-16: every item a walk stop */
       && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /\{active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(st => \{/.test(p)   /* 2026-11-15 (app build 872): a described item is no tile — Photos & details' */
       && !/DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
@@ -1316,7 +1316,7 @@ const RULES = {
       && /const xml = COLOR_ICONS \? COLOR_SVGS\[name\] : undefined;/.test(p) && /<TileIco name=\{groupIconFor\(g\.label, \(\) => 'shape-outline'\)\} \/>/.test(p)
       /* 2026-11-15 (app 2b9ee2d27): Photos & details is no grid tile — Start here is the bottom pair's right key */
       && /className="pv-pstart"/.test(p) && /if \(grp \? gLeft > 0 : hasPage\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\);/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
-      && /const allSteps = useMemo\(\(\) => previewSteps\(walkSystems, applies\), \[walkSystems, applies\]\);/.test(p)
+      && /const allSteps = useMemo\(\(\) => \[\.\.\.previewSteps\(walkSystems, applies\), \.\.\.previewSteps\(spaces, applies\)\], \[walkSystems, spaces, applies\]\);/.test(p)   /* 2026-11-16: + the rooms */
       && /const tile = nx \? systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\) : null;/.test(p) && /<b>Review &amp; send<\/b>/.test(p) && /className=\{`pv-pcond\$\{covered \? ' ready' : ' dim'\}`\}/.test(p)   /* 2026-11-15: the grid's pair */ ? [] : ['components/templates/PhonePreview.tsx'];
   },
   // ONE LIST FOR MATERIALS (owner 2026-11-14, mockup WGxSxwd2gAzkxGr4VRhMK2): a material's card has no switch of its own
@@ -1801,7 +1801,7 @@ const MUT = {
   'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and its group page (2026-11-15: it belongs to Photos & details)': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
-  'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
+  'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => [...previewSteps(walkSystems, applies), ...previewSteps(spaces, applies)], [walkSystems, spaces, applies]);', 'const allSteps = useMemo(() => [...previewSteps(systems, applies), ...previewSteps(spaces, applies)], [systems, spaces, applies]);'),
   'materials: a card comes and goes with its material (no switch of its own); its materials are edited only on the Material type list': rep('components/templates/Workspace.tsx', 'skip={hostQ?.attr.id} />', ' />'),
   'create: one question per screen, in order; the company answers are saved before Name it; the last screen creates the draft': rep('app/app/templates/create/page.tsx', ", next: () => void saveAndNext(),", ","),
   'writes: only lib/templates/api.ts writes to the database': add('components/templates/LedrixPanel.tsx', "\nworkspace.from('company_templates').update({ name: 'x' });"),
