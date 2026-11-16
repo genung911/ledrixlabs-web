@@ -113,6 +113,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   answer?: { key: string; value: string } | null;
 }): JSX.Element {
   const index = useMemo(() => buildIndex(tree), [tree]);
+  // A ROOM'S LINKS ARE THE TRADE'S RECORD (app 2026-11-15, x47: "one record, the room shows it"): a link row reads and
+  // writes the item it points to, so a room's Condition and progress are that record's.
+  const recordId = (id: string) => { const r = index.byId[id]?.node; return r?.pointsTo && index.byId[r.pointsTo.nodeId] ? r.pointsTo.nodeId : id; };
   const systems = useMemo(() => shownSystems(tree), [tree]);
   const spaces = useMemo(() => shownSpaces(tree), [tree]);
 
@@ -165,7 +168,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const walkSystems = useMemo(() => (fold.into
     ? systems.filter(s => !folded.includes(s.id)).flatMap(s => (s.id === fold.into ? [s, ...systems.filter(x => folded.includes(x.id))] : [s]))
     : systems), [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);
+  // ROOMS WALK TOO (app 2026-11-16, stages 4–5): a room's page is a system's page — its item tiles, Condition · Start here,
+  // its own walk. The preview's room items carry their own ids, so a room's steps sit after the systems' in one list.
+  const roomIds = useMemo(() => new Set(spaces.map(sp => sp.id)), [spaces]);
+  const allSteps = useMemo(() => [...previewSteps(walkSystems, applies), ...previewSteps(spaces, applies)], [walkSystems, spaces, applies]);
   // DESCRIBED IN DETAILS (app 2026-11-08): the spec fields Details asks — a description step made only of them leaves the
   // walk and folds into one line on its system page; on a card they show as one line, not a grid.
   const detailsKeys = useMemo(() => previewDetailsKeys(tree, rules), [tree, rules]);
@@ -323,7 +329,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (crossesSystem(steps, i, j)) { go({ kind: 'cross', from: steps[i].key, to: steps[j].key, dir: dir > 0 ? 'forward' : 'back' }); return; }
     openStep(steps[j]);
   };
-  const tourOrder = systems.filter(x => tileOf(x.id) === x.id).map(x => x.id)
+  // THE STOPS (app 2026-11-16, stage 5): the systems, then the rooms, in the grid's order.
+  const tourOrder = [...systems.filter(x => tileOf(x.id) === x.id).map(x => x.id), ...spaces.map(sp => sp.id)]
     .filter(id => allSteps.some(st => tileOf(st.systemId) === id) || (describeBy[id]?.total ?? 0) > 0);
   const pageOfSys = (id: string) => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0;
   const enterSys = (id: string) => {
@@ -338,7 +345,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (!next) { setTour(false); go({ kind: 'landing' }); say('Guided coverage complete.'); return; }
     go({ kind: 'tour', from: id, to: next });
   }
-  const stepStat = (st: GuidedStep) => sumProgress(st.rowIds.map(id => index.byId[id]?.node).filter(Boolean) as TemplateNode[], picks, cond, readings);
+  const stepStat = (st: GuidedStep) => sumProgress(st.rowIds.map(id => index.byId[recordId(id)]?.node).filter(Boolean) as TemplateNode[], picks, cond, readings);
   const stepDone = (st: GuidedStep) => { const p = stepStat(st); return p.total === 0 || p.met >= p.total; };
   const togglePick = (key: string, value: string, multi: boolean) => setPicks(p => {
     const cur = p[key] ?? [];
@@ -390,10 +397,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-bmeta">Walk with the camera. Shows the systems&apos; items that live there.</div>
             <div className="pv-tiles">
               {spaces.map(sp => (
-                <div key={sp.id} data-pv-id={sp.id} className="pv-cell" aria-label={`${sp.label}, space`}>
+                <button key={sp.id} type="button" data-pv-id={sp.id} className={`pv-cell${hl === sp.id ? ' pv-hit' : ''}`} onClick={() => openSystem(sp)} aria-label={`${sp.label}, room. Open`}>
                   <span className="pv-sq pv-sp"><TileIco name={sp.icon ?? 'door'} /></span>
                   <span className="pv-tl">{displayLabel(sp.label)}</span>
-                </div>
+                </button>
               ))}
             </div>
           </>
@@ -402,10 +409,12 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             never disabled (on the phone it opens Post-Inspect, which lists what still stands) — and Guided coverage on the
             right, naming the TILE it picks up at (a folded Heating reads Heat Pump). */}
         {(() => {
-          const nx = steps.length && !steps.every(stepDone) ? steps[resumeIndex(steps, stepDone, 0)] : null;
+          // The Coverage page's pair reads the systems (app: Review & send counts the building's systems).
+          const sysSteps = steps.filter(st => !roomIds.has(st.systemId));
+          const nx = sysSteps.length && !sysSteps.every(stepDone) ? sysSteps[resumeIndex(sysSteps, stepDone, 0)] : null;
           const tile = nx ? systems.find(x => x.id === tileOf(nx.systemId)) : null;
           const rows = systems.flatMap(x => condRowsOf(x.id));
-          const left = rows.filter(id => !cond[id]).length + steps.filter(st => !stepDone(st)).length;
+          const left = rows.filter(id => !cond[id]).length + sysSteps.filter(st => !stepDone(st)).length;
           const covered = left === 0;
           return (
             <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>GUIDED COVERAGE</div><div className="pv-pair">
@@ -630,7 +639,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // addressed stays), else the first open row of the step, else its first row.
   const camStep = screen.kind === 'step' ? steps.find(x => x.key === screen.key) ?? null : null;
   const onCond = screen.kind === 'system' && screen.group === '__condition__';
-  const condRowsOf = (sysId: string, grp?: string | null) => allSteps.filter(st => tileOf(st.systemId) === sysId && (!grp || st.tileId === grp)).flatMap(st => st.rowIds)
+  const condRowsOf = (sysId: string, grp?: string | null) => allSteps.filter(st => tileOf(st.systemId) === sysId && (!grp || st.tileId === grp)).flatMap(st => st.rowIds.map(recordId))
     .filter((id, i, all) => all.indexOf(id) === i && (() => { const r = index.byId[id]?.node; return !!r && !r.pointsTo && axesOf(r).condition; })());
   const camRows = camStep ? camStep.rowIds.filter(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; })
     : screen.kind === 'system' && onCond ? condRowsOf(screen.systemId) : [];
