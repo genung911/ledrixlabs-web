@@ -1293,12 +1293,11 @@ const RULES = {
       && /k = previewDetailsKeys\(tree, rulesFor\(tree\)\);/.test(m) && /ASK_IN\.has\(id\) \? \{ askIn: 'inspect' \} : \{\}/.test(m)
       && /TYPE_ROWS\.has\(id\) \? \{ typeRow: true \} : \{\}/.test(m) ? [] : ['components/templates/phonePreviewModel.ts'];
   },
-  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and is a tile on its page that opens Photos & details (2026-11-15, after the group Start here)': all => {
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and its group page (2026-11-15: it belongs to Photos & details)': all => {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
       && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => onSpot\(st\) && !describedStep\(st\)\)/.test(p)
-      && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /const shown = active\.items\.filter\(st => !isDescribed\(st\)\);/.test(p)
-      && /const desc = isDescribed\(st\);/.test(p) && /if \(desc\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\); go\(\{ kind: 'system', systemId: sysId \}\); \}/.test(p)
+      && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /\{active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(st => \{/.test(p)   /* 2026-11-15 (app build 872): a described item is no tile — Photos & details' */
       && !/DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': all => {
@@ -1316,9 +1315,9 @@ const RULES = {
       && /onClick=\{\(\) => go\(\{ kind: 'facts' \}\)\} aria-label="Before you start, the house facts\. Open"/.test(p) && /\{HOUSE_FACTS\.map\(f => \(/.test(p)
       && /const xml = COLOR_ICONS \? COLOR_SVGS\[name\] : undefined;/.test(p) && /<TileIco name=\{groupIconFor\(g\.label, \(\) => 'shape-outline'\)\} \/>/.test(p)
       /* 2026-11-15 (app 2b9ee2d27): Photos & details is no grid tile — Start here is the bottom pair's right key */
-      && /className="pv-pstart"/.test(p) && /if \(hasPage\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\); return; \}/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
+      && /className="pv-pstart"/.test(p) && /if \(grp \? gLeft > 0 : hasPage\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\);/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
       && /const allSteps = useMemo\(\(\) => previewSteps\(walkSystems, applies\), \[walkSystems, applies\]\);/.test(p)
-      && /const tile = systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\);/.test(p) && /<b>Review &amp; send<\/b>/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
+      && /const tile = nx \? systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\) : null;/.test(p) && /<b>Review &amp; send<\/b>/.test(p) && /className=\{`pv-pcond\$\{covered \? ' ready' : ' dim'\}`\}/.test(p)   /* 2026-11-15: the grid's pair */ ? [] : ['components/templates/PhonePreview.tsx'];
   },
   // ONE LIST FOR MATERIALS (owner 2026-11-14, mockup WGxSxwd2gAzkxGr4VRhMK2): a material's card has no switch of its own
   // ("Comes with …" in its place); a materials item's material field is edited only on its Material type list (no Details
@@ -1799,7 +1798,7 @@ const add = (f, x) => s => ({ ...s, [f]: (s[f] ?? '') + x });
 const rep = (f, a, b) => s => ({ ...s, [f]: (s[f] ?? '').replace(a, () => b) });
 const MUT = {
   'details: the preview runs the app’s whatsHere.ts on the rules a new inspection captures, and the pack’s askIn / type rows': rep('components/templates/phonePreviewModel.ts', "...(ASK_IN.has(id) ? { askIn: 'inspect' } : {})", ''),
-  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and is a tile on its page that opens Photos & details (2026-11-15, after the group Start here)': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and its group page (2026-11-15: it belongs to Photos & details)': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),

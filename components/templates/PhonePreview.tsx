@@ -39,7 +39,7 @@ import { shotsFor } from '@/lib/scope/core/taxonomy/systemShots';
 import { hvacFold, COMBINED_LABEL } from '@/lib/scope/core/taxonomy/hvacUnits';
 import { HOUSE_FACTS } from '@/lib/scope/core/taxonomy/houseFacts';
 import { COLOR_ICONS, COLOR_SVGS } from './colorIcons';
-import { groupIconFor } from './groupIcons';
+import { groupIconFor, itemIconFor } from './groupIcons';
 
 export type PreviewSelection = { systemId: string | null; nodeId: string | null };
 
@@ -378,18 +378,23 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             </div>
           </>
         ) : null}
-        {/* GUIDED / REVIEW & SEND above the rail (app 2026-11-13/14): Guided names the TILE it picks up at (a folded Heating
-            reads Heat Pump); once nothing is left, the bar is Review & send — on the phone it opens Post-Inspect. */}
+        {/* THE GRID'S PAIR (app 2026-11-15): Review & send on the left — grey with what is left until everything is covered,
+            never disabled (on the phone it opens Post-Inspect, which lists what still stands) — and Guided coverage on the
+            right, naming the TILE it picks up at (a folded Heating reads Heat Pump). */}
         {(() => {
-          const nx = steps.length ? steps[resumeIndex(steps, stepDone, 0)] : null;
-          if (!nx || steps.every(stepDone)) return steps.length ? (
-            <button type="button" className="pv-gbar pv-review" onClick={() => say('On the phone, Review & send opens Post-Inspect.')}><b>Review &amp; send</b><small>everything here is covered</small><span aria-hidden="true">›</span></button>
-          ) : null;
-          const tile = systems.find(x => x.id === tileOf(nx.systemId));
+          const nx = steps.length && !steps.every(stepDone) ? steps[resumeIndex(steps, stepDone, 0)] : null;
+          const tile = nx ? systems.find(x => x.id === tileOf(nx.systemId)) : null;
+          const rows = systems.flatMap(x => condRowsOf(x.id));
+          const left = rows.filter(id => !cond[id]).length + steps.filter(st => !stepDone(st)).length;
+          const covered = left === 0;
           return (
-            <button type="button" className="pv-gbar" onClick={() => { setWalkScope(null); openStep(nx); }} aria-label={`Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}`}>
-              <span className="pv-gplay">▶</span><b>Guided coverage</b><small>picks up at {displayLabel(tile?.label ?? nx.systemLabel)}</small><span className="pv-gsend" aria-hidden="true">Review & send ›</span>
-            </button>
+            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>GUIDED COVERAGE</div><div className="pv-pair">
+              <button type="button" className={`pv-pcond${covered ? ' ready' : ' dim'}`} onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
+                aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}><b>Review &amp; send</b><small>{covered ? 'Everything covered' : `${left} left`}</small></button>
+              <button type="button" className="pv-pstart" disabled={!nx} onClick={() => { if (nx) { setWalkScope(null); openStep(nx); } }}
+                aria-label={nx ? `Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Guided coverage: everything walked'}>
+                <span><b>Guided coverage</b><small>{nx ? `Picks up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Everything walked'}</small></span><i>▶</i></button>
+            </div></div>
           );
         })()}
       </>
@@ -525,31 +530,17 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             {/* ITEM TILES (app 2026-11-15): GROUP START HERE first (mockup UECFWqxWVPYRhPKppCNUwP) — this group's Details
                 questions, then its first open item — then every item, a described one opening Photos & details. */}
             <div className="pv-itiles">
-              {(() => {
-                const shown = active.items.filter(st => !isDescribed(st));
-                const detailsLeft = active.items.filter(st => isDescribed(st) && !describedStep(st)!.set).length;
-                const firstOpen = shown.find(st => { const q = stepStat(st); return !isDone(st) && !q.finding && !q.limited; }) ?? null;
-                const meta = detailsLeft ? `${detailsLeft} DETAIL${detailsLeft === 1 ? '' : 'S'} NEEDED` : firstOpen ? `WALK: ${firstOpen.label.toUpperCase()}` : 'ALL DONE';
-                const startGroup = () => {
-                  if (detailsLeft || !shown.length) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); go({ kind: 'system', systemId: sysId }); return; }
-                  setWalkScope(sysId); openStep(firstOpen ?? shown[0]);
-                };
-                return (
-                  <button type="button" className="pv-itile start" onClick={startGroup} aria-label={`Start here: ${active.label}. ${meta.toLowerCase()}`}>
-                    <b>▶ Start here</b><small>{meta}</small>
-                  </button>
-                );
-              })()}
-              {active.items.map(st => {
+              {/* The items to inspect only (app 2026-11-15, build 872): a described item is Photos & details'; Start here and
+                  Condition are the bottom pair. */}
+              {active.items.filter(st => !isDescribed(st)).map(st => {
                 const q = stepStat(st);
-                const desc = isDescribed(st);
-                const state = desc ? (describedStep(st)!.set ? 'dsc' : 'lim') : q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : '';
-                const sub = desc ? (describedStep(st)!.set ? 'DESCRIBED' : 'IN DETAILS') : state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : 'NOT YET';
-                const open = () => { if (desc) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); go({ kind: 'system', systemId: sysId }); } else { setWalkScope(sysId); openStep(st); } };
+                const state = q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : '';
+                const sub = state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : 'NOT YET';
+                const open = () => { setWalkScope(sysId); openStep(st); };
                 return (
                   <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={open}
-                    aria-label={`${st.label}, ${sub.toLowerCase()}. ${desc ? 'Open Details' : 'Open'}`}>
-                    <b>{st.label}</b><small>{sub}</small>
+                    aria-label={`${st.label}, ${sub.toLowerCase()}. Open`}>
+                    <span className="pv-iico"><TileIco name={itemIconFor(st.label, () => 'shape-outline')} /></span><b>{st.label}</b><small>{sub}</small>
                   </button>
                 );
               })}
@@ -771,14 +762,16 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
     // THE GUIDED WALK PAIR on a system page (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): Condition on the left, Start
     // here on the right — Photos & details, then the system's walk, else Condition.
-    if (screen.kind === 'system' && !screen.group && !opened[`photos:${screen.systemId}`] && index.allSystems[screen.systemId]) {
-      const sysId = screen.systemId;
+    // …and on a group page (app 2026-11-15): Start here asks the group's Details questions, then walks from its first open item.
+    if (screen.kind === 'system' && screen.group !== '__condition__' && !opened[`photos:${screen.systemId}`] && index.allSystems[screen.systemId]) {
+      const sysId = screen.systemId, grp = screen.group;
       const parts = [sysId, ...(fold.into === sysId ? folded : [])];
       const hasPage = parts.some(id => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0);
       const dLeft = parts.reduce((n, id) => n + (describeBy[id]?.left ?? 0), 0);
-      const pool = steps.filter(x => tileOf(x.systemId) === sysId);
+      const pool = steps.filter(x => tileOf(x.systemId) === sysId && (!grp || x.tileId === grp));
       const nextUp = pool.length && !pool.every(stepDone) ? pool[resumeIndex(pool, stepDone, 0)] : null;
-      const startMeta = hasPage && dLeft ? `✦ ${dLeft} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
+      const gLeft = grp ? allSteps.filter(x => tileOf(x.systemId) === sysId && x.tileId === grp && describedStep(x) && !describedStep(x)!.set).length : 0;
+      const startMeta = grp ? (gLeft ? `${gLeft} detail${gLeft === 1 ? '' : 's'} needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done') : hasPage && dLeft ? `✦ ${dLeft} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
       const rows = condRowsOf(sysId), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
       const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length}` : finds ? `${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
@@ -786,7 +779,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => go({ kind: 'system', systemId: sysId, group: '__condition__' })}
             aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
           <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
-            if (hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); return; }
+            if (grp ? gLeft > 0 : hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); if (grp) go({ kind: 'system', systemId: sysId }); return; }
             if (pool.length) { setWalkScope(sysId); openStep(nextUp ?? pool[0]); return; }
             go({ kind: 'system', systemId: sysId, group: '__condition__' });
           }}><span><b>Start here</b><small>{startMeta}</small></span><i>▶</i></button>
@@ -943,9 +936,10 @@ const CSS_TEXT = `
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
 .ldx-pv .pv-areacap{grid-column:1/-1;color:#6f8088;font-size:9.5px;font-weight:800;letter-spacing:1.4px;margin-bottom:-4px}
 .ldx-pv .pv-pair{display:flex;gap:7px}
+.ldx-pv .pv-iico{display:flex;justify-content:center;transform:scale(.8)}
 .ldx-pv .pv-pcond,.ldx-pv .pv-pstart{display:flex;align-items:center;justify-content:space-between;gap:6px;border-radius:12px;padding:9px 11px;font:inherit;text-align:left;cursor:pointer}
 .ldx-pv .pv-pcond{flex:1;flex-direction:column;align-items:flex-start;border:1px solid #26363b;background:#0d151b;color:#fff}
-.ldx-pv .pv-pcond.ok{border-color:rgba(47,197,110,.5)}.ldx-pv .pv-pcond.fnd{border-color:rgba(232,90,79,.55)}
+.ldx-pv .pv-pcond.ok{border-color:rgba(47,197,110,.5)}.ldx-pv .pv-pcond.ready{background:#2fc56e;border-color:#2fc56e}.ldx-pv .pv-pcond.ready small{color:#eafff2}.ldx-pv .pv-pcond.dim{background:#0a0f13;border-color:#1c262c}.ldx-pv .pv-pcond.dim b{color:#6f7d84}.ldx-pv .pv-pcond.fnd{border-color:rgba(232,90,79,.55)}
 .ldx-pv .pv-pstart{flex:1.25;border:0;background:#217BE8;color:#fff}.ldx-pv .pv-pstart span{display:flex;flex-direction:column}
 .ldx-pv .pv-pcond b,.ldx-pv .pv-pstart b{font-size:12.5px;font-weight:800}.ldx-pv .pv-pcond small{font-size:9.5px;color:#8fa0ad}.ldx-pv .pv-pstart small{font-size:9.5px;color:#d6e7fb}
 .ldx-pv .pv-pstart i{font-style:normal;font-size:14px}

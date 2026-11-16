@@ -40,3 +40,60 @@ export const GROUP_ICONS: Readonly<Record<string, string>> = {
 export function groupIconFor(label: string, fallback: (label: string) => string): string {
   return GROUP_ICONS[norm(label)] ?? fallback(label);
 }
+
+// ─── ITEM ICONS (owner 2026-11-15, on the group page's grey circles: "We need some tile emojis made") — an item tile shows
+// what it is; its state is the tile's border and the line under the name. First rule that matches the label wins; colorIcons
+// draws each name (a name it does not draw yet stays the white glyph).
+export const ITEM_ICON_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/data ?plate|make ?\/ ?model|\bmodel\b|serial|nameplate/, 'card-text-outline'],
+  [/heat exchanger/, 'waves'],
+  [/temp(erature)? rise|register|thermometer|temperature/, 'thermometer'],
+  [/thermostat|control/, 'thermostat'],
+  [/filter/, 'air-filter'],
+  [/burner|flame|pilot|ignit/, 'fire'],
+  [/combustion air|intake|make ?up air/, 'weather-windy'],
+  [/condensate|drain line|trap/, 'water-outline'],
+  [/flue|vent connector|venting|chimney|damper/, 'smoke'],
+  [/blower|fan|exhaust/, 'fan'],
+  [/duct|distribution|plenum/, 'hvac'],
+  [/furnace|air handler|heat pump|boiler|heating system|cabinet/, 'hvac'],
+  [/condenser|compressor|a ?c\b|cooling|refrigerant|line set/, 'air-conditioner'],
+  [/water heater|tank|tpr|relief/, 'water-boiler'],
+  [/gas|valve|shut ?off|meter/, 'pipe-valve'],
+  [/disconnect|wiring|wire|conductor|bond|ground/, 'cable-data'],
+  [/panel|breaker|fuse|service/, 'fuse'],
+  [/outlet|receptacle|gfci|afci|switch|fixture light|light/, 'power-socket-us'],
+  [/smoke|co alarm|carbon monoxide|detector/, 'smoke-detector'],
+  [/sink|faucet|basin/, 'water-outline'],
+  [/toilet/, 'toilet'],
+  [/shower|tub/, 'shower-head'],
+  [/supply|pipe|piping|plumbing|waste|drain/, 'pipe'],
+  [/garage door|opener/, 'garage-variant'],
+  [/door/, 'door'],
+  [/window|glazing/, 'window-closed-variant'],
+  [/stair|rail|guard/, 'stairs'],
+  [/counter|cabinet/, 'cupboard'],
+  [/floor/, 'floor-plan'],
+  [/wall|ceiling|siding|cladding|trim|stucco/, 'wall'],
+  [/shingle|roof|covering/, 'home-roof'],
+  [/gutter|downspout/, 'weather-pouring'],
+  [/flashing|penetration/, 'pipe-valve'],
+  [/insulation/, 'layers-outline'],
+  [/attic|hatch|access/, 'ladder'],
+  [/crawl/, 'home-floor-negative-1'],
+  [/foundation|slab|footing|pier/, 'cube-outline'],
+  [/joist|beam|post|girder|framing|truss|rafter/, 'pillar'],
+  [/deck|porch|patio|balcony/, 'fence'],
+  [/grade|grading|drainage|landscap|driveway|walkway/, 'terrain'],
+  [/fireplace|firebox|hearth/, 'fireplace'],
+  [/range|oven|cooktop|stove|appliance/, 'stove'],
+  [/dishwasher|disposal/, 'silverware-fork-knife'],
+  [/washer|dryer|laundry/, 'washing-machine'],
+];
+
+/** An item tile's icon: the first ITEM_ICON_RULES match on its label, else `fallback(label)`. */
+export function itemIconFor(label: string, fallback: (label: string) => string): string {
+  const l = String(label ?? '').toLowerCase();
+  for (const [re, icon] of ITEM_ICON_RULES) if (re.test(l)) return icon;
+  return fallback(label);
+}
