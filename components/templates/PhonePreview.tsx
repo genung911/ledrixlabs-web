@@ -117,6 +117,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [screen, setScreen] = useState<Screen>({ kind: 'landing' });
   // A walk entered inside a system stays in it (app ScopeScreen walkScope, 2026-11-15); null = the whole inspection.
   const [walkScope, setWalkScope] = useState<string | null>(null);
+  /** THE BAR CAMERA'S ROW (app 2026-11-15, owner: "it should follow selected row"): a tapped row name on a walk step. */
+  const [camPick, setCamPick] = useState<{ id: string; keep: boolean } | null>(null);
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
@@ -496,46 +498,33 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         ) : (
           <div className="pv-group">
             <div className="pv-ghead" data-pv-id={active.id !== sysId ? active.id : undefined}><span>{active.label.toUpperCase()}</span><em>+ Item</em></div>
-            {/* DESCRIBED IN DETAILS (app 2026-11-08): an item Details describes whole folds into one line — green when all are
-                described, amber with how many are not; its rows: the answer and Change (cards with their grids open), or
-                "Not described yet · Details". Replaces Already known. */}
-            {(() => {
-              const described = active.items.filter(isDescribed);
-              if (!described.length) return null;
-              const left = described.filter(st => !describedStep(st)!.set).length;
-              const listKey = `list:${active.id}`;
-              return (
-                <div className={`pv-known${left ? ' left' : ''}`}>
-                  <button type="button" className="pv-knownh" onClick={() => setOpened(o => ({ ...o, [listKey]: !o[listKey] }))} aria-expanded={!!opened[listKey]}>
-                    <span>{left ? `DESCRIBED IN DETAILS · ${described.length - left} OF ${described.length} · ${left} NOT YET` : `✓ DESCRIBED IN DETAILS · ${described.length}`}</span>
-                    <em>{opened[listKey] ? 'Hide' : 'View ›'}</em>
-                  </button>
-                  {opened[listKey] ? described.map(st => !describedStep(st)!.set ? (
-                    <div key={st.key} data-pv-id={st.key} className="pv-knownr"><span>{st.label}</span><b className="miss">Not described yet</b><em>Details ›</em></div>
-                  ) : opened[st.key] ? (
-                    <div key={st.key} data-pv-id={st.key}>
-                      <div className="pv-knownr"><span>{st.label}</span><button type="button" onClick={() => setOpened(o => ({ ...o, [st.key]: false }))}>Done</button></div>
-                      {st.rowIds.map(id => { const r = index.byId[id]?.node; return r ? leafCard(st.systemId, r, true) : null; })}
-                    </div>
-                  ) : (
-                    <button key={st.key} type="button" data-pv-id={st.key} className="pv-knownr" onClick={() => setOpened(o => ({ ...o, [st.key]: true }))}
-                      aria-label={`${st.label}: ${knownValue(st)}. Change`}>
-                      <span>{st.label}</span><b>{knownValue(st)}</b><em>Change</em>
-                    </button>
-                  )) : null}
-                </div>
-              );
-            })()}
-            {/* ITEM TILES (app 2026-11-15, owner: "4 tiles across like the main page … we do not need the guided button here"): lit
-                by state, the next open one outlined; a tap opens that item's walk. */}
+            {/* ITEM TILES (app 2026-11-15): GROUP START HERE first (mockup UECFWqxWVPYRhPKppCNUwP) — this group's Details
+                questions, then its first open item — then every item, a described one opening Photos & details. */}
             <div className="pv-itiles">
-              {active.items.filter(st => !isDescribed(st)).map(st => {
-                const q = stepStat(st);
-                const state = q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : nextUp?.key === st.key ? 'next' : '';
-                const sub = state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : state === 'next' ? 'NEXT' : 'NOT YET';
+              {(() => {
+                const shown = active.items.filter(st => !isDescribed(st));
+                const detailsLeft = active.items.filter(st => isDescribed(st) && !describedStep(st)!.set).length;
+                const firstOpen = shown.find(st => { const q = stepStat(st); return !isDone(st) && !q.finding && !q.limited; }) ?? null;
+                const meta = detailsLeft ? `${detailsLeft} DETAIL${detailsLeft === 1 ? '' : 'S'} NEEDED` : firstOpen ? `WALK: ${firstOpen.label.toUpperCase()}` : 'ALL DONE';
+                const startGroup = () => {
+                  if (detailsLeft || !shown.length) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); go({ kind: 'system', systemId: sysId }); return; }
+                  setWalkScope(sysId); openStep(firstOpen ?? shown[0]);
+                };
                 return (
-                  <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={() => { setWalkScope(sysId); openStep(st); }}
-                    aria-label={`${st.label}, ${sub.toLowerCase()}. Open`}>
+                  <button type="button" className="pv-itile start" onClick={startGroup} aria-label={`Start here: ${active.label}. ${meta.toLowerCase()}`}>
+                    <b>▶ Start here</b><small>{meta}</small>
+                  </button>
+                );
+              })()}
+              {active.items.map(st => {
+                const q = stepStat(st);
+                const desc = isDescribed(st);
+                const state = desc ? (describedStep(st)!.set ? 'dsc' : 'lim') : q.finding ? 'fnd' : q.limited ? 'lim' : q.total > 0 && q.met >= q.total ? 'ok' : '';
+                const sub = desc ? (describedStep(st)!.set ? 'DESCRIBED' : 'IN DETAILS') : state === 'fnd' ? 'FINDING' : state === 'lim' ? 'LIMITATION' : state === 'ok' ? '✓ OK' : 'NOT YET';
+                const open = () => { if (desc) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); go({ kind: 'system', systemId: sysId }); } else { setWalkScope(sysId); openStep(st); } };
+                return (
+                  <button key={st.key} type="button" data-pv-id={st.key} className={`pv-itile ${state}${hl === st.key ? ' pv-hit' : ''}`} onClick={open}
+                    aria-label={`${st.label}, ${sub.toLowerCase()}. ${desc ? 'Open Details' : 'Open'}`}>
                     <b>{st.label}</b><small>{sub}</small>
                   </button>
                 );
@@ -586,6 +575,15 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     );
   };
 
+  // THE BAR CAMERA'S TARGET (app ScopeRowList walkCam, 2026-11-15): the picked row while still open (one picked when already
+  // addressed stays), else the first open row of the step, else its first row.
+  const camStep = screen.kind === 'step' ? steps.find(x => x.key === screen.key) ?? null : null;
+  const camRows = camStep ? camStep.rowIds.filter(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; }) : [];
+  const camTarget = !camStep ? null
+    : camPick && camRows.includes(camPick.id) && (camPick.keep || !cond[camPick.id]) ? camPick.id
+    : camRows.find(id => !cond[id]) ?? camRows[0] ?? null;
+  const camLabel = camTarget ? (index.byId[camTarget]?.node.label ?? '') : (camStep?.label ?? '');
+
   // ✓ + 📷 (app build 789, owner 2026-11-11: "a satisfactory and a camera button to open the camera and then shutter is
   // chosen"). The preview has no camera: 📷 opens a sheet with the camera's Finding / Limitation shutters.
   const conditionRow = (n: TemplateNode) => {
@@ -598,9 +596,12 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             onClick={() => setCond(p => { const o = { ...p }; if (o[n.id] === 'ok') delete o[n.id]; else o[n.id] = 'ok'; return o; })}>
             <Glyph d={G.check} size={30} />
           </button>
-          <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
-            <Glyph d={G.camera} size={30} />
-          </button>
+          {/* In the walk the bar holds the camera (app 2026-11-15): the row draws none. */}
+          {screen.kind === 'step' ? null : (
+            <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
+              <Glyph d={G.camera} size={30} />
+            </button>
+          )}
         </div>
         {c === 'lim' && limReason[n.id] ? <div className="pv-limline">{limReason[n.id]}</div> : null}
         {c === 'fnd' && finding[n.id] ? <div className="pv-findline"><i /><span>{finding[n.id]} — drafted for Review</span></div> : null}
@@ -638,8 +639,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const named = ax.attributes.length > 1;
     const sel = hl === n.id;
     return (
-      <div key={n.id} data-pv-id={n.id} className={`pv-leaf${sel ? ' sel pv-hit' : ''}`}>
-        <button type="button" className="pv-leafhead" onClick={() => { emit({ systemId: sysId, nodeId: n.id }); flash(n.id); }} aria-label={`Select ${n.label} in the editor`}>
+      <div key={n.id} data-pv-id={n.id} className={`pv-leaf${sel ? ' sel pv-hit' : ''}${screen.kind === 'step' && camTarget === n.id ? ' campick' : ''}`}>
+        <button type="button" className="pv-leafhead" onClick={() => { if (screen.kind === 'step') setCamPick({ id: n.id, keep: !!cond[n.id] }); emit({ systemId: sysId, nodeId: n.id }); flash(n.id); }} aria-label={`Select ${n.label} in the editor`}>
           {/* Company Tips open from the blue ⓘ on the phone, never as a line under the name (owner 2026-11-05). */}
           <span className="pv-ct">{previewRowTitle(n, picks)}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}
             {/* 📋 (app build 792): amber = not described (Details), blue = described (Change opens the grid). */}
@@ -747,7 +748,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       <div className="pv-walk">
         <div className="pv-keys">
           <button type="button" className="pv-klim" disabled aria-label="Limitation on the whole system (on the phone)">⚠</button>
-          <button type="button" className="pv-kcam" disabled aria-label="The item's camera (on the phone)">📷 Camera · {displayLabel(here?.label ?? '')}</button>
+          {/* The bar camera follows the picked row, else the first open one (app 2026-11-15). The preview has no camera: it
+              opens the camera's Finding / Limitation lists for that row. */}
+          <button type="button" className="pv-kcam" disabled={!camTarget} onClick={() => camTarget && setSheet({ kind: 'camera', nodeId: camTarget })}
+            aria-label={`Camera for ${camLabel}`}>📷 Camera · {displayLabel(camLabel)}</button>
         </div>
         <div className="pv-nav">
           <button type="button" className="pv-nb" disabled={at <= 0 && !sysHasPhotos} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
@@ -889,7 +893,9 @@ const CSS_TEXT = `
 .ldx-pv .pv-itile.ok{border-color:rgba(47,197,110,.45)}.ldx-pv .pv-itile.ok small{color:#4fd88a}
 .ldx-pv .pv-itile.fnd{border-color:rgba(232,90,79,.55)}.ldx-pv .pv-itile.fnd small{color:#f07a6e}
 .ldx-pv .pv-itile.lim{border-color:rgba(245,166,35,.55)}.ldx-pv .pv-itile.lim small{color:#f5b94a}
-.ldx-pv .pv-itile.next{border-color:#217BE8;background:rgba(33,123,232,.12)}.ldx-pv .pv-itile.next small{color:#9cc4f2}
+.ldx-pv .pv-itile.start{border-color:#217BE8;background:#217BE8}.ldx-pv .pv-itile.start b,.ldx-pv .pv-itile.start small{color:#fff}
+.ldx-pv .pv-itile.dsc{border-color:rgba(106,168,240,.45)}.ldx-pv .pv-itile.dsc small{color:#6aa8f0}
+.ldx-pv .pv-leaf.campick{border-color:#217BE8;box-shadow:inset 0 0 0 1px #217BE8}
 .ldx-pv .pv-cell{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .ldx-pv .pv-sq{position:relative;width:100%;aspect-ratio:1/1;border-radius:15px;background:#11171b;border:1px solid #2a3439;display:flex;align-items:center;justify-content:center;color:#eef3f5;box-sizing:border-box}
 .ldx-pv .pv-sq .pv-prog{position:absolute;left:5px;right:5px;bottom:7px;margin:0}

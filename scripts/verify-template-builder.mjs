@@ -1293,12 +1293,13 @@ const RULES = {
       && /k = previewDetailsKeys\(tree, rulesFor\(tree\)\);/.test(m) && /ASK_IN\.has\(id\) \? \{ askIn: 'inspect' \} : \{\}/.test(m)
       && /TYPE_ROWS\.has\(id\) \? \{ typeRow: true \} : \{\}/.test(m) ? [] : ['components/templates/phonePreviewModel.ts'];
   },
-  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and folds into one line on its page': all => {
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and is a tile on its page that opens Photos & details (2026-11-15, after the group Start here)': all => {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     return /const moved = ax\.attributes\.filter\(a => detailsKeys\.has\(/.test(p) && /const gridAttrs = ax\.attributes\.filter\(a => specOpen \|\| !moved\.includes\(a\)\);/.test(p)
       && /\{gridAttrs\.map\(\(a, i\) => \(/.test(p) && /const steps = useMemo\(\(\) => allSteps\.filter\(st => !describedStep\(st\)\)/.test(p)
-      && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /active\.items\.filter\(st => !isDescribed\(st\)\)\.map\(/.test(p)
-      && /DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
+      && /const mine = allSteps\.filter\(st => tileOf\(st\.systemId\) === sysId\);/.test(p)   /* 2026-11-14: + what folded into a unit tile (app ofSys) */ && /const shown = active\.items\.filter\(st => !isDescribed\(st\)\);/.test(p)
+      && /const desc = isDescribed\(st\);/.test(p) && /if \(desc\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\); go\(\{ kind: 'system', systemId: sysId \}\); \}/.test(p)
+      && !/DESCRIBED IN DETAILS · /.test(p) && !/ALREADY KNOWN/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': all => {
     const r = strip(all['components/templates/ItemRow.tsx'] ?? '');
@@ -1797,7 +1798,7 @@ const add = (f, x) => s => ({ ...s, [f]: (s[f] ?? '') + x });
 const rep = (f, a, b) => s => ({ ...s, [f]: (s[f] ?? '').replace(a, () => b) });
 const MUT = {
   'details: the preview runs the app’s whatsHere.ts on the rules a new inspection captures, and the pack’s askIn / type rows': rep('components/templates/phonePreviewModel.ts', "...(ASK_IN.has(id) ? { askIn: 'inspect' } : {})", ''),
-  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and folds into one line on its page': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
+  'details: on the preview a Details field is one line, not a grid (Change opens it); a described item leaves the walk and is a tile on its page that opens Photos & details (2026-11-15, after the group Start here)': rep('components/templates/PhonePreview.tsx', '{gridAttrs.map((a, i) => (', '{ax.attributes.map((a, i) => ('),
   'details: every item row says where it is asked — Details (a spec Pre-Inspect asks) and/or Condition (judged in Inspect)': rep('components/templates/ItemRow.tsx', 'const inInspect = !node.pointsTo && assessesCondition(node);', 'const inInspect = false;'),
   'preview: each item row is titled as Scope titles it (previewRowTitle — the Furnace by its picked type)': rep('components/templates/PhonePreview.tsx', '<span className="pv-ct">{previewRowTitle(n, picks)}', '<span className="pv-ct">{n.label}'),
   'preview: the app\'s tiles — four across, Before you start and Photos & details pinned, color icons, the unit fold, Guided names the tile': rep('components/templates/PhonePreview.tsx', 'const allSteps = useMemo(() => previewSteps(walkSystems, applies), [walkSystems, applies]);', 'const allSteps = useMemo(() => previewSteps(systems, applies), [systems, applies]);'),
