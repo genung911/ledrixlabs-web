@@ -178,11 +178,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (!fields.length || !fields.every(x => detailsKeys.has(`${x.n.id}|${x.a.id}`))) return null;
     return { set: fields.every(x => (picks[pickKey(x.n.id, x.a.id)] ?? []).length > 0) };
   };
-  // ON THE SPOT (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): the walk is the items with a choice made there — a field
-  // Details does not ask, a method, a reading. Condition alone is on the system's Condition page.
-  const onSpot = (st: GuidedStep) => st.rowIds.some(id => { const r = index.byId[id]?.node; if (!r) return false; const ax = axesOf(r);
-    return ax.attributes.some(a => !detailsKeys.has(`${r.id}|${a.id}`)) || ax.method.length > 0 || !!r.freeFormValue; });
-  const steps = useMemo(() => allSteps.filter(st => onSpot(st) && !describedStep(st)), [allSteps, detailsKeys, index]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // START HERE = THE TILES, IN ORDER (app 2026-11-16, mockup 5NVwdqPKENDv2i6ZiENxdz): every item is a walk stop — a
+  // condition-only one too — so a tile and the walk open the same card. Only an item Details asks in full is passed by.
+  const steps = useMemo(() => allSteps.filter(st => !describedStep(st)), [allSteps, detailsKeys, index]);   // eslint-disable-line react-hooks/exhaustive-deps
   const prevSteps = useRef<GuidedStep[]>([]);
   const [limReason, setLimReason] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState<Record<string, string>>({});
@@ -361,8 +359,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (
       <>
         <div className="pv-bldg"><b>MAIN STRUCTURE <Glyph d={G.chevD} size={12} /></b></div>
-        {/* The count as metadata under the building (app 2026-11-08 — the card moved to Finalize). */}
-        <div className="pv-bmeta">{tot.met} of {tot.total} checkpoint{tot.total === 1 ? '' : 's'}</div>
+        {/* NO COUNTS (app 2026-11-16: "lets use the status bar everywhere"): the bar says it. */}
+        <div className="pv-bar3" aria-label={`${tot.met} of ${tot.total} checkpoints addressed`}><i style={{ width: `${tot.total ? Math.round((tot.met / tot.total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         {systems.length === 0 ? <p className="pv-empty">No system starts in scope. Inspectors would add each one with Add system.</p> : null}
         {/* THE TILES (app CoverageGrid, 2026-11-13/14): four across, the icon in a square, the name below; Before you start
             pinned first; a unit tile counts what folded into it. */}
@@ -465,32 +463,41 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     mine.forEach(st => { let g = groups.find(x => x.id === st.tileId); if (!g) { g = { id: st.tileId, label: st.tileLabel, items: [] }; groups.push(g); } g.items.push(st); });
     // Every system like Heating (app ScopeWorkspace, owner 2026-11-10): tiles first, one group or many.
     const condOpen = openGroup === '__condition__';
-    const active = groups.find(g => g.id === openGroup);
+    // ONE GROUP, ONE PAGE (app 2026-11-16): a one-group system shows its items on its own page, Details first.
+    const sole = !openGroup && groups.length === 1 ? groups[0] : undefined;
+    const active = groups.find(g => g.id === openGroup) ?? sole;
     const inGroup = !!active;
     const items = active ? active.items : mine;
     const done = items.filter(isDone).length;
     const pool = (inGroup ? items : mine).filter(st => steps.some(x => x.key === st.key));   // the walk (app 2026-11-15: on-the-spot items)
     const nextUp = pool.length ? pool[resumeIndex(pool, stepDone, 0)] : null;
     const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } else if (tour) finishSys(sysId); };
-    const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
+    const met = inGroup && active !== sole ? done : p.met, total = inGroup && active !== sole ? items.length : p.total;
+    // THE DETAILS TILE (app 2026-11-16: "lets put the tile back"; named Details): first, opens the page without the camera.
+    const detailsTile = hasTile ? (
+      <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label="Details. Open to check or edit">
+        <span className="pv-sq" style={{ borderColor: 'rgba(33,123,232,0.55)', background: 'rgba(33,123,232,0.12)' }}><TileIco name="camera-outline" /></span>
+        <span className="pv-tl">Details</span>
+        <span className="pv-tl" style={{ color: dsc.left ? '#f5c46a' : '#4fd88a', fontSize: 10 }}>{dsc.left ? 'To answer' : 'Check & edit'}</span>
+      </button>
+    ) : null;
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE{inGroup ? ` · ${sysName(sys).toUpperCase()}` : ''}</div>
         <div className="pv-sysrow">
           <button type="button" className="pv-iconbtn" onClick={back} aria-label={inGroup ? `Back to ${sysName(sys)}` : 'Back to all systems'}><Glyph d={G.chevL} size={22} color="#c7d0d6" /></button>
-          <span className="pv-big1">{inGroup ? displayLabel(active!.label) : condOpen ? 'Condition' : sysName(sys)}</span>
-          {condOpen ? null : <span className="pv-c">{met}<small> / {total}</small></span>}
+          <span className="pv-big1">{inGroup && active !== sole ? displayLabel(active!.label) : condOpen ? 'Condition' : sysName(sys)}</span>
+          {/* ⚠ BY EVERY PAGE'S TITLE (app 2026-11-16): on the phone it files or reviews this system's limitations. No counter. */}
+          <span className="pv-tlim" title="Limitations on this system (on the phone)">⚠</span>
         </div>
         <div className="pv-bar3"><i style={{ width: `${total ? Math.round((met / total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
-        <div className="pv-syssub">{!active
-          ? `${groups.length} group${groups.length === 1 ? '' : 's'} · ${groups.filter(g => g.items.every(isDone)).length} complete · tap a group to open it`
-          : `${items.length} item${items.length === 1 ? '' : 's'} · ${done} complete`}</div>
+        <div className="pv-syssub">{!active ? 'Tap a group to open it' : 'Tap an item to open it'}</div>
         {!mine.length ? <p className="pv-empty">Nothing in scope for this category yet.</p> : null}
         {/* THE PHOTOS TILE (app ScopeWorkspace, 2026-11-08): the system's named shots first — on the phone Ledrix reads them
             and suggests the Details answers to confirm; here it lists the shots this draft asks for. */}
         {photosOpen ? (
           <div className="pv-group">
-            <div className="pv-ghead"><span>PHOTOS THAT HELP LEDRIX · {shots.length}{dsc.total ? ` · ${dsc.left} STILL NEEDED` : ''}</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
+            <div className="pv-ghead"><span>DETAILS · PHOTOS THAT HELP LEDRIX</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
             <div className="pv-shots">
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>
@@ -510,9 +517,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           const grpOf = (id: string) => allSteps.find(x => tileOf(x.systemId) === sysId && x.rowIds.includes(id))?.tileLabel ?? '';
           return (
             <div className="pv-group">
-              <div className="pv-ghead"><span>CONDITION · {doneN} OF {rows.length}</span>
+              <div className="pv-ghead"><span>CONDITION</span>
                 {doneN < rows.length ? <button type="button" className="pv-linkbtn" onClick={() => setCond(p => { const o = { ...p }; rows.forEach(id => { if (!o[id]) o[id] = 'ok'; }); return o; })}>✓ {doneN ? 'REMAINING OK' : 'ALL OK'}</button> : null}</div>
-              {!rows.length ? <p className="pv-empty">Nothing to judge yet: pick what the system has in Photos &amp; details.</p> : null}
+              {!rows.length ? <p className="pv-empty">Nothing to judge yet: pick what the system has in Details.</p> : null}
               {rows.map((id, ri) => {
                 const r = index.byId[id]!.node;
                 const g = grpOf(id), head = g && (ri === 0 || grpOf(rows[ri - 1]) !== g) ? <div className="pv-areacap" style={{ margin: '8px 0 4px' }}>{displayLabel(g).toUpperCase()}</div> : null;
@@ -538,12 +545,13 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         })() : photosOpen ? null : !active ? (
           <div className="pv-tiles">
             <div className="pv-areacap">SYSTEM COMPONENTS</div>
+            {detailsTile}
             {groups.map(g => {
               const d = g.items.filter(isDone).length;
               const all = g.items.length > 0 && d === g.items.length;
               return (
                 <button key={g.id} type="button" data-pv-id={g.id !== sysId ? g.id : undefined} className={`pv-cell${hl === g.id ? ' pv-hit' : ''}`}
-                  onClick={() => go({ kind: 'system', systemId: sysId, group: g.id })} aria-label={`${g.label}, ${d} of ${g.items.length} complete. Open its checklist`}>
+                  onClick={() => go({ kind: 'system', systemId: sysId, group: g.id })} aria-label={`${g.label}. Open its checklist`}>
                   <span className="pv-sq"><TileIco name={groupIconFor(g.label, () => 'shape-outline')} />
                     <span className="pv-prog" aria-hidden="true"><i className={all ? 'g' : ''} style={{ width: `${g.items.length ? Math.round((d / g.items.length) * 100) : 0}%` }} /></span></span>
                   <span className="pv-tl">{displayLabel(g.label)}</span>
@@ -557,6 +565,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             {/* ITEM TILES (app 2026-11-15): GROUP START HERE first (mockup UECFWqxWVPYRhPKppCNUwP) — this group's Details
                 questions, then its first open item — then every item, a described one opening Photos & details. */}
             <div className="pv-itiles">
+              {active === sole ? detailsTile : null}
               {/* The items to inspect only (app 2026-11-15, build 872): a described item is Photos & details'; Start here and
                   Condition are the bottom pair. */}
               {active.items.filter(st => !isDescribed(st)).map(st => {
@@ -736,7 +745,6 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           <button type="button" className="pv-sysbtn" onClick={() => go({ kind: 'system', systemId: st.systemId })} aria-label={`Open the ${displayLabel(st.systemLabel)} page`}>
             <Glyph d={G.chevL} size={20} color="#2F8CE8" /><span className="pv-big1">{displayLabel(st.systemLabel)}</span>
           </button>
-          <span className="pv-c">{pos.n}<small> / {pos.of}</small></span>
         </div>
         <div className="pv-bar3"><i style={{ width: `${pos.of ? Math.round((pos.n / pos.of) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-kindrow"><span>{GUIDED_KIND_LABEL[st.kind]}{sub ? <small>{`  ·  ${sub}`}</small> : null}</span>
@@ -753,15 +761,28 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const name = (id: string) => sysName(index.allSystems[id]!);
     const toPool = steps.filter(x => tileOf(x.systemId) === to), fromPool = steps.filter(x => tileOf(x.systemId) === from);
     const rows = condRowsOf(from), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
-    const condTxt = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length} · do it now or come back any time` : finds ? `⚑ ${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
+    const condTxt = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN ? 'Part reviewed' : 'To review'} · do it now or come back any time` : finds ? `⚑ Finding${finds === 1 ? '' : 's'}` : 'All OK';
+    // STILL TO DO (app 2026-11-16, stage 5): every other stop not done, in the grid's order, a bar each.
+    const others = tourOrder.filter(id => id !== to && id !== from && !steps.filter(x => tileOf(x.systemId) === id).every(stepDone));
+    const pctOf = (id: string) => { const pl = steps.filter(x => tileOf(x.systemId) === id); return pl.length ? Math.round((pl.filter(stepDone).length / pl.length) * 100) : 0; };
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
-        <div className="pv-xcap">NEXT SYSTEM</div>
+        <div className="pv-xcap">SUGGESTED NEXT</div>
         <div className="pv-xsys">{name(to)}</div>
-        <div className="pv-xstat">System {tourOrder.indexOf(to) + 1} of {tourOrder.length} · {toPool.filter(stepDone).length} of {toPool.length} complete</div>
-        <div className="pv-xcard"><em>STARTS WITH</em><b>{pageOfSys(to) ? 'Photos & details' : toPool[0]?.label ?? 'Condition'}</b></div>
-        <div className="pv-xleave">Leaving {name(from)} · {fromPool.filter(stepDone).length} of {fromPool.length} items done</div>
+        <div className="pv-bar3"><i style={{ width: `${pctOf(to)}%`, background: '#2F8CE8' }} /></div>
+        <div className="pv-xcard"><em>STARTS WITH</em><b>{pageOfSys(to) ? 'Details' : toPool[0]?.label ?? 'Condition'}</b></div>
+        {others.length ? (<>
+          <div className="pv-xcap" style={{ marginTop: 12 }}>STILL TO DO</div>
+          {others.map(id => (
+            <button key={id} type="button" className="pv-crow" style={{ width: '100%', textAlign: 'left', font: 'inherit' }} onClick={() => enterSys(id)} aria-label={`Go to ${name(id)}`}>
+              <div style={{ flex: 1, minWidth: 0 }}><b>{name(id)}</b></div>
+              <span className="pv-bar3" style={{ width: 64, margin: 0 }}><i style={{ width: `${pctOf(id)}%`, background: '#2F8CE8' }} /></span>
+              <span style={{ color: '#9cc4f2', fontWeight: 800 }}>›</span>
+            </button>
+          ))}
+        </>) : null}
+        <div className="pv-xleave">Leaving {name(from)} · {!fromPool.length || fromPool.every(stepDone) ? 'Every item done' : fromPool.some(stepDone) ? 'Some items left' : 'Items not started'}</div>
         <button type="button" className="pv-crow" style={{ width: '100%', textAlign: 'left', font: 'inherit', marginTop: 8 }}
           onClick={() => { setTour(false); setCondGrp(null); go({ kind: 'system', systemId: from, group: '__condition__' }); }}>
           <div style={{ flex: 1, minWidth: 0 }}><b>✓ Condition</b><small>{condTxt}</small></div><span style={{ color: '#9cc4f2', fontWeight: 800 }}>Open ›</span>
@@ -780,9 +801,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
         <div className="pv-xcap">{dir === 'forward' ? 'NEXT SYSTEM' : 'BACK TO'}</div>
         <div className="pv-xsys">{displayLabel(t.systemLabel)}</div>
-        <div className="pv-xstat">System {toSum.n} of {toSum.of} · {toSum.steps} item{toSum.steps === 1 ? '' : 's'} · {toSum.done} complete</div>
+        <div className="pv-bar3"><i style={{ width: `${toSum.steps ? Math.round((toSum.done / toSum.steps) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-xcard"><em>{dir === 'forward' ? 'STARTS WITH' : 'RETURNS TO'}</em><span>{GUIDED_KIND_LABEL[t.kind]}</span><b>{t.label}</b></div>
-        <div className="pv-xleave">Leaving {displayLabel(fromSum.systemLabel)} · {fromSum.done} of {fromSum.steps} complete. Nothing changes by moving on.</div>
+        <div className="pv-xleave">Leaving {displayLabel(fromSum.systemLabel)}. Nothing changes by moving on.</div>
       </>
     );
   };
@@ -821,9 +842,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       const pool = steps.filter(x => tileOf(x.systemId) === sysId && (!grp || x.tileId === grp));
       const nextUp = pool.length && !pool.every(stepDone) ? pool[resumeIndex(pool, stepDone, 0)] : null;
       const gLeft = grp ? allSteps.filter(x => tileOf(x.systemId) === sysId && x.tileId === grp && describedStep(x) && !describedStep(x)!.set).length : 0;
-      const startMeta = grp ? (gLeft ? `${gLeft} detail${gLeft === 1 ? '' : 's'} needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done') : hasPage && dLeft ? `✦ ${dLeft} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
+      const startMeta = grp ? (gLeft ? 'Details to answer' : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done') : hasPage && dLeft ? '✦ Details to answer' : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
       const rows = condRowsOf(sysId, grp), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
-      const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length}` : finds ? `${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
+      const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? (doneN ? 'Part reviewed' : 'To review') : finds ? `Finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
         <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>GUIDED WALK</div><div className="pv-pair">
           <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}

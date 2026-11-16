@@ -71,8 +71,13 @@ export type Shot = {
 export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   heating: [
     { id: 'furnace_wide', label: 'Furnace wide', hint: 'The whole unit, with the pipes leaving it and the ductwork attached.', answers: ['hvac_heating|fuel_source', 'hvac_flue|spec', 'hvac_combustion_air|spec', 'hvac_ducts|type', 'hvac_ducts|insulation'] },
+    // THE INSPECTOR'S SEQUENCE (owner 2026-11-15: "Furnace, wide shot, inside doors, burner, ID tag, filter, temp") — the
+    // Shoot strip follows this order. Inside and burner document the items the reader can notice problems on.
+    { id: 'inside', label: 'Inside, doors off', hint: 'Both doors off: the cabinet, blower, wiring, and any staining, rust or water.', documents: ['hvac_cabinet', 'hvac_evap_blower', 'hvac_heat_exchanger', 'hvac_furnace_condensate'] },
+    { id: 'burner', label: 'Burner / flame', hint: 'The burners while firing: flame color and shape, and the area around them.', documents: ['hvac_burner', 'hvac_heat_exchanger'], gas: true },
     { id: 'plate', label: 'Data plate', hint: 'The rating label, close enough to read every line.', plate: 'Furnace / heating unit', answers: ['hvac_heating_age|system_age', 'hvac_furnace_eff|efficiency'], documents: ['hvac_heating'] },
     { id: 'filter', label: 'Filter edge', hint: 'Slide the filter out: the printed rim (size, MERV) and where it goes.', smallPrint: true, answers: ['hvac_filter|type', 'hvac_filter|size', 'hvac_filter|location'] },
+    { id: 'temp', label: 'Temp reading', hint: 'The thermometer\'s display at a supply register, with the heat running.', reading: { system: 'heating', point: 'supply_register' }, documents: ['hvac_temp_rise'] },
     { id: 'condensate', label: 'Condensate drain', hint: 'Where the condensate line leaves the coil or furnace: the pipe, a pump if there is one, and where it runs.', answers: ['hvac_condensate|spec'] },
     { id: 'thermostat', label: 'Thermostat', hint: 'The thermostat on the wall, face on.', answers: ['hvac_thermostat|spec'] },
   ],
