@@ -1,11 +1,11 @@
 {
  "_note": "The app Scope screens components/templates/PhonePreview.tsx was last matched to (sha256 of each). Written by ledrix-app scripts/sync-web-preview.mjs --ack after the preview was reviewed; checked by ledrix-app verify:web-preview. Do not edit by hand.",
  "files": {
-  "src/components/inspect/CoverageGrid.tsx": "06fa79f0c1aaacdc6fbf13ed48754747838db343d1b3aace50e1a081f6be6902",
+  "src/components/inspect/CoverageGrid.tsx": "6c179552352b8dab4c343b13082eb8f8242c5d8f97024f7875f40572b1b3d98a",
   "src/components/inspect/InspectTabBar.tsx": "2597fc0b09741a1c0694484e35e5085411516b2c82220b9d257acda5b3970828",
-  "src/components/systems/ScopeWorkspace.tsx": "e5cb279c3b91c2021fd2c0a6000dd55e7886e24fd6d3175382322c040a952f51",
-  "src/components/systems/GuidedStep.tsx": "37c1bae3be9fcb128594103f69afc2402e83127da01bbadcd7df857149433d84",
-  "src/components/systems/ScopeRowList.tsx": "bb10704dc011788fafa02d676920b3be062a6c264aa8b8762dbcd142d416d2fa",
+  "src/components/systems/ScopeWorkspace.tsx": "15ceec1b64fb8aca7f47f63b8e9bf1940d8d725f38c13f0fbe51cd30e0475805",
+  "src/components/systems/GuidedStep.tsx": "f89096abf690c331537c990edb460dbaacce9f54470aaf239930696b1af71bdf",
+  "src/components/systems/ScopeRowList.tsx": "167908fffaebf7725173352ff8393e61ff0fdbc27df5f87229a683b0b9218726",
   "src/core/taxonomy/guidedRows.ts": "67e2f3ed9c5243325010b2f74756e58f56eb912f06cd65492f87ed044a0714dc"
  }
 }

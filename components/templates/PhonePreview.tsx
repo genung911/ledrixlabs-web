@@ -24,7 +24,7 @@
 // The phone is ALWAYS dark, as the app is, whatever the website's theme.
 //
 // Condition is never a grade (app DECISIONS 2026-08-10): the only answers are Satisfactory, Limitation, Finding.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { InspectionTemplate, TemplateNode } from '@/lib/templateBuilder/core/InspectionTemplate';
 import {
   axesOf, buildIndex, findingShortcutsOf, itemApplies, leafProgress, leavesOf, limitationReasonsFor, METHOD_ATTR, pickKey,
@@ -119,6 +119,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [walkScope, setWalkScope] = useState<string | null>(null);
   /** THE BAR CAMERA'S ROW (app 2026-11-15, owner: "it should follow selected row"): a tapped row name on a walk step. */
   const [camPick, setCamPick] = useState<{ id: string; keep: boolean } | null>(null);
+  /** A group's Condition (layout rule screen 3): its rows only, and ‹ returns to the group. */
+  const [condGrp, setCondGrp] = useState<string | null>(null);
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
@@ -283,7 +285,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: tileOf(st.systemId) } : { kind: 'landing' }); }
     else if (screen.kind === 'facts') go({ kind: 'landing' });
     else if (screen.kind === 'cross') go({ kind: 'step', key: screen.from });
-    else if (screen.kind === 'system') go(screen.group ? { kind: 'system', systemId: screen.systemId } : { kind: 'landing' });
+    else if (screen.kind === 'system') go(screen.group ? (screen.group === '__condition__' && condGrp ? { kind: 'system', systemId: screen.systemId, group: condGrp } : { kind: 'system', systemId: screen.systemId }) : { kind: 'landing' });
   };
   const reset = () => {
     setPicks({}); setTyped({}); setCond({}); setLimReason({}); setFinding({}); setReadings({});
@@ -295,7 +297,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (!steps.some(x => x.key === st.key)) {   // condition alone (app 2026-11-15): its system's Condition page, on that row
       const row = st.rowIds.find(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; });
       if (row) setCamPick({ id: row, keep: true });
-      go({ kind: 'system', systemId: tileOf(st.systemId), group: '__condition__' }); return;
+      setCondGrp(st.tileId); go({ kind: 'system', systemId: tileOf(st.systemId), group: '__condition__' }); return;
     }
     go({ kind: 'step', key: st.key }); emit({ systemId: st.systemId, nodeId: st.key });
   };
@@ -473,29 +475,32 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>
             <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm; whatever they don't settle is listed under Still needed.</div>
-            {/* The walk's first step: Back to the system page, Next to its first open item (app 2026-11-15). */}
+            {/* LAYOUT RULE screen 4 (app 2026-11-15): one equal row — 📷 Shoot (on the phone) · Next into the items. */}
             <div className="pv-nav">
-              <button type="button" className="pv-nb" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))} aria-label="Back to the system page"><Glyph d={G.chevL} size={16} />BACK</button>
-              <button type="button" className="pv-nn" onClick={() => { setOpened(o => ({ ...o, [`photos:${sysId}`]: false })); start(); }} aria-label="Next step">NEXT<Glyph d={G.chevR} size={16} /></button>
+              <button type="button" className="pv-nb" style={{ flex: 1 }} onClick={() => say('On the phone, Shoot opens the camera for this system.')} aria-label="Shoot (on the phone)">📷 SHOOT</button>
+              <button type="button" className="pv-nn" style={{ flex: 1 }} onClick={() => { setOpened(o => ({ ...o, [`photos:${sysId}`]: false })); start(); }} aria-label="Next step">NEXT<Glyph d={G.chevR} size={16} /></button>
             </div>
           </div>
         ) : null}
         {/* THE CONDITION PAGE (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): every row of the system that takes condition,
             named by what was picked; ✓ = OK, ALL OK; the bar's camera follows the picked row. */}
         {condOpen ? (() => {
-          const rows = condRowsOf(sysId);
+          const rows = condRowsOf(sysId, condGrp);
           const doneN = rows.filter(id => !!cond[id]).length;
+          const grpOf = (id: string) => allSteps.find(x => tileOf(x.systemId) === sysId && x.rowIds.includes(id))?.tileLabel ?? '';
           return (
             <div className="pv-group">
               <div className="pv-ghead"><span>CONDITION · {doneN} OF {rows.length}</span>
                 {doneN < rows.length ? <button type="button" className="pv-linkbtn" onClick={() => setCond(p => { const o = { ...p }; rows.forEach(id => { if (!o[id]) o[id] = 'ok'; }); return o; })}>✓ {doneN ? 'REMAINING OK' : 'ALL OK'}</button> : null}</div>
               {!rows.length ? <p className="pv-empty">Nothing to judge yet: pick what the system has in Photos &amp; details.</p> : null}
-              {rows.map(id => {
+              {rows.map((id, ri) => {
                 const r = index.byId[id]!.node;
+                const g = grpOf(id), head = g && (ri === 0 || grpOf(rows[ri - 1]) !== g) ? <div className="pv-areacap" style={{ margin: '8px 0 4px' }}>{displayLabel(g).toUpperCase()}</div> : null;
                 const picked = axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []).join(', ');
                 const c = cond[id];
                 return (
-                  <div key={id} data-pv-id={id} role="button" tabIndex={0} className={`pv-crow${camTarget === id ? ' campick' : ''}`} onClick={() => setCamPick({ id, keep: !!c })}>
+                  <Fragment key={id}>{head}
+                  <div data-pv-id={id} className="pv-crow">
                     <div style={{ flex: 1, minWidth: 0 }}><b>{picked || r.label}</b>{picked ? <small>{r.label}</small> : null}
                       {c === 'lim' ? <small className="lim">⚠ {limReason[id] ?? 'Limited'}</small> : null}</div>
                     {c === 'fnd' ? <span className="pv-verdict fnd">⚑ Finding</span> : null}
@@ -503,7 +508,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                       onClick={e => { e.stopPropagation(); setCond(p => { const o = { ...p }; if (o[id] === 'ok') delete o[id]; else o[id] = 'ok'; return o; }); }}>
                       <Glyph d={G.check} size={26} />
                     </button>
+                    <button type="button" className="pv-ibtn cam" aria-label={`Camera for ${picked || r.label}`} onClick={() => setSheet({ kind: 'camera', nodeId: id })}><Glyph d={G.camera} size={26} /></button>
                   </div>
+                  </Fragment>
                 );
               })}
             </div>
@@ -594,7 +601,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   // addressed stays), else the first open row of the step, else its first row.
   const camStep = screen.kind === 'step' ? steps.find(x => x.key === screen.key) ?? null : null;
   const onCond = screen.kind === 'system' && screen.group === '__condition__';
-  const condRowsOf = (sysId: string) => allSteps.filter(st => tileOf(st.systemId) === sysId).flatMap(st => st.rowIds)
+  const condRowsOf = (sysId: string, grp?: string | null) => allSteps.filter(st => tileOf(st.systemId) === sysId && (!grp || st.tileId === grp)).flatMap(st => st.rowIds)
     .filter((id, i, all) => all.indexOf(id) === i && (() => { const r = index.byId[id]?.node; return !!r && !r.pointsTo && axesOf(r).condition; })());
   const camRows = camStep ? camStep.rowIds.filter(id => { const r = index.byId[id]?.node; return !!r && axesOf(r).condition; })
     : screen.kind === 'system' && onCond ? condRowsOf(screen.systemId) : [];
@@ -616,11 +623,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <Glyph d={G.check} size={30} />
           </button>
           {/* In the walk the bar holds the camera (app 2026-11-15): the row draws none. */}
-          {screen.kind === 'step' ? null : (
-            <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
-              <Glyph d={G.camera} size={30} />
-            </button>
-          )}
+          <button type="button" className="pv-ibtn cam" aria-label="Camera" onClick={() => setSheet({ kind: 'camera', nodeId: n.id })}>
+            <Glyph d={G.camera} size={30} />
+          </button>
         </div>
         {c === 'lim' && limReason[n.id] ? <div className="pv-limline">{limReason[n.id]}</div> : null}
         {c === 'fnd' && finding[n.id] ? <div className="pv-findline"><i /><span>{finding[n.id]} — drafted for Review</span></div> : null}
@@ -716,7 +721,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <div className="pv-bar3"><i style={{ width: `${pos.of ? Math.round((pos.n / pos.of) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         <div className="pv-kindrow"><span>{GUIDED_KIND_LABEL[st.kind]}{sub ? <small>{`  ·  ${sub}`}</small> : null}</span>
           <span className="pv-pill" style={{ color: c, borderColor: c }}>{state}</span></div>
-        <div className="pv-steptitle">{st.label}</div>
+        <div className="pv-steptitle">{st.label} <span className="pv-tlim" title="Limitation on this item (on the phone)">⚠</span></div>
         {st.rowIds.map(id => { const n = index.byId[id]?.node; return n ? leafCard(st.systemId, n) : null; })}
       </>
     );
@@ -752,14 +757,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         </div>
       );
     }
-    // THE CONDITION PAGE (app 2026-11-15): ⚠ + the camera on the picked row — no Back · Skip · Next.
-    if (screen.kind === 'system' && screen.group === '__condition__') return (
-      <div className="pv-walk"><div className="pv-keys">
-        <button type="button" className="pv-klim" disabled aria-label="Limitation on the whole system (on the phone)">⚠</button>
-        <button type="button" className="pv-kcam" disabled={!camTarget} onClick={() => camTarget && setSheet({ kind: 'camera', nodeId: camTarget })}
-          aria-label={`Camera for ${camLabel}`}>📷 Camera · {displayLabel(camLabel)}</button>
-      </div></div>
-    );
+    // THE CONDITION PAGE (layout rule screen 7): a list — no bottom bar; each row is ✓ + 📷.
+    if (screen.kind === 'system' && screen.group === '__condition__') return null;
     // THE GUIDED WALK PAIR on a system page (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): Condition on the left, Start
     // here on the right — Photos & details, then the system's walk, else Condition.
     // …and on a group page (app 2026-11-15): Start here asks the group's Details questions, then walks from its first open item.
@@ -772,16 +771,16 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       const nextUp = pool.length && !pool.every(stepDone) ? pool[resumeIndex(pool, stepDone, 0)] : null;
       const gLeft = grp ? allSteps.filter(x => tileOf(x.systemId) === sysId && x.tileId === grp && describedStep(x) && !describedStep(x)!.set).length : 0;
       const startMeta = grp ? (gLeft ? `${gLeft} detail${gLeft === 1 ? '' : 's'} needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done') : hasPage && dLeft ? `✦ ${dLeft} still needed` : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
-      const rows = condRowsOf(sysId), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
+      const rows = condRowsOf(sysId, grp), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
       const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length}` : finds ? `${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
         <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>GUIDED WALK</div><div className="pv-pair">
-          <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => go({ kind: 'system', systemId: sysId, group: '__condition__' })}
+          <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
             aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
           <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
             if (grp ? gLeft > 0 : hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); if (grp) go({ kind: 'system', systemId: sysId }); return; }
             if (pool.length) { setWalkScope(sysId); openStep(nextUp ?? pool[0]); return; }
-            go({ kind: 'system', systemId: sysId, group: '__condition__' });
+            setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' });
           }}><span><b>Start here</b><small>{startMeta}</small></span><i>▶</i></button>
         </div></div>
       );
@@ -799,13 +798,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const done = here ? stepDone(here) : true;
     return (
       <div className="pv-walk">
-        <div className="pv-keys">
-          <button type="button" className="pv-klim" disabled aria-label="Limitation on the whole system (on the phone)">⚠</button>
-          {/* The bar camera follows the picked row, else the first open one (app 2026-11-15). The preview has no camera: it
-              opens the camera's Finding / Limitation lists for that row. */}
-          <button type="button" className="pv-kcam" disabled={!camTarget} onClick={() => camTarget && setSheet({ kind: 'camera', nodeId: camTarget })}
-            aria-label={`Camera for ${camLabel}`}>📷 Camera · {displayLabel(camLabel)}</button>
-        </div>
+        {/* LAYOUT RULE screen 6: Back · Skip · Next only — ⚠ by the item's title, 📷 on each row. */}
         <div className="pv-nav">
           <button type="button" className="pv-nb" disabled={at <= 0 && !sysHasPhotos} onClick={() => move(-1)} aria-label="Previous step"><Glyph d={G.chevL} size={16} />BACK</button>
           <button type="button" className="pv-nb" onClick={() => move(1)} aria-label="Skip: leave this one open and move on">SKIP</button>
@@ -947,6 +940,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-crow{display:flex;align-items:center;gap:8px;border:1px solid #1f2d37;border-radius:11px;background:#0d151b;padding:8px 10px;margin-bottom:6px;cursor:pointer}
 .ldx-pv .pv-crow b{display:block;font-size:12px;color:#eef2f4}.ldx-pv .pv-crow small{display:block;font-size:10px;color:#8a959c}.ldx-pv .pv-crow small.lim{color:#f5c46a}
 .ldx-pv .pv-crow.campick{border-color:#217BE8;box-shadow:inset 0 0 0 1px #217BE8}
+.ldx-pv .pv-tlim{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:6px;border:1px solid #5a4520;border-radius:7px;color:#f5c46a;font-size:11px;vertical-align:middle}
 .ldx-pv .pv-guided{background:#217BE8;border-color:#217BE8;display:flex;align-items:center;justify-content:center;font-size:22px}
 .ldx-pv .pv-itiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 10px}
 .ldx-pv .pv-itile{display:flex;flex-direction:column;justify-content:space-between;min-height:72px;text-align:left;border:1px solid #1d2a31;border-radius:11px;background:#0c1117;padding:8px 8px 7px;color:#e6ecef;font:inherit;cursor:pointer}
