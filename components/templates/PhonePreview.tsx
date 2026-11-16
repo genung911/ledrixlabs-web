@@ -46,7 +46,9 @@ export type PreviewSelection = { systemId: string | null; nodeId: string | null 
 // The app's screens (2026-10-24): the Coverage grid, a system's item list, a guided step, and the system-boundary
 // card that Next / Back stops on between two systems — a state of the walk, never a step.
 type Screen = { kind: 'landing' } | { kind: 'facts' } | { kind: 'system'; systemId: string; group?: string } | { kind: 'step'; key: string }
-  | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' };
+  | { kind: 'cross'; from: string; to: string; dir: 'forward' | 'back' }
+  /** The tour's next-system card (app 2026-11-15, TourCard). */
+  | { kind: 'tour'; from: string; to: string };
 type Sheet = { kind: 'limit' | 'finding' | 'camera'; nodeId: string } | null;
 
 // ── icons (MaterialCommunityIcons names the app's pack uses → simple inline strokes) ──
@@ -121,6 +123,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const [camPick, setCamPick] = useState<{ id: string; keep: boolean } | null>(null);
   /** A group's Condition (layout rule screen 3): its rows only, and ‹ returns to the group. */
   const [condGrp, setCondGrp] = useState<string | null>(null);
+  /** THE TOUR (app 2026-11-15): Guided coverage runs each system as Start here does, a next-system card between. */
+  const [tour, setTour] = useState(false);
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Picks>({});
   const [cond, setCond] = useState<Record<string, CondPick>>({});
@@ -285,6 +289,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (screen.kind === 'step') { const st = steps.find(x => x.key === screen.key); go(st ? { kind: 'system', systemId: tileOf(st.systemId) } : { kind: 'landing' }); }
     else if (screen.kind === 'facts') go({ kind: 'landing' });
     else if (screen.kind === 'cross') go({ kind: 'step', key: screen.from });
+    else if (screen.kind === 'tour') { setTour(false); go({ kind: 'system', systemId: screen.from }); }
     else if (screen.kind === 'system') go(screen.group ? (screen.group === '__condition__' && condGrp ? { kind: 'system', systemId: screen.systemId, group: condGrp } : { kind: 'system', systemId: screen.systemId }) : { kind: 'landing' });
   };
   const reset = () => {
@@ -311,7 +316,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       // THIS SYSTEM'S WALK: Back from its first item to Photos & details, Next from its last back to its page.
       const pool = steps.filter(x => tileOf(x.systemId) === walkScope), k = pool.findIndex(x => x.key === screen.key) + dir;
       if (k < 0) { setOpened(o => ({ ...o, [`photos:${walkScope}`]: true })); go({ kind: 'system', systemId: walkScope }); return; }
-      if (k >= pool.length) { go({ kind: 'system', systemId: walkScope }); say(`End of ${displayLabel(steps[i].systemLabel)}.`); return; }
+      if (k >= pool.length) { if (tour) { finishSys(walkScope); return; } go({ kind: 'system', systemId: walkScope }); say(`End of ${displayLabel(steps[i].systemLabel)}.`); return; }
       openStep(pool[k]); return;
     }
     const j = i + dir;
@@ -320,6 +325,21 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (crossesSystem(steps, i, j)) { go({ kind: 'cross', from: steps[i].key, to: steps[j].key, dir: dir > 0 ? 'forward' : 'back' }); return; }
     openStep(steps[j]);
   };
+  const tourOrder = systems.filter(x => tileOf(x.id) === x.id).map(x => x.id)
+    .filter(id => allSteps.some(st => tileOf(st.systemId) === id) || (describeBy[id]?.total ?? 0) > 0);
+  const pageOfSys = (id: string) => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0;
+  const enterSys = (id: string) => {
+    setWalkScope(id);
+    const pool = steps.filter(x => tileOf(x.systemId) === id);
+    if (pageOfSys(id)) { setOpened(o => ({ ...o, [`photos:${id}`]: true })); go({ kind: 'system', systemId: id }); return; }
+    if (pool.length) { openStep(pool[0]); return; }
+    finishSys(id);
+  };
+  function finishSys(id: string) {
+    const at = tourOrder.indexOf(id), next = at >= 0 ? tourOrder[at + 1] : undefined;
+    if (!next) { setTour(false); go({ kind: 'landing' }); say('Guided coverage complete.'); return; }
+    go({ kind: 'tour', from: id, to: next });
+  }
   const stepStat = (st: GuidedStep) => sumProgress(st.rowIds.map(id => index.byId[id]?.node).filter(Boolean) as TemplateNode[], picks, cond, readings);
   const stepDone = (st: GuidedStep) => { const p = stepStat(st); return p.total === 0 || p.met >= p.total; };
   const togglePick = (key: string, value: string, multi: boolean) => setPicks(p => {
@@ -393,7 +413,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>GUIDED COVERAGE</div><div className="pv-pair">
               <button type="button" className={`pv-pcond${covered ? ' ready' : ' dim'}`} onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
                 aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}><b>Review &amp; send</b><small>{covered ? 'Everything covered' : `${left} left`}</small></button>
-              <button type="button" className="pv-pstart" disabled={!nx} onClick={() => { if (nx) { setWalkScope(null); openStep(nx); } }}
+              <button type="button" className="pv-pstart" disabled={!nx} onClick={() => { const first = tourOrder[0]; if (first) { setTour(true); enterSys(first); } }}
                 aria-label={nx ? `Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Guided coverage: everything walked'}>
                 <span><b>Guided coverage</b><small>{nx ? `Picks up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Everything walked'}</small></span><i>▶</i></button>
             </div></div>
@@ -451,7 +471,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const done = items.filter(isDone).length;
     const pool = (inGroup ? items : mine).filter(st => steps.some(x => x.key === st.key));   // the walk (app 2026-11-15: on-the-spot items)
     const nextUp = pool.length ? pool[resumeIndex(pool, stepDone, 0)] : null;
-    const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } };
+    const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } else if (tour) finishSys(sysId); };
     const met = inGroup ? done : p.met, total = inGroup ? items.length : p.total;
     return (
       <>
@@ -728,6 +748,28 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   };
 
   // ── THE SYSTEM BOUNDARY (GuidedTransitionView) ──
+  // ── THE NEXT-SYSTEM CARD (app TourCard, 2026-11-15) — the system left's Condition as a link, never a stop ──
+  const tourPage = (from: string, to: string) => {
+    const name = (id: string) => sysName(index.allSystems[id]!);
+    const toPool = steps.filter(x => tileOf(x.systemId) === to), fromPool = steps.filter(x => tileOf(x.systemId) === from);
+    const rows = condRowsOf(from), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
+    const condTxt = !rows.length ? 'Nothing yet' : doneN < rows.length ? `${doneN} of ${rows.length} · do it now or come back any time` : finds ? `⚑ ${finds} finding${finds === 1 ? '' : 's'}` : 'All OK';
+    return (
+      <>
+        <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
+        <div className="pv-xcap">NEXT SYSTEM</div>
+        <div className="pv-xsys">{name(to)}</div>
+        <div className="pv-xstat">System {tourOrder.indexOf(to) + 1} of {tourOrder.length} · {toPool.filter(stepDone).length} of {toPool.length} complete</div>
+        <div className="pv-xcard"><em>STARTS WITH</em><b>{pageOfSys(to) ? 'Photos & details' : toPool[0]?.label ?? 'Condition'}</b></div>
+        <div className="pv-xleave">Leaving {name(from)} · {fromPool.filter(stepDone).length} of {fromPool.length} items done</div>
+        <button type="button" className="pv-crow" style={{ width: '100%', textAlign: 'left', font: 'inherit', marginTop: 8 }}
+          onClick={() => { setTour(false); setCondGrp(null); go({ kind: 'system', systemId: from, group: '__condition__' }); }}>
+          <div style={{ flex: 1, minWidth: 0 }}><b>✓ Condition</b><small>{condTxt}</small></div><span style={{ color: '#9cc4f2', fontWeight: 800 }}>Open ›</span>
+        </button>
+      </>
+    );
+  };
+
   const crossPage = (from: string, to: string, dir: 'forward' | 'back') => {
     const fi = steps.findIndex(x => x.key === from), ti = steps.findIndex(x => x.key === to);
     if (fi < 0 || ti < 0) return null;
@@ -747,6 +789,15 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
 
   // ── BACK / NEXT, FIXED ABOVE THE TABS (GuidedNavBar in the rail's `above` slot) ──
   const navBar = () => {
+    if (screen.kind === 'tour') {
+      const from = screen.from, to = screen.to;
+      return (
+        <div className="pv-nav">
+          <button type="button" className="pv-nb" onClick={() => { setTour(false); go({ kind: 'system', systemId: from }); }}><Glyph d={G.chevL} size={16} />{sysName(index.allSystems[from]!).toUpperCase()}</button>
+          <button type="button" className="pv-nn" onClick={() => enterSys(to)}>BEGIN {sysName(index.allSystems[to]!).toUpperCase()}<Glyph d={G.chevR} size={16} /></button>
+        </div>
+      );
+    }
     if (screen.kind === 'cross') {
       const f = steps.find(x => x.key === screen.from), t = steps.find(x => x.key === screen.to);
       if (!f || !t) return null;
@@ -778,6 +829,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
             aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
           <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
+            setTour(false);
             if (grp ? gLeft > 0 : hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); if (grp) go({ kind: 'system', systemId: sysId }); return; }
             if (pool.length) { setWalkScope(sysId); openStep(nextUp ?? pool[0]); return; }
             setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' });
@@ -864,6 +916,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   else if (screen.kind === 'facts') body = factsPage();
   else if (screen.kind === 'system') body = systemPage(screen.systemId, screen.group);
   else if (screen.kind === 'step') body = stepPage(screen.key);
+  else if (screen.kind === 'tour') body = tourPage(screen.from, screen.to);
   else body = crossPage(screen.from, screen.to, screen.dir);
 
   return (
