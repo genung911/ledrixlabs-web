@@ -705,9 +705,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <button type="button" className="pv-leafhead" onClick={() => { if (screen.kind === 'step') setCamPick({ id: n.id, keep: !!cond[n.id] }); emit({ systemId: sysId, nodeId: n.id }); flash(n.id); }} aria-label={`Select ${n.label} in the editor`}>
           {/* Company Tips open from the blue ⓘ on the phone, never as a line under the name (owner 2026-11-05). */}
           <span className="pv-ct">{previewRowTitle(n, picks)}{n.description?.trim() ? <span className="pv-tips" title={`Tips: ${n.description.trim()}`} aria-label="Has tips from your company">i</span> : null}{first && !named ? <span className={`pv-hv${headVal ? '' : ' empty'}`}>{headVal || 'Not set'}</span> : null}
-            {/* 📋 (app build 792): amber = not described (Details), blue = described (Change opens the grid). */}
-            {moved.length ? <span role="button" tabIndex={0} className={`pv-dicon${movedMissing ? ' miss' : ''}`} aria-label={movedMissing ? 'Not described yet — Details' : `Described: ${movedVals.join(', ')} — Change`}
-              onClick={e => { e.stopPropagation(); if (!movedMissing) setOpened(o => ({ ...o, [`spec:${n.id}`]: !o[`spec:${n.id}`] })); }}>
+            {/* 📋 (app build 792; y11 2026-11-17): amber = not described, blue = described. A tap is the name's tap — on the
+                phone it enters the item ("I can't tap on the icon"), here it selects the item, as the name does. */}
+            {moved.length ? <span className={`pv-dicon${movedMissing ? ' miss' : ''}`} aria-label={movedMissing ? 'Not described yet' : `Described: ${movedVals.join(', ')}`}>
               <Glyph d="M9 4h6v3H9zM6 6h3M15 6h3v15H6V6M9 12h6M9 16h4" size={15} /></span> : null}
           </span>
         </button>
