@@ -19,7 +19,7 @@
 //                              body is src/components/systems/ScopeRowList.tsx + scopeRowStyles.ts (CONDITION:
 //                              Satisfactory / Limitation / Finding, limitation + finding sheets, value grids)
 //   · value grids ........... src/components/systems/SpecChipRow.tsx (SpecOptionGrid: three-across tiles, "Add …")
-//   · bottom tabs ........... src/components/inspect/InspectTabBar.tsx (Coverage · Findings · Evidence · Camera)
+//   · bottom tabs ........... src/components/inspect/InspectTabBar.tsx (Job info · Photos · Camera · Findings · Systems, 2026-11-16)
 //   · colours ............... src/core/theme/starlink.ts and the literals in the files above
 // The phone is ALWAYS dark, as the app is, whatever the website's theme.
 //
@@ -968,11 +968,18 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
               <div className="pv-addr"><i />{address}</div>
               <div className="pv-sub1">{tree.name}</div>
             </div>
-            {/* The tab rail is the ▦ grid menu on every page (app 2026-11-15): Coverage · Findings · Evidence · Camera. */}
-            <span className="pv-gridkey" title="Coverage · Findings · Evidence · Camera" aria-label="Menu: Coverage, Findings, Evidence, Camera (on the phone)"><Glyph d={G.grid} size={16} /></span>
           </div>
           <div className="pv-scroll" ref={scrollRef}>{body}</div>
           {navBar()}
+          {/* THE SLIM RAIL ON EVERY PAGE (app 2026-11-16): Job info · Photos · Camera (raised; the whole-inspection camera) ·
+              Findings · Systems, under the page's own keys. */}
+          <nav className="pv-tabs pv-rail" aria-label="Inspect tabs">
+            <button type="button" onClick={() => say('On the phone, Job info opens the job’s access, contacts and property.')}><Glyph d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5h.01" size={18} />Job info</button>
+            <button type="button" onClick={() => say('On the phone, Photos opens every photo of the job.')}><Glyph d={G.images} size={18} />Photos</button>
+            <button type="button" className="pv-railcam" onClick={() => say('On the phone, the Camera opens on the whole inspection: Building and System pills, Coverage · Finding · Limitation.')} aria-label="Camera"><span><Glyph d={G.camera} size={22} color="#ffffff" /></span></button>
+            <button type="button" onClick={() => say('On the phone, Findings opens the findings to review.')}><Glyph d={G.flag} size={18} />Findings</button>
+            <button type="button" className={screen.kind === 'landing' ? 'on' : ''} onClick={() => go({ kind: 'landing' })}><Glyph d={G.grid} size={18} />Systems</button>
+          </nav>
           {sheetView()}
           {note ? <div className="pv-toast" role="status">{note}</div> : null}
         </div>
@@ -999,6 +1006,10 @@ const CSS_TEXT = `
 .ldx-pv .pv-tabs{flex:none;display:flex;border-top:1px solid rgba(38,50,62,.55);background:#05070b;padding:6px 6px 18px}
 .ldx-pv .pv-tabs div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#6f7b82}
 .ldx-pv .pv-tabs div.on{color:#EAF1FB;font-weight:800}
+.ldx-pv .pv-rail{align-items:flex-end;padding:4px 6px 16px}
+.ldx-pv .pv-rail button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font:600 9.5px/1.2 inherit;color:#6f7b82;background:none;border:0;padding:0;cursor:pointer}
+.ldx-pv .pv-rail button.on{color:#EAF1FB;font-weight:800}
+.ldx-pv .pv-rail .pv-railcam span{width:44px;height:44px;border-radius:50%;background:#217BE8;display:flex;align-items:center;justify-content:center;margin-top:-16px;border:3px solid #05070b}
 .ldx-pv .pv-bldg{display:flex;justify-content:center;min-height:30px;align-items:center}
 .ldx-pv .pv-bldg b{color:#e8ecef;font-size:11.5px;font-weight:800;letter-spacing:1.6px;display:inline-flex;gap:4px;align-items:center}
 .ldx-pv .pv-bmeta{text-align:center;color:#8a959c;font-size:11px;font-weight:600;margin-top:-2px;font-variant-numeric:tabular-nums}
