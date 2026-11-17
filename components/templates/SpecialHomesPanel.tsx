@@ -46,7 +46,7 @@ export function SpecialHomesPanel({ tree, system, onOps, disabled }: {
     const ids = [...picks];
     const r = specialHomeOps(tree, system.id, ids, source);
     if (!r.ok) { setProblem(r.error); return; }
-    if (onOps(r.ops)) { setPicks(new Set()); setProblem(null); setDone(`Added ${ids.length} to ${system.label}. Undo is in the toolbar.`); }
+    if (onOps(r.ops)) { setPicks(new Set()); setProblem(null); setDone(`Added ${ids.length} to ${system.label}. To take one back, open its ⋯ menu and choose Switch off.`);   /* 2026-11-16: there is no toolbar Undo (Ask Ledrix is off) */ }
   };
 
   return (
