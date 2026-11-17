@@ -211,6 +211,27 @@ await ctx.route('**/*', async (route) => {
   return route.abort();
 });
 const page = await ctx.newPage();
+// "WHAT YOU INSPECT" OPENS ON GUIDED (owner 2026-11-14) and every reload starts there again; the edits this test makes are
+// All settings'. The left menu is the "Systems" list since 2026-11-05. (2026-11-16: the test had stopped at step 3 since.)
+const SYSTEMS = () => page.getByRole('region', { name: 'Systems' });
+const toAllSettings = async () => {
+  // A live template opens on its Overview (2026-11-06); "What you inspect" is the step that holds the editor.
+  await waitFor(async () => (await page.getByRole('tablist', { name: 'How to edit' }).count()) > 0
+    || (await page.getByRole('main', { name: 'Template section' }).getByRole('button', { name: 'Edit this template ›' }).count()) > 0, 60000);
+  if ((await page.getByRole('tablist', { name: 'How to edit' }).count()) === 0)
+    await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: /What you inspect/ }).click();
+  await waitFor(async () => (await page.getByRole('tablist', { name: 'How to edit' }).count()) > 0, 60000);
+  const tab = page.getByRole('tablist', { name: 'How to edit' }).getByRole('tab', { name: 'All settings', exact: true });
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+  await waitFor(async () => (await SYSTEMS().count()) > 0, 30000);
+};
+// 2026-11-16: the item editor (owner 2026-11-07, "one shape at every level") — an item is a list of rows, each opening its
+// own screen with a back button; there are no tabs, no "Close item" and no Name box.
+const EDITOR = () => page.getByRole('region', { name: 'Editor' });
+const openRow = (name) => EDITOR().getByRole('button', { name }).first().click();
+const backTo = (label) => EDITOR().getByRole('button', { name: `Back to ${label}`, exact: true }).click();
+const closeItem = () => EDITOR().getByRole('button', { name: /^Back to / }).first().click();
+const fullList = async () => { const c = EDITOR().getByRole('button', { name: 'Full list', exact: true }); if ((await c.getAttribute('aria-pressed')) !== 'true') await c.click(); };
 page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR_FAILED|ERR_BLOCKED|fonts\.g/.test(m.text())) consoleErrors.push(m.text().slice(0, process.env.E2E_FULL_ERRORS ? 4000 : 200)); });
 let step = 'start';
 // DEV-SERVER NOISE, AND ONLY THAT (2026-10-27): `next dev` re-fetches the app stylesheet with a `?v=` stamp while it
@@ -251,17 +272,27 @@ try {
 
   // ── 3 · edits ──
   step = '3'; console.log('\n3 · edits through the real controls\n');
-  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit Furnace Flue / Venting' }).click();
-  if (process.env.E2E_DEBUG) console.log('item name inputs:', JSON.stringify(await page.locator('[aria-label="Item name"]').evaluateAll(els => els.map(e => [e.value, e.closest('section,aside,div[class*="absolute"]')?.className.slice(0, 80)]))));
-  const nameBox = page.getByLabel('Item name', { exact: true });
-  await nameBox.fill('Flue / Vent Connector'); await nameBox.blur();
-  await page.getByRole('tab', { name: 'Details', exact: true }).click();
-  await page.getByLabel('Add choice to Flue / Venting').fill('Stainless Liner'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
-  await page.getByRole('button', { name: 'Close item' }).click();
-  await page.getByLabel('New item name').fill('E2E Draft Hood'); await page.getByLabel('New item name').press('Enter');
+  await toAllSettings();
+  await SYSTEMS().getByRole('button', { name: 'HEATING', exact: true }).click();
+  // 2026-11-16: the item editor has no tabs and no Name box (owner 2026-11-05/-07). A row's "More for …" menu renames it in
+  // the row; the row opens the item, whose rows (Condition · Details · …) each open a screen with "Back to <item>"; the
+  // item's own back button closes it to its system.
+  await EDITOR().getByRole('button', { name: 'More for Furnace Flue / Venting', exact: true }).first().click();
+  await page.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+  const nameBox = EDITOR().getByLabel('Item name', { exact: true });
+  await nameBox.fill('Flue / Vent Connector'); await nameBox.press('Enter');
+  await EDITOR().getByRole('button', { name: /^Flue \/ Vent Connector/ }).first().click();
+  await openRow(/^Details/);
+  await EDITOR().getByLabel('Add choice to Flue / Venting').fill('Stainless Liner'); await EDITOR().getByLabel('Add choice to Flue / Venting').press('Enter');
+  await backTo('Flue / Vent Connector');
+  await openRow(/^Condition/);
+  await EDITOR().getByRole('switch', { name: 'Inspectors rate its condition', exact: true }).click();
+  await backTo('Flue / Vent Connector');
+  await closeItem();
+  // 2026-11-16: a typed system (Heating) adds a shared item to a group from its "Full list" chip (the type chips' own
+  // "+ Add item for <type>" adds a type-only item); that list is also the one with the Move up / down arrows.
+  await fullList();
+  await EDITOR().getByLabel('New item name').fill('E2E Draft Hood'); await EDITOR().getByLabel('New item name').press('Enter');
   ok('3 · autosave reaches the server draft', await saved());
   let tree = draftRow().template;
   const flue = findIn(tree, 'hvac_flue');
@@ -285,23 +316,29 @@ try {
   ok('3 · reorder saved', sib2.findIndex(c => c.id === hood.id) === idx0 - 1, `${idx0} → ${sib2.findIndex(c => c.id === hood.id)}`);
 
   // ── 4 · undo from Draft changes ──
-  step = '4'; console.log('\n4 · undo\n');
-  await page.getByRole('tab', { name: /Ask Ledrix/ }).click();
-  await page.getByRole('button', { name: /\d+ draft changes?/ }).click();      // "N draft changes" opens the history (newest first)
-  const undoBtns = page.getByRole('button', { name: 'Undo', exact: true });
-  ok('4 · every hand edit is listed with an Undo', (await undoBtns.count()) >= 4, `${await undoBtns.count()} undo buttons`);
-  await undoBtns.first().click();
+  // 2026-11-16: the per-edit Undo list lives in the Ask Ledrix panel ("N draft changes"), which is hidden by design
+  // (page.tsx ASK_LEDRIX = false, owner 2026-11-05) — the editor has no other Undo control. The history the Undo list
+  // reads is still saved with the draft, so the first check reads it there (and Review & Publish's change count shows it);
+  // the second puts the order back with the list's own Move down arrow, the only way back the UI offers.
+  step = '4'; console.log('\n4 · edit history (Undo is hidden with Ask Ledrix)\n');
+  const log4 = draftRow().history?.log ?? [];
+  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: /Review & Publish/ }).click();
+  ok('4 · every hand edit is recorded in the draft\'s saved history, and Review & Publish counts them', log4.length >= 4
+    && await waitFor(async () => (await page.getByText(new RegExp(`${log4.length} changes in this draft`)).count()) > 0, 5000), `${log4.length} history entries`);
+  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: /What you inspect/ }).click();
+  await toAllSettings();
+  await EDITOR().getByRole('button', { name: 'Move E2E Draft Hood down' }).click();
   await sleep(1500); await saved();
   tree = draftRow().template;
   const sib3 = ((function find(n) { if ((n.children ?? []).some(c => c.id === hood.id)) return n; for (const c of n.children ?? []) { const h = find(c); if (h) return h; } return null; })(tree.systems.find(s => s.id === 'heating'))).children;
-  ok('4 · undoing the latest edit (the move) restores the previous order on the server', sib3.findIndex(c => c.id === hood.id) === idx0, `${sib3.findIndex(c => c.id === hood.id)} vs ${idx0}`);
-  await page.getByRole('tab', { name: 'Editor', exact: true }).click();
+  ok('4 · moving it back down restores the previous order on the server', sib3.findIndex(c => c.id === hood.id) === idx0, `${sib3.findIndex(c => c.id === hood.id)} vs ${idx0}`);
 
   // ── 5 · reload: persistence ──
   step = '5'; console.log('\n5 · persistence across a reload\n');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await waitFor(async () => (await page.getByRole('region', { name: 'Systems and components' }).count()) > 0, 60000);
-  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
+  await toAllSettings();
+  await SYSTEMS().getByRole('button', { name: 'HEATING', exact: true }).click();
+  await fullList();
   ok('5 · after a reload the editor shows the saved draft (renamed item, added item)',
     await waitFor(async () => (await page.getByRole('button', { name: 'Edit Flue / Vent Connector' }).count()) > 0 && (await page.getByRole('button', { name: 'Edit E2E Draft Hood' }).count()) > 0));
 
@@ -310,106 +347,143 @@ try {
   const phone = page.getByLabel('Inspector preview of the Ledrix Inspect app');
   await phone.getByRole('button', { name: /^HEATING, \d+ of \d+$/ }).click().catch(() => {});
   if (process.env.E2E_DEBUG) await page.screenshot({ path: join(dirname(OUT), 'preview.png') });
+  // 2026-11-16: the preview is the app's Heating page (owner 2026-11-08: "Pre-Inspect takes care of all details …; Inspect is
+  // strictly condition"). The renamed item has its condition switched off in step 3, so all it keeps is a Details question,
+  // and the preview's Details tile lists the photos that answer Details, not the questions — it draws no row with the
+  // item's name. So the rename is checked as: the old name is gone from the phone, the added item is a tile in Heating.
   ok('6 · the preview draws the draft: the renamed item and the added item appear in Heating',
-    await waitFor(async () => (await phone.getByText('Flue / Vent Connector').count()) > 0 && (await phone.getByText('E2E Draft Hood').count()) > 0));
+    await waitFor(async () => (await phone.getByRole('button', { name: /^E2E Draft Hood, / }).count()) > 0 && (await phone.getByText(/Furnace Flue \/ Venting/).count()) === 0));
+  // 2026-11-16: this check used to click and return true; it now reads the phone's Condition page, which lists every row
+  // that takes condition — the added item is there, the item switched off is not.
   ok('6 · …and the item that is no longer assessed offers no condition choice in its step', await (async () => {
-    await phone.getByRole('button', { name: 'Select Flue / Vent Connector in the editor' }).click().catch(() => {});
-    return true;
+    await phone.getByRole('button', { name: /^Condition: / }).click();
+    return waitFor(async () => (await phone.getByRole('button', { name: 'OK: E2E Draft Hood', exact: true }).count()) === 1
+      && (await phone.getByRole('button', { name: /^OK: Flue \/ Vent/ }).count()) === 0, 5000);
   })());
 
   // ── 7 · a refused invalid edit ──
   step = '7'; console.log('\n7 · validation\n');
-  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'HEATING', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit Flue / Vent Connector' }).click();
+  await SYSTEMS().getByRole('button', { name: 'HEATING', exact: true }).click();
+  await fullList();
+  await EDITOR().getByRole('button', { name: 'Edit Flue / Vent Connector' }).click();
   const before = JSON.stringify(draftRow().template);
-  await page.getByRole('tab', { name: 'Details', exact: true }).click();
-  await page.getByLabel('Add choice to Flue / Venting').fill('Metal B-Vent'); await page.getByLabel('Add choice to Flue / Venting').press('Enter');
+  await openRow(/^Details/);
+  await EDITOR().getByLabel('Add choice to Flue / Venting').fill('Metal B-Vent'); await EDITOR().getByLabel('Add choice to Flue / Venting').press('Enter');
   ok('7 · a duplicate choice is not added, the editor says it is already listed, and nothing is saved',
     await waitFor(async () => (await page.getByText(/already listed/i).count()) > 0, 5000) && (await sleep(1800), JSON.stringify(draftRow().template) === before));
   // an item cannot lose its name: clearing it puts the saved name back, and nothing is saved
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  const nb = page.getByLabel('Item name', { exact: true });
+  // 2026-11-16: the name is edited in the item's title behind its "Rename item" pencil (owner 2026-11-05); leaving the box
+  // empty closes it with the saved name back in the title — the box itself goes away, so the title is what is read.
+  await backTo('Flue / Vent Connector');
+  await EDITOR().getByRole('button', { name: 'Rename item', exact: true }).click();
+  const nb = EDITOR().getByLabel('Item name', { exact: true });
   await nb.fill(''); await nb.blur();
   ok('7 · clearing an item\'s name restores the saved name, and nothing is saved',
-    await waitFor(async () => (await nb.inputValue()) === 'Flue / Vent Connector', 5000) && (await sleep(1800), JSON.stringify(draftRow().template) === before));
-  await page.getByRole('button', { name: 'Close item' }).click();
+    await waitFor(async () => (await EDITOR().getByRole('heading', { name: 'Flue / Vent Connector', exact: true }).count()) === 1 && (await nb.count()) === 0, 5000)
+    && (await sleep(1800), JSON.stringify(draftRow().template) === before));
+  await closeItem();
 
   // ── 8 · building types ──
+  // 2026-11-06 (owner): the Building Types section left the steps; a template's buildings are the picker at the top of the
+  // systems column, and adding one there writes the template's own building types (the old "Customize building types").
   step = '8'; console.log('\n8 · building types\n');
-  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Building Types' }).click();
-  await page.getByRole('button', { name: 'Customize building types' }).click();
+  await page.getByRole('button', { name: 'Building', exact: true }).click();
+  await page.getByRole('button', { name: '+ Your own building…', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Building name').fill('E2E Shop');
+  await page.getByRole('dialog').getByRole('button', { name: 'Add', exact: true }).click();
   await sleep(1500); await saved();
-  ok('8 · customizing building types saves them into the draft', Array.isArray(draftRow().template.structureTypes) && draftRow().template.structureTypes.length >= 4);
-  await page.getByRole('navigation', { name: 'Template sections' }).getByRole('button', { name: 'Systems', exact: true }).click();
+  ok('8 · customizing building types saves them into the draft', Array.isArray(draftRow().template.structureTypes) && draftRow().template.structureTypes.length >= 4
+    && draftRow().template.structureTypes.some(t => t.name === 'E2E Shop'), JSON.stringify(draftRow().template.structureTypes?.map(t => t.name)));
+  // back to the main house, so every switch below is the template's own Included switch again
+  await page.getByRole('button', { name: 'Building', exact: true }).click();
+  await page.getByRole('listbox', { name: 'Buildings' }).getByRole('option').first().click();
 
   // ── 8b · the workspace: sections, search, applicability, requirements ──
   step = '8b'; console.log('\n8b · workspace sections, search, applicability, requirements\n');
   const nav = page.getByRole('navigation', { name: 'Template sections' });
-  for (const [btnName, heading] of [['Overview', 'Copy of Standard'], ['Requirements', 'Requirements'], ['Report Content', 'Report content'], ['Review & Publish', 'Review & publish']]) {
-    await nav.getByRole('button', { name: btnName }).click();
-    ok(`8b · the ${btnName} section opens its view`, await waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByRole('heading', { name: heading, exact: true }).count()) > 0, 10000)
-      && (await nav.getByRole('button', { name: btnName }).getAttribute('aria-current')) === 'page');
+  // 2026-11-16: the sections are Overview · What you inspect · Report · Review & Publish (owner 2026-11-06). Requirements
+  // left the steps — the template-wide list is on Review & Publish, under its own heading — and Review's headline says
+  // what needs doing ("✓ Ready to publish" / "N things to fix first"), so it is matched by shape.
+  for (const [btnName, heading, sectionBtn] of [['Overview', 'Copy of Standard', 'Overview'], ['Report Content', 'Report content', /Report$/],
+    ['Review & Publish', /^(✓ Ready to publish|\d+ things? to fix first|Review & publish)$/, /Review & Publish/], ['Requirements (on Review & Publish)', 'Required photos & readings', /Review & Publish/]]) {
+    await nav.getByRole('button', { name: sectionBtn, exact: typeof sectionBtn === 'string' }).click();
+    ok(`8b · the ${btnName} section opens its view`, await waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByRole('heading', { name: heading, exact: typeof heading === 'string' }).count()) > 0, 10000)
+      && (await nav.getByRole('button', { name: sectionBtn, exact: typeof sectionBtn === 'string' }).getAttribute('aria-current')) === 'page');
   }
   ok('8b · Overview counts come from the draft (items in the template)', await (async () => {
-    await nav.getByRole('button', { name: 'Overview' }).click();
+    await nav.getByRole('button', { name: 'Overview', exact: true }).click();
     const items = (function count(n) { return (n.kind === 'component' ? 1 : 0) + (n.children ?? []).reduce((a, c) => a + count(c), 0); })({ children: draftRow().template.systems });
     return waitFor(async () => (await page.getByRole('main', { name: 'Template section' }).getByText(String(items), { exact: true }).count()) > 0, 5000);
   })());
   // property types: picked on the Overview, saved on the draft
   await page.getByRole('group', { name: 'Property types' }).getByRole('button', { name: /Multi-unit — one building/ }).click();
+  // 2026-11-16: a kind of home that brings Ledrix checkpoints asks first (HomeKindsCard, owner 2026-11-05); save without them.
+  const addCk = page.getByRole('dialog', { name: 'Add checkpoints' });
+  if (await waitFor(async () => (await addCk.count()) > 0, 2000)) {
+    for (const cb of await addCk.getByRole('checkbox').all()) if (await cb.isChecked()) await cb.uncheck();
+    await addCk.getByRole('button', { name: /^(Save without checkpoints|Add \d+ checkpoints?)$/ }).click();
+  }
   await sleep(1500); await saved();
   ok('8b · a property type picked on the Overview is saved on the draft', JSON.stringify(draftRow().template.propertyTypes) === JSON.stringify(['multi_unit_one']), JSON.stringify(draftRow().template.propertyTypes));
-  await nav.getByRole('button', { name: 'Systems', exact: true }).click();
-  const tree8 = page.getByRole('region', { name: 'Systems and components' });
-  await tree8.getByLabel('Search systems and components').fill('draft hood');
-  ok('8b · search narrows the tree to matches (and opens their path)', await waitFor(async () => (await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).count()) === 1
-    && (await tree8.getByRole('button', { name: 'ROOFING', exact: true }).count()) === 0, 5000));
-  await tree8.getByRole('button', { name: 'E2E Draft Hood', exact: true }).click();
-  await tree8.getByLabel('Search systems and components').fill('');
-  ok('8b · a new item opens with Overview, Condition and Applicability (Details and Requirements are off)', await waitFor(async () => (await page.getByRole('heading', { name: 'E2E Draft Hood' }).count()) > 0, 5000)
-    && (await page.getByRole('tablist', { name: 'Component' }).getByRole('tab').allTextContents()).join('|') === 'Overview|Condition|Applicability');
+  await nav.getByRole('button', { name: /What you inspect/ }).click();
+  await toAllSettings();
+  // 2026-11-16: the tree's search box was removed (owner 2026-11-06, Tree.tsx: "the systems list is short, and a system
+  // opens group first"). The closest check: the systems list reaches the item through its system's list.
+  await SYSTEMS().getByRole('button', { name: 'HEATING', exact: true }).click();
+  await fullList();
+  ok('8b · the systems list reaches the new item through its system (no search since 2026-11-06)', await waitFor(async () => (await EDITOR().getByRole('button', { name: 'Edit E2E Draft Hood', exact: true }).count()) === 1, 5000));
+  await EDITOR().getByRole('button', { name: 'Edit E2E Draft Hood', exact: true }).click();
+  // 2026-11-16: an item has rows, not tabs (owner 2026-11-07) — a new item reads Condition on, Details Off, no photos or readings.
+  ok('8b · a new item opens with Condition on, Details and Requirements off, and Shows when', await waitFor(async () => (await EDITOR().getByRole('heading', { name: 'E2E Draft Hood', exact: true }).count()) > 0, 5000)
+    && (await EDITOR().getByRole('button', { name: /^Condition\s*Satisfactory · Limitation · Finding/ }).count()) === 1
+    && (await EDITOR().getByRole('button', { name: /^Details\s*Off$/ }).count()) === 1
+    && (await EDITOR().getByRole('button', { name: /^Required photos & readings\s*None$/ }).count()) === 1
+    && (await EDITOR().getByRole('button', { name: /^Shows when/ }).count()) === 1);
   // applicability: inspect the hood only when the heating fuel is a gas furnace
-  await page.getByRole('tab', { name: 'Applicability', exact: true }).click();
-  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add condition' }).first().click();
+  await openRow(/^Shows when/);
+  await EDITOR().getByRole('button', { name: '+ Add condition' }).first().click();
   await page.getByLabel('Condition 1: spec field').selectOption('hvac_heating::fuel_source');
-  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Gas Furnace', exact: true }).click();
-  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Save rule' }).click();
+  await EDITOR().getByRole('button', { name: 'Gas Furnace', exact: true }).click();
+  await EDITOR().getByRole('button', { name: 'Save rule' }).click();
   await sleep(1500); await saved();
   const hood8 = () => findByLabel(draftRow().template, 'E2E Draft Hood');
   ok('8b · an applicability rule is saved in the runtime\'s shape', JSON.stringify(hood8()?.appliesWhen) === JSON.stringify({ field: 'hvac_heating::fuel_source', anyOf: ['Gas Furnace'] }), JSON.stringify(hood8()?.appliesWhen));
-  // requirements: switched on from Overview (the tab appears), drafted through the contract, never publishable
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
-  ok('8b · switching Requirements on opens its tab', await waitFor(async () => (await page.getByRole('tab', { name: /^Requirements/, selected: true }).count()) === 1, 5000));
-  await page.getByLabel('New requirement name').fill('Hood photographed');
-  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: '+ Add requirement' }).click();
+  // requirements: switched on from the item (its screen opens), drafted through the contract, never publishable
+  // 2026-11-16: the switch is on the item's "Required photos & readings" screen, not an Overview tab.
+  await backTo('E2E Draft Hood');
+  await openRow(/^Required photos & readings/);
+  const reqSwitch = () => EDITOR().getByRole('switch', { name: 'Required photos & readings', exact: true });
+  await reqSwitch().click();
+  ok('8b · switching Requirements on opens its tab', await waitFor(async () => (await reqSwitch().getAttribute('aria-checked')) === 'true' && (await EDITOR().getByLabel('New requirement name').count()) === 1, 5000));
+  await EDITOR().getByLabel('New requirement name').fill('Hood photographed');
+  await EDITOR().getByRole('button', { name: '+ Add requirement' }).click();
   await sleep(1500); await saved();
   const rq8 = () => hood8()?.requirements ?? [];
   ok('8b · a requirement is drafted as a company requirement on its own item', rq8().length === 1 && rq8()[0].origin === 'company' && rq8()[0].subject?.nodeId === hood8()?.id && rq8()[0].unmet?.exception === 'not_allowed');
-  await page.getByLabel(/^Level$/).first().selectOption('recommended');
+  await EDITOR().getByLabel(/^Level$/).first().selectOption('recommended');
   await sleep(1500); await saved();
   ok('8b · changing its level is saved', rq8()[0]?.level === 'recommended', rq8()[0]?.level);
   // switching Requirements OFF keeps it, hidden — the draft publishes again — and ON restores it exactly
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  await reqSwitch().click();
   await sleep(1500); await saved();
+  // 2026-11-16: "the tab is gone" reads as: the requirement editor closes (the switch stays on its own screen).
   ok('8b · Requirements OFF keeps the requirement hidden (parked), the item no longer carries it, and Publish is available',
-    hood8()?.requirements === undefined && hood8()?.parked?.requirements?.length === 1 && (await page.getByRole('tab', { name: /^Requirements/ }).count()) === 0
+    hood8()?.requirements === undefined && hood8()?.parked?.requirements?.length === 1 && (await EDITOR().getByLabel('New requirement name').count()) === 0
     && await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000));
-  await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
+  await reqSwitch().click();
   await sleep(1500); await saved();
   ok('8b · Requirements ON restores it exactly (same level), and nothing stays parked', rq8().length === 1 && rq8()[0].level === 'recommended' && hood8()?.parked === undefined);
   if (process.env.E2E_SHOTS) {                                       // screenshots for review, dark theme (no checks)
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'dark'));
     await sleep(400); await page.screenshot({ path: join(dirname(OUT), 'dark-requirements.png') }).catch(() => {});
-    await page.getByRole('tab', { name: 'Applicability', exact: true }).click(); await sleep(300);
+    await backTo('E2E Draft Hood'); await openRow(/^Shows when/); await sleep(300);
     await page.screenshot({ path: join(dirname(OUT), 'dark-applicability.png') }).catch(() => {});
-    await nav.getByRole('button', { name: 'Review & Publish' }).click(); await sleep(300);
+    await nav.getByRole('button', { name: /Review & Publish/ }).click(); await sleep(300);
     await page.screenshot({ path: join(dirname(OUT), 'dark-review.png') }).catch(() => {});
-    await nav.getByRole('button', { name: 'Overview' }).click(); await sleep(300);
+    await nav.getByRole('button', { name: 'Overview', exact: true }).click(); await sleep(300);
     await page.screenshot({ path: join(dirname(OUT), 'dark-overview.png') }).catch(() => {});
-    await nav.getByRole('button', { name: 'Systems', exact: true }).click();
-    await page.getByRole('tab', { name: /^Requirements/ }).click();
+    await nav.getByRole('button', { name: /What you inspect/ }).click(); await toAllSettings();
+    await backTo('E2E Draft Hood'); await openRow(/^Required photos & readings/);
     await page.evaluate(() => document.documentElement.setAttribute('data-ws-theme', 'light'));
   }
   // Stage 2 (2026-10-27): an item requirement publishes — the phone checks it before the report is sent (soft)
@@ -418,21 +492,24 @@ try {
     && (await page.getByRole('button', { name: /to fix before publishing/ }).count()) === 0);
   ok('8b · the completion card says the phone checks it before the report is sent',
     (await page.getByRole('region', { name: 'Completion logic for this item' }).getByText(/Checked on the phone before the report is sent/).count()) > 0);
-  await page.getByRole('region', { name: 'Editor' }).getByRole('button', { name: 'Remove requirement' }).click();
+  await EDITOR().getByRole('button', { name: 'Remove requirement' }).click();
   await sleep(1500); await saved();
   ok('8b · removing it removes the field, and Publish is available again', hood8()?.requirements === undefined
     && await waitFor(async () => !(await page.getByRole('button', { name: 'Publish', exact: true }).first().isDisabled()), 5000));
   // all three off: the builder says inspectors won't see it
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  await page.getByRole('switch', { name: 'Requirements', exact: true }).click().catch(() => {});
-  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
-  if (await page.getByRole('switch', { name: 'Requirements', exact: true }).getAttribute('aria-checked') === 'true') await page.getByRole('switch', { name: 'Requirements', exact: true }).click();
-  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
+  if (await reqSwitch().getAttribute('aria-checked') === 'true') await reqSwitch().click();
+  await backTo('E2E Draft Hood');
+  await openRow(/^Condition/);
+  const condSwitch = () => EDITOR().getByRole('switch', { name: 'Inspectors rate its condition', exact: true });
+  await condSwitch().click();
   await sleep(1500); await saved();
+  await backTo('E2E Draft Hood');
   ok('8b · with Condition, Details and Requirements all off, the builder warns inspectors won’t see it',
     hood8()?.condition === false && await page.getByText('Nothing to record — inspectors won’t see this item.').isVisible() && await page.getByText('Hidden — nothing to record').isVisible());
-  await page.getByRole('switch', { name: 'Condition', exact: true }).click();
+  await openRow(/^Condition/);
+  await condSwitch().click();
   await sleep(1500); await saved();
+  await backTo('E2E Draft Hood');
 
   // ── 9 · publish ──
   step = '9'; console.log('\n9 · publish\n');
@@ -450,14 +527,17 @@ try {
   // ── 10 · concurrency: a stale save is refused ──
   step = '10'; console.log('\n10 · concurrency\n');
   await page.goto(`${BASE}/app/templates/${LIVE_ID}`, { waitUntil: 'domcontentloaded' });
-  await waitFor(async () => (await page.getByRole('region', { name: 'Systems and components' }).count()) > 0, 60000);
-  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'ROOFING', exact: true }).click();
-  await page.getByLabel('New item name').fill('E2E first edit'); await page.getByLabel('New item name').press('Enter');
+  await toAllSettings();
+  await SYSTEMS().getByRole('button', { name: 'ROOFING', exact: true }).click();
+  // 2026-11-16: Roofing is built by type (owner 2026-11-05); its "Full list" chip holds the plain add box.
+  await fullList();
+  const addBox = () => EDITOR().getByLabel('New item name', { exact: true });
+  await addBox().fill('E2E first edit'); await addBox().press('Enter');
   await saved();
   const live3 = db.company_template_drafts.find(d => d.template_id === LIVE_ID);
   ok('10 · editing a live template starts its shared draft at the live version', !!live3 && live3.based_on_version === 3);
   live3.row_version += 1;                                             // another tab saved meanwhile
-  await page.getByLabel('New item name').fill('E2E second edit'); await page.getByLabel('New item name').press('Enter');
+  await addBox().fill('E2E second edit'); await addBox().press('Enter');
   ok('10 · the stale save is refused and the editor says so (reload), never overwriting', await waitFor(async () => (await page.getByText(/saved somewhere else/i).count()) > 0, 10000)
     && !findByLabel(db.company_template_drafts.find(d => d.template_id === LIVE_ID).template, 'E2E second edit'));
 
@@ -478,15 +558,17 @@ try {
 
   // ── 11b · phone width ──
   step = '11b'; console.log('\n11b · phone width\n');
+  await toAllSettings();                                             // a reload opens on Guided (owner 2026-11-14)
   await page.screenshot({ path: join(dirname(OUT), 'desktop.png') }).catch(() => {});
   await page.setViewportSize({ width: 390, height: 844 });
   await sleep(800);
   ok('11b · at phone width the page has no sideways scroll and the section rail and tree are reachable',
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
     && await page.getByRole('navigation', { name: 'Template sections' }).isVisible()
-    && await page.getByRole('region', { name: 'Systems and components' }).isVisible(), await page.evaluate(() => `${document.documentElement.scrollWidth} > ${window.innerWidth}`));
+    && await SYSTEMS().isVisible(), await page.evaluate(() => `${document.documentElement.scrollWidth} > ${window.innerWidth}`));
   await page.screenshot({ path: join(dirname(OUT), 'phone.png'), fullPage: true }).catch(() => {});
-  await page.getByRole('tab', { name: 'Inspector preview' }).click();
+  // 2026-11-16: the narrow-width switch is the "View" tablist's Preview tab (2026-11-06), not a tab named Inspector preview.
+  await page.getByRole('tablist', { name: 'View' }).getByRole('tab', { name: 'Preview', exact: true }).click();
   ok('11b · at phone width the inspector preview opens from its tab', await waitFor(async () => await page.getByLabel('Inspector preview of the Ledrix Inspect app').isVisible(), 5000));
   await page.screenshot({ path: join(dirname(OUT), 'phone-preview.png'), fullPage: true }).catch(() => {});
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -524,36 +606,61 @@ try {
   ok('14 · New template opens the creation page (no dialog)', await waitFor(async () => page.url().includes('/app/templates/create') && await page.getByRole('heading', { name: 'Create a template' }).isVisible(), 60000));
   const fits = async () => { const r = []; for (const w of [1280, 1440, 1920]) { await page.setViewportSize({ width: w, height: 900 }); r.push(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)); } await page.setViewportSize({ width: 1600, height: 1000 }); return r.every(Boolean); };
   ok('14 · the start step fits 1280, 1440 and 1920 px wide (no sideways scroll)', await fits());
-  await page.getByRole('button', { name: 'Get started →' }).click();
+  // 2026-11-16: the creation page is one question per screen since 2026-11-14 (owner, mockup B6BhhbaEivmUiE9GtETeqi):
+  // What it's for (which picks the Ledrix build — no Starting point screen) → Where → License → Associations → Standards
+  // → Add-ons → Advisories (the company's answers are saved leaving it) → Name it. Each screen is driven by its own control.
+  const untickAll = async () => { for (let i = 0; i < 20 && (await page.getByRole('checkbox', { checked: true }).count()) > 0; i++) await page.getByRole('checkbox', { checked: true }).first().click(); };
+  const nextQ = async (q) => { await page.getByRole('button', { name: 'Next', exact: true }).click(); if (q) await waitFor(async () => (await page.getByRole('heading', { name: q }).count()) > 0, 10000); };
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await waitFor(async () => (await page.getByRole('heading', { name: 'What’s this template for?' }).count()) > 0, 10000);
+  ok('14 · the starting-point step fits 1280, 1440 and 1920 px wide', await fits());
+  await page.getByRole('radiogroup', { name: 'What the template is for' }).getByRole('radio', { name: /^4-Point/ }).click();
+  // 2026-11-16: "import is coming later" — the creation page has no Import option at all now; what it shows as not yet
+  // working is Commercial, marked Coming soon and not pickable.
+  ok('14 · import is shown as coming later, not as a working option', await page.getByText('Coming soon').isVisible()
+    && await page.getByRole('radio', { name: /^Commercial/ }).isDisabled() && (await page.getByRole('radio', { name: /Import/ }).count()) === 0);
+  await nextQ('Where do you inspect?');
   ok('14 · the company step fits 1280, 1440 and 1920 px wide', await fits());
   await page.getByLabel('States').selectOption('ID');
-  await page.getByLabel('4-Point (insurance)').check();
-  await page.getByLabel('InterNACHI member').check();
-  await page.getByLabel('We’re still determining this').check();
+  await nextQ('Do your inspectors need a license?');
+  await page.getByRole('radiogroup', { name: 'Licensing' }).getByRole('radio', { name: 'We’re still determining this' }).click();
   ok('14 · no individual license number is asked for', (await page.getByLabel(/license (number|#)/i).count()) === 0);
-  await page.getByRole('button', { name: 'Next: Starting point →' }).click();
+  await nextQ('Which associations do you belong to?');
+  await page.getByRole('checkbox', { name: 'InterNACHI', exact: true }).click();
+  await nextQ('Which standards do you follow?');
+  // 2026-11-16: standards now start ticked from the associations and the state; untick them — this company names none.
+  await untickAll();
+  await nextQ('Which add-on services do you offer?');
+  // 2026-11-16: add-ons (pre-ticked) would each add a section; untick them so the draft is exactly the Ledrix 4-Point build.
+  await untickAll();
+  await nextQ('What do your reports recommend?');
+  await nextQ('Name it');
   const ctxRow = () => db.company_template_context.find(c => c.company_id === CO);
   ok('14 · the company’s answers are saved once, for the company, at version 1',
     await waitFor(() => !!ctxRow()) && ctxRow().jurisdictions.join() === 'ID' && ctxRow().services.join() === 'four_point'
-    && ctxRow().affiliations.join() === 'internachi' && ctxRow().standards.length === 0 && ctxRow().licensing === 'undetermined' && ctxRow().row_version === 1);
+    && ctxRow().affiliations.join() === 'internachi' && ctxRow().standards.length === 0 && ctxRow().licensing === 'undetermined' && ctxRow().row_version === 1,
+    JSON.stringify(ctxRow()));
+  // 2026-11-16: no recommendation card — the purpose picks the build, and "Ledrix built" says which, as a fact.
+  // 2026-11-16: the 4-Point build has 15 systems since the Cooling / Mini-Split / Heat Pump split, not 13 — the count is
+  // read from the shipped baseline (lib/templates/baselines/fourPoint.json) instead of being written in.
+  const FOUR_N = JSON.parse(readFileSync(join(ROOT, 'lib/templates/baselines/fourPoint.json'), 'utf8')).systems.length;
   ok('14 · the Ledrix 4-Point template is recommended for the 4-Point service, with its reason',
-    await waitFor(async () => (await page.getByRole('radio', { name: /Recommended.*Ledrix 4-Point/ }).count()) === 1)
-    && await page.getByText('Built for 4-Point inspections, a service you selected.').isVisible());
+    // ("Ledrix built" counts the systems the build starts with included, which is not the stored count — so any count.)
+    await waitFor(async () => (await page.getByText(/^4-Point · \d+ systems$/).count()) === 1));
+  // 2026-11-16: no coverage score on the page — the state is listed as "checks coming soon", nothing claimed covered.
   ok('14 · requirements coverage reads "Not evaluated" — no score, nothing claimed covered',
-    await page.getByText(/^Not evaluated — Ledrix has no verified requirement data/).first().isVisible()
+    await page.getByText(/^Idaho · checks coming soon$/).isVisible()
     && (await page.getByText(/compliant|% covered/i).count()) === 0);
-  ok('14 · import is shown as coming later, not as a working option', await page.getByText('Coming later').isVisible() && (await page.getByRole('radio', { name: /Import/ }).count()) === 0);
-  ok('14 · the starting-point step fits 1280, 1440 and 1920 px wide', await fits());
-  await page.getByRole('button', { name: 'Next: Create draft →' }).click();
   ok('14 · the create-draft step fits 1280, 1440 and 1920 px wide', await fits());
   await page.locator('#tpl-name').fill('E2E 4-Point');
-  await page.getByRole('button', { name: 'Create draft & open Template Builder →' }).click();
+  await page.getByRole('button', { name: 'Create and fine-tune ›' }).click();
   const made = () => db.company_template_drafts.find(d => d.name === 'E2E 4-Point');
-  ok('14 · a private draft is created from the Ledrix 4-Point template (13 systems, the company’s own copy)',
-    await waitFor(() => !!made()) && made().template_id == null && made().base === 'fourpoint' && made().template.systems.length === 13 && made().template.id === 'custom'
-    && db.company_template_drafts.length === draftsBefore + 1);
+  ok(`14 · a private draft is created from the Ledrix 4-Point template (${FOUR_N} systems, the company’s own copy)`,
+    await waitFor(() => !!made()) && made().template_id == null && made().base === 'fourpoint' && made().template.systems.length === FOUR_N && made().template.id === 'custom'
+    && db.company_template_drafts.length === draftsBefore + 1, made() && `${made().base} · ${made().template.systems.length} systems · ${made().template.id}`);
   ok('14 · it opens in the Template Builder, unpublished', await waitFor(async () => page.url().includes('/app/templates/new?draft=') && await page.getByText('New template · not published').isVisible(), 60000));
-  await page.getByRole('region', { name: 'Systems and components' }).getByRole('button', { name: 'ROOFING', exact: true }).click();
+  await toAllSettings();
+  await SYSTEMS().getByRole('button', { name: 'ROOFING', exact: true }).click();
   const roofOn = () => findIn(made().template, 'roofing')?.defaultActive;
   const wasOn = roofOn() === true;
   await page.getByRole('switch', { name: /included in new inspections/ }).click();
