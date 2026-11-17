@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.16.1",
+ "packVersion": "2026.11.17.1",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -390,15 +390,16 @@
   "hvac_older_oil_furnace": {
    "requires": [
     {
-     "specNodeId": "hvac_heating::fuel_source",
-     "includes": [],
-     "unlisted": [],
-     "typeFirst": true
-    },
-    {
      "specNodeId": "house::built",
      "includes": [],
      "before": 1980
+    },
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Oil Furnace"
+     ],
+     "typeFirst": true
     }
    ]
   },
@@ -1577,6 +1578,13 @@
      "specNodeId": "house::built",
      "includes": [],
      "before": 1980
+    },
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [
+      "Tank — Oil",
+      "Oil-Fired"
+     ]
     }
    ]
   },
