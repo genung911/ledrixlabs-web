@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.15.2",
+ "packVersion": "2026.11.16.1",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -1812,6 +1812,16 @@
    ]
   },
   "plumb_wh_operation": {
+   "requires": [
+    {
+     "specNodeId": "plumb_wh_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "plumb_wh_water_lines": {
    "requires": [
     {
      "specNodeId": "plumb_wh_type::type",

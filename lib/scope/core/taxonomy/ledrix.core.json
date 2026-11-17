@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.15.2",
+  "packVersion": "2026.11.16.1",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -5298,6 +5298,46 @@
           ]
         },
         {
+          "id": "plumb_wh_water_lines",
+          "label": "Water Lines & Fittings",
+          "keywords": [
+            "water heater connections",
+            "water heater supply lines",
+            "water heater fittings",
+            "water heater connectors",
+            "dielectric union",
+            "cold water shutoff",
+            "water heater nipples"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "plumb_wh_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ],
+          "attributes": [
+            {
+              "id": "connector",
+              "label": "Water Connectors",
+              "values": [
+                "Hard Pipe — Copper",
+                "Flex — Braided Stainless",
+                "Flex — Corrugated Copper",
+                "PEX",
+                "CPVC",
+                "Galvanized"
+              ],
+              "multi": true,
+              "optional": true
+            }
+          ]
+        },
+        {
           "id": "plumb_wh_expansion",
           "label": "Expansion Tank",
           "keywords": [
@@ -5683,6 +5723,7 @@
             "wh_t_solar",
             "plumb_wh_tpr",
             "plumb_wh_operation",
+            "plumb_wh_water_lines",
             "plumb_wh_expansion",
             "plumb_wh_flue",
             "plumb_wh_pan",

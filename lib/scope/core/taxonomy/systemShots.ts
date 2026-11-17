@@ -91,7 +91,8 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   water_heater: [
     { id: 'wh_wide', label: 'Water heater wide', hint: 'Top to floor, with what surrounds it: pan, expansion tank, straps.', answers: ['plumb_wh_type|type', 'plumb_wh_type|enclosure', 'plumb_wh_type|location'] },
     { id: 'plate', label: 'Data plate', hint: 'The rating label: fuel, gallons, BTU and the date.', plate: 'Water heater', answers: ['plumb_wh_type|capacity', 'plumb_wh_type_age|age_est'], documents: ['plumb_wh_type'] },
-    { id: 'vent_top', label: 'Vent at the top', hint: 'Close on the vent where it leaves the unit — the stamp on the pipe if there is one.', answers: ['plumb_wh_flue|spec', 'plumb_wh_flue|material'] },
+    // 2026-11-16: the top shot shows the water connections too (Water Lines & Fittings).
+    { id: 'vent_top', label: 'Vent and connections at the top', hint: 'Close on the top: the vent where it leaves the unit (the stamp on the pipe if there is one) and the water lines.', answers: ['plumb_wh_flue|spec', 'plumb_wh_flue|material', 'plumb_wh_water_lines|connector'] },
     { id: 'hot_water', label: 'Hot water reading', hint: 'The thermometer\'s display at a faucet, hot side, after it has run.', reading: { system: 'water_heater', point: 'hot_water_temp' }, documents: ['plumb_wh_type'] },
   ],
   electrical: [

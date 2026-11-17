@@ -3361,6 +3361,38 @@
           ]
         },
         {
+          "id": "plumb_wh_water_lines",
+          "label": "Water Lines & Fittings",
+          "kind": "component",
+          "keywords": [
+            "water heater connections",
+            "water heater supply lines",
+            "water heater fittings",
+            "water heater connectors",
+            "dielectric union",
+            "cold water shutoff",
+            "water heater nipples"
+          ],
+          "trimmed": [],
+          "condition": true,
+          "attributes": [
+            {
+              "id": "connector",
+              "label": "Water Connectors",
+              "values": [
+                "Hard Pipe — Copper",
+                "Flex — Braided Stainless",
+                "Flex — Corrugated Copper",
+                "PEX",
+                "CPVC",
+                "Galvanized"
+              ],
+              "multi": true,
+              "optional": true
+            }
+          ]
+        },
+        {
           "id": "plumb_wh_expansion",
           "label": "Expansion Tank",
           "kind": "component",
