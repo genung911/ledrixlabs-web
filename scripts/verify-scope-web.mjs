@@ -144,6 +144,21 @@ ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 
   ok('§7 a Seal & send Age item opens the Age row', JSON.stringify(M.locateItem(v, 'hvac_heating_age')) === '{"systemId":"heating","rowId":"hvac_heating_age"}');
 }
 
+// §8 (2026-11-16, launch list w5: "The website's Scope checklist doesn't read gas / water / garage yet, so gas items show
+// on an all-electric house there"): a `house::` rule reads the job's own columns, as on the phone — EXECUTED on the
+// Ledrix default: no gas service takes Gas Piping and the Gas Shutoffs off; natural gas brings them; unanswered shows them.
+{
+  const base = JSON.parse(read('lib/templates/baselines/ledrixDefault.json'));
+  const tpl = { ...base, systems: base.systems.map(x => ({ ...x, inScope: true })) };
+  const rowsWith = (extras) => (M.buildScope(tpl, M.valueMapOf([]), { findings: () => 0, photos: () => 0 }, {}, { extras, inMain: true })
+    .systems.find(x => x.node.id === 'plumbing')?.tiles.flatMap(t => t.rows).map(r => r.node.id) ?? []);
+  const none = rowsWith({ gasSupply: 'None' }), gas = rowsWith({ gasSupply: 'Natural gas' }), open = rowsWith(null);
+  ok('§8 no gas service: Gas Piping and the Gas Shutoffs are off the website checklist', !none.includes('plumb_gas') && !none.includes('plumb_gas_shutoff') && none.length > 0, none.filter(x => /gas/.test(x)).join(','));
+  ok('§8 natural gas brings them back; unanswered shows them (Rule 2)', gas.includes('plumb_gas') && gas.includes('plumb_gas_shutoff') && open.includes('plumb_gas'));
+  const sp = read('components/workspace/ScopePanel.tsx');
+  ok('§8 the page loads the job\'s house facts and hands them to the checklist', /loadHouseFacts\(inspectionId\)/.test(sp) && /state\.utilities, \{ extras: state\.house, inMain: true \}\)/.test(sp));
+}
+
 let pass = 0, fail = 0;
 if (process.env.SCOPE_MUTANT) { console.log(JSON.stringify(out.filter(r => !r.pass).map(r => r.name))); process.exit(0); }
 for (const r of out) { if (r.pass) { pass++; console.log(`  ✓ ${r.name}`); } else { fail++; console.log(`  ✗ ${r.name}${r.detail ? `\n      ${r.detail}` : ''}`); } }
@@ -166,6 +181,8 @@ const MUTANTS = [
   { f: 'components/workspace/ScopePanel.tsx', why: 'picks saved without the lock', from: 'const lease = await lock.ensure();\n      if (!lease) return;\n', to: '', expect: /^§3 every pick takes/ },
   { f: 'lib/scope/api.ts', why: 'the version seen is not sent', from: ', base_seq: row.baseSeq', to: '', expect: /^§3 every pick names/ },
   { f: 'components/workspace/ScopePanel.tsx', why: 'a spec pick drops room / age', from: '{ ...prev, label: f.label, value: joinSpecPicks(picked) }', to: '{ label: f.label, value: joinSpecPicks(picked) }', expect: /^§3 a spec pick keeps/ },
+  { f: 'lib/scope/model.ts', why: 'a house fact never read', from: '(isHouseKey(key) ? houseSpecValue(house.extras, key, house.inMain) : specValue(values, scoped(key)))', to: '(specValue(values, scoped(key)))', expect: /^§8 / },
+  { f: 'components/workspace/ScopePanel.tsx', why: 'the page never hands the house facts over', from: 'state.utilities, { extras: state.house, inMain: true })', to: 'state.utilities)', expect: /^§8 the page/ },
 ];
 if (!process.env.SCOPE_NO_MUTANTS) for (const m of MUTANTS) {
   const src = read(m.f);

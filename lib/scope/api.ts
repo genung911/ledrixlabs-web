@@ -23,6 +23,15 @@ export async function loadUtilities(inspectionId: string): Promise<Utilities> {
   return { water: d.water_state ?? null, gas: d.gas_state ?? null, power: d.power_state ?? null };
 }
 
+/** The job's house facts for the checklist's rules (2026-11-16, w5) — keyed as the phone's extras (houseFacts.HOUSE_SPEC_KEYS),
+ *  read from the job's own columns. Null when the row cannot be read (the rules then treat every house fact as unanswered). */
+export async function loadHouseFacts(inspectionId: string): Promise<Record<string, unknown> | null> {
+  const { data, error } = await workspace.from('inspections').select('gas_supply, water_source, sewer_type, garage_type, stories, year_built').eq('id', inspectionId).maybeSingle();
+  if (error || !data) return null;
+  const d = data as Record<string, string | null>;
+  return { gasSupply: d.gas_supply, waterSource: d.water_source, sewerType: d.sewer_type, garageType: d.garage_type, stories: d.stories, yearBuilt: d.year_built };
+}
+
 export async function loadValues(inspectionId: string): Promise<ServerValue[]> {
   const out: ServerValue[] = [];
   for (let after = 0; ;) {

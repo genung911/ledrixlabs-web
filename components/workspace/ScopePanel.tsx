@@ -10,7 +10,7 @@ import { Card, Empty, Loading, formatWhen } from './ui';
 import type { EditLock } from './FindingEditor';
 import { gateOfRow, gateRowAction, gateStoreKey } from '@/lib/scope/core/taxonomy/gates';
 import { buildScope, gatesOfTemplate, locateItem, otherBuildingsOf, type OtherBuilding, holderOf, sectionAccess, valueId, valueMapOf, type Utilities, type AreaLimitView, type ScopeRow, type ServerValue, type SpecField, type TeamLike, type ValueMap } from '@/lib/scope/model';
-import { loadTemplate, loadUtilities, loadValues, putValue } from '@/lib/scope/api';
+import { loadHouseFacts, loadTemplate, loadUtilities, loadValues, putValue } from '@/lib/scope/api';
 import { CONDITION_OK, joinSpecPicks, limitationReasonOf, nextConditionValues } from '@/lib/scope/core/taxonomy/scopeRules';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
 
@@ -20,7 +20,7 @@ type Props = { inspectionId: string; team: TeamLike; names: Record<string, strin
   focus?: { nodeId: string; n: number } | null; onBackToSeal?: () => void };
 
 export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos, focus, onBackToSeal }: Props) {
-  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities; others: OtherBuilding[] }>({ kind: 'loading' });
+  const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities; house: Record<string, unknown> | null; others: OtherBuilding[] }>({ kind: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -28,14 +28,15 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
 
   const load = useCallback(async () => {
     try {
-      const [template, rows, utilities] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId), loadUtilities(inspectionId)]);
-      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows), utilities, others: otherBuildingsOf(template as { buildings?: unknown } | null, rows) });
+      const [template, rows, utilities, house] = await Promise.all([loadTemplate(inspectionId), loadValues(inspectionId), loadUtilities(inspectionId), loadHouseFacts(inspectionId)]);
+      setState({ kind: 'ready', template: template as { systems?: TemplateNode[] } | null, values: valueMapOf(rows), utilities, house, others: otherBuildingsOf(template as { buildings?: unknown } | null, rows) });
     } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The checklist could not be loaded.' }); }
   }, [inspectionId]);
   useEffect(() => { void load(); }, [load]);
 
   const view = useMemo(() => state.kind === 'ready'
-    ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 }, state.utilities)
+    // The main building's checklist (other buildings are listed apart): the house facts decide its items, as on the phone.
+    ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 }, state.utilities, { extras: state.house, inMain: true })
     : null, [state, counts]);
 
   // A Seal & send item: open its system once the checklist is loaded, then bring its row into view and mark it.

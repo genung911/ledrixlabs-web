@@ -18,6 +18,7 @@ import { leafVerdict } from './core/taxonomy/leafProgress';
 import { effectiveGates, evaluateGates, gateStoreKey, type Gate } from './core/taxonomy/gates';
 import ledrixPack from './core/taxonomy/ledrix.core.json';
 import { resolveApplicability, type ApplicabilityNode } from './core/taxonomy/applicability';
+import { houseSpecValue, isHouseKey } from './core/taxonomy/houseFacts';
 import type { TemplateNode } from './core/templates/InspectionTemplate';
 
 export type ValueKind = 'condition' | 'spec';
@@ -82,8 +83,16 @@ export function areaLimitsOf(values: ValueMap): Record<string, { cause: string; 
 const kindOf = (n: TemplateNode): 'system' | 'room' | 'structure' =>
   n.sectionType === 'room' || n.sectionType === 'structure' ? n.sectionType : String(n.id).startsWith('croom_') ? 'room' : 'system';
 
+/** The job's house facts, as the phone reads them (`house::gas` … from the job's own columns; `house::built` the year
+ *  built), and whether this page is the main building — a house fact never decides another building's items. */
+export type HouseFacts = { extras: Readonly<Record<string, unknown>> | null; inMain: boolean };
 export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown; gateDefinitions?: unknown } | null, values: ValueMap,
-  counts: { findings: (nodeId: string) => number; photos: (nodeId: string) => number }, utilities: Utilities = {}): { systems: ScopeSystem[]; sectionOf: SectionOf } {
+  counts: { findings: (nodeId: string) => number; photos: (nodeId: string) => number }, utilities: Utilities = {},
+  house: HouseFacts = { extras: null, inMain: true }): { systems: ScopeSystem[]; sectionOf: SectionOf } {
+  // THE HOUSE FACTS AS RULE INPUTS (2026-11-16, launch list w5: "gas items show on an all-electric house there"): a
+  // `house::` key reads the job's columns (houseSpecValue, the phone's own helper); every other key the saved specs.
+  const ruleValue = (key: string, scoped: (k: string) => string = k => k): string | undefined =>
+    (isHouseKey(key) ? houseSpecValue(house.extras, key, house.inMain) : specValue(values, scoped(key)));
   const systems = template?.systems ?? [];
   const sectionOf = sectionsOfTemplate(systems);
   // Covered by a whole-area limitation or a GATE: falls off (owner 2026-11-03), as on the phone (scopeRules.areaCoveredNodes).
@@ -91,7 +100,7 @@ export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown
   const gates = gatesOfTemplate(template);
   const rowValues = (nodeId: string): string[] => [...conditionValues(values, nodeId),
     ...[...values.values()].filter(r => r.kind === 'spec' && r.node_key.split('::')[0] === nodeId).map(r => String((r.value as { value?: unknown } | null)?.value ?? '')).filter(Boolean)];
-  const gateCtx = { gates, utility: (u: 'water' | 'gas' | 'power') => utilities[u] ?? undefined, specValue: (k: string) => specValue(values, k), rowValues };
+  const gateCtx = { gates, utility: (u: 'water' | 'gas' | 'power') => utilities[u] ?? undefined, specValue: (k: string) => ruleValue(k), rowValues };
   const covered = areaCoveredNodes(systems, areaLimits, gateCtx);
   const gateEval = evaluateGates(gates, systems, { ...gateCtx, stored: areaLimits });
   // TYPE RULES (owner 2026-11-03, round 1 of the dynamic checklist): an item that applies only to some types — a window
@@ -107,7 +116,7 @@ export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown
     const own = n as unknown as ApplicabilityNode;
     const node: ApplicabilityNode = { id, requires: own.requires ?? pk?.requires, dependsOnSpec: own.dependsOnSpec ?? pk?.dependsOnSpec };
     const scoped = (key: string) => { if (ord <= 1) return key; const [b, a] = key.split('::'); const sk = `${b.split('~i')[0]}~i${ord}`; return a ? `${sk}::${a}` : sk; };
-    const r = resolveApplicability(node, { specValue: k => specValue(values, scoped(k)), hasRecordedAssessment: x => conditionValues(values, x).length > 0 });
+    const r = resolveApplicability(node, { specValue: k => ruleValue(k, scoped), hasRecordedAssessment: x => conditionValues(values, x).length > 0 });
     return r.state !== 'not_applicable';
   };
   const isActive = (byId: Map<string, TemplateNode>) => (id: string) => { const n = byId.get(id); return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n); };
