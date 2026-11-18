@@ -25,6 +25,8 @@ export const GROUP_ICONS: Readonly<Record<string, string>> = {
   // Attic
   'access structure': 'ladder', 'insulation': 'layers-outline', 'ventilation': 'fan', 'conditions': 'water-percent',
   // Interior
+  // 2026-11-17 (owner, Interior split): the five surface tiles. Ceilings borrows layers-outline until it has its own drawing.
+  'walls': 'wall', 'ceilings': 'layers-outline', 'floors': 'floor-plan', 'doors': 'door', 'windows': 'window-closed-variant',
   'walls ceilings floors': 'wall', 'countertops cabinets': 'cupboard', 'counters cabinets': 'cupboard', 'doors windows': 'door',
   'stairs railings': 'stairs',
   // Fireplace

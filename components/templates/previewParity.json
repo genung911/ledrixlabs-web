@@ -3,7 +3,7 @@
  "files": {
   "src/components/inspect/CoverageGrid.tsx": "a94829520a95314a9be2369b2839d97e698077007b7bcf6c8e36af85082c2636",
   "src/components/inspect/InspectTabBar.tsx": "ffbd8c752bf20ca53ea7afd4935d576a5509b12fdceee1950733dff8146db1e6",
-  "src/components/systems/ScopeWorkspace.tsx": "bd856bdd74bb163758c9303742620d67668f83858078e6f209cd3a7954e0d16b",
+  "src/components/systems/ScopeWorkspace.tsx": "c59811e88b2abf1e208e09490d71bacc534e6f0ee4a7f46ab647c4f293605317",
   "src/components/systems/GuidedStep.tsx": "ce8e5e2bc0e2f06efc64b9a545c6094bb4ac300ec678de0a470f0b6494d7e166",
   "src/components/systems/ScopeRowList.tsx": "0bc9b434869a9dc0c918a7216513bb76ea7508144e170d32da40618d7668e7bf",
   "src/core/taxonomy/guidedRows.ts": "67e2f3ed9c5243325010b2f74756e58f56eb912f06cd65492f87ed044a0714dc"
