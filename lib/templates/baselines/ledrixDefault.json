@@ -7021,9 +7021,288 @@
       "defaultActive": true,
       "children": [
         {
-          "id": "interior__walls_ceilings_floors",
-          "label": "Walls, Ceilings & Floors",
+          "id": "interior__walls",
+          "label": "Walls",
           "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "int_walls",
+              "label": "Walls",
+              "kind": "component",
+              "keywords": [
+                "cracked wall",
+                "wall damage",
+                "wall",
+                "drywall",
+                "garage wall",
+                "water stain garage",
+                "drywall damage garage",
+                "plaster",
+                "paneling",
+                "wallboard",
+                "shiplap",
+                "shower surround",
+                "tub surround",
+                "tile wall bath",
+                "grout wall",
+                "moisture wall bath"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Wall Material",
+                  "values": [
+                    "Drywall",
+                    "Plaster",
+                    "Paneling",
+                    "Wood",
+                    "Tile",
+                    "Other"
+                  ]
+                }
+              ],
+              "trimmed": [],
+              "condition": false
+            },
+            {
+              "id": "wall_drywall",
+              "label": "Drywall",
+              "kind": "component",
+              "keywords": [
+                "drywall",
+                "sheetrock",
+                "nail pops",
+                "drywall crack",
+                "tape joint"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "wall_plaster",
+              "label": "Plaster",
+              "kind": "component",
+              "keywords": [
+                "plaster wall",
+                "plaster ceiling",
+                "plaster crack",
+                "lath"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "wall_paneling",
+              "label": "Paneling",
+              "kind": "component",
+              "keywords": [
+                "paneling",
+                "wood paneling",
+                "wall panels"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "wall_wood",
+              "label": "Wood Walls",
+              "kind": "component",
+              "keywords": [
+                "wood walls",
+                "shiplap",
+                "tongue and groove",
+                "wood ceiling"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "wall_tile",
+              "label": "Tile Walls",
+              "kind": "component",
+              "keywords": [
+                "wall tile",
+                "tile surround",
+                "shower surround",
+                "tub surround"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "wall_other",
+              "label": "Other Walls",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "int_era_lead_paint",
+              "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
+              "kind": "component",
+              "keywords": [
+                "lead paint",
+                "peeling paint",
+                "chipping paint",
+                "alligatored paint"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "interior__ceilings",
+          "label": "Ceilings",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "int_ceilings",
+              "label": "Ceilings",
+              "kind": "component",
+              "keywords": [
+                "ceiling",
+                "ceiling stain",
+                "ceiling damage",
+                "garage ceiling",
+                "laundry ceiling",
+                "ceiling crack",
+                "sagging ceiling",
+                "water stain ceiling"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Ceiling Material",
+                  "values": [
+                    "Drywall",
+                    "Plaster",
+                    "Acoustic / Popcorn",
+                    "Wood / Plank",
+                    "Suspended / Drop",
+                    "Other"
+                  ]
+                }
+              ],
+              "trimmed": [],
+              "condition": false
+            },
+            {
+              "id": "ceil_drywall",
+              "label": "Drywall Ceilings",
+              "kind": "component",
+              "keywords": [
+                "drywall ceiling",
+                "ceiling crack",
+                "ceiling nail pops",
+                "ceiling tape joint"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ceil_plaster",
+              "label": "Plaster Ceilings",
+              "kind": "component",
+              "keywords": [
+                "plaster ceiling",
+                "plaster ceiling crack",
+                "sagging plaster ceiling"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ceil_acoustic",
+              "label": "Acoustic / Popcorn",
+              "kind": "component",
+              "keywords": [
+                "popcorn ceiling",
+                "acoustic ceiling",
+                "cottage cheese ceiling",
+                "textured ceiling"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ceil_wood",
+              "label": "Wood Ceilings",
+              "kind": "component",
+              "keywords": [
+                "wood ceiling",
+                "plank ceiling",
+                "tongue and groove ceiling",
+                "beadboard ceiling"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ceil_suspended",
+              "label": "Suspended Ceilings",
+              "kind": "component",
+              "keywords": [
+                "drop ceiling",
+                "suspended ceiling",
+                "ceiling tiles",
+                "ceiling grid"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            },
+            {
+              "id": "ceil_other",
+              "label": "Other Ceilings",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Inspected"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "interior__floors",
+          "label": "Floors",
+          "kind": "subsystem",
+          "trimmed": [],
           "children": [
             {
               "id": "int_flooring",
@@ -7226,140 +7505,6 @@
               ]
             },
             {
-              "id": "int_walls",
-              "label": "Walls / Ceilings",
-              "kind": "component",
-              "keywords": [
-                "ceiling stain",
-                "cracked wall",
-                "wall damage",
-                "ceiling damage",
-                "wall",
-                "ceiling",
-                "drywall",
-                "garage wall",
-                "garage ceiling",
-                "water stain garage",
-                "drywall damage garage",
-                "plaster",
-                "paneling",
-                "wallboard",
-                "shiplap",
-                "shower surround",
-                "tub surround",
-                "tile wall bath",
-                "grout wall",
-                "moisture wall bath"
-              ],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Wall Material",
-                  "values": [
-                    "Drywall",
-                    "Plaster",
-                    "Paneling",
-                    "Wood",
-                    "Tile",
-                    "Other"
-                  ]
-                }
-              ],
-              "trimmed": [],
-              "condition": false
-            },
-            {
-              "id": "wall_drywall",
-              "label": "Drywall",
-              "kind": "component",
-              "keywords": [
-                "drywall",
-                "sheetrock",
-                "nail pops",
-                "drywall crack",
-                "tape joint"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
-              "id": "wall_plaster",
-              "label": "Plaster",
-              "kind": "component",
-              "keywords": [
-                "plaster wall",
-                "plaster ceiling",
-                "plaster crack",
-                "lath"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
-              "id": "wall_paneling",
-              "label": "Paneling",
-              "kind": "component",
-              "keywords": [
-                "paneling",
-                "wood paneling",
-                "wall panels"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
-              "id": "wall_wood",
-              "label": "Wood Walls",
-              "kind": "component",
-              "keywords": [
-                "wood walls",
-                "shiplap",
-                "tongue and groove",
-                "wood ceiling"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
-              "id": "wall_tile",
-              "label": "Tile Walls",
-              "kind": "component",
-              "keywords": [
-                "wall tile",
-                "tile surround",
-                "shower surround",
-                "tub surround"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
-              "id": "wall_other",
-              "label": "Other Walls",
-              "kind": "component",
-              "keywords": [],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Inspected"
-              ]
-            },
-            {
               "id": "int_era_asbestos_tile",
               "label": "Suspected Asbestos Floor Tile (9×9)",
               "kind": "component",
@@ -7369,442 +7514,15 @@
                 "vinyl asbestos tile",
                 "black mastic"
               ]
-            },
-            {
-              "id": "int_era_lead_paint",
-              "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
-              "kind": "component",
-              "keywords": [
-                "lead paint",
-                "peeling paint",
-                "chipping paint",
-                "alligatored paint"
-              ]
-            }
-          ],
-          "trimmed": []
-        },
-        {
-          "id": "interior__countertops_cabinets",
-          "label": "Countertops & Cabinets",
-          "kind": "subsystem",
-          "children": [
-            {
-              "id": "kit_counter",
-              "label": "Countertops",
-              "kind": "component",
-              "keywords": [
-                "granite",
-                "quartz",
-                "laminate counter",
-                "butcher block",
-                "marble counter",
-                "tile counter",
-                "solid surface",
-                "countertop",
-                "counter",
-                "counters"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Countertop Material",
-                  "values": [
-                    "Granite",
-                    "Quartz",
-                    "Laminate",
-                    "Butcher Block",
-                    "Marble",
-                    "Tile",
-                    "Solid Surface",
-                    "Concrete",
-                    "Other"
-                  ]
-                }
-              ],
-              "condition": false
-            },
-            {
-              "id": "ctr_granite",
-              "label": "Granite",
-              "kind": "component",
-              "keywords": [
-                "granite countertop",
-                "granite counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_quartz",
-              "label": "Quartz",
-              "kind": "component",
-              "keywords": [
-                "quartz countertop",
-                "quartz counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_laminate",
-              "label": "Laminate Countertops",
-              "kind": "component",
-              "keywords": [
-                "laminate countertop",
-                "formica",
-                "laminate counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_butcher",
-              "label": "Butcher Block",
-              "kind": "component",
-              "keywords": [
-                "butcher block",
-                "wood countertop"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_marble",
-              "label": "Marble",
-              "kind": "component",
-              "keywords": [
-                "marble countertop",
-                "marble counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_tile",
-              "label": "Tile Countertops",
-              "kind": "component",
-              "keywords": [
-                "tile countertop",
-                "tile counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_solid",
-              "label": "Solid Surface",
-              "kind": "component",
-              "keywords": [
-                "solid surface",
-                "corian"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_concrete",
-              "label": "Concrete Countertops",
-              "kind": "component",
-              "keywords": [
-                "concrete countertop",
-                "concrete counter"
-              ],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "ctr_other",
-              "label": "Other Countertops",
-              "kind": "component",
-              "keywords": [],
-              "trimmed": [],
-              "condition": true
-            },
-            {
-              "id": "kit_backsplash",
-              "label": "Backsplash",
-              "kind": "component",
-              "keywords": [
-                "backsplash",
-                "tile backsplash",
-                "splash guard",
-                "caulk backsplash"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Backsplash",
-                  "values": [
-                    "Tile",
-                    "Stone",
-                    "Laminate",
-                    "None"
-                  ],
-                  "optional": true
-                }
-              ]
-            },
-            {
-              "id": "kit_cabinets",
-              "label": "Cabinets",
-              "kind": "component",
-              "keywords": [
-                "cabinet",
-                "cabinetry",
-                "cabinet door",
-                "drawer",
-                "loose cabinet",
-                "water damage cabinet",
-                "cabinets",
-                "cupboard"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Cabinets",
-                  "values": [
-                    "Wood",
-                    "Painted",
-                    "Laminate / Thermofoil"
-                  ],
-                  "optional": true
-                }
-              ]
             }
           ]
         },
         {
-          "id": "interior__doors_windows",
-          "label": "Doors & Windows",
+          "id": "interior__doors",
+          "label": "Doors",
           "kind": "subsystem",
+          "trimmed": [],
           "children": [
-            {
-              "id": "ext_windows",
-              "label": "Window Type",
-              "kind": "component",
-              "keywords": [
-                "single pane",
-                "double pane",
-                "triple pane",
-                "aluminum window",
-                "vinyl window",
-                "wood window"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Frame Material",
-                  "values": [
-                    "Vinyl",
-                    "Wood",
-                    "Aluminum",
-                    "Fiberglass",
-                    "Clad Wood",
-                    "Storm Windows"
-                  ]
-                }
-              ],
-              "condition": false,
-              "walkZone": "exterior",
-              "walkZones": [
-                "exterior"
-              ]
-            },
-            {
-              "id": "win_vinyl",
-              "label": "Vinyl Windows",
-              "kind": "component",
-              "keywords": [
-                "vinyl window",
-                "vinyl windows",
-                "vinyl frame",
-                "vinyl sash"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_wood",
-              "label": "Wood Windows",
-              "kind": "component",
-              "keywords": [
-                "wood window",
-                "wood windows",
-                "wood sash",
-                "window rot",
-                "rotted sill"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_aluminum",
-              "label": "Aluminum Windows",
-              "kind": "component",
-              "keywords": [
-                "aluminum window",
-                "aluminum windows",
-                "aluminum frame"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_fiberglass",
-              "label": "Fiberglass Windows",
-              "kind": "component",
-              "keywords": [
-                "fiberglass window",
-                "fiberglass windows"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_clad",
-              "label": "Clad Wood Windows",
-              "kind": "component",
-              "keywords": [
-                "clad window",
-                "clad wood window",
-                "aluminum clad",
-                "vinyl clad"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_storm",
-              "label": "Storm Windows",
-              "kind": "component",
-              "keywords": [
-                "storm window",
-                "storm windows"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_other",
-              "label": "Other Windows",
-              "kind": "component",
-              "keywords": [],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Accessible"
-              ]
-            },
-            {
-              "id": "win_glazing",
-              "label": "Window Glazing",
-              "kind": "component",
-              "keywords": [
-                "single pane",
-                "double pane",
-                "triple pane",
-                "dual pane",
-                "insulated glass",
-                "glazing"
-              ],
-              "trimmed": [],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Glazing",
-                  "values": [
-                    "Single-Pane",
-                    "Double-Pane",
-                    "Triple-Pane"
-                  ]
-                }
-              ],
-              "condition": false
-            },
-            {
-              "id": "int_windows",
-              "label": "Window Operation",
-              "kind": "component",
-              "keywords": [
-                "window operation",
-                "window stuck",
-                "sash",
-                "failed seal",
-                "fogged window",
-                "broken window"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Sampled"
-              ],
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ],
-              "attributes": [
-                {
-                  "id": "spec",
-                  "label": "Window Operation",
-                  "values": [
-                    "Single-hung",
-                    "Double-hung",
-                    "Slider",
-                    "Casement",
-                    "Fixed"
-                  ],
-                  "optional": true
-                }
-              ]
-            },
-            {
-              "id": "int_egress",
-              "label": "Egress",
-              "kind": "component",
-              "keywords": [
-                "egress",
-                "egress window",
-                "bedroom egress",
-                "emergency escape",
-                "window well",
-                "sleeping room"
-              ],
-              "trimmed": [],
-              "condition": true,
-              "limitations": [
-                "Not Verified"
-              ],
-              "walkZone": "interior",
-              "walkZones": [
-                "interior"
-              ],
-              "description": "What to look for\n• Every bedroom, and a basement with a sleeping area, has an escape window or door to the outside.\n• It opens fully from inside by hand: no key, tool or special knowledge. Bars or grates have an inside quick release.\n• The opening is big enough to climb through and the sill is low enough to reach (IRC R310, where adopted: 5.7 sq ft clear, 5.0 at grade floor; 24\" high; 20\" wide; sill 44\" max).\n• A below-grade window well is big enough to stand in (9 sq ft, 36\" out) and has a ladder or steps when deeper than 44\".\n• Nothing blocks the way out: furniture, an AC unit, a deck, a well cover.\n\nCommon finds\n• Window painted, nailed or screwed shut.\n• Basement bedroom added with no egress window, or one too small or too high.\n• Replacement window that shrank the opening.\n• Window well too small, full of debris or water, or deep with no ladder.\n• Security bars with no inside release.\n• Older home built before current egress rules: report what is there, not code compliance."
-            },
             {
               "id": "ext_doors",
               "label": "Door Material",
@@ -8131,8 +7849,431 @@
                 "exterior"
               ]
             }
-          ],
-          "trimmed": []
+          ]
+        },
+        {
+          "id": "interior__windows",
+          "label": "Windows",
+          "kind": "subsystem",
+          "trimmed": [],
+          "children": [
+            {
+              "id": "ext_windows",
+              "label": "Window Type",
+              "kind": "component",
+              "keywords": [
+                "single pane",
+                "double pane",
+                "triple pane",
+                "aluminum window",
+                "vinyl window",
+                "wood window"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Frame Material",
+                  "values": [
+                    "Vinyl",
+                    "Wood",
+                    "Aluminum",
+                    "Fiberglass",
+                    "Clad Wood",
+                    "Storm Windows"
+                  ]
+                }
+              ],
+              "condition": false,
+              "walkZone": "exterior",
+              "walkZones": [
+                "exterior"
+              ]
+            },
+            {
+              "id": "win_vinyl",
+              "label": "Vinyl Windows",
+              "kind": "component",
+              "keywords": [
+                "vinyl window",
+                "vinyl windows",
+                "vinyl frame",
+                "vinyl sash"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_wood",
+              "label": "Wood Windows",
+              "kind": "component",
+              "keywords": [
+                "wood window",
+                "wood windows",
+                "wood sash",
+                "window rot",
+                "rotted sill"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_aluminum",
+              "label": "Aluminum Windows",
+              "kind": "component",
+              "keywords": [
+                "aluminum window",
+                "aluminum windows",
+                "aluminum frame"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_fiberglass",
+              "label": "Fiberglass Windows",
+              "kind": "component",
+              "keywords": [
+                "fiberglass window",
+                "fiberglass windows"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_clad",
+              "label": "Clad Wood Windows",
+              "kind": "component",
+              "keywords": [
+                "clad window",
+                "clad wood window",
+                "aluminum clad",
+                "vinyl clad"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_storm",
+              "label": "Storm Windows",
+              "kind": "component",
+              "keywords": [
+                "storm window",
+                "storm windows"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_other",
+              "label": "Other Windows",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Accessible"
+              ]
+            },
+            {
+              "id": "win_glazing",
+              "label": "Window Glazing",
+              "kind": "component",
+              "keywords": [
+                "single pane",
+                "double pane",
+                "triple pane",
+                "dual pane",
+                "insulated glass",
+                "glazing"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Glazing",
+                  "values": [
+                    "Single-Pane",
+                    "Double-Pane",
+                    "Triple-Pane"
+                  ]
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "int_windows",
+              "label": "Window Operation",
+              "kind": "component",
+              "keywords": [
+                "window operation",
+                "window stuck",
+                "sash",
+                "failed seal",
+                "fogged window",
+                "broken window"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Sampled"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Window Operation",
+                  "values": [
+                    "Single-hung",
+                    "Double-hung",
+                    "Slider",
+                    "Casement",
+                    "Fixed"
+                  ],
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "id": "int_egress",
+              "label": "Egress",
+              "kind": "component",
+              "keywords": [
+                "egress",
+                "egress window",
+                "bedroom egress",
+                "emergency escape",
+                "window well",
+                "sleeping room"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "limitations": [
+                "Not Verified"
+              ],
+              "walkZone": "interior",
+              "walkZones": [
+                "interior"
+              ],
+              "description": "What to look for\n• Every bedroom, and a basement with a sleeping area, has an escape window or door to the outside.\n• It opens fully from inside by hand: no key, tool or special knowledge. Bars or grates have an inside quick release.\n• The opening is big enough to climb through and the sill is low enough to reach (IRC R310, where adopted: 5.7 sq ft clear, 5.0 at grade floor; 24\" high; 20\" wide; sill 44\" max).\n• A below-grade window well is big enough to stand in (9 sq ft, 36\" out) and has a ladder or steps when deeper than 44\".\n• Nothing blocks the way out: furniture, an AC unit, a deck, a well cover.\n\nCommon finds\n• Window painted, nailed or screwed shut.\n• Basement bedroom added with no egress window, or one too small or too high.\n• Replacement window that shrank the opening.\n• Window well too small, full of debris or water, or deep with no ladder.\n• Security bars with no inside release.\n• Older home built before current egress rules: report what is there, not code compliance."
+            }
+          ]
+        },
+        {
+          "id": "interior__countertops_cabinets",
+          "label": "Countertops & Cabinets",
+          "kind": "subsystem",
+          "children": [
+            {
+              "id": "kit_counter",
+              "label": "Countertops",
+              "kind": "component",
+              "keywords": [
+                "granite",
+                "quartz",
+                "laminate counter",
+                "butcher block",
+                "marble counter",
+                "tile counter",
+                "solid surface",
+                "countertop",
+                "counter",
+                "counters"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Countertop Material",
+                  "values": [
+                    "Granite",
+                    "Quartz",
+                    "Laminate",
+                    "Butcher Block",
+                    "Marble",
+                    "Tile",
+                    "Solid Surface",
+                    "Concrete",
+                    "Other"
+                  ]
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "ctr_granite",
+              "label": "Granite",
+              "kind": "component",
+              "keywords": [
+                "granite countertop",
+                "granite counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_quartz",
+              "label": "Quartz",
+              "kind": "component",
+              "keywords": [
+                "quartz countertop",
+                "quartz counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_laminate",
+              "label": "Laminate Countertops",
+              "kind": "component",
+              "keywords": [
+                "laminate countertop",
+                "formica",
+                "laminate counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_butcher",
+              "label": "Butcher Block",
+              "kind": "component",
+              "keywords": [
+                "butcher block",
+                "wood countertop"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_marble",
+              "label": "Marble",
+              "kind": "component",
+              "keywords": [
+                "marble countertop",
+                "marble counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_tile",
+              "label": "Tile Countertops",
+              "kind": "component",
+              "keywords": [
+                "tile countertop",
+                "tile counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_solid",
+              "label": "Solid Surface",
+              "kind": "component",
+              "keywords": [
+                "solid surface",
+                "corian"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_concrete",
+              "label": "Concrete Countertops",
+              "kind": "component",
+              "keywords": [
+                "concrete countertop",
+                "concrete counter"
+              ],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "ctr_other",
+              "label": "Other Countertops",
+              "kind": "component",
+              "keywords": [],
+              "trimmed": [],
+              "condition": true
+            },
+            {
+              "id": "kit_backsplash",
+              "label": "Backsplash",
+              "kind": "component",
+              "keywords": [
+                "backsplash",
+                "tile backsplash",
+                "splash guard",
+                "caulk backsplash"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Backsplash",
+                  "values": [
+                    "Tile",
+                    "Stone",
+                    "Laminate",
+                    "None"
+                  ],
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "id": "kit_cabinets",
+              "label": "Cabinets",
+              "kind": "component",
+              "keywords": [
+                "cabinet",
+                "cabinetry",
+                "cabinet door",
+                "drawer",
+                "loose cabinet",
+                "water damage cabinet",
+                "cabinets",
+                "cupboard"
+              ],
+              "trimmed": [],
+              "condition": true,
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Cabinets",
+                  "values": [
+                    "Wood",
+                    "Painted",
+                    "Laminate / Thermofoil"
+                  ],
+                  "optional": true
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "interior__stairs_railings",
@@ -9349,11 +9490,20 @@
             },
             {
               "id": "space_garage__link_int_walls",
-              "label": "Walls / Ceilings",
+              "label": "Walls",
               "kind": "component",
               "pointsTo": {
                 "systemId": "interior",
                 "nodeId": "int_walls"
+              }
+            },
+            {
+              "id": "space_garage__link_int_ceilings",
+              "label": "Ceilings",
+              "kind": "component",
+              "pointsTo": {
+                "systemId": "interior",
+                "nodeId": "int_ceilings"
               }
             }
           ]

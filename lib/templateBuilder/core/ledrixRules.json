@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.17.2",
+ "packVersion": "2026.11.17.3",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -2949,6 +2949,176 @@
     }
    ]
   },
+  "wall_drywall": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Drywall"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_plaster": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Plaster"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_paneling": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Paneling"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_wood": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Wood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_tile": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Tile"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_other": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Drywall",
+      "Plaster",
+      "Paneling",
+      "Wood",
+      "Tile"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
+  "int_era_lead_paint": {
+   "requires": [
+    {
+     "specNodeId": "house::built",
+     "includes": [],
+     "before": 1978
+    }
+   ]
+  },
+  "ceil_drywall": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Drywall"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_plaster": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Plaster"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_acoustic": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Acoustic / Popcorn"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_wood": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Wood / Plank"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_suspended": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Suspended / Drop"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_other": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Other"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
   "flr_hardwood": {
    "requires": [
     {
@@ -3092,316 +3262,12 @@
     }
    ]
   },
-  "wall_drywall": {
+  "int_era_asbestos_tile": {
    "requires": [
     {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Drywall"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_plaster": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Plaster"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_paneling": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Paneling"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_wood": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Wood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_tile": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Tile"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_other": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
+     "specNodeId": "house::built",
      "includes": [],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "unlisted": [
-      "Drywall",
-      "Plaster",
-      "Paneling",
-      "Wood",
-      "Tile"
-     ],
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_granite": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Granite"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_quartz": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Quartz"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_laminate": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Laminate"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_butcher": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Butcher Block"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_marble": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Marble"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_tile": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Tile"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_solid": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Solid Surface"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_concrete": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [
-      "Concrete"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ctr_other": {
-   "requires": [
-    {
-     "specNodeId": "kit_counter",
-     "includes": [],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "unlisted": [
-      "Granite",
-      "Quartz",
-      "Laminate",
-      "Butcher Block",
-      "Marble",
-      "Tile",
-      "Solid Surface",
-      "Concrete"
-     ],
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_vinyl": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Vinyl",
-      "Double-Pane Vinyl"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_wood": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Wood",
-      "Double-Pane Wood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_aluminum": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Aluminum",
-      "Double-Pane Aluminum"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_fiberglass": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Fiberglass"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_clad": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Clad Wood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_storm": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [
-      "Storm Windows",
-      "Storm"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "win_other": {
-   "requires": [
-    {
-     "specNodeId": "ext_windows",
-     "includes": [],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "unlisted": [
-      "Vinyl",
-      "Wood",
-      "Aluminum",
-      "Fiberglass",
-      "Clad Wood",
-      "Storm Windows",
-      "Double-Pane Vinyl",
-      "Double-Pane Wood",
-      "Double-Pane Aluminum",
-      "Storm"
-     ],
-     "attr": "spec"
+     "before": 1980
     }
    ]
   },
@@ -3547,6 +3413,236 @@
     }
    ]
   },
+  "win_vinyl": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Vinyl",
+      "Double-Pane Vinyl"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_wood": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Wood",
+      "Double-Pane Wood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_aluminum": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Aluminum",
+      "Double-Pane Aluminum"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_fiberglass": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Fiberglass"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_clad": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Clad Wood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_storm": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [
+      "Storm Windows",
+      "Storm"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "win_other": {
+   "requires": [
+    {
+     "specNodeId": "ext_windows",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Vinyl",
+      "Wood",
+      "Aluminum",
+      "Fiberglass",
+      "Clad Wood",
+      "Storm Windows",
+      "Double-Pane Vinyl",
+      "Double-Pane Wood",
+      "Double-Pane Aluminum",
+      "Storm"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_granite": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Granite"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_quartz": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Quartz"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_laminate": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Laminate"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_butcher": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Butcher Block"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_marble": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Marble"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_tile": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Tile"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_solid": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Solid Surface"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_concrete": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [
+      "Concrete"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ctr_other": {
+   "requires": [
+    {
+     "specNodeId": "kit_counter",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Granite",
+      "Quartz",
+      "Laminate",
+      "Butcher Block",
+      "Marble",
+      "Tile",
+      "Solid Surface",
+      "Concrete"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
   "int_stairs": {
    "requires": [
     {
@@ -3617,24 +3713,6 @@
        ]
       }
      ]
-    }
-   ]
-  },
-  "int_era_asbestos_tile": {
-   "requires": [
-    {
-     "specNodeId": "house::built",
-     "includes": [],
-     "before": 1980
-    }
-   ]
-  },
-  "int_era_lead_paint": {
-   "requires": [
-    {
-     "specNodeId": "house::built",
-     "includes": [],
-     "before": 1978
     }
    ]
   },

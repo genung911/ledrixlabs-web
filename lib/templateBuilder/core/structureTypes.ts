@@ -51,7 +51,8 @@ const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foun
 // Windows, doors and garage doors live in Interior › Doors & Windows (owner 2026-11-07), so a detached garage or shop
 // includes Interior with everything off but what Exterior › Openings held before — its building keeps its garage door.
 const UTILITY = ['roofing', 'exterior', 'interior', 'electrical', 'foundation'];
-const UTILITY_OFF = ['interior__walls_ceilings_floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
+// 2026-11-17 (owner, mockup N2y2xhG5oqKYMF9vsd8oko): Walls, Ceilings & Floors is three tiles — all off in a utility building.
+const UTILITY_OFF = ['interior__walls', 'interior__ceilings', 'interior__floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
   'int_windows', 'int_egress', 'int_doors', 'int_trim'];
 // 2026-11-14 (owner, test run x1: "Change detached shop to just shop … Do we need a better list?" → "yes go with that
 // list"): Shop (was Detached Shop); Guest House is a living space without its own Kitchen and Laundry; Well House brings
