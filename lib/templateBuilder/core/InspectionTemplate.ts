@@ -78,6 +78,8 @@ export type TemplateNode = {
   space?: true;
   /** The room a space files captures under (app TemplateNode.room). */
   room?: string;
+  /** On a room: the items its "+ Item" offers first (app 2026-11-17, mockup Unrt8THVU1FKXw2D9AE6wJ). */
+  commonAdds?: string[];
   /** Company requirements on this item (app Phase A, 2026-10-25, requirementsContract.ts). Not read at runtime yet. */
   requirements?: import('./requirementsContract').RequirementDef[];
   /** Equipment component catalog entry this item or group was picked from (app equipmentCatalog.ts). Provenance only. */
