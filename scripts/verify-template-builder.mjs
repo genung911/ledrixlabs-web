@@ -836,23 +836,27 @@ async function runTypes(files) {
         // …the house-fact ones: Well Equipment and the Pressure Tank (house::water), and the three era items (house::built, x2)
         && sup.every.filter(n => (fdefs.nodes[n.id]?.requires ?? []).some(p => String(p.specNodeId).startsWith('house::'))).map(n => n.id).join('|') === 'plumb_well|plumb_pressure_tank|plumb_era_asbestos_pipe_wrap|plumb_era_lead_pipe|plumb_era_polybutylene|plumbing_older_galvanized_supply'
         && drn?.questions.length === 1 && drn.questions[0].cards.length === 8);
-      const I = mat('interior'), surf = grp(I, 'Walls, Ceilings & Floors');
+      // AMENDED 2026-11-17 (app, owner mockup N2y2xhG5oqKYMF9vsd8oko): Walls, Ceilings & Floors is three tiles — Walls,
+      // Ceilings (a new item, Ceiling Material) and Floors — each its own materials question.
+      const I = mat('interior'), wal = grp(I, 'Walls'), cei = grp(I, 'Ceilings'), flo = grp(I, 'Floors');
+      const qsig = g => (g?.questions ?? []).map(x => `${x.node.label}:${x.rows.length}:${x.rows[x.rows.length - 1].value}>${x.rows[x.rows.length - 1].card?.label}`).join('|');
       const A = mat('attic'), ins = grp(A, 'Insulation');
       r('materials: Interior floors, walls and countertops are materials questions, one card per answer (2026-11-07); a group with none lists its items that record a choice first (Attic insulation)',
-        !!surf && surf.questions.map(x => `${x.node.label}:${x.rows.length}:${x.rows[x.rows.length - 1].value}>${x.rows[x.rows.length - 1].card?.label}`).join('|') === 'Floors:10:Other>Other Flooring|Walls / Ceilings:6:Other>Other Walls'
-        && surf.questions.every(x => x.rows.every(r => r.card)) && surf.materials.length === 0
-        && !surf.every.some(n => (n.attributes ?? []).length) && !!ins && ins.materials.some(n => n.label === 'Insulation'));
+        qsig(wal) === 'Walls:6:Other>Other Walls' && qsig(cei) === 'Ceilings:6:Other>Other Ceilings' && qsig(flo) === 'Floors:10:Other>Other Flooring'
+        && [wal, cei, flo].every(g => g.questions.every(x => x.rows.every(r => r.card)) && g.materials.length === 0 && !g.every.some(n => (n.attributes ?? []).length))
+        && !!ins && ins.materials.some(n => n.label === 'Insulation'));
       // Interior (owner 2026-11-06, mockup SqNS9bXgLH8HwppCXtwBPY, "approved with recommendations"): one card per surface
       // (Wall Material merged into Walls / Ceilings), the kitchen pieces in their own group, the answer lists fixed.
       {
         const lab = l => (l ?? []).map(n => n.label).join('|');
         const kc = grp(I, 'Countertops & Cabinets'), vent = grp(I, 'Ventilation');
         let wm = false; const any = n => { if (n.id === 'int_wall_material') wm = true; (n.children ?? []).forEach(any); (n.trimmed ?? []).forEach(any); }; any(fsys('interior'));
-        globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: lab(surf?.every), kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
+        globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: [lab(wal?.every), lab(cei?.every), lab(flo?.every)], kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
         r('interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings; Trim moved to Doors & Windows), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card',
-          I.map(g => g.node.label).join('|') === 'Walls, Ceilings & Floors|Countertops & Cabinets|Doors & Windows|Stairs & Railings|Ventilation'
+          I.map(g => g.node.label).join('|') === 'Walls|Ceilings|Floors|Doors|Windows|Countertops & Cabinets|Stairs & Railings|Ventilation'
           // AMENDED 2026-11-14 (app x2): the surfaces' every-home items are the two era items (asbestos tile, lead paint) only
-          && !!surf && surf.every.map(n => n.id).join('|') === 'int_era_asbestos_tile|int_era_lead_paint' &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
+          // — since 2026-11-17 lead paint in Walls, the tile in Floors, nothing in Ceilings.
+          && lab(wal?.every) === 'Lead-Based Paint — Deteriorated / Friction Surfaces' && (cei?.every ?? [1]).length === 0 && (flo?.every ?? []).map(n => n.id).join() === 'int_era_asbestos_tile' &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
           && !!vent && vent.every.length === 0 && !wm);
         // The answer lists themselves are the app's verify:interior-surfaces (pack, Ledrix Default, 4-Point; byte copies here).
       }
