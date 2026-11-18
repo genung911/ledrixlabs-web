@@ -2540,7 +2540,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
           <div>
             <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{record.inspector ?? '—'}</div>
             {record.company && <div style={{ color: MED, fontSize: 10, fontWeight: 700, marginBottom: 2 }}>{record.company}</div>}
-            {record.license_number && <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>LIC #{record.license_number}</div>}
+            {record.license_number && <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace' }}>{record.license_number}</div>}
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: DIM, fontSize: 8, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', marginBottom: 4 }}>
