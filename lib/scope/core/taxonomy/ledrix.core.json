@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.17.1",
+  "packVersion": "2026.11.17.2",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -13606,6 +13606,19 @@
           "keywords": [
             "clothes dryer",
             "dryer"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "coverageRole": "vocabulary"
+        },
+        {
+          "id": "appl_central_vac",
+          "label": "Central Vacuum",
+          "keywords": [
+            "central vacuum",
+            "central vac",
+            "vacuum inlet",
+            "vacuum power unit"
           ],
           "kind": "equipment",
           "origin": "core",

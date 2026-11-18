@@ -141,6 +141,8 @@ export const NODE_FIELDS: Record<string, FieldSpec> = {
   keywords:         { check: strList, class: 'content', why: 'voice and routing vocabulary' },
   locationAxis:     { check: oneOf('room', 'elevation', 'none'), class: 'content', why: 'where findings are located' },
   walkZones:        { check: strList, class: 'content', why: 'where the inspector meets it' },
+  // 2026-11-17 (owner, mockup Unrt8THVU1FKXw2D9AE6wJ): on a room, the items its "+ Item" offers first.
+  commonAdds:       { check: strList, class: 'content', why: 'the items a room offers first' },
   trimmedOptions:   { check: strList, class: 'content', why: 'spec values set aside, restorable' },
   condition:        { check: bool, class: 'policy', why: 'whether this item is assessed (inspection work)' },
   method:           { check: strList, class: 'policy', why: 'method values are disclosures in the report' },

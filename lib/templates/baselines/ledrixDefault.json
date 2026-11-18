@@ -2345,7 +2345,21 @@
               "keywords": []
             }
           ],
-          "trimmed": []
+          "trimmed": [
+            {
+              "id": "plumb_softener",
+              "label": "Water Softener",
+              "kind": "component",
+              "keywords": [
+                "water softener",
+                "softener",
+                "brine tank",
+                "resin tank"
+              ],
+              "condition": true,
+              "trimmed": []
+            }
+          ]
         },
         {
           "id": "plumbing__drain_waste_vent",
@@ -4426,7 +4440,21 @@
               ]
             }
           ],
-          "trimmed": []
+          "trimmed": [
+            {
+              "id": "elec_ev",
+              "label": "EV Charger",
+              "kind": "component",
+              "keywords": [
+                "ev charger",
+                "car charger",
+                "electric vehicle charger",
+                "level 2 charger"
+              ],
+              "condition": true,
+              "trimmed": []
+            }
+          ]
         }
       ],
       "trimmed": [
@@ -9145,6 +9173,21 @@
       "walkZone": "interior",
       "walkZones": [
         "interior"
+      ],
+      "trimmed": [
+        {
+          "id": "appl_central_vac",
+          "label": "Central Vacuum",
+          "kind": "component",
+          "keywords": [
+            "central vacuum",
+            "central vac",
+            "vacuum inlet",
+            "vacuum power unit"
+          ],
+          "condition": true,
+          "trimmed": []
+        }
       ]
     },
     {
@@ -9319,6 +9362,14 @@
       "walkZone": "garage",
       "walkZones": [
         "garage"
+      ],
+      "commonAdds": [
+        "plumb_sinks",
+        "kit_supplydrain",
+        "plumb_softener",
+        "elec_ev",
+        "appl_central_vac",
+        "hvac_elec_wall"
       ]
     },
     {
@@ -9511,6 +9562,16 @@
       "walkZone": "interior",
       "walkZones": [
         "interior"
+      ],
+      "commonAdds": [
+        "kit_fridge",
+        "kit_dishwasher",
+        "kit_disposal",
+        "kit_hood",
+        "kit_microwave",
+        "elec_grounding",
+        "int_lighting",
+        "hvac_elec_wall"
       ]
     },
     {
@@ -9623,6 +9684,13 @@
       "walkZone": "interior",
       "walkZones": [
         "interior"
+      ],
+      "commonAdds": [
+        "plumb_sinks",
+        "kit_supplydrain",
+        "plumb_softener",
+        "hvac_elec_wall",
+        "int_lighting"
       ]
     },
     {
@@ -9736,6 +9804,14 @@
       "walkZone": "interior",
       "walkZones": [
         "interior"
+      ],
+      "commonAdds": [
+        "primary_bathroom_exhaust_fan",
+        "elec_grounding",
+        "plumb_tubshower",
+        "plumb_toilets",
+        "hvac_elec_wall",
+        "int_lighting"
       ]
     }
   ],
