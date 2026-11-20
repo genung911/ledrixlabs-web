@@ -1290,6 +1290,18 @@ const browserFiles = all => Object.entries(all).filter(([f]) => !f.startsWith('a
 const WRITE = /\.(insert|update|upsert|delete)\s*\(\s*[{\[]|\.delete\(\)|\.rpc\s*\(/;
 
 const RULES = {
+  // z21 (owner 2026-11-20, "go ahead with z21"): Multi-Unit is its own type and template right after launch (z19). Until
+  // then Create a template shows Multi unit as coming soon and never starts with it; Overview can take it off, never on.
+  'create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on': all => {
+    const m = all['lib/templates/createModel.ts'] ?? '', cr = all['app/app/templates/create/page.tsx'] ?? '';
+    const pt = all['lib/templateBuilder/core/propertyTypes.ts'] ?? '', pk = all['components/templates/PropertyTypes.tsx'] ?? '';
+    const out = [];
+    if (!m.includes("{ id: 'multi', label: 'Multi unit', soon: true }") || !m.includes('export const DEFAULT_HOME_TYPES: HomeType[] = HOME_TYPES.filter(h => !h.soon).map(h => h.id);')) out.push('createModel: Multi unit not coming soon, or the defaults include it');
+    if (!cr.includes('useState<HomeType[]>(DEFAULT_HOME_TYPES)') || /useState<HomeType\[\]>\(\[[^\]]*'multi'/.test(cr) || !cr.includes('{HOME_TYPES.map(h => h.soon ? (') || !/aria-disabled[^>]*>\s*<span[^>]*\/><span className="flex-1">\{h\.label\}<\/span><Pill>Coming soon<\/Pill>/.test(cr)) out.push('create page: Multi unit ticked to start or still a live tile');
+    if ((pt.match(/hint: '[^']*', soon: true \}/g) ?? []).length !== 2 || !/id: 'multi_unit_one'[^\n]*soon: true/.test(pt) || !/id: 'multi_unit_many'[^\n]*soon: true/.test(pt)) out.push('propertyTypes: both multi-unit types are not coming soon');
+    if (!pk.includes('disabled={disabled || (!!p.soon && !on.has(p.id))}')) out.push('Overview picker: a coming-soon type can be put on');
+    return out;
+  },
   // DESCRIBED IN DETAILS (ledrix-app 2026-11-08, mockup 1JBGc6WjSZSztpkMm3pynL → approved).
   'details: the preview runs the app’s whatsHere.ts on the rules a new inspection captures, and the pack’s askIn / type rows': all => {
     const m = strip(all['components/templates/phonePreviewModel.ts'] ?? '');
@@ -1862,6 +1874,11 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('lib/templates/createModel.ts', "{ id: 'multi', label: 'Multi unit', soon: true }", "{ id: 'multi', label: 'Multi unit' }"), 'Multi unit is pickable again'],
+  ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('app/app/templates/create/page.tsx', 'useState<HomeType[]>(DEFAULT_HOME_TYPES)', "useState<HomeType[]>(['single_family', 'manufactured', 'condo_townhome', 'multi'])"), 'a new template starts with Multi unit ticked'],
+  ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('app/app/templates/create/page.tsx', '{HOME_TYPES.map(h => h.soon ? (', '{HOME_TYPES.map(h => false ? ('), 'the coming-soon tile is a live tile'],
+  ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('lib/templateBuilder/core/propertyTypes.ts', "hint: 'Apartment complex', soon: true }", "hint: 'Apartment complex' }"), 'multiple buildings can be put on in Overview'],
+  ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('components/templates/PropertyTypes.tsx', 'disabled={disabled || (!!p.soon && !on.has(p.id))}', 'disabled={disabled}'), 'the Overview picker ignores coming soon'],
   ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', 'onClick={() => setOpen(o => !o)} aria-expanded={open}', 'onClick={() => {}} aria-expanded={open}'), 'a tap opens nothing'],
   ['limitations: a Limitations row opens each part’s own — when the inspector records it, what the checklist does, what the report says; a tap edits it there', rep('components/templates/GatesPanel.tsx', '{open && (', '{false && ('), 'the editor never shows'],
   ['buildings: a building picker atop the systems column (the home, then each building; ‹ › step); with a building selected every list, Off list and switch in Systems reads it; the Building Types tab is gone; Create a template asks which other buildings come with the home', rep('components/templates/Tree.tsx', 'const covered = lens ? lens.isIn(s.id) : isCovered(tree, s);', 'const covered = isCovered(tree, s);'), 'the systems list ignores the building'],

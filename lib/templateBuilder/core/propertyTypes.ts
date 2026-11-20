@@ -16,12 +16,14 @@ import type { InspectionTemplate } from './InspectionTemplate';
 
 export type PropertyTypeId = 'single_family' | 'condo_townhome' | 'manufactured' | 'multi_unit_one' | 'multi_unit_many';
 
-export const PROPERTY_TYPES: ReadonlyArray<{ id: PropertyTypeId; label: string; short: string; hint: string }> = [
+// soon (owner 2026-11-20, launch list z21): Multi-Unit is its own type and template right after launch (z19). Until then a
+// template cannot take it on; one that already has it can still take it off.
+export const PROPERTY_TYPES: ReadonlyArray<{ id: PropertyTypeId; label: string; short: string; hint: string; soon?: true }> = [
   { id: 'single_family',   label: 'Single-family home',               short: 'Single-family',  hint: 'One home, plus any ADU, shop or garage on the lot' },
   { id: 'condo_townhome',  label: 'Condo / Townhome',                 short: 'Condo',          hint: 'One unit; the building’s shared parts usually out of scope' },
   { id: 'manufactured',    label: 'Manufactured / Mobile',            short: 'Manufactured',   hint: 'Factory-built home' },
-  { id: 'multi_unit_one',  label: 'Multi-unit — one building',        short: 'Multi-unit',     hint: 'Duplex to small apartment building' },
-  { id: 'multi_unit_many', label: 'Multi-unit — multiple buildings',  short: 'Multi-building', hint: 'Apartment complex' },
+  { id: 'multi_unit_one',  label: 'Multi-unit — one building',        short: 'Multi-unit',     hint: 'Duplex to small apartment building', soon: true },
+  { id: 'multi_unit_many', label: 'Multi-unit — multiple buildings',  short: 'Multi-building', hint: 'Apartment complex', soon: true },
 ];
 const IDS = new Set<string>(PROPERTY_TYPES.map(p => p.id));
 

@@ -37,10 +37,14 @@ export const withService = (services: readonly string[], p: Purpose): string[] =
 
 // ── HOME TYPES ─────────────────────────────────────────────────────────────────────────────────────────────────────
 export type HomeType = 'single_family' | 'manufactured' | 'condo_townhome' | 'multi';
-export const HOME_TYPES: ReadonlyArray<{ id: HomeType; label: string }> = [
+// Owner 2026-11-20 (launch list z21): Multi-Unit becomes its own inspection type and template right after launch (z19);
+// until then a multi unit pick built units with nothing in them, so it shows as coming soon and is never picked.
+export const HOME_TYPES: ReadonlyArray<{ id: HomeType; label: string; soon?: true }> = [
   { id: 'single_family', label: 'Single family home' }, { id: 'manufactured', label: 'Manufactured' },
-  { id: 'condo_townhome', label: 'Condo' }, { id: 'multi', label: 'Multi unit' },
+  { id: 'condo_townhome', label: 'Condo' }, { id: 'multi', label: 'Multi unit', soon: true },
 ];
+/** The home types a new template starts with: every one that is not coming soon. */
+export const DEFAULT_HOME_TYPES: HomeType[] = HOME_TYPES.filter(h => !h.soon).map(h => h.id);
 export type MultiLayout = 'multi_unit_one' | 'multi_unit_many';
 /** Flat, named (owner 2026-11-14): one building per unit. Several buildings take units in each from 1 up, which covers
  *  "several buildings, one unit each". */

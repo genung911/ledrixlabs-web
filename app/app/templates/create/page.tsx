@@ -35,7 +35,7 @@ import {
 } from '@/lib/templates/startingPoints';
 import { ASSOCIATION_SYSTEMS, starterCheckpoints } from '@/lib/templateBuilder/core/specialHomes';
 import {
-  HOME_TYPES, LEDRIX_ADD_ONS, MULTI_LAYOUTS, PURPOSES, STANDARD_GROUPS, asksHomeTypes, buildFor, builtLines, defaultName, propertyTypesFor,
+  DEFAULT_HOME_TYPES, HOME_TYPES, LEDRIX_ADD_ONS, MULTI_LAYOUTS, PURPOSES, STANDARD_GROUPS, asksHomeTypes, buildFor, builtLines, defaultName, propertyTypesFor,
   stateStandardLabel, suggestedStandards, withAddOns, withService, type HomeType, type MultiLayout, type Purpose,
 } from '@/lib/templates/createModel';
 
@@ -53,7 +53,7 @@ export default function CreateTemplatePage() {
   const [step, setStep] = useState(0);             // 0 = start, then one screen per question
   const [ctx, setCtx] = useState<CompanyContext>(EMPTY_CONTEXT);
   const [purpose, setPurpose] = useState<Purpose>('home');
-  const [types, setTypes] = useState<HomeType[]>(['single_family', 'manufactured', 'condo_townhome', 'multi']);
+  const [types, setTypes] = useState<HomeType[]>(DEFAULT_HOME_TYPES);   // z21 (2026-11-20): never Multi unit until z19
   const [layouts, setLayouts] = useState<MultiLayout[]>(['multi_unit_one', 'multi_unit_many']);
   const [name, setName] = useState('');
   const [kindChoice, setKindChoice] = useState<Omit<KindChoice, 'propertyTypes'>>(EMPTY_KIND_CHOICE);
@@ -194,7 +194,11 @@ export default function CreateTemplatePage() {
             </button>
             {purpose === p.id && asksHomeTypes(p.id) && (
               <div className="mt-3 grid grid-cols-1 gap-2 pl-8 sm:grid-cols-2" role="group" aria-label="Home types">
-                {HOME_TYPES.map(h => tile(types.includes(h.id), h.label, () => setTypes(flip(types, h.id))))}
+                {HOME_TYPES.map(h => h.soon ? (
+                  <div key={h.id} aria-disabled className="flex min-h-[50px] cursor-not-allowed items-center gap-3 rounded-xl border border-hairline bg-surface px-4 text-[15px] font-semibold text-ink opacity-60">
+                    <span aria-hidden className="h-5 w-5 shrink-0 rounded-md border-2 border-muted" /><span className="flex-1">{h.label}</span><Pill>Coming soon</Pill>
+                  </div>
+                ) : tile(types.includes(h.id), h.label, () => setTypes(flip(types, h.id))))}
               </div>
             )}
           </div>

@@ -8,11 +8,12 @@ export function PropertyTypePicker({ value, onChange, disabled }: { value: reado
   const on = new Set(value);
   return (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Property types">
+      {/* Coming soon (z21): can be taken off, never put on. */}
       {PROPERTY_TYPES.map(p => (
-        <button key={p.id} type="button" aria-pressed={on.has(p.id)} disabled={disabled} title={p.hint}
+        <button key={p.id} type="button" aria-pressed={on.has(p.id)} disabled={disabled || (!!p.soon && !on.has(p.id))} title={p.soon ? `${p.hint} · coming soon` : p.hint}
           onClick={() => onChange(PROPERTY_TYPES.map(x => x.id).filter(id => (id === p.id ? !on.has(id) : on.has(id))))}
-          className={`rounded-full border px-3 py-1 text-xs font-semibold ${on.has(p.id) ? 'border-accent bg-accent/10 text-accent-ink' : 'border-hairline text-body hover:text-ink'}`}>
-          {on.has(p.id) ? '✓ ' : ''}{p.label}
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${on.has(p.id) ? 'border-accent bg-accent/10 text-accent-ink' : 'border-hairline text-body hover:text-ink'} disabled:cursor-not-allowed disabled:opacity-60`}>
+          {on.has(p.id) ? '✓ ' : ''}{p.label}{p.soon && !on.has(p.id) ? ' · coming soon' : ''}
         </button>
       ))}
     </div>
