@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.17.3",
+ "packVersion": "2026.11.18.2",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -1261,6 +1261,149 @@
     }
    ]
   },
+  "hvac_hp_heads": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
+       ],
+       "exact": true
+      }
+     ]
+    }
+   ]
+  },
+  "hvac_hp_head_1": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
+       ],
+       "exact": true
+      }
+     ]
+    },
+    {
+     "specNodeId": "hvac_hp_heads",
+     "includes": [
+      "1",
+      "2",
+      "3",
+      "4"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_hp_head_2": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
+       ],
+       "exact": true
+      }
+     ]
+    },
+    {
+     "specNodeId": "hvac_hp_heads",
+     "includes": [
+      "2",
+      "3",
+      "4"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_hp_head_3": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
+       ],
+       "exact": true
+      }
+     ]
+    },
+    {
+     "specNodeId": "hvac_hp_heads",
+     "includes": [
+      "3",
+      "4"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_hp_head_4": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Heat Pump"
+     ],
+     "exact": true,
+     "typeFirst": true,
+     "orSpec": [
+      {
+       "specNodeId": "hvac_cooling::spec",
+       "includes": [
+        "Heat Pump AC"
+       ],
+       "exact": true
+      }
+     ]
+    },
+    {
+     "specNodeId": "hvac_hp_heads",
+     "includes": [
+      "4"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
   "plumb_sup_copper": {
    "requires": [
     {
@@ -1521,6 +1664,38 @@
    ]
   },
   "plumb_gas": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas",
+      "Propane"
+     ],
+     "exact": true
+    }
+   ]
+  },
+  "plumb_gas_csst_bond": {
+   "requires": [
+    {
+     "specNodeId": "house::gas",
+     "includes": [
+      "Natural gas",
+      "Propane"
+     ],
+     "exact": true
+    },
+    {
+     "specNodeId": "plumb_gas",
+     "includes": [
+      "CSST"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "plumb_gas_connectors": {
    "requires": [
     {
      "specNodeId": "house::gas",

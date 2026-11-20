@@ -370,6 +370,7 @@ export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system:
     : x.year
     ? `- ${x.key} — ${x.label}${cond(x)}: the 4-digit YEAR the unit was made, only from a manufacture date printed on its plate or label (e.g. "2023" for "DATE OF MANUFACTURE JAN 2023"); never from the serial number, never from how it looks`
     : `- ${x.key} — ${x.label}${cond(x)}${gather(x)}: ${order(x.choices).map(c => JSON.stringify(c)).join(' | ')}`;
+  const finds = ctx.items.length > 0 || !!ctx.otherItems?.length;
   const system =
     'You read ONE photo a licensed home inspector took, and fill in a form from what the photo SHOWS. You never guess.\n' +
     'Rules:\n' +
@@ -378,9 +379,12 @@ export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system:
     'unmistakable look. Otherwise leave it out, or put it ' +
     'in cant_tell with the photo that WOULD settle it (under 60 characters).\n' +
     '2. Never answer an age from how something looks. Only from a printed date.\n' +
-    '3. "noticed": at most ' + MAX_NOTICED + ' problems that are CLEARLY visible, each one of the listed quick findings for ' +
-    'one listed item, with a short plain note of WHAT you see and WHERE (not the finding\'s name again). Most photos have ' +
-    'none — return an empty list.\n' +
+    // PHOTOS FILL IN, THEY DO NOT FIND (owner 2026-11-19): with no quick findings listed, the read is not asked to notice.
+    (finds
+      ? '3. "noticed": at most ' + MAX_NOTICED + ' problems that are CLEARLY visible, each one of the listed quick findings for ' +
+        'one listed item, with a short plain note of WHAT you see and WHERE (not the finding\'s name again). Most photos have ' +
+        'none — return an empty list.\n'
+      : '3. You are not judging condition. Never report damage, wear or defects — the inspector does that.\n') +
     '4. "reading": only if a reading slot is listed and an instrument\'s display is legible: the number and unit shown.\n' +
     '5b. "seen": only if equipment to look for is listed — each listed item the photo PLAINLY shows (it is unmistakably ' +
     'there), with a short note of what you see and where. Never one you only suspect. Most photos show none.\n' +
@@ -391,7 +395,7 @@ export function buildShotPrompt(ctx: ShotContext, g: ReadGuards = {}): { system:
         'on the filter frame, top edge"). No "seen", no answer. The order of the choices means nothing.\n' +
         'Return JSON: {"answers":[{"key":"…","value":"…","seen":"…"}],"cant_tell":[{"key":"…","need":"…"}],'
       : 'Return JSON: {"answers":[{"key":"…","value":"…"}],"cant_tell":[{"key":"…","need":"…"}],') +
-    '"noticed":[{"node":"…","finding":"…","note":"…"}],"seen":[{"node":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null,"shot":"…"|null}';
+    (finds ? '"noticed":[{"node":"…","finding":"…","note":"…"}],' : '') + '"seen":[{"node":"…","note":"…"}],"reading":{"value":0,"unit":"…"}|null,"shot":"…"|null}';
   const user =
     `Photo: "${ctx.shot.label}" for ${ctx.systemLabel}${ctx.place ? ` — the inspector named it "${ctx.place}"` : ''}. ${ctx.shot.hint}\n\n` +
     `Questions for ${ctx.systemLabel}:\n${own.length ? own.map(q).join('\n') : '(none open)'}\n` +
@@ -589,4 +593,6 @@ export function narrowQuestions(ctx: ShotContext, relevant: readonly string[] | 
 }
 /** Whether a sorted photo gets the full read: it is a helpful shot, can answer something, or shows a problem — never when
  *  it is unusable (unless it is a helpful shot: the inspector can still see it was found). */
-export const worthFullRead = (s: ShotSort): boolean => !!s.shot || s.issue || ((s.useful || !!s.sees) && !s.unusable);
+// A problem alone no longer earns a full read (owner 2026-11-19: photos fill in, they do not find) — only a shot, an answer
+// or a sighting does. `issue` stays in the sort so the Finding shutter's path is unchanged.
+export const worthFullRead = (s: ShotSort): boolean => !!s.shot || ((s.useful || !!s.sees) && !s.unusable);

@@ -69,8 +69,10 @@ export function factNode(systems: readonly TemplateNode[], nodeId: string): Temp
 export function factsView(systems: readonly TemplateNode[], values: ValueMap, row: FactsRow): FactView[] {
   const sectionOf = sectionsOfTemplate(systems);
   // Only a fact with something to answer: the item AND its field (the phone's factsFor, 2026-11-15).
-  const inTemplate = HOUSE_FACTS.filter(f => f.source.kind === 'extras'
-    || ((factNode(systems, f.source.nodeId)?.attributes ?? []) as { id: string }[]).some(a => a.id === (f.source as { attr: string }).attr));
+  // THIS VISIT (app 2026-11-18, Batch A): Weather, Occupancy and Utilities on are panels on the phone, not pick lists; the
+  // website asks only the extras it has a column and choices for (EXTRAS_COLUMN) — those three stay the phone's for now.
+  const inTemplate = HOUSE_FACTS.filter(f => (f.source.kind === 'extras' ? f.source.key in EXTRAS_COLUMN
+    : ((factNode(systems, f.source.nodeId)?.attributes ?? []) as { id: string }[]).some(a => a.id === (f.source as { attr: string }).attr)));
   const valueOf = (f: HouseFact): string => {
     if (f.source.kind === 'extras') return String(row[EXTRAS_COLUMN[f.source.key as ExtrasKey] as keyof FactsRow] ?? '');
     const n = factNode(systems, f.source.nodeId);

@@ -112,7 +112,12 @@ export function rowReason(g: Gate, values: readonly (string | null | undefined)[
 export function utilityReason(g: Gate, state: string | null | undefined): { reason: GateReason; cause: string } | null {
   if (!g.utility || !state) return null;
   const r = g.reasons.find(x => x.effect !== 'none' && norm(x.value) === norm(state));
-  return r ? { reason: r, cause: r.cause ?? r.value } : null;
+  if (r) return { reason: r, cause: r.cause ?? r.value };
+  // ONE OFF (owner 2026-11-18, Batch A): a gate authored before Off was one answer lists 'Off at meter' / 'Off — vacant';
+  // a plain Off takes the first of those, and the report says Off.
+  if (norm(state) !== 'off') return null;
+  const old = g.reasons.find(x => x.effect !== 'none' && norm(x.value).startsWith('off'));
+  return old ? { reason: old, cause: old.cause ?? 'Off' } : null;
 }
 
 function findNode(systems: readonly Node[], id: string): Node | null {

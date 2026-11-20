@@ -2001,6 +2001,210 @@
             "Not Operated — outdoor temperature",
             "Not Operated"
           ]
+        },
+        {
+          "id": "hvac_hp_heads",
+          "label": "Ductless Heads",
+          "kind": "component",
+          "keywords": [
+            "ductless heads",
+            "how many heads",
+            "wall head",
+            "dual zone",
+            "branch box"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "count",
+              "label": "Ductless Heads",
+              "values": [
+                "None",
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "optional": true
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "hvac_hp_head_1",
+          "label": "Ductless Head 1",
+          "kind": "component",
+          "keywords": [
+            "indoor head",
+            "ductless head",
+            "wall head"
+          ],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "location",
+              "label": "Location",
+              "values": [
+                "Living Room",
+                "Primary Bedroom",
+                "Bedroom",
+                "Kitchen",
+                "Dining Room",
+                "Family Room",
+                "Office",
+                "Bonus Room",
+                "Basement",
+                "Garage"
+              ],
+              "freeText": true,
+              "optional": true,
+              "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "hvac_hp_head_2",
+          "label": "Ductless Head 2",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "location",
+              "label": "Location",
+              "values": [
+                "Living Room",
+                "Primary Bedroom",
+                "Bedroom",
+                "Kitchen",
+                "Dining Room",
+                "Family Room",
+                "Office",
+                "Bonus Room",
+                "Basement",
+                "Garage"
+              ],
+              "freeText": true,
+              "optional": true,
+              "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "hvac_hp_head_3",
+          "label": "Ductless Head 3",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "location",
+              "label": "Location",
+              "values": [
+                "Living Room",
+                "Primary Bedroom",
+                "Bedroom",
+                "Kitchen",
+                "Dining Room",
+                "Family Room",
+                "Office",
+                "Bonus Room",
+                "Basement",
+                "Garage"
+              ],
+              "freeText": true,
+              "optional": true,
+              "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true
+        },
+        {
+          "id": "hvac_hp_head_4",
+          "label": "Ductless Head 4",
+          "kind": "component",
+          "keywords": [],
+          "trimmed": [],
+          "attributes": [
+            {
+              "id": "location",
+              "label": "Location",
+              "values": [
+                "Living Room",
+                "Primary Bedroom",
+                "Bedroom",
+                "Kitchen",
+                "Dining Room",
+                "Family Room",
+                "Office",
+                "Bonus Room",
+                "Basement",
+                "Garage"
+              ],
+              "freeText": true,
+              "optional": true,
+              "emptyLabel": "Unknown"
+            },
+            {
+              "id": "heat_supply",
+              "label": "Heat supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            },
+            {
+              "id": "cool_supply",
+              "label": "Cool supply",
+              "values": [],
+              "optional": true,
+              "input": "temperature"
+            }
+          ],
+          "condition": true
         }
       ],
       "locationAxis": "room",
@@ -2925,7 +3129,7 @@
           "children": [
             {
               "id": "plumb_gas",
-              "label": "Gas Supply",
+              "label": "Gas Piping",
               "kind": "component",
               "keywords": [
                 "gas supply",
@@ -2934,19 +3138,73 @@
                 "propane",
                 "csst",
                 "black iron",
-                "gas piping"
+                "gas piping",
+                "galvanized gas pipe"
               ],
               "trimmed": [],
               "attributes": [
                 {
                   "id": "spec",
-                  "label": "Gas Supply",
+                  "label": "Gas Piping",
                   "values": [
                     "Black Iron",
-                    "CSST (Bonded)",
-                    "CSST (Bonding Unverified)",
+                    "Galvanized Steel",
+                    "CSST",
                     "Copper"
-                  ]
+                  ],
+                  "multi": true
+                }
+              ],
+              "condition": true
+            },
+            {
+              "id": "plumb_gas_csst_bond",
+              "label": "CSST Bonding",
+              "kind": "component",
+              "keywords": [
+                "csst bonding",
+                "csst bond",
+                "bonding clamp",
+                "csst ground"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "CSST Bonding",
+                  "values": [
+                    "Bonded",
+                    "Not Visible"
+                  ],
+                  "optional": true
+                }
+              ],
+              "condition": false
+            },
+            {
+              "id": "plumb_gas_connectors",
+              "label": "Appliance Connectors",
+              "kind": "component",
+              "keywords": [
+                "appliance connector",
+                "gas connector",
+                "flex connector",
+                "flexible gas line",
+                "brass connector",
+                "gas flex"
+              ],
+              "trimmed": [],
+              "attributes": [
+                {
+                  "id": "spec",
+                  "label": "Appliance Connectors",
+                  "values": [
+                    "Flexible Stainless",
+                    "Uncoated Brass",
+                    "Hard-Piped"
+                  ],
+                  "multi": true,
+                  "optional": true
                 }
               ],
               "condition": true
@@ -3317,7 +3575,7 @@
         },
         {
           "id": "plumb_wh_tpr",
-          "label": "TPR Valve & Discharge",
+          "label": "T&P Relief Valve & Discharge Pipe",
           "kind": "component",
           "keywords": [
             "tpr",
@@ -3325,7 +3583,9 @@
             "relief valve",
             "discharge tube",
             "overflow tube",
-            "t&p valve"
+            "t&p valve",
+            "t and p valve",
+            "t&p relief valve"
           ],
           "trimmed": [],
           "condition": true,
@@ -3349,7 +3609,8 @@
                 "CPVC",
                 "PEX",
                 "Galvanized",
-                "Missing"
+                "PVC",
+                "None"
               ],
               "optional": true
             }

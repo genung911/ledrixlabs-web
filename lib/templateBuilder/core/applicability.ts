@@ -170,7 +170,8 @@ export type ApplicabilityResult = {
 // addition silently start blocking scope. Same convention as every other applicability mechanism
 // in this codebase: absent, unset or unrecognised is permissive, never the new behaviour.
 const UTILITY_AVAILABLE = ['on'];
-const UTILITY_UNAVAILABLE = ['off at meter', 'off — vacant', 'off - vacant', 'off vacant'];
+// 'off' (owner 2026-11-18, Batch A: one Off) beside the two older words, which saved jobs and company templates still hold.
+const UTILITY_UNAVAILABLE = ['off', 'off at meter', 'off — vacant', 'off - vacant', 'off vacant'];
 
 /** Exposed so a guard can assert the vocabulary this module actually recognises, rather than
  *  restating it and drifting. */

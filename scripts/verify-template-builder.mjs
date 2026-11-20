@@ -889,7 +889,9 @@ async function runTypes(files) {
         r('water heater: TPR has ONE "We operate the TPR valve" switch for every type (value *), Ledrix starts it Off; switching it On removes the entry, Off writes a sentence naming the item',
           !!tpr && E.canStartLimited(tpr) && (tpr.startsLimited ?? []).length === 1 && tpr.startsLimited[0].value === '*'
           && on.length === 1 && on[0].value.length === 0
-          && off.length === 1 && off[0].value.length === 1 && off[0].value[0].value === '*' && /tpr valve & discharge was not operated/i.test(off[0].value[0].sentence)
+          && off.length === 1 && off[0].value.length === 1 && off[0].value[0].value === '*'
+          // RE-ANCHORED 2026-11-20 (app 2026-11-18, trade terms): the item is the T&P relief valve & discharge pipe.
+          && /t&p relief valve & discharge pipe was not operated/i.test(off[0].value[0].sentence)
           && !whL.typed.concat(whL.every).some(n => n.id !== 'plumb_wh_tpr' && (n.startsLimited ?? []).some(e => e.value === '*')));
       }
       // Report advisories (owner 2026-11-06, mockup NH8eoefNScGrsemCdofANd, "looks great"): picked with a rule and a mode.
@@ -968,7 +970,7 @@ async function runTypes(files) {
       const wit = clone(fresh); const wEl = wit.systems.find(x => x.id === 'electrical');
       { const walkC = (n) => { const i = (n.children ?? []).findIndex(c => c.id === 'elec_svc_drop'); if (i >= 0) { n.children.splice(i + 1, 0, { ...clone(n.children[i]), id: 'elec_svc_drop~i2' }); return true; } return (n.children ?? []).some(walkC); }; walkC(wEl); }
       r('electrical: no type chips — a question that brings several items but decides under a third of the system stays a group list; Heating, Cooling, Water Heater, Fireplace and Foundation keep theirs',
-        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heating|mini_split|roofing|water_heater' /* + roofing 2026-11-12: Ridge / Sag Line and Scuppers follow the roof material; + mini_split 2026-11-13: its items follow Cooling's type, read from outside the system */
+        !TL.typeLayoutOf(fresh, fsys('electrical'), fdefs) && typedIds === 'cooling|fireplace|foundation|heat_pump|heating|mini_split|roofing|water_heater' /* + heat_pump 2026-11-20 (app 2026-11-18, Batch B: the heat pump is one tile with its backup); + roofing 2026-11-12: Ridge / Sag Line and Scuppers follow the roof material; + mini_split 2026-11-13: its items follow Cooling's type, read from outside the system */
         && !!CTS_find(wit, 'elec_svc_drop~i2') && !TL.typeLayoutOf(wit, wEl, PM.rulesFor(wit)));
       const row = (b, v) => ids(b?.rows.find(x => x.value === v)?.cards);
       const se = svc?.brought.find(b => b.label === 'Service Entrance');

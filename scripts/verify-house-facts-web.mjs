@@ -45,6 +45,8 @@ function suite() {
     // RE-ANCHORED 2026-11-14 (app 6f9f84020, #127): Front faces is the first fact
     // RE-ANCHORED 2026-11-15 (app b24196efb, #128): Stories, a job column like the utilities, is always asked
     ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace' })) === 'front,gas,water,sewer,heats,cools,stories,garage');
+  ok('§1 the phone\'s This-visit pages (Weather, Occupancy, Utilities on) are not asked here — the website has no choices for them (app 2026-11-18)',
+    !/weather|occupancy|utilities_on/.test(ids(vm({}))));
   ok('§1 Backup heat follows What heats only for a heat pump or a mini-split',
     ids(vm({ 'hvac_heating::fuel_source': 'Heat Pump' })) === 'front,gas,water,sewer,heats,backup_heat,cools,stories,garage'
     && ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace, Ductless Mini-Split' })).includes('backup_heat'));

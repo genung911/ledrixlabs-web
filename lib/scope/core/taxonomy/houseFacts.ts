@@ -14,10 +14,10 @@
 //
 // NO IMPORTS, so `verify:house-facts` can execute it.
 
-export type HouseFactGroup = 'property' | 'utilities' | 'equipment' | 'building';
+export type HouseFactGroup = 'visit' | 'property' | 'utilities' | 'equipment' | 'building';
 /** Where a fact already lives: a key of the job's report extras (Details), or a spec field (`node id`, `attribute id`). */
 export type HouseFactSource =
-  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'frontFaces' | 'stories' }
+  | { kind: 'extras'; key: 'gasSupply' | 'waterSource' | 'sewerType' | 'garageType' | 'frontFaces' | 'stories' | 'appliancesAsked' | 'weather' | 'occupancy' | 'waterState' }
   | { kind: 'spec'; nodeId: string; attr: string };
 /** `none`: the house may have none of it (owner 2026-11-13, build 811: "Fireplace made me realize we need a 'none' option").
  *  A spec fact's None records applicability's NOT_PRESENT ('Not present'), the absence every rule already reads; the
@@ -38,6 +38,14 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
   { id: 'gas',          label: 'Gas',          group: 'utilities', source: { kind: 'extras', key: 'gasSupply' }, multi: true, question: 'What gas does the house have?', hint: 'Pick every one. Look for a meter at the side of the house, or a tank in the yard.' },
   { id: 'water',        label: 'Water',        group: 'utilities', source: { kind: 'extras', key: 'waterSource' }, multi: true, question: 'Where does the water come from?', hint: 'Pick every one. A well has a well head and a pressure tank.' },
   { id: 'sewer',        label: 'Sewer',        group: 'utilities', source: { kind: 'extras', key: 'sewerType' }, multi: true, question: 'Where does the sewer go?', hint: 'Pick every one. Septic shows a tank lid or cleanouts in the yard.' },
+  // THIS VISIT (owner 2026-11-18, Batch A mockup Eo3mgxTzVWDiN2J4hdQpA8: "Maybe they all need to move to the questions"):
+  // the weather, who is living there, and the utilities on today were Pre-Inspect's Conditions tile. Their group follows
+  // the utilities (HOUSE_FACT_GROUPS), so the pages run Front faces · Gas · Water · Sewer · Weather · Occupancy · Utilities on. Each page draws Pre-Inspect's own panel section
+  // (BeforeYouStart), the same record; `utilities_on` is answered when every utility shown has an answer
+  // (utilitiesOnValue) — gas only when the house has gas.
+  { id: 'weather',      label: 'Weather',      group: 'visit',     source: { kind: 'extras', key: 'weather' }, question: 'What’s the weather?', hint: 'Ledrix fills this from the forecast. Change anything that’s wrong.' },
+  { id: 'occupancy',    label: 'Occupancy',    group: 'visit',     source: { kind: 'extras', key: 'occupancy' }, question: 'Is anyone living there?', hint: 'And who came to the inspection, if anyone.' },
+  { id: 'utilities_on', label: 'Utilities on', group: 'visit',     source: { kind: 'extras', key: 'waterState' }, question: 'Are the utilities on?', hint: 'Off takes what needs it off the checklist, marked not tested.' },
   { id: 'heats',        label: 'What heats',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_heating', attr: 'fuel_source' }, none: true, question: 'What heats the house?', hint: 'Pick every one.', multi: true },
   { id: 'backup_heat',  label: 'Backup heat',  group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_backup_heat', attr: 'spec' }, question: 'What is the backup heat?', hint: 'A heat pump or mini-split usually has one: heat strips in the air handler, or a gas furnace (dual fuel).', askWhen: { fact: 'heats', includesAny: ['heat pump', 'mini-split'] } },
   { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true, question: 'What cools the house?', hint: 'Pick every one.', multi: true },
@@ -61,6 +69,8 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
 export const HOUSE_FACT_GROUPS: readonly { id: HouseFactGroup; label: string }[] = [
   { id: 'property',  label: 'THE PROPERTY' },
   { id: 'utilities', label: 'UTILITIES' },
+  // After the supplies, so "Are the utilities on?" follows "what does it have" (2026-11-18); Front faces stays first.
+  { id: 'visit',     label: 'THIS VISIT' },
   { id: 'equipment', label: 'EQUIPMENT TYPES' },
   { id: 'building',  label: 'THE BUILDING' },
 ];
@@ -84,6 +94,16 @@ export function factsAsked(facts: readonly HouseFact[], valueOf: (f: HouseFact) 
   });
 }
 
+/** THE UTILITIES-ON PAGE AS ONE ANSWER (2026-11-18): water and power, and gas when the house has gas (or its gas is not
+ *  answered yet) — blank until each of those is answered, so the page counts as owed until then. */
+export function utilitiesOnValue(x: Readonly<Record<string, unknown>> | null | undefined): string {
+  const v = (k: string) => String((x as any)?.[k] ?? '').trim();
+  const gas = v('gasSupply'), hasGas = !gas || /natural gas|propane/i.test(gas);
+  const rows: [string, string][] = [['Water', v('waterState')], ...(hasGas ? [['Gas', v('gasState')] as [string, string]] : []), ['Power', v('powerState')]];
+  if (rows.some(([, s]) => !s)) return '';
+  return rows.map(([k, s]) => `${k} ${/^off\b/i.test(s) ? 'off' : s.toLowerCase()}`).join(' · ');
+}
+
 /** The absence a None records — applicability's NOT_PRESENT, spelled here because this module imports nothing (the guard
  *  checks the two agree). */
 export const NONE_ANSWER = 'Not present';
@@ -92,6 +112,18 @@ export const factDisplay = (v: string): string => v.trim().toLowerCase() === NON
   : v.split(', ').map(x => x.trim()).filter(Boolean).join(' + ');
 /** A recorded answer: anything but blank. */
 export const isAnswered = (v: string | null | undefined): boolean => typeof v === 'string' && v.trim().length > 0;
+
+/** THE APPLIANCES PAGE AS AN ANSWER (owner 2026-11-18, mockup VMxF6WCSZi4Wxapz9Cyuqc approved): its tiles open blank, so
+ *  the page is owed until answered. An appliance that is here leaves its row empty, so the rows cannot tell "all here"
+ *  from "not answered": Continue on the page stamps `appliancesAsked` in this visit's extras (its own server column,
+ *  #134 `appliances_asked`; the Not present marks on the rows sync as before). It counts in the progress, never as a page of its own —
+ *  Before you start draws that page itself. */
+export const APPLIANCES_FACT: HouseFact = { id: 'appliances', label: 'Appliances', group: 'equipment', source: { kind: 'extras', key: 'appliancesAsked' } };
+/** The facts in the pages' order — by group, the appliances page closing the equipment group when the template has
+ *  appliances — so the first one left is the page Before you start opens on. */
+export function withAppliancesFact(facts: readonly HouseFact[], hasAppliances: boolean): HouseFact[] {
+  return HOUSE_FACT_GROUPS.flatMap(g => [...facts.filter(f => f.group === g.id), ...(g.id === 'equipment' && hasAppliances ? [APPLIANCES_FACT] : [])]);
+}
 
 /** How far "Before you start" is: the facts asked, how many are answered, and which are left (in page order). */
 export function houseFactsProgress(facts: readonly HouseFact[], valueOf: (f: HouseFact) => string | null | undefined): {
@@ -150,3 +182,40 @@ export const TYPE_HOST_FIELDS: Readonly<Record<string, string>> = Object.fromEnt
   // A follow-up (Backup heat) is not a type its system waits for (2026-11-14).
   HOUSE_FACTS.flatMap(f => (f.source.kind === 'spec' && !f.askWhen ? [[f.source.nodeId, f.source.attr]] : [])),
 );
+
+// ── REOPENING BEFORE YOU START (owner 2026-11-19, mockup PcYvQNowcapaYVAuuAyUED: "When I reopen a report to work on, I
+// shouldn't get the questions I already answered… if they are unanswered, we should get those cards and answer later
+// if needed"; all answered → "a list like the review page… if something needs to be updated, they click on that line").
+// Pure: which page comes next. Pages are 0..total-1; `total` is the list ("This house has").
+export type SetupNav = {
+  /** The open pages to walk (indices, in order) — a reopen; null walks every page in order (the first time through). */
+  queue: number[] | null;
+  /** One page, opened from the list (or a page already answered): Continue and Back return to the list. */
+  single: boolean;
+  /** The list is home: Back on it closes. */
+  list: boolean;
+};
+/** Where Before you start opens. `owed[i]` — page i still needs an answer; `firstWalk` — nothing much answered yet. */
+export function setupOpen(owed: readonly boolean[], startIdx: number, atFinish: boolean, firstWalk: boolean): { step: number; nav: SetupNav } {
+  const total = owed.length;
+  const open = owed.map((o, i) => (o ? i : -1)).filter(i => i >= 0);
+  // Nothing open → the list. Asked for the list with a page still open (the appliances page, Ledrix's weather — the
+  // tile's count leaves them out) → that page's card first.
+  if (!open.length && (atFinish || startIdx < 0)) return { step: total, nav: { queue: null, single: false, list: true } };
+  const at = startIdx >= 0 && !atFinish ? startIdx : open[0];
+  if (!owed[at]) return { step: at, nav: { queue: null, single: true, list: true } };
+  if (firstWalk) return { step: at, nav: { queue: null, single: false, list: false } };
+  return { step: at, nav: { queue: open, single: false, list: false } };
+}
+export function setupNext(nav: SetupNav, step: number, total: number): number {
+  if (nav.single) return total;
+  if (nav.queue) return nav.queue.find(i => i > step) ?? total;
+  return Math.min(total, step + 1);
+}
+/** Back: a page index, or 'close'. */
+export function setupBack(nav: SetupNav, step: number, total: number): number | 'close' {
+  if (step >= total) return nav.list || nav.queue ? 'close' : Math.max(0, total - 1);
+  if (nav.single) return total;
+  if (nav.queue) { const prev = [...nav.queue].reverse().find(i => i < step); return prev ?? 'close'; }
+  return step === 0 ? 'close' : step - 1;
+}

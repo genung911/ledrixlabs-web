@@ -67,7 +67,8 @@ async function checks(src) {
     && M.systemsOfGate({ id: 'company_x', label: 'X', row: 'roof_method', origin: 'company', reasons: [] }, sys).join('|') === 'roofing';
   const rows = M.limitRows(g('utility_water'));
   out['reasons with the same effect read as one row; a row that changes nothing does not limit'] =
-    rows.length === 1 && rows[0].reasons.length === 2 && rows[0].limits
+    // RE-ANCHORED 2026-11-20 (app 2026-11-18, Batch A: one Off): the water gate lists Off beside Off at meter and Off — vacant.
+    rows.length === 1 && rows[0].reasons.length === 3 && rows[0].limits
     && M.limitRows(g('attic_access')).length === 3
     && M.limitRows(g('roof_method')).filter(r => !r.limits).length === 1;
   const c = M.limitCounts(TPL);
