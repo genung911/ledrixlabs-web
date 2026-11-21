@@ -72,6 +72,7 @@ export const ITEM_ICON_RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/supply|pipe|piping|plumbing|waste|drain/, 'pipe'],
   [/garage door|opener/, 'garage-variant'],
   [/door/, 'door'],
+  [/egress|escape opening/, 'exit-run'],
   [/window|glazing/, 'window-closed-variant'],
   [/stair|rail|guard/, 'stairs'],
   [/counter|cabinet/, 'cupboard'],

@@ -92,6 +92,10 @@ export const COLOR_SVGS: Readonly<Record<string, string>> = {
   'garage': svg(garage),
   'garage-variant': svg(garage),
   'wall': svg(wall),
+  // EGRESS (owner 2026-11-20, run 933: its tile was a plain cube) — the window, open, with the way out.
+  // Review & send's Walk-through (owner 2026-11-21): a person and two speech bubbles — talking it through with the client.
+  'account-voice': svg(`<circle cx="15" cy="17" r="7" fill="#f2f5f7"/><path d="M3 42c0-8 5.4-13 12-13s12 5 12 13z" fill="#f2f5f7"/><path d="M27 5h16a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9l-5 4v-4h-2a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z" fill="${P.water}"/><path d="M30 11h10M30 15h6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`),
+  'exit-run': svg(`<rect x="4" y="7" width="28" height="34" rx="2" fill="#f2f5f7"/><rect x="8" y="11" width="20" height="26" rx="1" fill="${P.glass}"/><path d="M8 24h20" stroke="#f2f5f7" stroke-width="3"/><path d="M22 24h20" stroke="${P.green}" stroke-width="4.5" stroke-linecap="round"/><path d="M35 16l8 8-8 8" fill="none" stroke="${P.green}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`),
   'window-closed-variant': svg(`<rect x="7" y="5" width="34" height="38" rx="2" fill="#f2f5f7"/><rect x="11" y="9" width="26" height="30" rx="1" fill="${P.glass}"/><path d="M24 9v30M11 24h26" stroke="#f2f5f7" stroke-width="3"/><path d="M14 13l6 0-6 6z" fill="${P.glassLt}" opacity=".7"/>`),
   'terrain': svg(`<path d="M2 40 16 18l8 10 8-14 14 26z" fill="${P.green}"/><path d="M2 40 16 18l8 10 8-14 14 26z" fill="none" stroke="${P.greenDk}" stroke-width="2" stroke-linejoin="round"/><path d="M28 21l4-7 4 7z" fill="#fff"/><circle cx="11" cy="10" r="4" fill="${P.flameLt}"/>`),
   'fence': svg(`<path d="M5 18h38M5 32h38" stroke="${P.woodDk}" stroke-width="4"/><g fill="${P.wood}"><path d="M7 42V12l3-4 3 4v30zM17 42V12l3-4 3 4v30zM27 42V12l3-4 3 4v30zM37 42V12l3-4 3 4v30z"/></g>`),

@@ -7051,9 +7051,9 @@
                   "values": [
                     "Continuous",
                     "Individual",
+                    "Low Gable / Eave",
                     "None seen"
-                  ],
-                  "optional": true
+                  ]
                 }
               ]
             },
@@ -8337,7 +8337,7 @@
               "walkZones": [
                 "interior"
               ],
-              "description": "What to look for\n• Every bedroom, and a basement with a sleeping area, has an escape window or door to the outside.\n• It opens fully from inside by hand: no key, tool or special knowledge. Bars or grates have an inside quick release.\n• The opening is big enough to climb through and the sill is low enough to reach (IRC R310, where adopted: 5.7 sq ft clear, 5.0 at grade floor; 24\" high; 20\" wide; sill 44\" max).\n• A below-grade window well is big enough to stand in (9 sq ft, 36\" out) and has a ladder or steps when deeper than 44\".\n• Nothing blocks the way out: furniture, an AC unit, a deck, a well cover.\n\nCommon finds\n• Window painted, nailed or screwed shut.\n• Basement bedroom added with no egress window, or one too small or too high.\n• Replacement window that shrank the opening.\n• Window well too small, full of debris or water, or deep with no ladder.\n• Security bars with no inside release.\n• Older home built before current egress rules: report what is there, not code compliance."
+              "description": "What to look for\n• Every bedroom, and a basement with a sleeping area, has an escape window or door to the outside.\n• It opens fully from inside by hand: no key, tool or special knowledge. Bars or grates have an inside quick release.\n• The opening is big enough to climb through and the sill is low enough to reach (the usual minimums: 5.7 sq ft clear, 5.0 at a grade-level floor; 24\" high; 20\" wide; sill no higher than 44\").\n• A below-grade window well is big enough to stand in (9 sq ft, 36\" out) and has a ladder or steps when deeper than 44\".\n• Nothing blocks the way out: furniture, an AC unit, a deck, a well cover.\n\nCommon finds\n• Window painted, nailed or screwed shut.\n• Basement bedroom added with no egress window, or one too small or too high.\n• Replacement window that shrank the opening.\n• Window well too small, full of debris or water, or deep with no ladder.\n• Security bars with no inside release.\n• Older home built before today's egress sizes: report what is there. This is not a compliance check."
             }
           ]
         },

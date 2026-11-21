@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.18.2",
+  "packVersion": "2026.11.20.1",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -10299,9 +10299,9 @@
               "values": [
                 "Continuous",
                 "Individual",
+                "Low Gable / Eave",
                 "None seen"
-              ],
-              "optional": true
+              ]
             }
           ],
           "requires": [
