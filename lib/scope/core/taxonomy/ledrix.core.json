@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.20.1",
+  "packVersion": "2026.11.22.1",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -316,7 +316,7 @@
               "optional": true
             }
           ],
-          "condition": false,
+          "condition": true,
           "requires": [
             {
               "specNodeId": "hvac_distribution",
@@ -13214,7 +13214,7 @@
               ]
             }
           ],
-          "condition": false,
+          "condition": true,
           "requires": [
             {
               "specNodeId": "fp_type",

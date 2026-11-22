@@ -169,6 +169,18 @@ export const fieldAnswered = (read: (key: string) => string | undefined, f: { ke
   const v = read(f.key) ?? (f.legacyKey ? read(f.legacyKey) : undefined);
   return !!v && v !== 'Present';
 };
+/** DESCRIBED — every owed field answered. A component whose fields are ALL optional owes none, and `factFieldsOf` is empty
+ *  for it, so "every owed field" could never be true and the item never completed (owner, build 952: Ductwork "not allowing it
+ *  to be completed" at 0/1 SPECS SET with Flexible and R-8 picked; also Ductless Heads, CSST Bonding, Roof Remaining Life).
+ *  Such a component is described once ANY of its fields is answered (2026-11-22). */
+export const describedBy = (n: TemplateNode | null | undefined, read: (key: string) => string | undefined): boolean => {
+  if (!n) return false;
+  const owed = factFieldsOf(n);
+  if (owed.length) return owed.every(f => fieldAnswered(read, f));
+  const optional = componentAxes(n).attributes.filter(a => (a as any).optional === true)
+    .map(a => { const l = specLegacyKey(n, a.id); return { key: specStoreKey(n, a.id), ...(l ? { legacyKey: l } : {}) }; });
+  return optional.some(f => fieldAnswered(read, f));
+};
 /** Which node carries this component's MATERIAL axis: itself, or its legacy paired sibling. */
 export function materialNodeFor(node: TemplateNode, paired: TemplateNode | undefined): TemplateNode | null {
   if (componentAxes(node).attributes.length) return node;

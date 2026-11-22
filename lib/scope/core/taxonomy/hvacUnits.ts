@@ -78,6 +78,17 @@ export function dualFuelOrder<T extends { id: string }>(systems: readonly T[], b
   return [...rest.slice(0, before), ...trio, ...rest.slice(before)];
 }
 
+/** ADDING A FURNACE AT A HEAT PUMP HOUSE MAKES IT THE BACKUP HEAT (owner 2026-11-22, z8: "Make it Backup Heat"). Where
+ *  What heats names a Heat Pump and no furnace, Heating is the heat pump's own heating side; + Add system → Furnace used to
+ *  rename that side "Furnace #1" and add an empty "Furnace #2". It now answers Backup Heat = Gas Furnace (Dual Fuel) —
+ *  exactly as Before you start does — and the dual-fuel link and fold make the Backup Heat tile. Only with one Heating
+ *  unit: a house that already has a second keeps the normal add. */
+export function addedFurnaceIsBackup(heating: string | null | undefined, heatingUnits?: number): boolean {
+  const h = entries(heating);
+  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  return h.some(e => eq(e, HEAT_PUMP)) && !h.some(e => FURNACES.some(f => eq(e, f))) && (heatingUnits ?? 1) <= 1;
+}
+
 /** The fold for one building. `heatingUnits` / `coolingUnits`: how many units the system has there (a Heating #2 means
  *  Heating is not only the mini-split, so it never folds). */
 export function hvacFold(x: { heating: string | null | undefined; cooling: string | null | undefined; heatingUnits?: number; coolingUnits?: number }): HvacFold {

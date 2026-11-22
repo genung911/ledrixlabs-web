@@ -518,34 +518,60 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             </div>
           </div>
         ) : null}
-        {/* THE CONDITION PAGE (app 2026-11-15, mockup 1gRjaYCeiaRfLtfvAJh662): every row of the system that takes condition,
-            named by what was picked; ✓ = OK, ALL OK; the bar's camera follows the picked row. */}
+        {/* ONE LIST (app 2026-11-22, launch list n8; mockup 3yWuh6jruKT8Ra6sfNCAwr): the system's items once — the circle =
+            Satisfactory, the type under the name ("Choose type" while unanswered), the camera = a finding; each section ends
+            with "Mark the rest Satisfactory", its type items first; one count. An item is done when its condition and its
+            type are answered (app core/taxonomy/oneList.ts). */}
         {condOpen ? (() => {
           const rows = condRowsOf(sysId, condGrp);
-          const doneN = rows.filter(id => !!cond[id]).length;
           const grpOf = (id: string) => allSteps.find(x => tileOf(x.systemId) === sysId && x.rowIds.includes(id))?.tileLabel ?? '';
+          const typeOf = (id: string) => {
+            const r = index.byId[id]!.node;
+            const attrs = axesOf(r).attributes;
+            if (!attrs.length) return null;
+            const value = attrs.flatMap(a => picks[pickKey(r.id, a.id)] ?? []).join(', ');
+            return { value, need: !value };
+          };
+          const doneOf = (id: string) => (!!cond[id]) && !typeOf(id)?.need;
+          const sections: { name: string; ids: string[] }[] = [];
+          for (const id of rows) { const g = grpOf(id); const last = sections[sections.length - 1]; if (last && last.name === g) last.ids.push(id); else sections.push({ name: g, ids: [id] }); }
+          for (const sec of sections) sec.ids = [...sec.ids.filter(id => !!typeOf(id)), ...sec.ids.filter(id => !typeOf(id))];
+          const doneN = rows.filter(doneOf).length;
           return (
             <div className="pv-group">
-              <div className="pv-ghead"><span>CONDITION</span>
-                {doneN < rows.length ? <button type="button" className="pv-linkbtn" onClick={() => setCond(p => { const o = { ...p }; rows.forEach(id => { if (!o[id]) o[id] = 'ok'; }); return o; })}>✓ {doneN ? 'REMAINING OK' : 'ALL OK'}</button> : null}</div>
-              {!rows.length ? <p className="pv-empty">Nothing to judge yet: pick what the system has in Details.</p> : null}
-              {rows.map((id, ri) => {
-                const r = index.byId[id]!.node;
-                const g = grpOf(id), head = g && (ri === 0 || grpOf(rows[ri - 1]) !== g) ? <div className="pv-areacap" style={{ margin: '8px 0 4px' }}>{displayLabel(g).toUpperCase()}</div> : null;
-                const picked = axesOf(r).attributes.flatMap(a => picks[pickKey(r.id, a.id)] ?? []).join(', ');
-                const c = cond[id];
+              <div className="pv-1count">{doneN} of {rows.length} done</div>
+              <div className="pv-1bar"><i style={{ width: `${rows.length ? Math.round((doneN / rows.length) * 100) : 0}%` }} /></div>
+              {!rows.length ? <p className="pv-empty">Nothing to judge yet.</p> : null}
+              {sections.map((sec, si) => {
+                const rest = sec.ids.filter(id => !cond[id]);
                 return (
-                  <Fragment key={id}>{head}
-                  <div data-pv-id={id} className="pv-crow">
-                    <div style={{ flex: 1, minWidth: 0 }}><b>{picked || r.label}</b>{picked ? <small>{r.label}</small> : null}
-                      {c === 'lim' ? <small className="lim">⚠ {limReason[id] ?? 'Limited'}</small> : null}</div>
-                    {c === 'fnd' ? <span className="pv-verdict fnd">⚑ Finding</span> : null}
-                    <button type="button" className={`pv-ibtn${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' dis' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'} aria-label={`OK: ${picked || r.label}`}
-                      onClick={e => { e.stopPropagation(); setCond(p => { const o = { ...p }; if (o[id] === 'ok') delete o[id]; else o[id] = 'ok'; return o; }); }}>
-                      <Glyph d={G.check} size={26} />
-                    </button>
-                    <button type="button" className="pv-ibtn cam" aria-label={`Camera for ${picked || r.label}`} onClick={() => setSheet({ kind: 'camera', nodeId: id })}><Glyph d={G.camera} size={26} /></button>
-                  </div>
+                  <Fragment key={`sec:${si}:${sec.name}`}>
+                    {sec.name ? <div className="pv-1cap">{displayLabel(sec.name).toUpperCase()}</div> : null}
+                    <div className="pv-1card">
+                      {sec.ids.map(id => {
+                        const r = index.byId[id]!.node;
+                        const t = typeOf(id);
+                        const c = cond[id];
+                        return (
+                          <div key={id} data-pv-id={id} className="pv-1row">
+                            <button type="button" className={`pv-1dot${c === 'ok' ? ' ok' : ''}${c === 'fnd' ? ' fnd' : ''}${c === 'lim' ? ' lim' : ''}`} disabled={c === 'fnd'} aria-pressed={c === 'ok'}
+                              aria-label={`${c === 'ok' ? 'Clear Satisfactory for' : 'Mark Satisfactory:'} ${r.label}`}
+                              onClick={e => { e.stopPropagation(); setCond(p => { const o = { ...p }; if (o[id] === 'ok') delete o[id]; else o[id] = 'ok'; return o; }); }}>
+                              {c === 'ok' ? <Glyph d={G.check} size={14} color="#000" /> : null}
+                            </button>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <b>{displayLabel(r.label)}</b>
+                              {t?.need ? <small className="choose">Choose type</small> : t?.value ? <small>{t.value}</small> : null}
+                              {c === 'fnd' ? <small className="fnd">Finding</small> : c === 'lim' ? <small className="lim">{limReason[id] ?? 'Couldn’t inspect'}</small> : null}
+                            </div>
+                            <button type="button" className="pv-1cam" aria-label={`Shoot a finding on ${r.label}`} onClick={() => setSheet({ kind: 'camera', nodeId: id })}><Glyph d={G.camera} size={20} /></button>
+                          </div>
+                        );
+                      })}
+                      {rest.length ? (
+                        <button type="button" className="pv-1rest" onClick={() => setCond(p => { const o = { ...p }; rest.forEach(id => { if (!o[id]) o[id] = 'ok'; }); return o; })}>Mark the rest Satisfactory</button>
+                      ) : null}
+                    </div>
                   </Fragment>
                 );
               })}
@@ -1032,6 +1058,17 @@ const CSS_TEXT = `
 .ldx-pv .pv-pcond b,.ldx-pv .pv-pstart b{font-size:12.5px;font-weight:800}.ldx-pv .pv-pcond small{font-size:9.5px;color:#8fa0ad}.ldx-pv .pv-pstart small{font-size:9.5px;color:#d6e7fb}
 .ldx-pv .pv-pstart i{font-style:normal;font-size:14px}
 .ldx-pv .pv-gridkey{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid #26363b;border-radius:8px;color:#c7d0d6}
+.ldx-pv .pv-1count{font-size:12px;font-weight:600;color:#eef2f4;margin:2px 0 4px}
+.ldx-pv .pv-1bar{height:3px;border-radius:2px;background:#2c2c2e;overflow:hidden;margin-bottom:12px}.ldx-pv .pv-1bar i{display:block;height:3px;background:#30d158}
+.ldx-pv .pv-1cap{font-size:10px;letter-spacing:.3px;color:#8e8e93;margin:0 0 5px 10px}
+.ldx-pv .pv-1card{background:#1c1c1e;border-radius:9px;overflow:hidden;margin-bottom:14px}
+.ldx-pv .pv-1row{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 6px 4px 9px;border-top:1px solid rgba(84,84,88,.45)}.ldx-pv .pv-1row:first-child{border-top:none}
+.ldx-pv .pv-1row b{display:block;font-size:12px;font-weight:400;color:#fff}.ldx-pv .pv-1row small{display:block;font-size:10px;color:#8e8e93}
+.ldx-pv .pv-1row small.choose{color:#ff9f0a;font-weight:600}.ldx-pv .pv-1row small.fnd{color:#ff6961;font-weight:600}.ldx-pv .pv-1row small.lim{color:#ff9f0a}
+.ldx-pv .pv-1dot{width:20px;height:20px;border-radius:50%;border:2px solid #5a5a5f;background:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;cursor:pointer}
+.ldx-pv .pv-1dot.ok{background:#30d158;border-color:#30d158}.ldx-pv .pv-1dot.fnd{border-color:#ff6961;background:#ff6961}.ldx-pv .pv-1dot.lim{border-color:#ff9f0a}
+.ldx-pv .pv-1cam{background:none;border:none;color:#0a84ff;padding:6px;cursor:pointer}
+.ldx-pv .pv-1rest{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid rgba(84,84,88,.45);color:#0a84ff;font-size:12px;padding:10px 9px 10px 37px;cursor:pointer}
 .ldx-pv .pv-crow{display:flex;align-items:center;gap:8px;border:1px solid #1f2d37;border-radius:11px;background:#0d151b;padding:8px 10px;margin-bottom:6px;cursor:pointer}
 .ldx-pv .pv-crow b{display:block;font-size:12px;color:#eef2f4}.ldx-pv .pv-crow small{display:block;font-size:10px;color:#8a959c}.ldx-pv .pv-crow small.lim{color:#f5c46a}
 .ldx-pv .pv-crow.campick{border-color:#217BE8;box-shadow:inset 0 0 0 1px #217BE8}

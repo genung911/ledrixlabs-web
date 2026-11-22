@@ -493,7 +493,7 @@
                   "optional": true
                 }
               ],
-              "condition": false
+              "condition": true
             },
             {
               "id": "hvac_filter",
@@ -8948,7 +8948,7 @@
                   ]
                 }
               ],
-              "condition": false
+              "condition": true
             },
             {
               "id": "fp_liner",
