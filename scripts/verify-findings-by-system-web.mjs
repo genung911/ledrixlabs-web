@@ -147,7 +147,7 @@ if (!MUTANT) {
   console.log('\n4 · mutations (temp copies)\n');
   const tmp = mkdtempSync(join(tmpdir(), 'fbs-web-'));
   const MUT = [
-    ['a repeated component name gets a sub-heading', 'FINDING_SECTIONS_MODULE', F.sections, s => s.replace('component: same(c.component, g.label) ? null : c.component,', 'component: c.component,')],
+    ['a repeated component name gets a sub-heading', 'FINDING_SECTIONS_MODULE', F.sections, s => s.replace("component: same(c.component, g.label) ? (many ? 'General' : null) : c.component,", 'component: c.component,')],   // re-anchored 2026-11-22: + the PDF's GENERAL
     ['components print best first', 'FINDING_SECTIONS_MODULE', F.sections, s => s.replace('const components = (g.components ?? []).map(', 'const components = [...(g.components ?? [])].reverse().map(')],
     ['an ungrouped finding is dropped', 'FINDING_SECTIONS_MODULE', F.sections, s => s.replace('if (left.length) {', 'if (false) {')],
     ['the sealed page loses its component sub-headings', 'FINDING_SECTIONS_MODULE', F.sections, s => s.replace("${c.component ? `<h3>${esc(c.component)}</h3>` : ''}", '')],

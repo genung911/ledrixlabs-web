@@ -14,6 +14,7 @@ import { readLastPlace, type Place } from '@/lib/templates/lastPlace';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
+import { LocationSuggestions } from '@/components/templates/LocationSuggestions';
 import { Card, Empty, ErrorBox, Loading, Page, PageHeader, formatWhen } from '@/components/workspace/ui';
 import { Banner, Menu, Modal, Pill, btn, field, label, timeAgo } from '@/components/templates/ui';
 import { canAuthorTemplates } from '@/lib/templateBuilder/access';
@@ -91,6 +92,9 @@ export default function TemplatesPage() {
             ? <Link className={btn.primary} href="/app/templates/create"><span aria-hidden>+</span> New template</Link>
             : <button className={btn.primary} disabled title={NEEDS_SERVER}><span aria-hidden>+</span> New template</button>
         )} />
+
+      {/* Location suggestions (ledrix-app PLAN_2026-11-21_location.md L6): only for someone who may approve locations. */}
+      <LocationSuggestions />
 
       {data && !server && author && (
         <div className="mb-4">

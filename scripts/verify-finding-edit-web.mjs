@@ -71,7 +71,15 @@ async function suite(src) {
   const cp = R.confirmPatch({ ...base, description: 'Possible duplicate — review: Pipe ends high' }, R.draftOf({ ...base, description: 'Possible duplicate — review: Pipe ends high' }));
   ok('§1 confirming is one write: the edits, the status, and the duplicate marker off', cp.status === 'confirmed' && cp.description === 'Pipe ends high');
   const ch = R.changesOf(base, { ...R.draftOf(base), room: 'Utility room', is_safety: true });
-  ok('§1 only what changed is sent; room and location move together', JSON.stringify(ch) === '{"is_safety":true,"room":"Utility room","location":"Utility room"}', JSON.stringify(ch));
+  // AMENDED 2026-11-21 (ledrix-app PLAN_2026-11-21_location.md): the place, an optional direction and spot compose the
+  // location; room is the place with its direction. Same values for a plain place, written location first.
+  ok('§1 only what changed is sent; room and location move together', JSON.stringify(ch) === '{"is_safety":true,"location":"Utility room","room":"Utility room"}', JSON.stringify(ch));
+  const chd = R.changesOf(base, { ...R.draftOf(base), room: 'Bedroom', dir: 'NE', spot: 'by the closet door' });
+  ok('§1 a direction and a spot compose the location; room is the place with its direction',
+    chd.location === 'NE Bedroom · by the closet door' && chd.room === 'NE Bedroom', JSON.stringify(chd));
+  const back = R.draftOf({ ...base, location: 'NE Bedroom · by the closet door', room: 'NE Bedroom' });
+  ok('§1 a composed location reads back into its parts, direction blank unless it was chosen',
+    back.room === 'Bedroom' && back.dir === 'NE' && back.spot === 'by the closet door' && R.draftOf({ ...base, location: 'Garage' }).dir === '', JSON.stringify(back));
   ok('§1 restore goes back to the queue as proposed, never confirmed', R.restorePatch('t').status === 'proposed' && R.restorePatch('t').rejected_at === null);
   ok('§1 GOOD is not a finding priority', !R.PICKABLE_PRIORITIES.includes('spec') && R.PICKABLE_PRIORITIES.length === 4);
 

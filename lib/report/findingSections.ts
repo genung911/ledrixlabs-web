@@ -28,8 +28,11 @@ export function findingSections<T>(findings: readonly T[], groups: readonly Repo
   const placed = new Set<number>();
   const out: FindingSection<T>[] = [];
   for (const g of groups ?? []) {
+    // The PDF's rule (ledrix-app DECISIONS 2026-11-21, build 942): findings filed on the system itself print no
+    // sub-heading when they are its only group, and GENERAL beside other headings — or they read as part of the one above.
+    const many = (g.components ?? []).filter(c => (c.findings ?? []).length).length > 1;
     const components = (g.components ?? []).map(c => ({
-      component: same(c.component, g.label) ? null : c.component,
+      component: same(c.component, g.label) ? (many ? 'General' : null) : c.component,
       findings: (c.findings ?? []).filter(i => Number.isInteger(i) && i >= 0 && i < findings.length && !placed.has(i))
         .map(i => { placed.add(i); return findings[i]; }),
     })).filter(c => c.findings.length);

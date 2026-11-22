@@ -11,7 +11,7 @@ import { workspace } from '@/lib/workspace/client';
 
 export type Capability =
   | 'add_inspections' | 'see_all_inspections' | 'assign_work' | 'edit_findings'
-  | 'crm' | 'invoices' | 'team' | 'company_settings';
+  | 'crm' | 'invoices' | 'team' | 'company_settings' | 'approve_locations';
 
 export type MemberPermission = { capability: Capability; preset: boolean; allowed: boolean; changed: boolean };
 export type MemberPermissions = { role: string | null; can_change: boolean; permissions: MemberPermission[] };
@@ -26,6 +26,7 @@ export const PERMISSION_LABEL: Record<Capability, string> = {
   invoices: 'Invoices & payments',
   team: 'Team — invite, change people',
   company_settings: 'Company settings',
+  approve_locations: 'Approve locations',
 };
 
 export class PermissionError extends Error {

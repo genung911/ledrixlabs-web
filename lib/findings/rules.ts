@@ -29,7 +29,23 @@ export function editAccess(row: EditableRow, team: TeamLike): EditAccess {
   return 'edit';
 }
 
-export type Draft = { description: string; severity: string; is_safety: boolean; room: string; level: string; inspector_notes: string };
+/** `room` is the PLACE (ledrix-app PLAN_2026-11-21_location.md: one place, an optional direction blank unless chosen, an
+ *  optional spot). Until #137 the website writes them as the composed text the phone reads back as its parts. */
+export type Draft = { description: string; severity: string; is_safety: boolean; room: string; dir: string; spot: string; level: string; inspector_notes: string };
+
+export const DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
+/** "NE Bedroom · by the closet door" → its parts (the phone's composeLocation, read backwards). */
+export function splitLocation(text: string | null | undefined): { place: string; dir: string; spot: string } {
+  const [head, ...rest] = (text ?? '').split(' · ');
+  const words = head.trim().split(/\s+/).filter(Boolean);
+  const dir = words.length > 1 && (DIRECTIONS as readonly string[]).includes(words[0]) ? words[0] : '';
+  return { place: (dir ? words.slice(1) : words).join(' '), dir, spot: rest.join(' · ').trim() };
+}
+/** Its parts → "NE Bedroom · by the closet door"; direction and spot only when chosen. */
+export function joinLocation(place: string, dir: string, spot: string): string {
+  const d = (DIRECTIONS as readonly string[]).includes(dir) ? dir : '';
+  return [[d, place.trim()].filter(Boolean).join(' '), spot.trim()].filter(Boolean).join(' · ');
+}
 
 const str = (v: string | null | undefined) => (v ?? '').trim();
 
@@ -45,7 +61,7 @@ export function draftOf(row: EditableRow): Draft {
     description: row.description ?? '',
     severity: priorityUnset(row) ? '' : (row.severity ?? ''),
     is_safety: row.is_safety === true,
-    room: row.room ?? row.location ?? '',
+    ...(() => { const p = splitLocation(row.location ?? row.room); return { room: p.place, dir: p.dir, spot: p.spot }; })(),
     level: row.level ?? '',
     inspector_notes: row.inspector_notes ?? '',
   };
@@ -57,7 +73,9 @@ export function changesOf(row: EditableRow, d: Draft): Record<string, unknown> {
   if (str(d.description) !== str(row.description)) out.description = str(d.description);
   if (d.severity && d.severity !== row.severity) out.severity = d.severity;
   if (d.is_safety !== (row.is_safety === true)) out.is_safety = d.is_safety;
-  if (str(d.room) !== str(row.room ?? row.location)) { out.room = str(d.room) || null; out.location = str(d.room) || null; }
+  // The place, its direction and spot compose the location; `room` is the place with its direction (the room it is in).
+  const next = str(d.room) ? joinLocation(d.room, d.dir, d.spot) : '';
+  if (next !== str(row.location ?? row.room)) { out.location = next || null; out.room = str(d.room) ? joinLocation(d.room, d.dir, '') : null; }
   if (str(d.level) !== str(row.level)) out.level = str(d.level) || null;
   if (str(d.inspector_notes) !== str(row.inspector_notes)) out.inspector_notes = str(d.inspector_notes);
   return out;

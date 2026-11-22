@@ -5,10 +5,11 @@
 // under the phone's rules (lib/findings/rules.ts) and through the same server checks
 // (lib/findings/edit.ts). Someone else's finding, a staged limitation, or a job you are not on is read only and
 // says why. Photos are shown above, exactly as the read-only panel showed them.
+import { STANDARD_LOCATIONS } from '@/lib/scope/core/taxonomy/locations';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SEVERITY_COLOR, SEVERITY_SHORT_LABELS, normalizeFindingStatus, parseSeverity } from '@/lib/workspace/model';
 import {
-  PICKABLE_PRIORITIES, changesOf, confirmPatch, draftOf, editAccess, missingForConfirm, notTaken, priorityUnset, rejectPatch, restorePatch,
+  DIRECTIONS, PICKABLE_PRIORITIES, changesOf, confirmPatch, draftOf, editAccess, missingForConfirm, notTaken, priorityUnset, rejectPatch, restorePatch,
   type Draft, type EditableRow, type TeamLike,
 } from '@/lib/findings/rules';
 import { WEB_DEVICE_NAME, checkInLease, moveLeaseHere, releaseLease, saveFinding, takeLease, type Lease } from '@/lib/findings/edit';
@@ -172,10 +173,24 @@ export function FindingEditor<T extends Row>({ finding, team, names, lock, onSav
         ) : finding.is_safety ? <p className="text-xs font-semibold text-safety">SAFETY</p> : null}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Labeled label="Room" htmlFor={`r-${finding.id}`}>
-            {editable && status !== 'rejected'
-              ? <input id={`r-${finding.id}`} value={draft.room} onChange={e => set('room', e.target.value)} className="w-full rounded-lg border border-hairline bg-ground px-3 py-1.5 text-sm text-ink focus:border-accent focus:bg-surface focus:outline-none" />
-              : <p className="text-ink">{finding.room || finding.location || '—'}</p>}
+          <Labeled label="Location" htmlFor={`r-${finding.id}`}>
+            {editable && status !== 'rejected' ? (
+              <div className="space-y-2">
+                {/* Ledrix's standard locations to pick from, or the inspector's own words (a custom place). */}
+                <input id={`r-${finding.id}`} list={`locs-${finding.id}`} value={draft.room} onChange={e => set('room', e.target.value)} placeholder="Search or add a location"
+                  className="w-full rounded-lg border border-hairline bg-ground px-3 py-1.5 text-sm text-ink focus:border-accent focus:bg-surface focus:outline-none" />
+                <datalist id={`locs-${finding.id}`}>{STANDARD_LOCATIONS.map(l => <option key={l.id} value={l.label} />)}</datalist>
+                <div className="flex gap-2">
+                  <select aria-label="Direction" value={draft.dir} onChange={e => set('dir', e.target.value)}
+                    className="rounded-lg border border-hairline bg-ground px-2 py-1.5 text-sm text-ink focus:border-accent focus:outline-none">
+                    <option value="">No direction</option>
+                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <input aria-label="Spot, optional" value={draft.spot} onChange={e => set('spot', e.target.value)} placeholder="Spot (optional)"
+                    className="min-w-0 flex-1 rounded-lg border border-hairline bg-ground px-3 py-1.5 text-sm text-ink focus:border-accent focus:bg-surface focus:outline-none" />
+                </div>
+              </div>
+            ) : <p className="text-ink">{finding.location || finding.room || '—'}</p>}
           </Labeled>
           <Labeled label="Floor" htmlFor={`l-${finding.id}`}>
             {editable && status !== 'rejected'
