@@ -62,6 +62,18 @@ export function unitTileLabel(fold: HvacFold): string | null {
   return null;
 }
 
+/** HOW MANY OF A UNIT THIS JOB HAS (owner 2026-11-22, build 960: "This is still showing two even though under heat pump I no
+ *  longer have a backup heat" → "Build it"). The Add list's "N in house" counted every unit the HOME had ever recorded — the
+ *  furnaces earlier jobs at the same address made — so a heat-pump-only job read "Furnace · 2 in house". It counts this
+ *  job's tiles now: the listed sections the unit owns ("heating", "heating~i2"), and none when the Heat Pump or Mini-Split
+ *  tile holds that section — Heating there is the heat pump's air handler, not a furnace. A furnace + AC folding into
+ *  Heating & Cooling still counts its AC. Null: the unit owns no section (counted by its rows instead). */
+export function unitsOnTiles(ownsSystem: string | null | undefined, listedBases: readonly string[], fold: HvacFold): number | null {
+  if (!ownsSystem) return null;
+  if ((fold.into === 'heat_pump' || fold.into === 'mini_split') && (fold.folded as string[]).includes(ownsSystem)) return 0;
+  return listedBases.filter(b => b === ownsSystem).length;
+}
+
 /** The Heating tile's name at a dual-fuel house. */
 export const BACKUP_LABEL = 'Backup Heat';
 /** How a furnace type reads under the Backup Heat tile. */

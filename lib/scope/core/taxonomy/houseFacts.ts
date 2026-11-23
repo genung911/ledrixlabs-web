@@ -29,6 +29,13 @@ export type HouseFact = { id: string; label: string; group: HouseFactGroup; sour
    *  should the next question … be what the backup heat is?") — the same words the item's own rule reads. */
   askWhen?: { fact: string; includesAny: readonly string[] } };
 
+/** ASKED ONLY IN BEFORE YOU START (owner 2026-11-22, build 959: "it is creating a backup heat inside heat pump so we have 2
+ *  heat sources already. I did not select the backup heat" → "Extra choices in same pass"). Backup Heat is a fact about the
+ *  house, never an item to inspect: no system page lists it as a row or asks it in Details. What the backup IS is inspected
+ *  where it lives — the strips with the air handler, a furnace on its own Backup Heat tile, a fireplace in Fireplace. */
+export const BEFORE_YOU_START_ONLY: ReadonlySet<string> = new Set(['hvac_backup_heat']);
+export const askedOnlyBeforeYouStart = (nodeId: string): boolean => BEFORE_YOU_START_ONLY.has(String(nodeId).split('~')[0]);
+
 /** The facts, in the page's order (board 6). */
 export const HOUSE_FACTS: readonly HouseFact[] = [
   // ORIENTATION FIRST (owner 2026-11-14: "Before you start needs a front facing direction or however internachi says we
@@ -47,7 +54,7 @@ export const HOUSE_FACTS: readonly HouseFact[] = [
   { id: 'occupancy',    label: 'Occupancy',    group: 'visit',     source: { kind: 'extras', key: 'occupancy' }, question: 'Is anyone living there?', hint: 'And who came to the inspection, if anyone.' },
   { id: 'utilities_on', label: 'Utilities on', group: 'visit',     source: { kind: 'extras', key: 'waterState' }, question: 'Are the utilities on?', hint: 'Off takes what needs it off the checklist, marked not tested.' },
   { id: 'heats',        label: 'What heats',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_heating', attr: 'fuel_source' }, none: true, question: 'What heats the house?', hint: 'Pick every one.', multi: true },
-  { id: 'backup_heat',  label: 'Backup heat',  group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_backup_heat', attr: 'spec' }, question: 'What is the backup heat?', hint: 'A heat pump or mini-split usually has one: heat strips in the air handler, or a gas furnace (dual fuel).', askWhen: { fact: 'heats', includesAny: ['heat pump', 'mini-split'] } },
+  { id: 'backup_heat',  label: 'Backup heat',  group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_backup_heat', attr: 'spec' }, question: 'What is the backup heat?', hint: 'Not every one has one. Heat strips in the air handler, a furnace (dual fuel), a fireplace or wood stove, baseboards — or None.', askWhen: { fact: 'heats', includesAny: ['heat pump', 'mini-split'] } },
   { id: 'cools',        label: 'What cools',   group: 'equipment', source: { kind: 'spec', nodeId: 'hvac_cooling', attr: 'spec' }, none: true, question: 'What cools the house?', hint: 'Pick every one.', multi: true },
   { id: 'water_heater', label: 'Water heater', group: 'equipment', source: { kind: 'spec', nodeId: 'plumb_wh_type', attr: 'type' }, none: true, question: 'What kind of water heater?', hint: 'The data plate on its side says.' },
   { id: 'laundry',      label: 'Laundry',      group: 'equipment', source: { kind: 'spec', nodeId: 'laundry_dryer', attr: 'spec' }, none: true, question: 'Are there laundry hookups?', hint: 'The dryer hookup: electric, gas or both — or None.' },

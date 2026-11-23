@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.22.2",
+  "packVersion": "2026.11.22.4",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -221,12 +221,16 @@
               "values": [
                 "Electric Strips",
                 "Gas Furnace (Dual Fuel)",
+                "Propane Furnace (Dual Fuel)",
+                "Oil Furnace (Dual Fuel)",
+                "Fireplace / Wood Stove",
+                "Electric Baseboard",
                 "None",
                 "Not Determined"
               ]
             }
           ],
-          "condition": true,
+          "condition": false,
           "requires": [
             {
               "specNodeId": "hvac_heating::fuel_source",

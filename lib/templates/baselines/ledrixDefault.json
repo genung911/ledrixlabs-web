@@ -150,12 +150,16 @@
                   "values": [
                     "Electric Strips",
                     "Gas Furnace (Dual Fuel)",
+                    "Propane Furnace (Dual Fuel)",
+                    "Oil Furnace (Dual Fuel)",
+                    "Fireplace / Wood Stove",
+                    "Electric Baseboard",
                     "None",
                     "Not Determined"
                   ]
                 }
               ],
-              "condition": true
+              "condition": false
             },
             {
               "id": "hvac_flue",
