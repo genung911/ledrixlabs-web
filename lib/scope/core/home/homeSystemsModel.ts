@@ -38,7 +38,7 @@ export const HOME_SYSTEM_ORDER = ['roof', 'exterior', 'structure', 'foundation',
   'water_heater', 'plumbing', 'fireplace', 'attic', 'insulation', 'interior', 'appliances', 'garage'] as const;
 
 const LABELS: Record<string, string> = {
-  roof: 'Roof', exterior: 'Exterior', structure: 'Structure', foundation: 'Foundation', electrical: 'Electrical',
+  roof: 'Roof', exterior: 'Exterior', structure: 'Structure', foundation: 'Foundation', electrical: 'Electrical', windows_doors: 'Windows & Doors',
   heating: 'Heating', cooling: 'Cooling', mini_split: 'Mini-Split', heat_pump: 'Heat Pump', hvac: 'Heating & Cooling', water_heater: 'Water Heater', plumbing: 'Plumbing',
   fireplace: 'Fireplace', attic: 'Attic', insulation: 'Insulation', interior: 'Interior', appliances: 'Appliances', garage: 'Garage',
 };

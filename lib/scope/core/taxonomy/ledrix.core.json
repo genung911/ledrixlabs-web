@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.22.4",
+  "packVersion": "2026.11.23.2",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -49,7 +49,8 @@
                 "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
-                "Boiler",
+                "Hot Water Boiler",
+                "Steam Boiler",
                 "Radiant Heat"
               ]
             }
@@ -108,7 +109,8 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler",
+                "Steam Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -226,7 +228,7 @@
                 "Fireplace / Wood Stove",
                 "Electric Baseboard",
                 "None",
-                "Not Determined"
+                "Not determined"
               ]
             }
           ],
@@ -262,7 +264,9 @@
               "values": [
                 "Forced Air (Ducts)",
                 "Baseboard Electric",
-                "Radiator / Boiler",
+                "Radiators (Hot Water)",
+                "Radiators (Steam)",
+                "Hydronic Baseboard (Fin-Tube)",
                 "Ductless",
                 "Radiant Floor",
                 "Fan Coil Units"
@@ -270,18 +274,46 @@
               "offeredWhen": [
                 {
                   "specNodeId": "hvac_heating::fuel_source",
-                  "includesAny": ["Gas Furnace", "Electric Furnace", "Propane", "Oil Furnace", "Heat Pump"],
-                  "values": ["Forced Air (Ducts)"]
+                  "includesAny": [
+                    "Gas Furnace",
+                    "Electric Furnace",
+                    "Propane",
+                    "Oil Furnace",
+                    "Heat Pump"
+                  ],
+                  "values": [
+                    "Forced Air (Ducts)"
+                  ]
                 },
                 {
                   "specNodeId": "hvac_heating::fuel_source",
-                  "includesAny": ["Boiler"],
-                  "values": ["Radiator / Boiler", "Radiant Floor", "Fan Coil Units"]
+                  "includesAny": [
+                    "Hot Water Boiler"
+                  ],
+                  "values": [
+                    "Radiators (Hot Water)",
+                    "Hydronic Baseboard (Fin-Tube)",
+                    "Radiant Floor",
+                    "Fan Coil Units"
+                  ]
                 },
                 {
                   "specNodeId": "hvac_heating::fuel_source",
-                  "includesAny": ["Radiant Heat"],
-                  "values": ["Radiant Floor"]
+                  "includesAny": [
+                    "Steam Boiler"
+                  ],
+                  "values": [
+                    "Radiators (Steam)"
+                  ]
+                },
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includesAny": [
+                    "Radiant Heat"
+                  ],
+                  "values": [
+                    "Radiant Floor"
+                  ]
                 }
               ]
             }
@@ -504,7 +536,7 @@
                 "PVC (High-Eff)",
                 "Direct Vent (Sealed)",
                 "Masonry Chimney",
-                "Single-Wall (Verify)"
+                "Single-Wall Metal"
               ],
               "offeredWhen": [
                 {
@@ -521,7 +553,7 @@
                   "values": [
                     "Metal B-Vent",
                     "Masonry Chimney",
-                    "Single-Wall (Verify)"
+                    "Single-Wall Metal"
                   ]
                 }
               ]
@@ -761,8 +793,9 @@
               "id": "spec",
               "label": "Heat Exchanger",
               "values": [
-                "Visible — No Defects",
-                "Partially Visible"
+                "Visible",
+                "Partially visible",
+                "Not visible"
               ]
             }
           ],
@@ -870,8 +903,10 @@
                 "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
-                "Boiler",
-                "Radiant Heat"
+                "Hot Water Boiler",
+                "Steam Boiler",
+                "Radiant Heat",
+                "Boiler"
               ],
               "exact": true,
               "typeFirst": true
@@ -952,8 +987,10 @@
                 "Ductless Mini-Split",
                 "Propane",
                 "Oil Furnace",
-                "Boiler",
-                "Radiant Heat"
+                "Hot Water Boiler",
+                "Steam Boiler",
+                "Radiant Heat",
+                "Boiler"
               ],
               "exact": true,
               "typeFirst": true
@@ -1155,7 +1192,7 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -1169,7 +1206,7 @@
               "values": [
                 "Diaphragm",
                 "Compression",
-                "None seen"
+                "None"
               ],
               "optional": true
             }
@@ -1193,7 +1230,8 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler",
+                "Steam Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -1219,7 +1257,7 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -1259,7 +1297,83 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler",
+                "Steam Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_steam_sight_glass",
+          "label": "Sight Glass",
+          "kind": "spec",
+          "origin": "core",
+          "keywords": [
+            "sight glass",
+            "gauge glass",
+            "water level glass",
+            "steam boiler water level"
+          ],
+          "attributes": [],
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Steam Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_steam_pressure_control",
+          "label": "Pressure Control",
+          "kind": "spec",
+          "origin": "core",
+          "keywords": [
+            "pressuretrol",
+            "pressure control",
+            "steam pressure control",
+            "pigtail"
+          ],
+          "attributes": [],
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Steam Boiler"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable"
+            }
+          ],
+          "layout": "row"
+        },
+        {
+          "id": "hvac_steam_air_vents",
+          "label": "Air Vents",
+          "kind": "spec",
+          "origin": "core",
+          "keywords": [
+            "steam vent",
+            "radiator vent",
+            "main vent",
+            "air vent"
+          ],
+          "attributes": [],
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "hvac_heating::fuel_source",
+              "includes": [
+                "Steam Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -1287,7 +1401,8 @@
             {
               "specNodeId": "hvac_heating::fuel_source",
               "includes": [
-                "Boiler"
+                "Hot Water Boiler",
+                "Steam Boiler"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -1567,6 +1682,9 @@
             "hvac_boiler_relief",
             "hvac_boiler_circulator",
             "hvac_boiler_lwco",
+            "hvac_steam_sight_glass",
+            "hvac_steam_pressure_control",
+            "hvac_steam_air_vents",
             "hvac_boiler_piping",
             "hvac_elec_baseboard",
             "hvac_elec_wall",
@@ -4473,6 +4591,7 @@
               "label": "Bathing Fixture",
               "values": [
                 "Tub Only",
+                "Clawfoot Tub",
                 "Shower Only",
                 "Tub / Shower Combo",
                 "Walk-in Shower",
@@ -4586,7 +4705,7 @@
               "label": "CSST Bonding",
               "values": [
                 "Bonded",
-                "Not Visible"
+                "Not visible"
               ],
               "optional": true
             }
@@ -5468,7 +5587,9 @@
                 "Under 5 years old",
                 "5–10 years old",
                 "10–15 years old",
-                "Over 15 years old — budget replacement",
+                "15–20 years old",
+                "20–25 years old",
+                "Over 25 years old",
                 "Not determined"
               ]
             }
@@ -5840,7 +5961,7 @@
               "label": "Expansion Tank",
               "values": [
                 "Present",
-                "Not present"
+                "None"
               ],
               "optional": true
             }
@@ -6028,7 +6149,7 @@
               "label": "Sediment Trap",
               "values": [
                 "Present",
-                "Not present"
+                "None"
               ],
               "optional": true
             }
@@ -6124,7 +6245,7 @@
               "label": "Service Valves",
               "values": [
                 "Present",
-                "Not present"
+                "None"
               ],
               "optional": true
             }
@@ -6676,7 +6797,7 @@
                 "Ufer / Concrete-Encased",
                 "Ground Plate",
                 "Metal Water Pipe",
-                "Not Determined"
+                "Not determined"
               ]
             }
           ],
@@ -6711,17 +6832,19 @@
               "values": [
                 "Copper",
                 "Aluminum",
-                "Cloth-Sheathed (Ungrounded)",
-                "Knob & Tube"
+                "Copper-Clad Aluminum"
               ]
             },
             {
               "id": "method",
               "label": "Method",
               "values": [
+                "Knob & Tube",
+                "Cloth-Jacketed Cable (Old NM)",
                 "NM-B (Romex)",
-                "Conduit (EMT)",
-                "Armored (BX / MC)"
+                "Armored Cable (BX)",
+                "MC Cable",
+                "Conduit (EMT / Rigid)"
               ]
             }
           ],
@@ -6755,7 +6878,7 @@
         },
         {
           "id": "elec_wir_conduit",
-          "label": "Conduit (EMT)",
+          "label": "Conduit",
           "keywords": [
             "emt conduit",
             "wiring in conduit",
@@ -6771,6 +6894,7 @@
             {
               "specNodeId": "elec_wiring::method",
               "includes": [
+                "Conduit (EMT / Rigid)",
                 "Conduit (EMT)"
               ],
               "exact": true,
@@ -6798,7 +6922,8 @@
             {
               "specNodeId": "elec_wiring::type",
               "includes": [
-                "Aluminum"
+                "Aluminum",
+                "Copper-Clad Aluminum"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -6822,7 +6947,7 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_wiring::type",
+              "specNodeId": "elec_wiring::method",
               "includes": [
                 "Knob & Tube"
               ],
@@ -6833,7 +6958,7 @@
         },
         {
           "id": "elec_wir_cloth",
-          "label": "Cloth-Sheathed / Ungrounded Wiring",
+          "label": "Cloth-Jacketed Cable",
           "keywords": [
             "cloth wiring",
             "cloth sheathed",
@@ -6848,9 +6973,9 @@
           ],
           "requires": [
             {
-              "specNodeId": "elec_wiring::type",
+              "specNodeId": "elec_wiring::method",
               "includes": [
-                "Cloth-Sheathed (Ungrounded)"
+                "Cloth-Jacketed Cable (Old NM)"
               ],
               "exact": true,
               "whenUnanswered": "not_applicable"
@@ -6859,7 +6984,7 @@
         },
         {
           "id": "elec_wir_mc",
-          "label": "Armored (BX / MC) Cable",
+          "label": "Armored Cable (BX / MC)",
           "keywords": [
             "armored cable",
             "bx cable",
@@ -6876,6 +7001,8 @@
             {
               "specNodeId": "elec_wiring::method",
               "includes": [
+                "Armored Cable (BX)",
+                "MC Cable",
                 "Armored (BX / MC)"
               ],
               "exact": true,
@@ -6902,8 +7029,7 @@
               "unlisted": [
                 "Copper",
                 "Aluminum",
-                "Cloth-Sheathed (Ungrounded)",
-                "Knob & Tube"
+                "Copper-Clad Aluminum"
               ]
             }
           ]
@@ -7734,8 +7860,7 @@
               "values": [
                 "Step",
                 "Counter",
-                "Kick-out",
-                "Kick-out missing"
+                "Kick-out"
               ],
               "optional": true
             }
@@ -7911,7 +8036,7 @@
               "label": "Downspout Extensions / Discharge",
               "values": [
                 "Splash Blocks Only",
-                "Underground — Verify Daylight"
+                "Underground"
               ]
             }
           ],
@@ -7955,7 +8080,7 @@
               "label": "Drip Edge",
               "values": [
                 "Present",
-                "Not present"
+                "None"
               ],
               "optional": true
             }
@@ -8269,12 +8394,13 @@
               "id": "type",
               "label": "Type",
               "values": [
-                "Poured Concrete Slab",
+                "Slab-on-Grade",
                 "Crawlspace",
                 "Basement",
                 "Pier & Beam",
                 "Grade Beam"
-              ]
+              ],
+              "multi": true
             },
             {
               "id": "wall_material",
@@ -8282,8 +8408,10 @@
               "values": [
                 "Poured Concrete",
                 "Concrete Block (CMU)",
-                "Stone",
-                "Brick"
+                "Cut Stone",
+                "Rubble Stone",
+                "Brick",
+                "Hollow Clay Tile"
               ]
             }
           ],
@@ -8412,6 +8540,43 @@
               "optional": true
             }
           ]
+        },
+        {
+          "id": "found_wall_framing",
+          "label": "Wall Framing",
+          "kind": "spec",
+          "origin": "core",
+          "keywords": [
+            "wall framing",
+            "balloon framing",
+            "platform framing",
+            "solid masonry",
+            "fire blocking",
+            "fireblocking"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Wall Framing",
+              "values": [
+                "Platform",
+                "Balloon",
+                "Solid Masonry",
+                "Not visible"
+              ],
+              "optional": true
+            }
+          ],
+          "condition": false,
+          "requires": [
+            {
+              "specNodeId": "found_type::type",
+              "includes": [],
+              "unlisted": [],
+              "typeFirst": true
+            }
+          ],
+          "layout": "row"
         },
         {
           "id": "foundation_manufactured_tie_downs",
@@ -8617,8 +8782,9 @@
               "id": "spec",
               "label": "Foundation Vents / Louvers",
               "values": [
-                "Passive Vents — Adequate",
-                "Sealed — Conditioned Crawl"
+                "Vented",
+                "Sealed (Conditioned)",
+                "None"
               ]
             }
           ],
@@ -8955,7 +9121,7 @@
               "label": "Floor Drain",
               "values": [
                 "Present",
-                "Not present"
+                "None"
               ],
               "optional": true
             }
@@ -9085,7 +9251,8 @@
           "nodeIds": [
             "found_joists",
             "found_beams",
-            "found_subfloor"
+            "found_subfloor",
+            "found_wall_framing"
           ]
         },
         {
@@ -10128,1256 +10295,11 @@
       ]
     },
     {
-      "id": "attic",
-      "label": "ATTIC / INSULATION",
-      "icon": "home-thermometer-outline",
-      "order": 8,
+      "id": "windows_doors",
+      "label": "WINDOWS & DOORS",
+      "icon": "window-closed-variant",
+      "order": 6,
       "nodes": [
-        {
-          "id": "attic_access",
-          "label": "Attic Access",
-          "keywords": [
-            "attic access",
-            "scuttle",
-            "pull-down stair",
-            "attic door",
-            "attic hatch",
-            "no access attic"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Attic Access",
-              "values": [
-                "Scuttle / Hatch",
-                "Pull-Down Stair",
-                "Walk-Up Stair"
-              ]
-            }
-          ],
-          "condition": true,
-          "limitations": [
-            "Viewed from Hatch",
-            "No Access"
-          ],
-          "method": [
-            "Fully Entered"
-          ]
-        },
-        {
-          "id": "attic_framing",
-          "label": "Roof Framing",
-          "keywords": [
-            "rafter",
-            "truss",
-            "roof framing",
-            "collar tie",
-            "cut truss",
-            "modified truss",
-            "ridge board"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Roof Framing",
-              "values": [
-                "Conventional Rafters",
-                "Engineered Trusses"
-              ]
-            }
-          ],
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_instype",
-          "label": "Insulation",
-          "keywords": [
-            "fiberglass batt",
-            "blown cellulose",
-            "blown fiberglass",
-            "spray foam",
-            "rigid foam",
-            "attic insulation",
-            "r-value",
-            "r value",
-            "r-19",
-            "r-30",
-            "r-38",
-            "r-49",
-            "insulation depth"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "type",
-              "label": "Type",
-              "values": [
-                "Fiberglass Batts",
-                "Blown Cellulose",
-                "Blown Fiberglass",
-                "Open-Cell Spray Foam",
-                "Closed-Cell Spray Foam",
-                "Rigid Foam Board"
-              ]
-            },
-            {
-              "id": "est_r_value",
-              "label": "Est. R-Value",
-              "values": [
-                "< R-19 (Upgrade)",
-                "R-19–R-30",
-                "R-30–R-38",
-                "R-38–R-49",
-                "> R-49"
-              ]
-            }
-          ],
-          "condition": true,
-          "limitations": [
-            "Not Determined"
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_coverage",
-          "label": "Insulation Coverage",
-          "keywords": [
-            "insulation coverage",
-            "gaps insulation",
-            "missing insulation",
-            "compressed insulation",
-            "uneven coverage",
-            "voids"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Coverage",
-              "values": [
-                "Full",
-                "Partial",
-                "Gaps seen"
-              ],
-              "optional": true
-            }
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_intake",
-          "label": "Intake (Soffit) Vents",
-          "keywords": [
-            "soffit vent",
-            "intake vent",
-            "eave vent",
-            "baffle",
-            "blocked soffit",
-            "continuous soffit"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Intake Vents",
-              "values": [
-                "Continuous",
-                "Individual",
-                "Low Gable / Eave",
-                "None seen"
-              ]
-            }
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_exhaust",
-          "label": "Exhaust (Ridge / Gable)",
-          "keywords": [
-            "ridge vent",
-            "gable vent",
-            "box vent",
-            "turbine vent",
-            "exhaust vent attic"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Exhaust (Ridge / Gable)",
-              "values": [
-                "Ridge Vent",
-                "Gable Vents",
-                "Box / Turbine Vents"
-              ]
-            }
-          ],
-          "condition": true,
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_powered",
-          "label": "Powered Vents",
-          "keywords": [
-            "power vent",
-            "attic fan",
-            "powered attic ventilator",
-            "solar vent",
-            "thermostat vent"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Present — Not Tested"
-          ],
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Powered Fan",
-              "values": [
-                "Roof",
-                "Gable",
-                "Solar"
-              ],
-              "optional": true
-            }
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_fan_term",
-          "label": "Bath / Kitchen Fan Termination",
-          "keywords": [
-            "fan termination",
-            "bath fan vent",
-            "exhaust to attic",
-            "duct to soffit",
-            "fan dumps in attic",
-            "terminates exterior",
-            "ducting"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Fan Termination",
-              "values": [
-                "To exterior",
-                "Into attic",
-                "Not visible"
-              ],
-              "optional": true
-            }
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_moisture",
-          "label": "Moisture / Staining",
-          "keywords": [
-            "attic moisture",
-            "water stain attic",
-            "condensation",
-            "frost attic",
-            "mold attic",
-            "leak stain"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_pests",
-          "label": "Pests / Rodents",
-          "keywords": [
-            "rodent",
-            "droppings",
-            "nest",
-            "pest attic",
-            "squirrel",
-            "wasp nest",
-            "insect attic"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_wiring",
-          "label": "Wiring / Junction Boxes",
-          "keywords": [
-            "junction box attic",
-            "open splice attic",
-            "wiring attic",
-            "open junction",
-            "knob and tube attic",
-            "buried splice"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Visible"
-          ],
-          "requires": [
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        },
-        {
-          "id": "attic_multi_unit_shared_attic",
-          "label": "Shared Attic Space",
-          "keywords": [],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "multi_unit"
-          ],
-          "condition": true
-        },
-        {
-          "id": "attic_nc_insulation",
-          "label": "Attic Insulation Depth and Baffles",
-          "keywords": [
-            "insulation depth",
-            "baffle",
-            "insulation ruler"
-          ],
-          "kind": "equipment",
-          "origin": "core",
-          "appliesTo": [
-            "new_construction"
-          ],
-          "condition": true
-        },
-        {
-          "id": "attic_era_vermiculite",
-          "label": "Suspected Vermiculite Insulation",
-          "keywords": [
-            "vermiculite",
-            "zonolite",
-            "loose fill pebbles"
-          ],
-          "kind": "equipment",
-          "origin": "core",
-          "condition": true,
-          "requires": [
-            {
-              "specNodeId": "house::built",
-              "includes": [],
-              "before": 1990
-            },
-            {
-              "specNodeId": "attic_access::spec",
-              "includes": [],
-              "unlisted": []
-            }
-          ]
-        }
-      ],
-      "subsystems": [
-        {
-          "id": "attic__access_structure",
-          "name": "Access & Structure",
-          "nodeIds": [
-            "attic_access",
-            "attic_framing"
-          ]
-        },
-        {
-          "id": "attic__insulation",
-          "name": "Insulation",
-          "nodeIds": [
-            "attic_instype",
-            "attic_coverage",
-            "attic_era_vermiculite"
-          ]
-        },
-        {
-          "id": "attic__ventilation",
-          "name": "Ventilation",
-          "nodeIds": [
-            "attic_intake",
-            "attic_exhaust",
-            "attic_powered",
-            "attic_fan_term"
-          ]
-        },
-        {
-          "id": "attic__concerns",
-          "name": "Concerns",
-          "nodeIds": [
-            "attic_moisture",
-            "attic_pests",
-            "attic_wiring"
-          ]
-        },
-        {
-          "id": "attic__attic",
-          "name": "Special Homes",
-          "nodeIds": [
-            "attic_multi_unit_shared_attic",
-            "attic_nc_insulation"
-          ]
-        }
-      ],
-      "sectionType": "system",
-      "locationAxis": "none",
-      "walkZone": "attic",
-      "walkZones": [
-        "attic"
-      ]
-    },
-    {
-      "id": "interior",
-      "label": "INTERIOR",
-      "icon": "floor-plan",
-      "order": 9,
-      "nodes": [
-        {
-          "id": "int_walls",
-          "label": "Walls",
-          "keywords": [
-            "cracked wall",
-            "wall damage",
-            "laundry walls",
-            "laundry room walls",
-            "garage wall",
-            "water stain garage",
-            "drywall damage garage",
-            "drywall",
-            "plaster",
-            "paneling",
-            "wallboard",
-            "shiplap",
-            "shower surround",
-            "tub surround",
-            "tile wall bath",
-            "grout wall",
-            "moisture wall bath"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Wall Material",
-              "values": [
-                "Drywall",
-                "Plaster",
-                "Paneling",
-                "Wood",
-                "Tile",
-                "Other"
-              ]
-            }
-          ],
-          "condition": false
-        },
-        {
-          "id": "wall_drywall",
-          "label": "Drywall",
-          "keywords": [
-            "drywall",
-            "sheetrock",
-            "nail pops",
-            "drywall crack",
-            "tape joint"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [
-                "Drywall"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "wall_plaster",
-          "label": "Plaster",
-          "keywords": [
-            "plaster wall",
-            "plaster ceiling",
-            "plaster crack",
-            "lath"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [
-                "Plaster"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "wall_paneling",
-          "label": "Paneling",
-          "keywords": [
-            "paneling",
-            "wood paneling",
-            "wall panels"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [
-                "Paneling"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "wall_wood",
-          "label": "Wood Walls",
-          "keywords": [
-            "wood walls",
-            "shiplap",
-            "tongue and groove",
-            "wood ceiling"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [
-                "Wood"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "wall_tile",
-          "label": "Tile Walls",
-          "keywords": [
-            "wall tile",
-            "tile surround",
-            "shower surround",
-            "tub surround"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [
-                "Tile"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "wall_other",
-          "label": "Other Walls",
-          "keywords": [],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_walls",
-              "includes": [],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "unlisted": [
-                "Drywall",
-                "Plaster",
-                "Paneling",
-                "Wood",
-                "Tile"
-              ],
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "int_era_lead_paint",
-          "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
-          "keywords": [
-            "lead paint",
-            "peeling paint",
-            "chipping paint",
-            "alligatored paint"
-          ],
-          "kind": "equipment",
-          "origin": "core",
-          "condition": true,
-          "requires": [
-            {
-              "specNodeId": "house::built",
-              "includes": [],
-              "before": 1978
-            }
-          ]
-        },
-        {
-          "id": "int_ceilings",
-          "label": "Ceilings",
-          "keywords": [
-            "ceiling",
-            "ceiling stain",
-            "ceiling damage",
-            "garage ceiling",
-            "laundry ceiling",
-            "ceiling crack",
-            "sagging ceiling",
-            "water stain ceiling"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Ceiling Material",
-              "values": [
-                "Drywall",
-                "Plaster",
-                "Acoustic / Popcorn",
-                "Wood / Plank",
-                "Suspended / Drop",
-                "Other"
-              ]
-            }
-          ],
-          "condition": false
-        },
-        {
-          "id": "ceil_drywall",
-          "label": "Drywall Ceilings",
-          "keywords": [
-            "drywall ceiling",
-            "ceiling crack",
-            "ceiling nail pops",
-            "ceiling tape joint"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Drywall"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "ceil_plaster",
-          "label": "Plaster Ceilings",
-          "keywords": [
-            "plaster ceiling",
-            "plaster ceiling crack",
-            "sagging plaster ceiling"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Plaster"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "ceil_acoustic",
-          "label": "Acoustic / Popcorn",
-          "keywords": [
-            "popcorn ceiling",
-            "acoustic ceiling",
-            "cottage cheese ceiling",
-            "textured ceiling"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Acoustic / Popcorn"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "ceil_wood",
-          "label": "Wood Ceilings",
-          "keywords": [
-            "wood ceiling",
-            "plank ceiling",
-            "tongue and groove ceiling",
-            "beadboard ceiling"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Wood / Plank"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "ceil_suspended",
-          "label": "Suspended Ceilings",
-          "keywords": [
-            "drop ceiling",
-            "suspended ceiling",
-            "ceiling tiles",
-            "ceiling grid"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Suspended / Drop"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "ceil_other",
-          "label": "Other Ceilings",
-          "keywords": [],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_ceilings",
-              "includes": [
-                "Other"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "int_flooring",
-          "label": "Floors",
-          "keywords": [
-            "hardwood",
-            "laminate",
-            "lvp",
-            "vinyl plank",
-            "tile floor",
-            "carpet",
-            "concrete floor",
-            "terrazzo",
-            "luxury vinyl plank",
-            "lvp flooring",
-            "vinyl flooring",
-            "wood laminate",
-            "ceramic tile",
-            "flooring damage",
-            "floor damage",
-            "carpet stain",
-            "loose flooring",
-            "trip hazard",
-            "vinyl floor",
-            "lvp bathroom",
-            "bathroom flooring",
-            "stone floor",
-            "laundry floor",
-            "laundry room floor",
-            "laundry flooring"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Flooring Material",
-              "values": [
-                "Hardwood",
-                "Engineered Hardwood",
-                "LVP / Vinyl Plank",
-                "Laminate",
-                "Ceramic / Porcelain Tile",
-                "Carpet",
-                "Concrete",
-                "Natural Stone",
-                "Sheet Vinyl",
-                "Other"
-              ]
-            }
-          ],
-          "condition": false
-        },
-        {
-          "id": "flr_hardwood",
-          "label": "Hardwood",
-          "keywords": [
-            "hardwood floor",
-            "hardwood flooring",
-            "wood floor",
-            "cupping",
-            "floor gaps"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Hardwood"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_engineered",
-          "label": "Engineered Hardwood",
-          "keywords": [
-            "engineered hardwood",
-            "engineered wood floor"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Engineered Hardwood"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_lvp",
-          "label": "LVP / Vinyl Plank",
-          "keywords": [
-            "lvp",
-            "luxury vinyl plank",
-            "vinyl plank",
-            "lvp flooring"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "LVP / Vinyl Plank",
-                "LVP"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_laminate",
-          "label": "Laminate",
-          "keywords": [
-            "laminate floor",
-            "laminate flooring",
-            "swollen laminate"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Laminate"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_tile",
-          "label": "Ceramic / Porcelain Tile",
-          "keywords": [
-            "tile floor",
-            "ceramic tile",
-            "porcelain tile",
-            "cracked tile",
-            "grout"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Ceramic / Porcelain Tile",
-                "Tile"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_carpet",
-          "label": "Carpet",
-          "keywords": [
-            "carpet",
-            "carpet stain",
-            "stained carpet",
-            "carpet seam"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Carpet"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_concrete",
-          "label": "Concrete Floors",
-          "keywords": [
-            "concrete floor",
-            "stained concrete",
-            "polished concrete"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Concrete"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_stone",
-          "label": "Natural Stone Floors",
-          "keywords": [
-            "stone floor",
-            "slate floor",
-            "travertine",
-            "marble floor"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Natural Stone"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_sheet",
-          "label": "Sheet Vinyl",
-          "keywords": [
-            "sheet vinyl",
-            "linoleum",
-            "vinyl sheet flooring"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [
-                "Sheet Vinyl"
-              ],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "flr_other",
-          "label": "Other Flooring",
-          "keywords": [],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Inspected"
-          ],
-          "requires": [
-            {
-              "specNodeId": "int_flooring",
-              "includes": [],
-              "exact": true,
-              "whenUnanswered": "not_applicable",
-              "unlisted": [
-                "Hardwood",
-                "Engineered Hardwood",
-                "LVP / Vinyl Plank",
-                "Laminate",
-                "Ceramic / Porcelain Tile",
-                "Carpet",
-                "Concrete",
-                "Natural Stone",
-                "Sheet Vinyl",
-                "LVP",
-                "Tile"
-              ],
-              "attr": "spec"
-            }
-          ]
-        },
-        {
-          "id": "int_era_asbestos_tile",
-          "label": "Suspected Asbestos Floor Tile (9×9)",
-          "keywords": [
-            "9x9 tile",
-            "asbestos tile",
-            "vinyl asbestos tile",
-            "black mastic"
-          ],
-          "kind": "equipment",
-          "origin": "core",
-          "condition": true,
-          "requires": [
-            {
-              "specNodeId": "house::built",
-              "includes": [],
-              "before": 1980
-            }
-          ]
-        },
         {
           "id": "ext_doors",
           "label": "Door Material",
@@ -11587,59 +10509,6 @@
           "walkZone": "exterior",
           "walkZones": [
             "exterior"
-          ]
-        },
-        {
-          "id": "int_doors",
-          "label": "Interior Doors",
-          "keywords": [
-            "interior door",
-            "bedroom door",
-            "closet door",
-            "door latch",
-            "rubbing door",
-            "hollow core"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "limitations": [
-            "Not Tested"
-          ],
-          "walkZone": "interior",
-          "walkZones": [
-            "interior"
-          ],
-          "attributes": [
-            {
-              "id": "spec",
-              "label": "Interior Doors",
-              "values": [
-                "Hollow core",
-                "Solid core",
-                "Pocket",
-                "Barn"
-              ],
-              "optional": true
-            }
-          ]
-        },
-        {
-          "id": "int_trim",
-          "label": "Trim / Doors Finish",
-          "keywords": [
-            "baseboard",
-            "casing",
-            "trim interior",
-            "crown molding",
-            "damaged trim"
-          ],
-          "kind": "spec",
-          "origin": "core",
-          "condition": true,
-          "walkZone": "interior",
-          "walkZones": [
-            "interior"
           ]
         },
         {
@@ -12142,6 +11011,1403 @@
           "walkZones": [
             "interior"
           ]
+        }
+      ],
+      "subsystems": [
+        {
+          "id": "windows_doors__windows",
+          "name": "Windows",
+          "nodeIds": [
+            "ext_windows",
+            "win_vinyl",
+            "win_wood",
+            "win_aluminum",
+            "win_fiberglass",
+            "win_clad",
+            "win_storm",
+            "win_other",
+            "win_glazing",
+            "int_windows",
+            "int_egress"
+          ]
+        },
+        {
+          "id": "windows_doors__doors",
+          "name": "Exterior Doors",
+          "nodeIds": [
+            "ext_doors",
+            "door_steel",
+            "door_fiberglass",
+            "door_wood",
+            "door_french",
+            "door_sliding",
+            "door_other",
+            "ext_weatherstrip"
+          ]
+        },
+        {
+          "id": "windows_doors__garage_door",
+          "name": "Garage Door",
+          "nodeIds": [
+            "gar_door",
+            "gar_opener",
+            "ext_garage_door",
+            "gar_springs",
+            "garage_gar_door_hardware"
+          ]
+        }
+      ],
+      "sectionType": "system",
+      "locationAxis": "room",
+      "walkZone": "exterior",
+      "walkZones": [
+        "exterior",
+        "interior"
+      ]
+    },
+    {
+      "id": "attic",
+      "label": "ATTIC / INSULATION",
+      "icon": "home-thermometer-outline",
+      "order": 8,
+      "nodes": [
+        {
+          "id": "attic_access",
+          "label": "Attic Access",
+          "keywords": [
+            "attic access",
+            "scuttle",
+            "pull-down stair",
+            "attic door",
+            "attic hatch",
+            "no access attic"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Attic Access",
+              "values": [
+                "Scuttle / Hatch",
+                "Pull-Down Stair",
+                "Walk-Up Stair"
+              ]
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Viewed from Hatch",
+            "No Access"
+          ],
+          "method": [
+            "Fully Entered"
+          ]
+        },
+        {
+          "id": "attic_framing",
+          "label": "Roof Framing",
+          "keywords": [
+            "rafter",
+            "truss",
+            "roof framing",
+            "collar tie",
+            "cut truss",
+            "modified truss",
+            "ridge board"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Roof Framing",
+              "values": [
+                "Conventional Rafters",
+                "Engineered Trusses"
+              ]
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_instype",
+          "label": "Insulation",
+          "keywords": [
+            "fiberglass batt",
+            "blown cellulose",
+            "blown fiberglass",
+            "spray foam",
+            "rigid foam",
+            "attic insulation",
+            "r-value",
+            "r value",
+            "r-19",
+            "r-30",
+            "r-38",
+            "r-49",
+            "insulation depth"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "type",
+              "label": "Type",
+              "values": [
+                "Fiberglass Batts",
+                "Blown Cellulose",
+                "Blown Fiberglass",
+                "Open-Cell Spray Foam",
+                "Closed-Cell Spray Foam",
+                "Rigid Foam Board"
+              ]
+            },
+            {
+              "id": "est_r_value",
+              "label": "Est. R-Value",
+              "values": [
+                "Under R-19",
+                "R-19–R-30",
+                "R-30–R-38",
+                "R-38–R-49",
+                "> R-49"
+              ]
+            }
+          ],
+          "condition": true,
+          "limitations": [
+            "Not Determined"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_coverage",
+          "label": "Insulation Coverage",
+          "keywords": [
+            "insulation coverage",
+            "gaps insulation",
+            "missing insulation",
+            "compressed insulation",
+            "uneven coverage",
+            "voids"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Coverage",
+              "values": [
+                "Full",
+                "Partial",
+                "Gaps seen"
+              ],
+              "optional": true
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_intake",
+          "label": "Intake (Soffit) Vents",
+          "keywords": [
+            "soffit vent",
+            "intake vent",
+            "eave vent",
+            "baffle",
+            "blocked soffit",
+            "continuous soffit"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Intake Vents",
+              "values": [
+                "Continuous",
+                "Individual",
+                "Low Gable / Eave",
+                "None"
+              ]
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_exhaust",
+          "label": "Exhaust (Ridge / Gable)",
+          "keywords": [
+            "ridge vent",
+            "gable vent",
+            "box vent",
+            "turbine vent",
+            "exhaust vent attic"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Exhaust (Ridge / Gable)",
+              "values": [
+                "Ridge Vent",
+                "Gable Vents",
+                "Box / Turbine Vents"
+              ]
+            }
+          ],
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_powered",
+          "label": "Powered Vents",
+          "keywords": [
+            "power vent",
+            "attic fan",
+            "powered attic ventilator",
+            "solar vent",
+            "thermostat vent"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Present — Not Tested"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Powered Fan",
+              "values": [
+                "Roof",
+                "Gable",
+                "Solar"
+              ],
+              "optional": true
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_fan_term",
+          "label": "Bath / Kitchen Fan Termination",
+          "keywords": [
+            "fan termination",
+            "bath fan vent",
+            "exhaust to attic",
+            "duct to soffit",
+            "fan dumps in attic",
+            "terminates exterior",
+            "ducting"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Fan Termination",
+              "values": [
+                "To exterior",
+                "Into attic",
+                "Not visible"
+              ],
+              "optional": true
+            }
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_moisture",
+          "label": "Moisture / Staining",
+          "keywords": [
+            "attic moisture",
+            "water stain attic",
+            "condensation",
+            "frost attic",
+            "mold attic",
+            "leak stain"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_pests",
+          "label": "Pests / Rodents",
+          "keywords": [
+            "rodent",
+            "droppings",
+            "nest",
+            "pest attic",
+            "squirrel",
+            "wasp nest",
+            "insect attic"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_wiring",
+          "label": "Wiring / Junction Boxes",
+          "keywords": [
+            "junction box attic",
+            "open splice attic",
+            "wiring attic",
+            "open junction",
+            "knob and tube attic",
+            "buried splice"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Visible"
+          ],
+          "requires": [
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        },
+        {
+          "id": "attic_multi_unit_shared_attic",
+          "label": "Shared Attic Space",
+          "keywords": [],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "multi_unit"
+          ],
+          "condition": true
+        },
+        {
+          "id": "attic_nc_insulation",
+          "label": "Attic Insulation Depth and Baffles",
+          "keywords": [
+            "insulation depth",
+            "baffle",
+            "insulation ruler"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "appliesTo": [
+            "new_construction"
+          ],
+          "condition": true
+        },
+        {
+          "id": "attic_era_vermiculite",
+          "label": "Suspected Vermiculite Insulation",
+          "keywords": [
+            "vermiculite",
+            "zonolite",
+            "loose fill pebbles"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1990
+            },
+            {
+              "specNodeId": "attic_access::spec",
+              "includes": [],
+              "unlisted": []
+            }
+          ]
+        }
+      ],
+      "subsystems": [
+        {
+          "id": "attic__access_structure",
+          "name": "Access & Structure",
+          "nodeIds": [
+            "attic_access",
+            "attic_framing"
+          ]
+        },
+        {
+          "id": "attic__insulation",
+          "name": "Insulation",
+          "nodeIds": [
+            "attic_instype",
+            "attic_coverage",
+            "attic_era_vermiculite"
+          ]
+        },
+        {
+          "id": "attic__ventilation",
+          "name": "Ventilation",
+          "nodeIds": [
+            "attic_intake",
+            "attic_exhaust",
+            "attic_powered",
+            "attic_fan_term"
+          ]
+        },
+        {
+          "id": "attic__concerns",
+          "name": "Concerns",
+          "nodeIds": [
+            "attic_moisture",
+            "attic_pests",
+            "attic_wiring"
+          ]
+        },
+        {
+          "id": "attic__attic",
+          "name": "Special Homes",
+          "nodeIds": [
+            "attic_multi_unit_shared_attic",
+            "attic_nc_insulation"
+          ]
+        }
+      ],
+      "sectionType": "system",
+      "locationAxis": "none",
+      "walkZone": "attic",
+      "walkZones": [
+        "attic"
+      ]
+    },
+    {
+      "id": "interior",
+      "label": "INTERIOR",
+      "icon": "floor-plan",
+      "order": 9,
+      "nodes": [
+        {
+          "id": "int_walls",
+          "label": "Walls",
+          "keywords": [
+            "cracked wall",
+            "wall damage",
+            "laundry walls",
+            "laundry room walls",
+            "garage wall",
+            "water stain garage",
+            "drywall damage garage",
+            "drywall",
+            "plaster",
+            "paneling",
+            "wallboard",
+            "shiplap",
+            "shower surround",
+            "tub surround",
+            "tile wall bath",
+            "grout wall",
+            "moisture wall bath"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Wall Material",
+              "values": [
+                "Drywall",
+                "Plaster on Wood Lath",
+                "Plaster on Rock Lath",
+                "Plaster (Lath not visible)",
+                "Paneling",
+                "Wood",
+                "Tile",
+                "Other"
+              ]
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "wall_drywall",
+          "label": "Drywall",
+          "keywords": [
+            "drywall",
+            "sheetrock",
+            "nail pops",
+            "drywall crack",
+            "tape joint"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [
+                "Drywall"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "wall_plaster",
+          "label": "Plaster",
+          "keywords": [
+            "plaster wall",
+            "plaster ceiling",
+            "plaster crack",
+            "lath"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [
+                "Plaster on Wood Lath",
+                "Plaster on Rock Lath",
+                "Plaster (Lath not visible)",
+                "Plaster"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "wall_paneling",
+          "label": "Paneling",
+          "keywords": [
+            "paneling",
+            "wood paneling",
+            "wall panels"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [
+                "Paneling"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "wall_wood",
+          "label": "Wood Walls",
+          "keywords": [
+            "wood walls",
+            "shiplap",
+            "tongue and groove",
+            "wood ceiling"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [
+                "Wood"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "wall_tile",
+          "label": "Tile Walls",
+          "keywords": [
+            "wall tile",
+            "tile surround",
+            "shower surround",
+            "tub surround"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [
+                "Tile"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "wall_other",
+          "label": "Other Walls",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_walls",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "Drywall",
+                "Plaster on Wood Lath",
+                "Plaster on Rock Lath",
+                "Plaster (Lath not visible)",
+                "Plaster",
+                "Paneling",
+                "Wood",
+                "Tile"
+              ],
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "int_era_lead_paint",
+          "label": "Lead-Based Paint — Deteriorated / Friction Surfaces",
+          "keywords": [
+            "lead paint",
+            "peeling paint",
+            "chipping paint",
+            "alligatored paint"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1978
+            }
+          ]
+        },
+        {
+          "id": "int_ceilings",
+          "label": "Ceilings",
+          "keywords": [
+            "ceiling",
+            "ceiling stain",
+            "ceiling damage",
+            "garage ceiling",
+            "laundry ceiling",
+            "ceiling crack",
+            "sagging ceiling",
+            "water stain ceiling"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Ceiling Material",
+              "values": [
+                "Drywall",
+                "Plaster on Wood Lath",
+                "Plaster on Rock Lath",
+                "Plaster (Lath not visible)",
+                "Pressed Metal (Tin)",
+                "Acoustic / Popcorn",
+                "Wood / Plank",
+                "Suspended / Drop",
+                "Other"
+              ]
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "ceil_drywall",
+          "label": "Drywall Ceilings",
+          "keywords": [
+            "drywall ceiling",
+            "ceiling crack",
+            "ceiling nail pops",
+            "ceiling tape joint"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Drywall"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_plaster",
+          "label": "Plaster Ceilings",
+          "keywords": [
+            "plaster ceiling",
+            "plaster ceiling crack",
+            "sagging plaster ceiling"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Plaster on Wood Lath",
+                "Plaster on Rock Lath",
+                "Plaster (Lath not visible)",
+                "Plaster"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_pressed_metal",
+          "label": "Pressed Metal Ceilings",
+          "keywords": [
+            "pressed metal ceiling",
+            "tin ceiling",
+            "pressed tin"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Pressed Metal (Tin)"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_acoustic",
+          "label": "Acoustic / Popcorn",
+          "keywords": [
+            "popcorn ceiling",
+            "acoustic ceiling",
+            "cottage cheese ceiling",
+            "textured ceiling"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Acoustic / Popcorn"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_wood",
+          "label": "Wood Ceilings",
+          "keywords": [
+            "wood ceiling",
+            "plank ceiling",
+            "tongue and groove ceiling",
+            "beadboard ceiling"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Wood / Plank"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_suspended",
+          "label": "Suspended Ceilings",
+          "keywords": [
+            "drop ceiling",
+            "suspended ceiling",
+            "ceiling tiles",
+            "ceiling grid"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Suspended / Drop"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "ceil_other",
+          "label": "Other Ceilings",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_ceilings",
+              "includes": [
+                "Other"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "int_flooring",
+          "label": "Floors",
+          "keywords": [
+            "hardwood",
+            "laminate",
+            "lvp",
+            "vinyl plank",
+            "tile floor",
+            "carpet",
+            "concrete floor",
+            "terrazzo",
+            "luxury vinyl plank",
+            "lvp flooring",
+            "vinyl flooring",
+            "wood laminate",
+            "ceramic tile",
+            "flooring damage",
+            "floor damage",
+            "carpet stain",
+            "loose flooring",
+            "trip hazard",
+            "vinyl floor",
+            "lvp bathroom",
+            "bathroom flooring",
+            "stone floor",
+            "laundry floor",
+            "laundry room floor",
+            "laundry flooring"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Flooring Material",
+              "values": [
+                "Hardwood",
+                "Engineered Hardwood",
+                "LVP / Vinyl Plank",
+                "Laminate",
+                "Ceramic / Porcelain Tile",
+                "Carpet",
+                "Concrete",
+                "Natural Stone",
+                "Sheet Vinyl",
+                "Other"
+              ]
+            }
+          ],
+          "condition": false
+        },
+        {
+          "id": "flr_hardwood",
+          "label": "Hardwood",
+          "keywords": [
+            "hardwood floor",
+            "hardwood flooring",
+            "wood floor",
+            "cupping",
+            "floor gaps"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Hardwood"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_engineered",
+          "label": "Engineered Hardwood",
+          "keywords": [
+            "engineered hardwood",
+            "engineered wood floor"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Engineered Hardwood"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_lvp",
+          "label": "LVP / Vinyl Plank",
+          "keywords": [
+            "lvp",
+            "luxury vinyl plank",
+            "vinyl plank",
+            "lvp flooring"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "LVP / Vinyl Plank",
+                "LVP"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_laminate",
+          "label": "Laminate",
+          "keywords": [
+            "laminate floor",
+            "laminate flooring",
+            "swollen laminate"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Laminate"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_tile",
+          "label": "Ceramic / Porcelain Tile",
+          "keywords": [
+            "tile floor",
+            "ceramic tile",
+            "porcelain tile",
+            "cracked tile",
+            "grout"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Ceramic / Porcelain Tile",
+                "Tile"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_carpet",
+          "label": "Carpet",
+          "keywords": [
+            "carpet",
+            "carpet stain",
+            "stained carpet",
+            "carpet seam"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Carpet"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_concrete",
+          "label": "Concrete Floors",
+          "keywords": [
+            "concrete floor",
+            "stained concrete",
+            "polished concrete"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Concrete"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_stone",
+          "label": "Natural Stone Floors",
+          "keywords": [
+            "stone floor",
+            "slate floor",
+            "travertine",
+            "marble floor"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Natural Stone"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_sheet",
+          "label": "Sheet Vinyl",
+          "keywords": [
+            "sheet vinyl",
+            "linoleum",
+            "vinyl sheet flooring"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [
+                "Sheet Vinyl"
+              ],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "flr_other",
+          "label": "Other Flooring",
+          "keywords": [],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Inspected"
+          ],
+          "requires": [
+            {
+              "specNodeId": "int_flooring",
+              "includes": [],
+              "exact": true,
+              "whenUnanswered": "not_applicable",
+              "unlisted": [
+                "Hardwood",
+                "Engineered Hardwood",
+                "LVP / Vinyl Plank",
+                "Laminate",
+                "Ceramic / Porcelain Tile",
+                "Carpet",
+                "Concrete",
+                "Natural Stone",
+                "Sheet Vinyl",
+                "LVP",
+                "Tile"
+              ],
+              "attr": "spec"
+            }
+          ]
+        },
+        {
+          "id": "int_era_asbestos_tile",
+          "label": "Suspected Asbestos Floor Tile (9×9)",
+          "keywords": [
+            "9x9 tile",
+            "asbestos tile",
+            "vinyl asbestos tile",
+            "black mastic"
+          ],
+          "kind": "equipment",
+          "origin": "core",
+          "condition": true,
+          "requires": [
+            {
+              "specNodeId": "house::built",
+              "includes": [],
+              "before": 1980
+            }
+          ]
+        },
+        {
+          "id": "int_doors",
+          "label": "Interior Doors",
+          "keywords": [
+            "interior door",
+            "bedroom door",
+            "closet door",
+            "door latch",
+            "rubbing door",
+            "hollow core"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "limitations": [
+            "Not Tested"
+          ],
+          "walkZone": "interior",
+          "walkZones": [
+            "interior"
+          ],
+          "attributes": [
+            {
+              "id": "spec",
+              "label": "Interior Doors",
+              "values": [
+                "Hollow core",
+                "Solid core",
+                "Pocket",
+                "Barn"
+              ],
+              "optional": true
+            }
+          ]
+        },
+        {
+          "id": "int_trim",
+          "label": "Trim / Doors Finish",
+          "keywords": [
+            "baseboard",
+            "casing",
+            "trim interior",
+            "crown molding",
+            "damaged trim"
+          ],
+          "kind": "spec",
+          "origin": "core",
+          "condition": true,
+          "walkZone": "interior",
+          "walkZones": [
+            "interior"
+          ]
         },
         {
           "id": "kit_counter",
@@ -12499,8 +12765,7 @@
               "label": "Handrail Material",
               "values": [
                 "Wood",
-                "Metal",
-                "Missing"
+                "Metal"
               ],
               "optional": true
             }
@@ -12716,6 +12981,7 @@
             "int_ceilings",
             "ceil_drywall",
             "ceil_plaster",
+            "ceil_pressed_metal",
             "ceil_acoustic",
             "ceil_wood",
             "ceil_suspended",
@@ -12741,41 +13007,11 @@
           ]
         },
         {
-          "id": "interior__doors",
-          "name": "Doors",
+          "id": "interior__doors_trim",
+          "name": "Doors & Trim",
           "nodeIds": [
-            "ext_doors",
-            "door_steel",
-            "door_fiberglass",
-            "door_wood",
-            "door_french",
-            "door_sliding",
-            "door_other",
-            "ext_weatherstrip",
             "int_doors",
-            "int_trim",
-            "gar_door",
-            "gar_opener",
-            "ext_garage_door",
-            "gar_springs",
-            "garage_gar_door_hardware"
-          ]
-        },
-        {
-          "id": "interior__windows",
-          "name": "Windows",
-          "nodeIds": [
-            "ext_windows",
-            "win_vinyl",
-            "win_wood",
-            "win_aluminum",
-            "win_fiberglass",
-            "win_clad",
-            "win_storm",
-            "win_other",
-            "win_glazing",
-            "int_windows",
-            "int_egress"
+            "int_trim"
           ]
         },
         {
@@ -13128,12 +13364,12 @@
             {
               "specNodeId": "fp_gas_vent",
               "includes": [
-                "B-Vent — Proper Draft"
+                "B-Vent"
               ],
               "exact": true,
               "unlisted": [
                 "Direct Vent (Sealed)",
-                "B-Vent — Proper Draft"
+                "B-Vent"
               ]
             }
           ],
@@ -13271,9 +13507,11 @@
               "id": "spec",
               "label": "Flue Liner",
               "values": [
+                "Unlined",
                 "Clay Tile",
-                "Stainless Steel Insert",
-                "Cast-In-Place"
+                "Stainless Steel Liner",
+                "Cast-In-Place",
+                "Not visible"
               ]
             }
           ],
@@ -13311,12 +13549,12 @@
             {
               "specNodeId": "fp_gas_vent",
               "includes": [
-                "B-Vent — Proper Draft"
+                "B-Vent"
               ],
               "exact": true,
               "unlisted": [
                 "Direct Vent (Sealed)",
-                "B-Vent — Proper Draft"
+                "B-Vent"
               ]
             }
           ]
@@ -13428,7 +13666,7 @@
               "label": "Gas Venting",
               "values": [
                 "Direct Vent (Sealed)",
-                "B-Vent — Proper Draft"
+                "B-Vent"
               ]
             }
           ],
@@ -13498,7 +13736,7 @@
               "label": "Gas Logs",
               "values": [
                 "Vented Set",
-                "Vent-Free (Verify Code)",
+                "Vent-Free",
                 "Sealed Unit (Factory Logs)"
               ]
             }
@@ -13553,7 +13791,8 @@
               "values": [
                 "Key valve",
                 "In-line valve",
-                "Not seen"
+                "None",
+                "Not visible"
               ],
               "optional": true
             }
@@ -13997,8 +14236,7 @@
                 "Bottom Freezer",
                 "Side-by-Side",
                 "French Door",
-                "Built-In",
-                "Not Present"
+                "Built-In"
               ],
               "optional": true
             },
@@ -14101,7 +14339,7 @@
               "label": "Disposal",
               "values": [
                 "Present",
-                "Not Present"
+                "None"
               ],
               "optional": true
             }

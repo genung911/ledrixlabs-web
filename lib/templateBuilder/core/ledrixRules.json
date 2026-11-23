@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.22.4",
+ "packVersion": "2026.11.23.2",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -22,7 +22,8 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler",
+      "Steam Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -295,8 +296,10 @@
       "Ductless Mini-Split",
       "Propane",
       "Oil Furnace",
-      "Boiler",
-      "Radiant Heat"
+      "Hot Water Boiler",
+      "Steam Boiler",
+      "Radiant Heat",
+      "Boiler"
      ],
      "exact": true,
      "typeFirst": true
@@ -344,8 +347,10 @@
       "Ductless Mini-Split",
       "Propane",
       "Oil Furnace",
-      "Boiler",
-      "Radiant Heat"
+      "Hot Water Boiler",
+      "Steam Boiler",
+      "Radiant Heat",
+      "Boiler"
      ],
      "exact": true,
      "typeFirst": true
@@ -455,7 +460,7 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -467,7 +472,8 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler",
+      "Steam Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -479,7 +485,7 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -491,7 +497,44 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler",
+      "Steam Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_steam_sight_glass": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Steam Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_steam_pressure_control": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Steam Boiler"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable"
+    }
+   ]
+  },
+  "hvac_steam_air_vents": {
+   "requires": [
+    {
+     "specNodeId": "hvac_heating::fuel_source",
+     "includes": [
+      "Steam Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -503,7 +546,8 @@
     {
      "specNodeId": "hvac_heating::fuel_source",
      "includes": [
-      "Boiler"
+      "Hot Water Boiler",
+      "Steam Boiler"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -2245,6 +2289,7 @@
     {
      "specNodeId": "elec_wiring::method",
      "includes": [
+      "Conduit (EMT / Rigid)",
       "Conduit (EMT)"
      ],
      "exact": true,
@@ -2257,7 +2302,8 @@
     {
      "specNodeId": "elec_wiring::type",
      "includes": [
-      "Aluminum"
+      "Aluminum",
+      "Copper-Clad Aluminum"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -2267,7 +2313,7 @@
   "elec_wir_kt": {
    "requires": [
     {
-     "specNodeId": "elec_wiring::type",
+     "specNodeId": "elec_wiring::method",
      "includes": [
       "Knob & Tube"
      ],
@@ -2279,9 +2325,9 @@
   "elec_wir_cloth": {
    "requires": [
     {
-     "specNodeId": "elec_wiring::type",
+     "specNodeId": "elec_wiring::method",
      "includes": [
-      "Cloth-Sheathed (Ungrounded)"
+      "Cloth-Jacketed Cable (Old NM)"
      ],
      "exact": true,
      "whenUnanswered": "not_applicable"
@@ -2293,6 +2339,8 @@
     {
      "specNodeId": "elec_wiring::method",
      "includes": [
+      "Armored Cable (BX)",
+      "MC Cable",
       "Armored (BX / MC)"
      ],
      "exact": true,
@@ -2310,8 +2358,7 @@
      "unlisted": [
       "Copper",
       "Aluminum",
-      "Cloth-Sheathed (Ungrounded)",
-      "Knob & Tube"
+      "Copper-Clad Aluminum"
      ]
     }
    ]
@@ -2569,6 +2616,16 @@
    ]
   },
   "found_subfloor": {
+   "requires": [
+    {
+     "specNodeId": "found_type::type",
+     "includes": [],
+     "unlisted": [],
+     "typeFirst": true
+    }
+   ]
+  },
+  "found_wall_framing": {
    "requires": [
     {
      "specNodeId": "found_type::type",
@@ -3020,432 +3077,6 @@
     }
    ]
   },
-  "attic_framing": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_instype": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_coverage": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_intake": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_exhaust": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_powered": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_fan_term": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_moisture": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_pests": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_wiring": {
-   "requires": [
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "attic_era_vermiculite": {
-   "requires": [
-    {
-     "specNodeId": "house::built",
-     "includes": [],
-     "before": 1990
-    },
-    {
-     "specNodeId": "attic_access::spec",
-     "includes": [],
-     "unlisted": []
-    }
-   ]
-  },
-  "wall_drywall": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Drywall"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_plaster": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Plaster"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_paneling": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Paneling"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_wood": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Wood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_tile": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [
-      "Tile"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "wall_other": {
-   "requires": [
-    {
-     "specNodeId": "int_walls",
-     "includes": [],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "unlisted": [
-      "Drywall",
-      "Plaster",
-      "Paneling",
-      "Wood",
-      "Tile"
-     ],
-     "attr": "spec"
-    }
-   ]
-  },
-  "int_era_lead_paint": {
-   "requires": [
-    {
-     "specNodeId": "house::built",
-     "includes": [],
-     "before": 1978
-    }
-   ]
-  },
-  "ceil_drywall": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Drywall"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ceil_plaster": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Plaster"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ceil_acoustic": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Acoustic / Popcorn"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ceil_wood": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Wood / Plank"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ceil_suspended": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Suspended / Drop"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "ceil_other": {
-   "requires": [
-    {
-     "specNodeId": "int_ceilings",
-     "includes": [
-      "Other"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_hardwood": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Hardwood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_engineered": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Engineered Hardwood"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_lvp": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "LVP / Vinyl Plank",
-      "LVP"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_laminate": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Laminate"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_tile": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Ceramic / Porcelain Tile",
-      "Tile"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_carpet": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Carpet"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_concrete": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Concrete"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_stone": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Natural Stone"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_sheet": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [
-      "Sheet Vinyl"
-     ],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "attr": "spec"
-    }
-   ]
-  },
-  "flr_other": {
-   "requires": [
-    {
-     "specNodeId": "int_flooring",
-     "includes": [],
-     "exact": true,
-     "whenUnanswered": "not_applicable",
-     "unlisted": [
-      "Hardwood",
-      "Engineered Hardwood",
-      "LVP / Vinyl Plank",
-      "Laminate",
-      "Ceramic / Porcelain Tile",
-      "Carpet",
-      "Concrete",
-      "Natural Stone",
-      "Sheet Vinyl",
-      "LVP",
-      "Tile"
-     ],
-     "attr": "spec"
-    }
-   ]
-  },
-  "int_era_asbestos_tile": {
-   "requires": [
-    {
-     "specNodeId": "house::built",
-     "includes": [],
-     "before": 1980
-    }
-   ]
-  },
   "door_steel": {
    "requires": [
     {
@@ -3690,6 +3321,454 @@
       "Storm"
      ],
      "attr": "spec"
+    }
+   ]
+  },
+  "attic_framing": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_instype": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_coverage": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_intake": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_exhaust": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_powered": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_fan_term": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_moisture": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_pests": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_wiring": {
+   "requires": [
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "attic_era_vermiculite": {
+   "requires": [
+    {
+     "specNodeId": "house::built",
+     "includes": [],
+     "before": 1990
+    },
+    {
+     "specNodeId": "attic_access::spec",
+     "includes": [],
+     "unlisted": []
+    }
+   ]
+  },
+  "wall_drywall": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Drywall"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_plaster": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Plaster on Wood Lath",
+      "Plaster on Rock Lath",
+      "Plaster (Lath not visible)",
+      "Plaster"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_paneling": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Paneling"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_wood": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Wood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_tile": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [
+      "Tile"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "wall_other": {
+   "requires": [
+    {
+     "specNodeId": "int_walls",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Drywall",
+      "Plaster on Wood Lath",
+      "Plaster on Rock Lath",
+      "Plaster (Lath not visible)",
+      "Plaster",
+      "Paneling",
+      "Wood",
+      "Tile"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
+  "int_era_lead_paint": {
+   "requires": [
+    {
+     "specNodeId": "house::built",
+     "includes": [],
+     "before": 1978
+    }
+   ]
+  },
+  "ceil_drywall": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Drywall"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_plaster": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Plaster on Wood Lath",
+      "Plaster on Rock Lath",
+      "Plaster (Lath not visible)",
+      "Plaster"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_pressed_metal": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Pressed Metal (Tin)"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_acoustic": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Acoustic / Popcorn"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_wood": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Wood / Plank"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_suspended": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Suspended / Drop"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "ceil_other": {
+   "requires": [
+    {
+     "specNodeId": "int_ceilings",
+     "includes": [
+      "Other"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_hardwood": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Hardwood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_engineered": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Engineered Hardwood"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_lvp": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "LVP / Vinyl Plank",
+      "LVP"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_laminate": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Laminate"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_tile": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Ceramic / Porcelain Tile",
+      "Tile"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_carpet": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Carpet"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_concrete": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Concrete"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_stone": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Natural Stone"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_sheet": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [
+      "Sheet Vinyl"
+     ],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "attr": "spec"
+    }
+   ]
+  },
+  "flr_other": {
+   "requires": [
+    {
+     "specNodeId": "int_flooring",
+     "includes": [],
+     "exact": true,
+     "whenUnanswered": "not_applicable",
+     "unlisted": [
+      "Hardwood",
+      "Engineered Hardwood",
+      "LVP / Vinyl Plank",
+      "Laminate",
+      "Ceramic / Porcelain Tile",
+      "Carpet",
+      "Concrete",
+      "Natural Stone",
+      "Sheet Vinyl",
+      "LVP",
+      "Tile"
+     ],
+     "attr": "spec"
+    }
+   ]
+  },
+  "int_era_asbestos_tile": {
+   "requires": [
+    {
+     "specNodeId": "house::built",
+     "includes": [],
+     "before": 1980
     }
    ]
   },
@@ -4026,12 +4105,12 @@
     {
      "specNodeId": "fp_gas_vent",
      "includes": [
-      "B-Vent — Proper Draft"
+      "B-Vent"
      ],
      "exact": true,
      "unlisted": [
       "Direct Vent (Sealed)",
-      "B-Vent — Proper Draft"
+      "B-Vent"
      ]
     }
    ]
@@ -4103,12 +4182,12 @@
     {
      "specNodeId": "fp_gas_vent",
      "includes": [
-      "B-Vent — Proper Draft"
+      "B-Vent"
      ],
      "exact": true,
      "unlisted": [
       "Direct Vent (Sealed)",
-      "B-Vent — Proper Draft"
+      "B-Vent"
      ]
     }
    ]
@@ -4350,12 +4429,22 @@
    {
     "specNodeId": "hvac_heating::fuel_source",
     "includesAny": [
-     "Boiler"
+     "Hot Water Boiler"
     ],
     "values": [
-     "Radiator / Boiler",
+     "Radiators (Hot Water)",
+     "Hydronic Baseboard (Fin-Tube)",
      "Radiant Floor",
      "Fan Coil Units"
+    ]
+   },
+   {
+    "specNodeId": "hvac_heating::fuel_source",
+    "includesAny": [
+     "Steam Boiler"
+    ],
+    "values": [
+     "Radiators (Steam)"
     ]
    },
    {
@@ -4383,7 +4472,7 @@
     "values": [
      "Metal B-Vent",
      "Masonry Chimney",
-     "Single-Wall (Verify)"
+     "Single-Wall Metal"
     ]
    }
   ],

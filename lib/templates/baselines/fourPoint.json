@@ -45,7 +45,8 @@
           "Ductless Mini-Split",
           "Propane",
           "Oil Furnace",
-          "Boiler",
+          "Hot Water Boiler",
+          "Steam Boiler",
           "Radiant Heat"
          ]
         }
@@ -150,12 +151,16 @@
          "values": [
           "Electric Strips",
           "Gas Furnace (Dual Fuel)",
+          "Propane Furnace (Dual Fuel)",
+          "Oil Furnace (Dual Fuel)",
+          "Fireplace / Wood Stove",
+          "Electric Baseboard",
           "None",
-          "Not Determined"
+          "Not determined"
          ]
         }
        ],
-       "condition": true
+       "condition": false
       },
       {
        "id": "hvac_flue",
@@ -180,7 +185,7 @@
           "PVC (High-Eff)",
           "Direct Vent (Sealed)",
           "Masonry Chimney",
-          "Single-Wall (Verify)"
+          "Single-Wall Metal"
          ],
          "offeredWhen": [
           {
@@ -197,7 +202,7 @@
            "values": [
             "Metal B-Vent",
             "Masonry Chimney",
-            "Single-Wall (Verify)"
+            "Single-Wall Metal"
            ]
           }
          ]
@@ -340,8 +345,9 @@
          "id": "spec",
          "label": "Heat Exchanger",
          "values": [
-          "Visible — No Defects",
-          "Partially Visible"
+          "Visible",
+          "Partially visible",
+          "Not visible"
          ]
         }
        ],
@@ -472,10 +478,57 @@
          "values": [
           "Forced Air (Ducts)",
           "Baseboard Electric",
-          "Radiator / Boiler",
+          "Radiators (Hot Water)",
+          "Radiators (Steam)",
+          "Hydronic Baseboard (Fin-Tube)",
           "Ductless",
           "Radiant Floor",
           "Fan Coil Units"
+         ],
+         "offeredWhen": [
+          {
+           "specNodeId": "hvac_heating::fuel_source",
+           "includesAny": [
+            "Gas Furnace",
+            "Electric Furnace",
+            "Propane",
+            "Oil Furnace",
+            "Heat Pump"
+           ],
+           "values": [
+            "Forced Air (Ducts)"
+           ]
+          },
+          {
+           "specNodeId": "hvac_heating::fuel_source",
+           "includesAny": [
+            "Hot Water Boiler"
+           ],
+           "values": [
+            "Radiators (Hot Water)",
+            "Hydronic Baseboard (Fin-Tube)",
+            "Radiant Floor",
+            "Fan Coil Units"
+           ]
+          },
+          {
+           "specNodeId": "hvac_heating::fuel_source",
+           "includesAny": [
+            "Steam Boiler"
+           ],
+           "values": [
+            "Radiators (Steam)"
+           ]
+          },
+          {
+           "specNodeId": "hvac_heating::fuel_source",
+           "includesAny": [
+            "Radiant Heat"
+           ],
+           "values": [
+            "Radiant Floor"
+           ]
+          }
          ]
         }
        ],
@@ -517,7 +570,7 @@
          "optional": true
         }
        ],
-       "condition": false
+       "condition": true
       },
       {
        "id": "hvac_filter",
@@ -681,7 +734,7 @@
          "values": [
           "Diaphragm",
           "Compression",
-          "None seen"
+          "None"
          ],
          "optional": true
         }
@@ -743,6 +796,42 @@
         "Not Tested",
         "Not Present"
        ]
+      },
+      {
+       "id": "hvac_steam_sight_glass",
+       "label": "Sight Glass",
+       "kind": "component",
+       "keywords": [
+        "sight glass",
+        "gauge glass",
+        "water level glass",
+        "steam boiler water level"
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_steam_pressure_control",
+       "label": "Pressure Control",
+       "kind": "component",
+       "keywords": [
+        "pressuretrol",
+        "pressure control",
+        "steam pressure control",
+        "pigtail"
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_steam_air_vents",
+       "label": "Air Vents",
+       "kind": "component",
+       "keywords": [
+        "steam vent",
+        "radiator vent",
+        "main vent",
+        "air vent"
+       ],
+       "condition": true
       },
       {
        "id": "hvac_boiler_piping",
@@ -1826,43 +1915,256 @@
    "locationAxis": "room",
    "children": [
     {
-     "id": "hvac_hp_operation",
-     "label": "Heat Pump Operation",
-     "kind": "component",
-     "keywords": [
-      "heat pump operation",
-      "supply temperature",
-      "return temperature",
-      "heat pump test",
-      "defrost"
-     ],
-     "attributes": [
+     "id": "heat_pump__operation",
+     "label": "Operation",
+     "kind": "subsystem",
+     "children": [
       {
-       "id": "heat_supply",
-       "label": "Heat supply",
-       "values": [],
-       "optional": true,
-       "input": "temperature"
-      },
-      {
-       "id": "cool_supply",
-       "label": "Cool supply",
-       "values": [],
-       "optional": true,
-       "input": "temperature"
-      },
-      {
-       "id": "return_temp",
-       "label": "Return",
-       "values": [],
-       "optional": true,
-       "input": "temperature"
+       "id": "hvac_hp_operation",
+       "label": "Heat Pump Operation",
+       "kind": "component",
+       "keywords": [
+        "heat pump operation",
+        "supply temperature",
+        "return temperature",
+        "heat pump test",
+        "defrost"
+       ],
+       "attributes": [
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "return_temp",
+         "label": "Return",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Operated — outdoor temperature",
+        "Not Operated"
+       ]
       }
-     ],
-     "condition": true,
-     "limitations": [
-      "Not Operated — outdoor temperature",
-      "Not Operated"
+     ]
+    },
+    {
+     "id": "heat_pump__ductless_heads",
+     "label": "Ductless Heads",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "hvac_hp_heads",
+       "label": "Ductless Heads",
+       "kind": "component",
+       "keywords": [
+        "ductless heads",
+        "how many heads",
+        "wall head",
+        "dual zone",
+        "branch box"
+       ],
+       "attributes": [
+        {
+         "id": "count",
+         "label": "Ductless Heads",
+         "values": [
+          "None",
+          "1",
+          "2",
+          "3",
+          "4"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "hvac_hp_head_1",
+       "label": "Ductless Head 1",
+       "kind": "component",
+       "keywords": [
+        "indoor head",
+        "ductless head",
+        "wall head"
+       ],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_hp_head_2",
+       "label": "Ductless Head 2",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_hp_head_3",
+       "label": "Ductless Head 3",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "hvac_hp_head_4",
+       "label": "Ductless Head 4",
+       "kind": "component",
+       "keywords": [],
+       "attributes": [
+        {
+         "id": "location",
+         "label": "Location",
+         "values": [
+          "Living Room",
+          "Primary Bedroom",
+          "Bedroom",
+          "Kitchen",
+          "Dining Room",
+          "Family Room",
+          "Office",
+          "Bonus Room",
+          "Basement",
+          "Garage"
+         ],
+         "freeText": true,
+         "optional": true,
+         "emptyLabel": "Unknown"
+        },
+        {
+         "id": "heat_supply",
+         "label": "Heat supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        },
+        {
+         "id": "cool_supply",
+         "label": "Cool supply",
+         "values": [],
+         "optional": true,
+         "input": "temperature"
+        }
+       ],
+       "condition": true
+      }
      ]
     }
    ]
@@ -2562,6 +2864,7 @@
          "label": "Bathing Fixture",
          "values": [
           "Tub Only",
+          "Clawfoot Tub",
           "Shower Only",
           "Tub / Shower Combo",
           "Walk-in Shower",
@@ -2731,7 +3034,7 @@
      "children": [
       {
        "id": "plumb_gas",
-       "label": "Gas Supply",
+       "label": "Gas Piping",
        "kind": "component",
        "keywords": [
         "gas supply",
@@ -2740,18 +3043,70 @@
         "propane",
         "csst",
         "black iron",
-        "gas piping"
+        "gas piping",
+        "galvanized gas pipe"
        ],
        "attributes": [
         {
          "id": "spec",
-         "label": "Gas Supply",
+         "label": "Gas Piping",
          "values": [
           "Black Iron",
-          "CSST (Bonded)",
-          "CSST (Bonding Unverified)",
+          "Galvanized Steel",
+          "CSST",
           "Copper"
-         ]
+         ],
+         "multi": true
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "plumb_gas_csst_bond",
+       "label": "CSST Bonding",
+       "kind": "component",
+       "keywords": [
+        "csst bonding",
+        "csst bond",
+        "bonding clamp",
+        "csst ground"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "CSST Bonding",
+         "values": [
+          "Bonded",
+          "Not visible"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "plumb_gas_connectors",
+       "label": "Appliance Connectors",
+       "kind": "component",
+       "keywords": [
+        "appliance connector",
+        "gas connector",
+        "flex connector",
+        "flexible gas line",
+        "brass connector",
+        "gas flex"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Appliance Connectors",
+         "values": [
+          "Flexible Stainless",
+          "Uncoated Brass",
+          "Hard-Piped"
+         ],
+         "multi": true,
+         "optional": true
         }
        ],
        "condition": true
@@ -3006,7 +3361,9 @@
         "Under 5 years old",
         "5–10 years old",
         "10–15 years old",
-        "Over 15 years old — budget replacement",
+        "15–20 years old",
+        "20–25 years old",
+        "Over 25 years old",
         "Not determined"
        ]
       }
@@ -3105,7 +3462,7 @@
     },
     {
      "id": "plumb_wh_tpr",
-     "label": "TPR Valve & Discharge",
+     "label": "T&P Relief Valve & Discharge Pipe",
      "kind": "component",
      "keywords": [
       "tpr",
@@ -3113,7 +3470,9 @@
       "relief valve",
       "discharge tube",
       "overflow tube",
-      "t&p valve"
+      "t&p valve",
+      "t and p valve",
+      "t&p relief valve"
      ],
      "attributes": [
       {
@@ -3124,7 +3483,8 @@
         "CPVC",
         "PEX",
         "Galvanized",
-        "Missing"
+        "PVC",
+        "None"
        ],
        "optional": true
       }
@@ -3206,7 +3566,7 @@
        "label": "Expansion Tank",
        "values": [
         "Present",
-        "Not present"
+        "None"
        ],
        "optional": true
       }
@@ -3310,7 +3670,7 @@
        "label": "Sediment Trap",
        "values": [
         "Present",
-        "Not present"
+        "None"
        ],
        "optional": true
       }
@@ -3360,7 +3720,7 @@
        "label": "Service Valves",
        "values": [
         "Present",
-        "Not present"
+        "None"
        ],
        "optional": true
       }
@@ -3769,7 +4129,7 @@
           "Ufer / Concrete-Encased",
           "Ground Plate",
           "Metal Water Pipe",
-          "Not Determined"
+          "Not determined"
          ]
         }
        ],
@@ -3834,17 +4194,19 @@
          "values": [
           "Copper",
           "Aluminum",
-          "Cloth-Sheathed (Ungrounded)",
-          "Knob & Tube"
+          "Copper-Clad Aluminum"
          ]
         },
         {
          "id": "method",
          "label": "Method",
          "values": [
+          "Knob & Tube",
+          "Cloth-Jacketed Cable (Old NM)",
           "NM-B (Romex)",
-          "Conduit (EMT)",
-          "Armored (BX / MC)"
+          "Armored Cable (BX)",
+          "MC Cable",
+          "Conduit (EMT / Rigid)"
          ]
         }
        ],
@@ -3867,7 +4229,7 @@
       },
       {
        "id": "elec_wir_conduit",
-       "label": "Conduit (EMT)",
+       "label": "Conduit",
        "kind": "component",
        "keywords": [
         "emt conduit",
@@ -3912,7 +4274,7 @@
       },
       {
        "id": "elec_wir_cloth",
-       "label": "Cloth-Sheathed / Ungrounded Wiring",
+       "label": "Cloth-Jacketed Cable",
        "kind": "component",
        "keywords": [
         "cloth wiring",
@@ -3927,7 +4289,7 @@
       },
       {
        "id": "elec_wir_mc",
-       "label": "Armored (BX / MC) Cable",
+       "label": "Armored Cable (BX / MC)",
        "kind": "component",
        "keywords": [
         "armored cable",
@@ -4450,8 +4812,7 @@
          "values": [
           "Step",
           "Counter",
-          "Kick-out",
-          "Kick-out missing"
+          "Kick-out"
          ],
          "optional": true
         }
@@ -4611,7 +4972,7 @@
          "label": "Downspout Extensions / Discharge",
          "values": [
           "Splash Blocks Only",
-          "Underground — Verify Daylight"
+          "Underground"
          ]
         }
        ],
@@ -4633,7 +4994,7 @@
          "label": "Drip Edge",
          "values": [
           "Present",
-          "Not present"
+          "None"
          ],
          "optional": true
         }
@@ -4817,12 +5178,13 @@
          "id": "type",
          "label": "Type",
          "values": [
-          "Poured Concrete Slab",
+          "Slab-on-Grade",
           "Crawlspace",
           "Basement",
           "Pier & Beam",
           "Grade Beam"
-         ]
+         ],
+         "multi": true
         },
         {
          "id": "wall_material",
@@ -4830,8 +5192,10 @@
          "values": [
           "Poured Concrete",
           "Concrete Block (CMU)",
-          "Stone",
-          "Brick"
+          "Cut Stone",
+          "Rubble Stone",
+          "Brick",
+          "Hollow Clay Tile"
          ]
         }
        ],
@@ -4935,6 +5299,33 @@
        "limitations": [
         "Not Visible"
        ]
+      },
+      {
+       "id": "found_wall_framing",
+       "label": "Wall Framing",
+       "kind": "component",
+       "keywords": [
+        "wall framing",
+        "balloon framing",
+        "platform framing",
+        "solid masonry",
+        "fire blocking",
+        "fireblocking"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Wall Framing",
+         "values": [
+          "Platform",
+          "Balloon",
+          "Solid Masonry",
+          "Not visible"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": false
       }
      ]
     },
@@ -5053,8 +5444,9 @@
          "id": "spec",
          "label": "Foundation Vents / Louvers",
          "values": [
-          "Passive Vents — Adequate",
-          "Sealed — Conditioned Crawl"
+          "Vented",
+          "Sealed (Conditioned)",
+          "None"
          ]
         }
        ],
@@ -5262,7 +5654,7 @@
          "label": "Floor Drain",
          "values": [
           "Present",
-          "Not present"
+          "None"
          ],
          "optional": true
         }
@@ -5869,6 +6261,471 @@
    ]
   },
   {
+   "id": "windows_doors",
+   "label": "WINDOWS & DOORS",
+   "kind": "system",
+   "icon": "window-closed-variant",
+   "defaultActive": false,
+   "locationAxis": "room",
+   "children": [
+    {
+     "id": "windows_doors__exterior_doors",
+     "label": "Exterior Doors",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "ext_doors",
+       "label": "Door Material",
+       "kind": "component",
+       "keywords": [
+        "entry door",
+        "exterior door",
+        "garage door",
+        "steel door",
+        "fiberglass door"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Material",
+         "values": [
+          "Steel",
+          "Fiberglass",
+          "Solid Wood",
+          "Glass / French",
+          "Sliding Glass"
+         ]
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "door_steel",
+       "label": "Steel Doors",
+       "kind": "component",
+       "keywords": [
+        "steel door",
+        "metal door",
+        "steel entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_fiberglass",
+       "label": "Fiberglass Doors",
+       "kind": "component",
+       "keywords": [
+        "fiberglass door",
+        "fiberglass entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_wood",
+       "label": "Solid Wood Doors",
+       "kind": "component",
+       "keywords": [
+        "wood door",
+        "solid wood door",
+        "wood entry door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_french",
+       "label": "Glass / French Doors",
+       "kind": "component",
+       "keywords": [
+        "french door",
+        "french doors",
+        "glass door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_sliding",
+       "label": "Sliding Glass Doors",
+       "kind": "component",
+       "keywords": [
+        "sliding glass door",
+        "slider",
+        "patio door",
+        "sliding door"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "door_other",
+       "label": "Other Doors",
+       "kind": "component",
+       "keywords": [],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "ext_weatherstrip",
+       "label": "Weatherstripping",
+       "kind": "component",
+       "keywords": [
+        "weatherstrip",
+        "weatherstripping",
+        "door seal",
+        "threshold",
+        "gap at door",
+        "daylight at door"
+       ],
+       "condition": true
+      }
+     ]
+    },
+    {
+     "id": "windows_doors__garage_door",
+     "label": "Garage Door",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "gar_door",
+       "label": "Garage Vehicle Door",
+       "kind": "component",
+       "keywords": [
+        "garage door",
+        "overhead door",
+        "sectional door",
+        "roll-up door",
+        "tilt-up door",
+        "bay door"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Vehicle Door",
+         "values": [
+          "Sectional — Insulated",
+          "Sectional — Non-Insulated",
+          "Roll-Up",
+          "Tilt-Up",
+          "Wood",
+          "Steel"
+         ]
+        }
+       ],
+       "condition": true
+      },
+      {
+       "id": "gar_opener",
+       "label": "Garage Door Opener",
+       "kind": "component",
+       "keywords": [
+        "garage door opener",
+        "opener",
+        "liftmaster",
+        "chamberlain",
+        "genie",
+        "belt drive",
+        "chain drive"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Opener Drive",
+         "values": [
+          "Chain",
+          "Belt",
+          "Screw",
+          "Wall-mount"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "ext_garage_door",
+       "label": "Garage Door Auto-Reverse / Photo-Eyes",
+       "kind": "component",
+       "keywords": [
+        "garage door opener",
+        "auto reverse",
+        "auto-reverse",
+        "photo eye",
+        "photoelectric",
+        "safety reverse",
+        "photo-eyes",
+        "safety sensor",
+        "reverse on contact"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Garage Door Auto-Reverse / Photo-Eyes",
+         "values": [
+          "Photo-Eyes Only",
+          "Mechanical Reverse Only",
+          "Auto-Reverse Only"
+         ]
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Tested"
+       ]
+      },
+      {
+       "id": "gar_springs",
+       "label": "Garage Door Springs & Cables",
+       "kind": "component",
+       "keywords": [
+        "torsion spring",
+        "extension spring",
+        "garage cable",
+        "frayed cable",
+        "broken spring"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Visible"
+       ]
+      },
+      {
+       "id": "garage_gar_door_hardware",
+       "label": "Garage Door Hardware",
+       "kind": "component",
+       "keywords": [],
+       "condition": true
+      }
+     ]
+    },
+    {
+     "id": "windows_doors__windows",
+     "label": "Windows",
+     "kind": "subsystem",
+     "children": [
+      {
+       "id": "ext_windows",
+       "label": "Window Type",
+       "kind": "component",
+       "keywords": [
+        "single pane",
+        "double pane",
+        "triple pane",
+        "aluminum window",
+        "vinyl window",
+        "wood window",
+        "windows",
+        "vinyl windows",
+        "wood windows",
+        "aluminum windows"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Frame Material",
+         "values": [
+          "Vinyl",
+          "Wood",
+          "Aluminum",
+          "Fiberglass",
+          "Clad Wood",
+          "Storm Windows"
+         ]
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "win_vinyl",
+       "label": "Vinyl Windows",
+       "kind": "component",
+       "keywords": [
+        "vinyl window",
+        "vinyl windows",
+        "vinyl frame",
+        "vinyl sash"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_wood",
+       "label": "Wood Windows",
+       "kind": "component",
+       "keywords": [
+        "wood window",
+        "wood windows",
+        "wood sash",
+        "window rot",
+        "rotted sill"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_aluminum",
+       "label": "Aluminum Windows",
+       "kind": "component",
+       "keywords": [
+        "aluminum window",
+        "aluminum windows",
+        "aluminum frame"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_fiberglass",
+       "label": "Fiberglass Windows",
+       "kind": "component",
+       "keywords": [
+        "fiberglass window",
+        "fiberglass windows"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_clad",
+       "label": "Clad Wood Windows",
+       "kind": "component",
+       "keywords": [
+        "clad window",
+        "clad wood window",
+        "aluminum clad",
+        "vinyl clad"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_storm",
+       "label": "Storm Windows",
+       "kind": "component",
+       "keywords": [
+        "storm window",
+        "storm windows"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_other",
+       "label": "Other Windows",
+       "kind": "component",
+       "keywords": [],
+       "condition": true,
+       "limitations": [
+        "Not Accessible"
+       ]
+      },
+      {
+       "id": "win_glazing",
+       "label": "Window Glazing",
+       "kind": "component",
+       "keywords": [
+        "single pane",
+        "double pane",
+        "triple pane",
+        "dual pane",
+        "insulated glass",
+        "glazing"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Glazing",
+         "values": [
+          "Single-Pane",
+          "Double-Pane",
+          "Triple-Pane"
+         ]
+        }
+       ],
+       "condition": false
+      },
+      {
+       "id": "int_windows",
+       "label": "Window Operation",
+       "kind": "component",
+       "keywords": [
+        "window operation",
+        "window stuck",
+        "sash",
+        "failed seal",
+        "fogged window",
+        "broken window"
+       ],
+       "attributes": [
+        {
+         "id": "spec",
+         "label": "Window Operation",
+         "values": [
+          "Single-hung",
+          "Double-hung",
+          "Slider",
+          "Casement",
+          "Fixed"
+         ],
+         "optional": true
+        }
+       ],
+       "condition": true,
+       "limitations": [
+        "Sampled"
+       ]
+      },
+      {
+       "id": "int_egress",
+       "label": "Egress",
+       "kind": "component",
+       "keywords": [
+        "egress",
+        "egress window",
+        "bedroom egress",
+        "emergency escape",
+        "window well",
+        "sleeping room"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Verified"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "attic",
    "label": "ATTIC / INSULATION",
    "kind": "system",
@@ -5984,7 +6841,7 @@
          "id": "est_r_value",
          "label": "Est. R-Value",
          "values": [
-          "< R-19 (Upgrade)",
+          "Under R-19",
           "R-19–R-30",
           "R-30–R-38",
           "R-38–R-49",
@@ -6063,9 +6920,9 @@
          "values": [
           "Continuous",
           "Individual",
-          "None seen"
-         ],
-         "optional": true
+          "Low Gable / Eave",
+          "None"
+         ]
         }
        ],
        "condition": true,
@@ -6271,7 +7128,9 @@
          "label": "Wall Material",
          "values": [
           "Drywall",
-          "Plaster",
+          "Plaster on Wood Lath",
+          "Plaster on Rock Lath",
+          "Plaster (Lath not visible)",
           "Paneling",
           "Wood",
           "Tile",
@@ -6405,7 +7264,10 @@
          "label": "Ceiling Material",
          "values": [
           "Drywall",
-          "Plaster",
+          "Plaster on Wood Lath",
+          "Plaster on Rock Lath",
+          "Plaster (Lath not visible)",
+          "Pressed Metal (Tin)",
           "Acoustic / Popcorn",
           "Wood / Plank",
           "Suspended / Drop",
@@ -6438,6 +7300,20 @@
         "plaster ceiling",
         "plaster ceiling crack",
         "sagging plaster ceiling"
+       ],
+       "condition": true,
+       "limitations": [
+        "Not Inspected"
+       ]
+      },
+      {
+       "id": "ceil_pressed_metal",
+       "label": "Pressed Metal Ceilings",
+       "kind": "component",
+       "keywords": [
+        "pressed metal ceiling",
+        "tin ceiling",
+        "pressed tin"
        ],
        "condition": true,
        "limitations": [
@@ -6714,130 +7590,10 @@
      ]
     },
     {
-     "id": "interior__doors",
-     "label": "Doors",
+     "id": "interior__doors_trim",
+     "label": "Doors & Trim",
      "kind": "subsystem",
      "children": [
-      {
-       "id": "ext_doors",
-       "label": "Door Material",
-       "kind": "component",
-       "keywords": [
-        "entry door",
-        "exterior door",
-        "garage door",
-        "steel door",
-        "fiberglass door"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Material",
-         "values": [
-          "Steel",
-          "Fiberglass",
-          "Solid Wood",
-          "Glass / French",
-          "Sliding Glass"
-         ]
-        }
-       ],
-       "condition": false
-      },
-      {
-       "id": "door_steel",
-       "label": "Steel Doors",
-       "kind": "component",
-       "keywords": [
-        "steel door",
-        "metal door",
-        "steel entry door"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "door_fiberglass",
-       "label": "Fiberglass Doors",
-       "kind": "component",
-       "keywords": [
-        "fiberglass door",
-        "fiberglass entry door"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "door_wood",
-       "label": "Solid Wood Doors",
-       "kind": "component",
-       "keywords": [
-        "wood door",
-        "solid wood door",
-        "wood entry door"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "door_french",
-       "label": "Glass / French Doors",
-       "kind": "component",
-       "keywords": [
-        "french door",
-        "french doors",
-        "glass door"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "door_sliding",
-       "label": "Sliding Glass Doors",
-       "kind": "component",
-       "keywords": [
-        "sliding glass door",
-        "slider",
-        "patio door",
-        "sliding door"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "door_other",
-       "label": "Other Doors",
-       "kind": "component",
-       "keywords": [],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "ext_weatherstrip",
-       "label": "Weatherstripping",
-       "kind": "component",
-       "keywords": [
-        "weatherstrip",
-        "weatherstripping",
-        "door seal",
-        "threshold",
-        "gap at door",
-        "daylight at door"
-       ],
-       "condition": true
-      },
       {
        "id": "int_doors",
        "label": "Interior Doors",
@@ -6880,327 +7636,6 @@
         "damaged trim"
        ],
        "condition": true
-      },
-      {
-       "id": "gar_door",
-       "label": "Garage Vehicle Door",
-       "kind": "component",
-       "keywords": [
-        "garage door",
-        "overhead door",
-        "sectional door",
-        "roll-up door",
-        "tilt-up door",
-        "bay door"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Vehicle Door",
-         "values": [
-          "Sectional — Insulated",
-          "Sectional — Non-Insulated",
-          "Roll-Up",
-          "Tilt-Up",
-          "Wood",
-          "Steel"
-         ]
-        }
-       ],
-       "condition": true
-      },
-      {
-       "id": "gar_opener",
-       "label": "Garage Door Opener",
-       "kind": "component",
-       "keywords": [
-        "garage door opener",
-        "opener",
-        "liftmaster",
-        "chamberlain",
-        "genie",
-        "belt drive",
-        "chain drive"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Opener Drive",
-         "values": [
-          "Chain",
-          "Belt",
-          "Screw",
-          "Wall-mount"
-         ],
-         "optional": true
-        }
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
-      },
-      {
-       "id": "ext_garage_door",
-       "label": "Garage Door Auto-Reverse / Photo-Eyes",
-       "kind": "component",
-       "keywords": [
-        "garage door opener",
-        "auto reverse",
-        "auto-reverse",
-        "photo eye",
-        "photoelectric",
-        "safety reverse",
-        "photo-eyes",
-        "safety sensor",
-        "reverse on contact"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Garage Door Auto-Reverse / Photo-Eyes",
-         "values": [
-          "Photo-Eyes Only",
-          "Mechanical Reverse Only",
-          "Auto-Reverse Only"
-         ]
-        }
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Tested"
-       ]
-      },
-      {
-       "id": "gar_springs",
-       "label": "Garage Door Springs & Cables",
-       "kind": "component",
-       "keywords": [
-        "torsion spring",
-        "extension spring",
-        "garage cable",
-        "frayed cable",
-        "broken spring"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Visible"
-       ]
-      },
-      {
-       "id": "garage_gar_door_hardware",
-       "label": "Garage Door Hardware",
-       "kind": "component",
-       "keywords": [],
-       "condition": true
-      }
-     ]
-    },
-    {
-     "id": "interior__windows",
-     "label": "Windows",
-     "kind": "subsystem",
-     "children": [
-      {
-       "id": "ext_windows",
-       "label": "Window Type",
-       "kind": "component",
-       "keywords": [
-        "single pane",
-        "double pane",
-        "triple pane",
-        "aluminum window",
-        "vinyl window",
-        "wood window",
-        "windows",
-        "vinyl windows",
-        "wood windows",
-        "aluminum windows"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Frame Material",
-         "values": [
-          "Vinyl",
-          "Wood",
-          "Aluminum",
-          "Fiberglass",
-          "Clad Wood",
-          "Storm Windows"
-         ]
-        }
-       ],
-       "condition": false
-      },
-      {
-       "id": "win_vinyl",
-       "label": "Vinyl Windows",
-       "kind": "component",
-       "keywords": [
-        "vinyl window",
-        "vinyl windows",
-        "vinyl frame",
-        "vinyl sash"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_wood",
-       "label": "Wood Windows",
-       "kind": "component",
-       "keywords": [
-        "wood window",
-        "wood windows",
-        "wood sash",
-        "window rot",
-        "rotted sill"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_aluminum",
-       "label": "Aluminum Windows",
-       "kind": "component",
-       "keywords": [
-        "aluminum window",
-        "aluminum windows",
-        "aluminum frame"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_fiberglass",
-       "label": "Fiberglass Windows",
-       "kind": "component",
-       "keywords": [
-        "fiberglass window",
-        "fiberglass windows"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_clad",
-       "label": "Clad Wood Windows",
-       "kind": "component",
-       "keywords": [
-        "clad window",
-        "clad wood window",
-        "aluminum clad",
-        "vinyl clad"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_storm",
-       "label": "Storm Windows",
-       "kind": "component",
-       "keywords": [
-        "storm window",
-        "storm windows"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_other",
-       "label": "Other Windows",
-       "kind": "component",
-       "keywords": [],
-       "condition": true,
-       "limitations": [
-        "Not Accessible"
-       ]
-      },
-      {
-       "id": "win_glazing",
-       "label": "Window Glazing",
-       "kind": "component",
-       "keywords": [
-        "single pane",
-        "double pane",
-        "triple pane",
-        "dual pane",
-        "insulated glass",
-        "glazing"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Glazing",
-         "values": [
-          "Single-Pane",
-          "Double-Pane",
-          "Triple-Pane"
-         ]
-        }
-       ],
-       "condition": false
-      },
-      {
-       "id": "int_windows",
-       "label": "Window Operation",
-       "kind": "component",
-       "keywords": [
-        "window operation",
-        "window stuck",
-        "sash",
-        "failed seal",
-        "fogged window",
-        "broken window"
-       ],
-       "attributes": [
-        {
-         "id": "spec",
-         "label": "Window Operation",
-         "values": [
-          "Single-hung",
-          "Double-hung",
-          "Slider",
-          "Casement",
-          "Fixed"
-         ],
-         "optional": true
-        }
-       ],
-       "condition": true,
-       "limitations": [
-        "Sampled"
-       ]
-      },
-      {
-       "id": "int_egress",
-       "label": "Egress",
-       "kind": "component",
-       "keywords": [
-        "egress",
-        "egress window",
-        "bedroom egress",
-        "emergency escape",
-        "window well",
-        "sleeping room"
-       ],
-       "condition": true,
-       "limitations": [
-        "Not Verified"
-       ]
       }
      ]
     },
@@ -7436,8 +7871,7 @@
          "label": "Handrail Material",
          "values": [
           "Wood",
-          "Metal",
-          "Missing"
+          "Metal"
          ],
          "optional": true
         }
@@ -7742,7 +8176,7 @@
          ]
         }
        ],
-       "condition": false
+       "condition": true
       },
       {
        "id": "fp_liner",
@@ -7761,9 +8195,11 @@
          "id": "spec",
          "label": "Flue Liner",
          "values": [
+          "Unlined",
           "Clay Tile",
-          "Stainless Steel Insert",
-          "Cast-In-Place"
+          "Stainless Steel Liner",
+          "Cast-In-Place",
+          "Not visible"
          ]
         }
        ],
@@ -7835,7 +8271,7 @@
          "label": "Gas Venting",
          "values": [
           "Direct Vent (Sealed)",
-          "B-Vent — Proper Draft"
+          "B-Vent"
          ]
         }
        ],
@@ -7889,7 +8325,7 @@
          "label": "Gas Logs",
          "values": [
           "Vented Set",
-          "Vent-Free (Verify Code)",
+          "Vent-Free",
           "Sealed Unit (Factory Logs)"
          ]
         }
@@ -7916,7 +8352,8 @@
          "values": [
           "Key valve",
           "In-line valve",
-          "Not seen"
+          "None",
+          "Not visible"
          ],
          "optional": true
         }
@@ -8169,8 +8606,7 @@
           "Bottom Freezer",
           "Side-by-Side",
           "French Door",
-          "Built-In",
-          "Not Present"
+          "Built-In"
          ],
          "optional": true
         },
@@ -8268,7 +8704,7 @@
          "label": "Disposal",
          "values": [
           "Present",
-          "Not Present"
+          "None"
          ],
          "optional": true
         }

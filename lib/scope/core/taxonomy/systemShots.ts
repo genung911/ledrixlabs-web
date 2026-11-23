@@ -133,7 +133,14 @@ export const SYSTEM_SHOTS: Record<string, readonly Shot[]> = {
   interior: [
     { id: 'room_view', label: 'Room view', hint: 'Wide, from a doorway: the floor, walls, ceiling and windows.', repeat: { base: 'Room', next: 'Next room' }, answers: ['int_flooring|spec', 'int_walls|spec', 'ext_windows|spec'], documents: ['int_flooring'] },
     { id: 'stairs', label: 'Stairs & railings', hint: 'The stair from the bottom: treads, the handrail, and the guard or balusters.', documents: ['int_stairs'] },
+  ],
+  // 2026-11-23 (ap3, owner "Approve the split"): Windows & Doors is its own tile — the window close-up moved here from Interior.
+  windows_doors: [
     { id: 'window_close', label: 'A window up close', hint: 'The frame and glass, where the label or spacer shows.', repeat: { base: 'Window', next: 'Next window' }, answers: ['win_glazing|spec', 'ext_windows|spec'] },
+  ],
+  // …and Wiring & Fixtures, the second Electrical tile: the cable itself, where it runs exposed.
+  electrical_wiring: [
+    { id: 'wiring', label: 'Exposed wiring', hint: 'Wiring in the basement, crawlspace or attic: the cable and its jacket, close enough to read.', answers: ['elec_wiring|type', 'elec_wiring|method'] },
   ],
   fireplace: [
     { id: 'fp_wide', label: 'Fireplace view', hint: 'The whole fireplace and its surround, with the hearth in front.', answers: ['fp_type|spec', 'fp_gas_logs|spec'], documents: ['fp_type'] },
@@ -495,7 +502,7 @@ export function validateShotRead(raw: any, ctx: ShotContext, g: ReadGuards = {})
 // house already has (confirmed, settled or proposed) is held back; two in one read that contradict each other both are —
 // the inspector decides. Closed and short: physics, not opinion.
 export const CONFLICTS: readonly { a: { key: string; values: readonly string[] }; b: { key: string; values: readonly string[] } }[] = [
-  { a: { key: 'hvac_furnace_eff|efficiency', values: ['90%+ (High Efficiency)'] }, b: { key: 'hvac_flue|spec', values: ['Metal B-Vent', 'Masonry Chimney', 'Single-Wall (Verify)'] } },
+  { a: { key: 'hvac_furnace_eff|efficiency', values: ['90%+ (High Efficiency)'] }, b: { key: 'hvac_flue|spec', values: ['Metal B-Vent', 'Masonry Chimney', 'Single-Wall Metal'] } },
   { a: { key: 'hvac_furnace_eff|efficiency', values: ['80% (Standard)'] }, b: { key: 'hvac_flue|spec', values: ['PVC (High-Eff)'] } },
 ];
 const clashes = (k1: string, v1: string, k2: string, v2: string) => CONFLICTS.some(c =>

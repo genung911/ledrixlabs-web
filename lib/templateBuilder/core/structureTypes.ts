@@ -47,10 +47,11 @@ export const STRUCTURE_TYPE_ICONS: readonly string[] = [
 // unit gets the main house's core systems plus Kitchen / Laundry / Bathroom; a utility building a lean structural
 // set; an Outbuilding starts empty. `RESIDENTIAL` is canonicalSystems.DEFAULT_ACTIVE_SYSTEMS + the three rooms —
 // verify:structure-types holds the two equal. Ids a template does not have are inert (Scope lists template systems).
-const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'interior', 'foundation', 'electrical', 'plumbing', 'water_heater', 'heating', 'cooling', 'kitchen', 'laundry', 'primary_bathroom'];
+const RESIDENTIAL = ['safety', 'roofing', 'attic', 'exterior', 'windows_doors', 'interior', 'foundation', 'electrical', 'electrical_wiring', 'plumbing', 'water_heater', 'heating', 'cooling', 'kitchen', 'laundry', 'primary_bathroom'];
 // Windows, doors and garage doors live in Interior › Doors & Windows (owner 2026-11-07), so a detached garage or shop
 // includes Interior with everything off but what Exterior › Openings held before — its building keeps its garage door.
-const UTILITY = ['roofing', 'exterior', 'interior', 'electrical', 'foundation'];
+// 2026-11-23 (ap3): the garage door moved to Windows & Doors, and the wiring to Wiring & Fixtures — a shop keeps both.
+const UTILITY = ['roofing', 'exterior', 'windows_doors', 'interior', 'electrical', 'electrical_wiring', 'foundation'];
 // 2026-11-17 (owner, mockup N2y2xhG5oqKYMF9vsd8oko): Walls, Ceilings & Floors is three tiles — all off in a utility building.
 const UTILITY_OFF = ['interior__walls', 'interior__ceilings', 'interior__floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
   'int_windows', 'int_egress', 'int_doors', 'int_trim'];
@@ -67,9 +68,9 @@ export const LEDRIX_DEFAULT_STRUCTURE_TYPES: readonly StructureTypeDef[] = [
   { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_outbuilding', name: 'Outbuilding',     kind: 'outbuilding', icon: 'home-outline',         systems: [] },
   // 2026-11-14 (owner: fold the old intake Add-ons in): the old "Wellhouse" add-on is a building.
-  { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'plumbing'], off: WELL_OFF },
+  { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'electrical_wiring', 'plumbing'], off: WELL_OFF },
   { id: 'ledrix_barn',        name: 'Barn / Pole Barn', kind: 'outbuilding', icon: 'barn',                systems: UTILITY, off: UTILITY_OFF },
-  { id: 'ledrix_pool_house',  name: 'Pool House',      kind: 'outbuilding', icon: 'pool',                 systems: ['roofing', 'exterior', 'electrical', 'plumbing', 'primary_bathroom'] },
+  { id: 'ledrix_pool_house',  name: 'Pool House',      kind: 'outbuilding', icon: 'pool',                 systems: ['roofing', 'exterior', 'electrical', 'electrical_wiring', 'plumbing', 'primary_bathroom'] },
   { id: 'ledrix_shed',        name: 'Shed',            kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior'] },
   { id: 'ledrix_carport',     name: 'Carport',         kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'foundation'] },
 ];

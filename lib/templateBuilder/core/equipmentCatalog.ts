@@ -207,7 +207,7 @@ export const EQUIPMENT_CATALOG: CatalogEquipmentType[] = [
       P('plateout', 'Outdoor unit data plate', 'Outdoor Unit Data Plate'), P('platein', 'Air handler data plate', 'Air Handler Data Plate'),
     ] },
   ] },
-  { id: 'gas_boiler', label: 'Gas boiler', system: 'heating', intro: 'Components Ledrix knows for a gas-fired hot-water boiler — no blower, no air filter.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Boiler'] }, groups: [
+  { id: 'gas_boiler', label: 'Gas boiler', system: 'heating', intro: 'Components Ledrix knows for a gas-fired hot-water boiler — no blower, no air filter.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Hot Water Boiler'] }, groups: [
     { id: 'combustion', label: 'Combustion & venting', why: 'because it burns gas', components: [
       T('burner', 'Burner / flame'), T('hx', 'Heat exchanger (visible portions)'), T('ignition', 'Ignition — igniter or pilot'),
       T('vent', 'Vent connector / flue', GAS_VENT), T('combair', 'Combustion air supply'),
@@ -219,7 +219,7 @@ export const EQUIPMENT_CATALOG: CatalogEquipmentType[] = [
     ] },
     boilerReadings(),
   ] },
-  { id: 'oil_boiler', label: 'Oil boiler', system: 'heating', intro: 'Components Ledrix knows for an oil-fired hot-water boiler — oil burner and oil supply, no blower, no air filter.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Boiler'] }, groups: [
+  { id: 'oil_boiler', label: 'Oil boiler', system: 'heating', intro: 'Components Ledrix knows for an oil-fired hot-water boiler — oil burner and oil supply, no blower, no air filter.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Hot Water Boiler'] }, groups: [
     oilBurner, oilSupply,
     waterSide([LWCO, D('tankless', 'Tankless domestic hot-water coil', 'when the boiler also heats household water')]),
     distribution,
@@ -228,7 +228,7 @@ export const EQUIPMENT_CATALOG: CatalogEquipmentType[] = [
     ] },
     boilerReadings([R('stacktemp', 'Stack (flue gas) temperature', F, 'Flue Gas Temperature', undefined, 'if your company tests combustion')]),
   ] },
-  { id: 'electric_boiler', label: 'Electric boiler', system: 'heating', intro: 'Components Ledrix knows for an electric hot-water boiler — no combustion, no fuel supply, no venting.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Boiler'] }, groups: [
+  { id: 'electric_boiler', label: 'Electric boiler', system: 'heating', intro: 'Components Ledrix knows for an electric hot-water boiler — no combustion, no fuel supply, no venting.', equipmentRule: { field: HEAT_FUEL, anyOf: ['Hot Water Boiler'] }, groups: [
     { id: 'elements', label: 'Heating elements', why: 'electric resistance heat', components: [
       T('elements', 'Heating elements'), T('contactors', 'Contactors / relays'), T('hilimit', 'High-temperature limit control'),
     ] },
