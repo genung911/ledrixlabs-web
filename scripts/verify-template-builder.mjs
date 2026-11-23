@@ -572,7 +572,8 @@ async function runDesktop(files) {
     // ── the equipment component catalog (owner rulings 2026-10-26) ──────────────────────────────────────────
     const C = await import(pathToFileURL(join(dir, 'catalogModel.ts')).href);
     const EC = await import(pathToFileURL(join(dir, 'core/equipmentCatalog.ts')).href);
-    const FUEL = ['Gas Furnace', 'Electric Heat', 'Heat Pump', 'Ductless Mini-Split', 'Propane', 'Oil Furnace', 'Boiler', 'Radiant Heat'];
+    // RE-ANCHORED 2026-11-23 (app 965, Terminology C): Boiler is Hot Water Boiler / Steam Boiler; the three boilers are hot-water ones.
+    const FUEL = ['Gas Furnace', 'Electric Heat', 'Heat Pump', 'Ductless Mini-Split', 'Propane', 'Oil Furnace', 'Hot Water Boiler', 'Steam Boiler', 'Radiant Heat'];
     const HEAT = { id: 'cat_1', name: 'Catalog', version: 1, systems: [{ id: 'heating', label: 'Heating', kind: 'system', children: [
       { id: 'heating__plant', label: 'Heating Plant', kind: 'subsystem', children: [
         { id: 'hvac_heating', label: 'Heating System', kind: 'component', condition: false, attributes: [{ id: 'fuel_source', label: 'Fuel Source', values: FUEL }] },
@@ -633,7 +634,7 @@ async function runDesktop(files) {
     const oldTree = clone(cdr.tree); oldTree.systems[0].children[0].children[0].attributes[0].values = FUEL.filter(v => v !== 'Ductless Mini-Split');
     r('suggest: an answer maps to its equipment (Gas Furnace and Propane → gas furnace; Boiler → the three boilers; Ductless Mini-Split → mini-split, nothing under another field)',
       ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Gas Furnace')) === 'gas_furnace' && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Propane')) === 'gas_furnace'
-      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Boiler')) === 'gas_boiler,oil_boiler,electric_boiler'
+      && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Hot Water Boiler')) === 'gas_boiler,oil_boiler,electric_boiler'
       && ids(C.catalogTypesForAnswer(cdr.tree, sysOf(), FIELD, 'Ductless Mini-Split')) === 'mini_split' && ids(C.catalogTypesOffField(cdr.tree, sysOf(), FIELD)) === ''
       && ids(C.catalogTypesOffField(oldTree, oldTree.systems[0], FIELD)) === '');
     r('suggest: under the mini-split chip Heating suggests only what Cooling does not check (the outdoor defrost drain)',
@@ -842,7 +843,7 @@ async function runTypes(files) {
       const qsig = g => (g?.questions ?? []).map(x => `${x.node.label}:${x.rows.length}:${x.rows[x.rows.length - 1].value}>${x.rows[x.rows.length - 1].card?.label}`).join('|');
       const A = mat('attic'), ins = grp(A, 'Insulation');
       r('materials: Interior floors, walls and countertops are materials questions, one card per answer (2026-11-07); a group with none lists its items that record a choice first (Attic insulation)',
-        qsig(wal) === 'Walls:6:Other>Other Walls' && qsig(cei) === 'Ceilings:6:Other>Other Ceilings' && qsig(flo) === 'Floors:10:Other>Other Flooring'
+        /* RE-ANCHORED 2026-11-23 (app 965): plaster answers name their lath (three each) */ qsig(wal) === 'Walls:8:Other>Other Walls' && qsig(cei) === 'Ceilings:9:Other>Other Ceilings' && qsig(flo) === 'Floors:10:Other>Other Flooring'
         && [wal, cei, flo].every(g => g.questions.every(x => x.rows.every(r => r.card)) && g.materials.length === 0 && !g.every.some(n => (n.attributes ?? []).length))
         && !!ins && ins.materials.some(n => n.label === 'Insulation'));
       // Interior (owner 2026-11-06, mockup SqNS9bXgLH8HwppCXtwBPY, "approved with recommendations"): one card per surface
@@ -853,7 +854,7 @@ async function runTypes(files) {
         let wm = false; const any = n => { if (n.id === 'int_wall_material') wm = true; (n.children ?? []).forEach(any); (n.trimmed ?? []).forEach(any); }; any(fsys('interior'));
         globalThis.__intDebug = { groups: I.map(g => g.node.label), surf: [lab(wal?.every), lab(cei?.every), lab(flo?.every)], kc: [lab(kc?.materials), lab(kc?.every)], vent: lab(vent?.every) };
         r('interior: Walls, Ceilings & Floors (Floors, Walls / Ceilings; Trim moved to Doors & Windows), Countertops & Cabinets (Countertops, then Backsplash and Cabinets), Doors & Windows, Stairs & Railings, Ventilation; no Wall Material card',
-          I.map(g => g.node.label).join('|') === 'Walls|Ceilings|Floors|Doors|Windows|Countertops & Cabinets|Stairs & Railings|Ventilation'
+          /* RE-ANCHORED 2026-11-23 (app 966, ap3): Windows and the exterior / garage doors are Windows & Doors; Interior keeps Doors & Trim */ I.map(g => g.node.label).join('|') === 'Walls|Ceilings|Floors|Doors & Trim|Countertops & Cabinets|Stairs & Railings|Ventilation'
           // AMENDED 2026-11-14 (app x2): the surfaces' every-home items are the two era items (asbestos tile, lead paint) only
           // — since 2026-11-17 lead paint in Walls, the tile in Floors, nothing in Ceilings.
           && lab(wal?.every) === 'Lead-Based Paint — Deteriorated / Friction Surfaces' && (cei?.every ?? [1]).length === 0 && (flo?.every ?? []).map(n => n.id).join() === 'int_era_asbestos_tile' &&   /* Trim moved to Doors & Windows (2026-11-07) */ kc?.questions.map(x => x.node.label).join() === 'Countertops' && kc.questions[0].rows.length === 9 && kc.questions[0].rows.every(r => r.card) && lab(kc?.every) === 'Backsplash|Cabinets'
@@ -962,7 +963,7 @@ async function runTypes(files) {
       // decides 3 of its items, under a third, so no chips; each group is Recorded → Brought by → every home.
       const ids = (l) => (l ?? []).map(n => n.id).join('|');
       const CTS_find = (t, id) => { let hit = null; const w = (n) => { if (hit || !n) return; if (n.id === id) hit = n; (n.children ?? []).forEach(w); }; (t.systems ?? []).forEach(w); return hit; };
-      const EG = mat('electrical'), svc = grp(EG, 'Service'), pnl = grp(EG, 'Panel'), bw = grp(EG, 'Branch Wiring'), dev = grp(EG, 'Devices & Protection');
+      const EG = mat('electrical'), svc = grp(EG, 'Service'), pnl = grp(EG, 'Panel');
       const typedIds = fresh.systems.filter(x => TL.typeLayoutOf(fresh, x, fdefs)).map(x => x.id).sort().join('|');
       // THE THIRD-OF-THE-SYSTEM RULE needs a question that brings SEVERAL items yet decides few. Since the 2026-11-09 split
       // (Overhead → the drop; the mast follows Attachment) no default question does, so the witness is made in memory: a
@@ -996,11 +997,15 @@ async function runTypes(files) {
         && ids(pnl.every) === 'electrical_older_fuse_panel' && ids(pnl.materials) === 'elec_panel|elec_deadfront|elec_breakers|elec_bonding'
         // 2026-11-09 (panels as units): the Sub-Panel row is retired; a panel's Role brings the sub-only check
         && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Sub-Panel') === 'elec_sub_separation' && row(pnl.brought.find(b => b.label === 'Panel › Role'), 'Main') === '');
+      // RE-ANCHORED 2026-11-23 (app 966, ap3): Branch Wiring and Devices sit on Electrical's second tile, Wiring & Fixtures.
+      const EW = mat('electrical_wiring'), bw = grp(EW, 'Branch Wiring'), dev = grp(EW, 'Devices & Protection');
       const wq = bw?.questions[0];
       r('electrical: Branch Wiring is its wiring-type materials rows (one card each, Other for typed) then every home; Devices records GFCI / AFCI',
         // 2026-11-09: Type is the conductor (4, each its card) and Method how it is run (Conduit / Armored bring theirs)
-        !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 4 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
-        && bw.questions[1]?.field === 'elec_wiring::method' && bw.questions[1].rows.filter(x => x.card).map(x => x.card.id).join('|') === 'elec_wir_conduit|elec_wir_mc'
+        // RE-ANCHORED 2026-11-23 (app 965): the conductor is Copper / Aluminum / Copper-Clad Aluminum (+ Other typed); the method's
+        // answers carry their cards — Knob & Tube, Cloth, Armored (old and new words), Conduit
+        !!wq && wq.field === 'elec_wiring::type' && wq.rows.length === 3 && wq.rows.every(x => x.card) && wq.typed?.id === 'elec_wir_other'
+        && bw.questions[1]?.field === 'elec_wiring::method' && bw.questions[1].rows.filter(x => x.card).map(x => x.card.id).join('|') === 'elec_wir_kt|elec_wir_cloth|elec_wir_mc|elec_wir_mc|elec_wir_conduit'
         && ids(bw.every) === 'kit_circuits|laundry_dryer' && !bw.brought.length
         // RE-ANCHORED 2026-11-14 (app x44): Receptacles and Exterior Lighting carry a photo detail now
         && ids(dev?.materials) === 'elec_grounding|elec_receptacles|elec_ext_lighting' && ids(dev?.every) === 'int_lighting');
