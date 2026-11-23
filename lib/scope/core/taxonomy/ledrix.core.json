@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.22.1",
+  "packVersion": "2026.11.22.2",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -262,6 +262,23 @@
                 "Ductless",
                 "Radiant Floor",
                 "Fan Coil Units"
+              ],
+              "offeredWhen": [
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includesAny": ["Gas Furnace", "Electric Furnace", "Propane", "Oil Furnace", "Heat Pump"],
+                  "values": ["Forced Air (Ducts)"]
+                },
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includesAny": ["Boiler"],
+                  "values": ["Radiator / Boiler", "Radiant Floor", "Fan Coil Units"]
+                },
+                {
+                  "specNodeId": "hvac_heating::fuel_source",
+                  "includesAny": ["Radiant Heat"],
+                  "values": ["Radiant Floor"]
+                }
               ]
             }
           ],

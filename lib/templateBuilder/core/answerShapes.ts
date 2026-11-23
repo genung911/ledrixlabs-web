@@ -3,7 +3,8 @@
 // Mockup https://claude.ai/artifact/7W41vFJnKg12JmmQWreorf → "approved yes on all 3". The furnace's efficiency class
 // shapes its venting choices and its title:
 //
-//   offeredValues   a field's `offeredWhen` (pack): while the answer it names EQUALS a value, the field offers only the
+//   offeredValues   a field's `offeredWhen` (pack): while the answer it names EQUALS a value (or, `includesAny`, names any of
+//                   several — 2026-11-22), the field offers only the
 //                   listed choices — Furnace Flue / Venting on a 90%+ furnace offers PVC (High-Eff) and Direct Vent
 //                   (Sealed). NEVER a removal: a choice already picked stays offered, "+ Add" still takes anything, and a
 //                   list that would come out empty (a company renamed every choice) offers them all. A rule reading an
@@ -15,7 +16,10 @@
 // PURE — no store, no React. Scope (useSpecField, ScopeRowList) passes a reader; the website's phone preview runs a
 // byte-identical copy against its own picks (verify:furnace-class).
 
-export type OfferRule = { specNodeId: string; equals: string; values: readonly string[] };
+/** `equals`: the one answer that narrows (the first rule that matches wins). `includesAny` (2026-11-22, Distribution follows
+ *  What heats): matches when the answer — one value or several — includes any of these; EVERY matching rule adds its
+ *  choices, so a house heated by a furnace and a boiler is offered both sets. */
+export type OfferRule = { specNodeId: string; equals?: string; includesAny?: readonly string[]; values: readonly string[] };
 export type TypeTitle = {
   field: string;
   map?: Record<string, string>;
@@ -32,9 +36,13 @@ const one = (v: string | null | undefined): string | null => {
 /** The choices a field offers now, in its own order. */
 export function offeredValues(all: readonly string[], picked: readonly string[], rules: readonly OfferRule[] | null | undefined, read: ReadAnswer): string[] {
   if (!Array.isArray(rules) || !rules.length) return [...all];
-  const hit = rules.find(r => r && typeof r.specNodeId === 'string' && one(read(r.specNodeId)) === r.equals);
-  if (!hit) return [...all];
-  const narrowed = all.filter(v => hit.values.includes(v));
+  const entries = (v: string | null | undefined) => String(v ?? '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  const anyHits = rules.filter(r => r && typeof r.specNodeId === 'string' && Array.isArray(r.includesAny)
+    && entries(read(r.specNodeId)).some(e => r.includesAny!.some(w => String(w).toLowerCase() === e)));
+  const hit = anyHits.length ? null : rules.find(r => r && typeof r.specNodeId === 'string' && typeof r.equals === 'string' && one(read(r.specNodeId)) === r.equals);
+  if (!anyHits.length && !hit) return [...all];
+  const allowed = anyHits.length ? anyHits.flatMap(r => [...r.values]) : [...hit!.values];
+  const narrowed = all.filter(v => allowed.includes(v));
   if (!narrowed.length) return [...all];
   return all.filter(v => narrowed.includes(v) || picked.includes(v));
 }

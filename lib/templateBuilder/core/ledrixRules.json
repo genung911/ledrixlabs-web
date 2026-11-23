@@ -1,6 +1,6 @@
 {
  "_note": "GENERATED from ledrix-app src/core/taxonomy/ledrix.core.json (the Ledrix rule fields only: requires, dependsOnSpec). Do not edit; re-export when the pack changes. Parity: scripts/verify-template-builder.mjs.",
- "packVersion": "2026.11.22.1",
+ "packVersion": "2026.11.22.2",
  "nodes": {
   "hvac_heating_age": {
    "requires": [
@@ -4333,6 +4333,41 @@
   }
  },
  "offered": {
+  "hvac_distribution|spec": [
+   {
+    "specNodeId": "hvac_heating::fuel_source",
+    "includesAny": [
+     "Gas Furnace",
+     "Electric Furnace",
+     "Propane",
+     "Oil Furnace",
+     "Heat Pump"
+    ],
+    "values": [
+     "Forced Air (Ducts)"
+    ]
+   },
+   {
+    "specNodeId": "hvac_heating::fuel_source",
+    "includesAny": [
+     "Boiler"
+    ],
+    "values": [
+     "Radiator / Boiler",
+     "Radiant Floor",
+     "Fan Coil Units"
+    ]
+   },
+   {
+    "specNodeId": "hvac_heating::fuel_source",
+    "includesAny": [
+     "Radiant Heat"
+    ],
+    "values": [
+     "Radiant Floor"
+    ]
+   }
+  ],
   "hvac_flue|spec": [
    {
     "specNodeId": "hvac_furnace_eff",
