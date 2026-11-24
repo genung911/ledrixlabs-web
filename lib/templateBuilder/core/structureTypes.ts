@@ -55,6 +55,9 @@ const UTILITY = ['roofing', 'exterior', 'windows_doors', 'interior', 'electrical
 // 2026-11-17 (owner, mockup N2y2xhG5oqKYMF9vsd8oko): Walls, Ceilings & Floors is three tiles — all off in a utility building.
 const UTILITY_OFF = ['interior__walls', 'interior__ceilings', 'interior__floors', 'interior__countertops_cabinets', 'interior__stairs_railings', 'interior__ventilation',
   'int_windows', 'int_egress', 'int_doors', 'int_trim'];
+// 2026-11-23 (owner 11-19, z20: "Yes to garage ceilings, walls, floors"): a DETACHED GARAGE shows Interior's Walls,
+// Ceilings and Floors (garage walls, ceilings, fire separation); a Shop and a Barn still leave them out.
+const GARAGE_OFF = UTILITY_OFF.filter(id => id !== 'interior__walls' && id !== 'interior__ceilings' && id !== 'interior__floors');
 // 2026-11-14 (owner, test run x1: "Change detached shop to just shop … Do we need a better list?" → "yes go with that
 // list"): Shop (was Detached Shop); Guest House is a living space without its own Kitchen and Laundry; Well House brings
 // only the well equipment, the pressure check and its shelter; Barn / Pole Barn, Pool House, Shed and Carport join.
@@ -65,7 +68,7 @@ export const LEDRIX_DEFAULT_STRUCTURE_TYPES: readonly StructureTypeDef[] = [
   { id: 'ledrix_shop',        name: 'Shop',            kind: 'shop',        icon: 'warehouse',            systems: UTILITY, off: UTILITY_OFF },
   { id: 'ledrix_adu',         name: 'ADU',             kind: 'adu',         icon: 'home-group',           systems: RESIDENTIAL },
   { id: 'ledrix_guest_house', name: 'Guest House',     kind: 'guest_house', icon: 'home-variant-outline', systems: LIVING },
-  { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: UTILITY_OFF },
+  { id: 'ledrix_garage',      name: 'Detached Garage', kind: 'garage',      icon: 'garage-variant',       systems: UTILITY, off: GARAGE_OFF },
   { id: 'ledrix_outbuilding', name: 'Outbuilding',     kind: 'outbuilding', icon: 'home-outline',         systems: [] },
   // 2026-11-14 (owner: fold the old intake Add-ons in): the old "Wellhouse" add-on is a building.
   { id: 'ledrix_well_house',  name: 'Well House',      kind: 'outbuilding', icon: 'home-outline',         systems: ['roofing', 'exterior', 'foundation', 'electrical', 'electrical_wiring', 'plumbing'], off: WELL_OFF },
