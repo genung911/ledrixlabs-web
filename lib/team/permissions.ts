@@ -6,6 +6,11 @@
 //   member_permissions       — one colleague's list with the role's default and what changed (team managers read it)
 //   set_member_permission    — OWNER ONLY; returns the list as the server now has it
 //   reset_member_permissions — OWNER ONLY; back to the role's defaults
+// and, since #150 (2026-11-24, permissions on an invitation, set before the person accepts; accepting copies them):
+//   role_permission_preset       — a role's 9 defaults (the invite sheet, before the invitation exists)
+//   invitation_permissions       — a pending invitation's list, the same shape as a member's
+//   set_invitation_permission    — OWNER ONLY, pending invitations only
+//   reset_invitation_permissions — OWNER ONLY
 // The same calls as the phone (ledrix-app AuthService). scripts/verify-team.mjs holds this module to exactly these.
 import { workspace } from '@/lib/workspace/client';
 
@@ -64,6 +69,36 @@ export async function resetMemberPermissions(memberId: string): Promise<MemberPe
   if (res.error || !res.data) throw new PermissionError('Permissions were not reset', res.error);
   return res.data as MemberPermissions;
 }
+
+/** A role's defaults, in the screen's order — the invite sheet's Permissions before Send. */
+export async function loadRolePreset(role: string): Promise<Array<{ capability: Capability; preset: boolean }>> {
+  const res = await workspace.rpc('role_permission_preset', { p_role: role });
+  if (res.error || !res.data) throw new PermissionError('The role\'s defaults could not be loaded', res.error);
+  return (res.data as { permissions: Array<{ capability: Capability; preset: boolean }> }).permissions;
+}
+
+export async function loadInvitationPermissions(invitationId: string): Promise<MemberPermissions> {
+  const res = await workspace.rpc('invitation_permissions', { p_invitation: invitationId });
+  if (res.error || !res.data) throw new PermissionError('Permissions could not be loaded', res.error);
+  return res.data as MemberPermissions;
+}
+
+/** OWNER ONLY, pending invitations only. Shows the server's list, never the click. */
+export async function setInvitationPermission(invitationId: string, capability: Capability, allowed: boolean): Promise<MemberPermissions> {
+  const res = await workspace.rpc('set_invitation_permission', { p_invitation: invitationId, p_cap: capability, p_allowed: allowed });
+  if (res.error || !res.data) throw new PermissionError('The permission was not changed', res.error);
+  return res.data as MemberPermissions;
+}
+
+export async function resetInvitationPermissions(invitationId: string): Promise<MemberPermissions> {
+  const res = await workspace.rpc('reset_invitation_permissions', { p_invitation: invitationId });
+  if (res.error || !res.data) throw new PermissionError('The invitation’s permissions were not reset', res.error);
+  return res.data as MemberPermissions;
+}
+
+/** The steps an invited person follows, until invites are emailed (b3, Resend) — the same words as the phone. */
+export const joinSteps = (email: string) =>
+  `You're invited to join our team on Ledrix.\n\n1. Install Ledrix Inspect from the App Store.\n2. Tap Create account and use this email: ${email}\n3. Confirm the email Ledrix sends, sign in, and tap "I'm joining my company".`;
 
 /** "Everything" / "Custom · 2 changes" / "Office defaults" — the Access column. */
 export function accessLabel(role: string | null | undefined, perms: MemberPermissions | null | undefined): string {

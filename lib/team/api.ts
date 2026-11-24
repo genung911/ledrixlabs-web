@@ -34,7 +34,8 @@ function inviteToken(): string {
 }
 
 /** Save an invitation for `email` (already cleaned) as `role`. Refused when that address is already a member. */
-export async function createInvitation(companyId: string, email: string, role: string): Promise<void> {
+/** Returns the new invitation's id (#150: the sheet's permission changes are set on it). */
+export async function createInvitation(companyId: string, email: string, role: string): Promise<string> {
   const member = await workspace.from('company_members').select('id').ilike('email', email).limit(1);
   if (member.error) throw new TeamError('The team could not be checked', member.error);
   if ((member.data ?? []).length) throw new TeamError('That email already belongs to a team member');
@@ -47,6 +48,7 @@ export async function createInvitation(companyId: string, email: string, role: s
   }).select('id');
   if (res.error) throw new TeamError('The invitation was not saved', res.error);
   if (!(res.data ?? []).length) throw new TeamError('The invitation was not saved — the server did not confirm it');
+  return (res.data as Array<{ id: string }>)[0].id;
 }
 
 /** Remove a pending invitation. Confirmed by the rows the server says it deleted (RLS refuses silently). */

@@ -10,12 +10,17 @@ import { loadMembers, type MemberRow } from '@/lib/workspace/data';
 import { createInvitation, loadPendingInvitations, revokeInvitation, setMemberRole, type InvitationRow } from '@/lib/team/api';
 import { ROLE_SUMMARY, assignableRoles, canManageTeam, cleanInviteEmail, expiresLabel, roleLockReason } from '@/lib/team/model';
 import { PERMISSION_LABEL, accessLabel, loadMemberPermissions, loadMyCapabilities, resetMemberPermissions, setMemberPermission,
+  loadRolePreset, loadInvitationPermissions, setInvitationPermission, resetInvitationPermissions, joinSteps,
   type Capability, type MemberPermissions } from '@/lib/team/permissions';
 
 // Team (2026-10-21, mockup approved by the owner): invite by email address, revoke a pending invitation, change a role.
 // Every change goes to the server as the signed-in user and is shown only once the server confirms it (lib/team/api).
 // Inspectors and office see the list only. Removing a member does not exist on the server yet, so it is not offered.
 // Website Apple pass 2026-11-23: Invite is a sheet; People / Waiting to accept are grouped rows; a person opens beside.
+// #150 (owner 2026-11-24, "Yes do it. All 3", mockup XTwBvpqZgyrmSXjbUFLYRB; the phone's Team the same): the invite sheet
+// shows the role's Permissions and the owner can change them before Send; invited people sit in People tagged Invited,
+// and one opens beside the list with its permissions (set before they accept, copied onto them when they do),
+// Copy how to join, and Revoke. Waiting to accept is folded into People.
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; rows: MemberRow[]; invites: InvitationRow[] };
 type Pending = { member: MemberRow; role: string } | null;
@@ -40,6 +45,13 @@ export default function TeamPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, setPending] = useState<Pending>(null);
+  // #150: the sheet's Permissions — the role's defaults from the server, the owner's changes held until Send.
+  const isOwner = access.role === 'owner' || access.role === 'ledrix_admin';
+  const [invitePreset, setInvitePreset] = useState<Array<{ capability: Capability; preset: boolean }> | null>(null);
+  const [inviteChanges, setInviteChanges] = useState<Partial<Record<Capability, boolean>>>({});
+  useEffect(() => { setInviteChanges({}); setInvitePreset(null); loadRolePreset(inviteRole).then(setInvitePreset).catch(() => {}); }, [inviteRole]);
+  const [invPerms, setInvPerms] = useState<Record<string, MemberPermissions>>({});
+  const [openInvite, setOpenInvite] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
@@ -55,6 +67,10 @@ export default function TeamPage() {
         const next: Record<string, MemberPermissions> = {};
         got.forEach((g, i) => { if (g.status === 'fulfilled') next[others[i].id] = g.value; });
         setPerms(next);
+        const ig = await Promise.allSettled(invites.map(i => loadInvitationPermissions(i.id)));
+        const inext: Record<string, MemberPermissions> = {};
+        ig.forEach((g, i) => { if (g.status === 'fulfilled') inext[invites[i].id] = g.value; });
+        setInvPerms(inext);
       }
     } catch (e) { setState({ kind: 'error', message: e instanceof Error ? e.message : 'The team could not load.' }); }
   }, [manages, access.companyId, access.userId]);
@@ -66,8 +82,16 @@ export default function TeamPage() {
     if (!access.companyId) return;
     setBusy(true); setNotice(null);
     try {
-      await createInvitation(access.companyId, clean, inviteRole);
-      setNotice({ ok: true, text: `Invitation saved for ${clean} as ${roleLabel(inviteRole)}. No email was sent — they sign in with this address and accept.` });
+      const id = await createInvitation(access.companyId, clean, inviteRole);
+      // #150: the sheet's permission changes go onto the new invitation; the server's answer decides.
+      let refused = 0;
+      for (const [cap, allowed] of Object.entries(inviteChanges) as Array<[Capability, boolean]>) {
+        await setInvitationPermission(id, cap, allowed).catch(() => { refused++; });
+      }
+      setInviteChanges({});
+      setNotice(refused
+        ? { ok: false, text: `Invitation saved for ${clean}, but ${refused} permission change${refused === 1 ? ' was' : 's were'} not saved. Open them under People to set ${refused === 1 ? 'it' : 'them'} again.` }
+        : { ok: true, text: `Invitation saved for ${clean} as ${roleLabel(inviteRole)}. Ledrix doesn’t email it yet: open them under People and Copy how to join.` });
       setEmail('');
       setInviting(false);
       await load();
@@ -78,7 +102,7 @@ export default function TeamPage() {
   const revoke = async (inv: InvitationRow) => {
     if (!access.companyId || !window.confirm(`Revoke the invitation for ${inv.email}?`)) return;
     setBusy(true); setNotice(null);
-    try { await revokeInvitation(access.companyId, inv.id); setNotice({ ok: true, text: `Invitation for ${inv.email} revoked.` }); await load(); }
+    try { await revokeInvitation(access.companyId, inv.id); setNotice({ ok: true, text: `Invitation for ${inv.email} revoked.` }); setOpenInvite(null); await load(); }
     catch (e) { setNotice({ ok: false, text: msg(e) }); }
     finally { setBusy(false); }
   };
@@ -109,7 +133,21 @@ export default function TeamPage() {
     catch (e) { setNotice({ ok: false, text: msg(e) }); }
     finally { setPermBusy(false); }
   };
+  const toggleInvite = async (id: string, cap: Capability, allowed: boolean) => {
+    setPermBusy(true); setNotice(null);
+    try { const p = await setInvitationPermission(id, cap, allowed); setInvPerms(prev => ({ ...prev, [id]: p })); }
+    catch (e) { setNotice({ ok: false, text: msg(e) }); }
+    finally { setPermBusy(false); }
+  };
+  const resetInvite = async (id: string, who: string) => {
+    if (!window.confirm(`Reset the invitation for ${who} to the role’s defaults?`)) return;
+    setPermBusy(true); setNotice(null);
+    try { const p = await resetInvitationPermissions(id); setInvPerms(prev => ({ ...prev, [id]: p })); }
+    catch (e) { setNotice({ ok: false, text: msg(e) }); }
+    finally { setPermBusy(false); }
+  };
   const openMember = state.kind === 'ready' && openPerm ? state.rows.find(r => r.id === openPerm) ?? null : null;
+  const openInv = state.kind === 'ready' && openInvite ? state.invites.find(i => i.id === openInvite) ?? null : null;
   const [inviting, setInviting] = useState(false);
   const roleSelect = (m: MemberRow) => {
     const lock = roleLockReason({ userId: access.userId, role: access.role }, m, manages);
@@ -158,20 +196,20 @@ export default function TeamPage() {
                       label={<>{m.full_name || m.email || 'Member'}{m.id === access.userId && <span className="ml-2 text-xs text-muted">(you)</span>}</>}
                       sub={[m.email, m.phone, manages && changed ? `${changed} permission${changed === 1 ? '' : 's'} changed` : null].filter(Boolean).join(' · ') || undefined}
                       value={roleLabel(m.role)}
-                      onClick={manages ? () => setOpenPerm(openPerm === m.id ? null : m.id) : undefined}
+                      onClick={manages ? () => { setOpenInvite(null); setOpenPerm(openPerm === m.id ? null : m.id); } : undefined}
                       disabled={!manages || (!grantable && m.id !== access.userId && !manages)} />
                   );
                 })}
+                {manages && state.invites.map(inv => {
+                  const n = invPerms[inv.id]?.permissions.filter(x => x.changed).length ?? 0;
+                  return (
+                    <Row key={inv.id} label={inv.email}
+                      sub={[`${roleLabel(inv.role)} · ${expiresLabel(inv.expires_at)}`, n ? `${n} permission${n === 1 ? '' : 's'} changed` : null].filter(Boolean).join(' · ')}
+                      value="Invited"
+                      onClick={() => { setOpenPerm(null); setOpenInvite(openInvite === inv.id ? null : inv.id); }} />
+                  );
+                })}
               </Group>
-
-              {manages && state.invites.length > 0 && (
-                <Group heading="Waiting to accept">
-                  {state.invites.map(inv => (
-                    <Row key={inv.id} label={inv.email} sub={`${roleLabel(inv.role)} · ${expiresLabel(inv.expires_at)}`}
-                      right={<button type="button" disabled={busy} onClick={() => revoke(inv)} className="text-sm font-semibold text-safety hover:underline disabled:opacity-50">Revoke</button>} />
-                  ))}
-                </Group>
-              )}
 
               {manages && (
                 <details className="px-3">
@@ -196,6 +234,14 @@ export default function TeamPage() {
                 onReset={() => resetPerms(openMember.id, openMember.full_name || openMember.email || 'this person')}
                 onClose={() => setOpenPerm(null)} />
             )}
+            {openInv && (
+              <InvitationPanel invite={openInv} perms={invPerms[openInv.id] ?? null} busy={permBusy || busy}
+                onToggle={(cap, v) => toggleInvite(openInv.id, cap, v)}
+                onReset={() => resetInvite(openInv.id, openInv.email)}
+                onRevoke={() => revoke(openInv)}
+                onCopied={ok => setNotice(ok ? { ok: true, text: `Copied the steps for ${openInv.email}. Paste them into a text or an email.` } : { ok: false, text: 'Could not copy. Select the steps and copy them yourself.' })}
+                onClose={() => setOpenInvite(null)} />
+            )}
           </div>
         )}
       </div>
@@ -203,13 +249,26 @@ export default function TeamPage() {
       {manages && inviting && (
         <Sheet title="Invite someone" onCancel={() => setInviting(false)} busy={busy} doneLabel="Send invite" doneDisabled={!email.trim()}
           onDone={async () => { await invite(); }}>
-          <Group footnote={<>Ledrix doesn’t send an email. Tell them to sign in to Ledrix with this address and choose <strong className="text-ink">“I’m joining my company”</strong> — they join when they accept. Invitations expire after 7 days.</>}>
+          <Group footnote={<>Ledrix doesn’t send an email yet. After you send, open them under People and <strong className="text-ink">Copy how to join</strong> to text or email them the steps. Invitations expire after 7 days.</>}>
             <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Email</span>
               <input id="inv-email" type="email" autoComplete="off" value={email} onChange={e => { setEmail(e.target.value); setNotice(null); }} className={FIELD} /></label>
             <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Role</span>
               <select id="inv-role" value={inviteRole} onChange={e => setInviteRole(e.target.value)} className={FIELD}>
                 {roles.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
               </select></label>
+          </Group>
+          <Group heading="Permissions"
+            footnote={inviteRole === 'owner' ? 'An Owner can do everything; their permissions cannot be changed.'
+              : isOwner ? 'Nothing is saved until you send the invite. They start with these when they accept.' : 'Only the company owner can change these; they start on the role’s defaults.'}>
+            {!invitePreset ? <Loading /> : invitePreset.map(p => {
+              const allowed = inviteChanges[p.capability] ?? p.preset;
+              return (
+                <Row key={p.capability} label={PERMISSION_LABEL[p.capability] ?? p.capability} sub={`${roleLabel(inviteRole)} default: ${p.preset ? 'on' : 'off'}`}
+                  right={<span className="flex items-center gap-3">{allowed !== p.preset && <span className="text-xs italic text-muted">changed</span>}
+                    <Toggle label={PERMISSION_LABEL[p.capability] ?? p.capability} checked={allowed} disabled={!isOwner || inviteRole === 'owner' || busy}
+                      onChange={v => setInviteChanges(prev => { const n = { ...prev }; if (v === p.preset) delete n[p.capability]; else n[p.capability] = v; return n; })} /></span>} />
+              );
+            })}
           </Group>
           {notice && <p role="status" className={`px-3 text-sm ${notice.ok ? 'text-emerald-700' : 'text-red-700'}`}>{notice.text}</p>}
         </Sheet>
@@ -269,6 +328,48 @@ function PermissionsPanel({ member, perms, busy, role: roleControl, grantable, o
           )}
         </>
       ))}
+    </aside>
+  );
+}
+
+// Team → an invited person, beside the list (#150): the permissions they will start with — set before they accept, copied
+// onto them when they do — then Copy how to join and Revoke. The role is fixed on an invitation (revoke and invite again).
+function InvitationPanel({ invite, perms, busy, onToggle, onReset, onRevoke, onCopied, onClose }: {
+  invite: InvitationRow; perms: MemberPermissions | null; busy: boolean;
+  onToggle: (cap: Capability, allowed: boolean) => void; onReset: () => void; onRevoke: () => void;
+  onCopied: (ok: boolean) => void; onClose: () => void;
+}) {
+  const role = roleLabel(perms?.role ?? invite.role);
+  const changed = perms?.permissions.filter(p => p.changed).length ?? 0;
+  const copy = async () => { try { await navigator.clipboard.writeText(joinSteps(invite.email)); onCopied(true); } catch { onCopied(false); } };
+  return (
+    <aside aria-label={`Invitation for ${invite.email}`} className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
+      <div className="flex items-center justify-between gap-3 px-3">
+        <h2 className="min-w-0 break-all text-base font-bold text-ink">{invite.email}</h2>
+        <button type="button" onClick={onClose} className="text-sm text-accent-ink hover:underline">Done</button>
+      </div>
+      <Group heading="Role" footnote="Invited, not joined yet. To change the role, revoke this invitation and invite them again.">
+        <Row label="Role" value={`${role} · ${expiresLabel(invite.expires_at)}`} />
+      </Group>
+      {!perms ? <Loading /> : (
+        <>
+          <Group heading="Permissions"
+            footnote={perms.can_change ? 'They start with these when they accept. Nothing applies until then, and you can still change it afterwards.' : 'Only the company owner can change these.'}>
+            {perms.permissions.map(p => (
+              <Row key={p.capability} label={PERMISSION_LABEL[p.capability] ?? p.capability} sub={`${role} default: ${p.preset ? 'on' : 'off'}`}
+                right={<span className="flex items-center gap-3">{p.changed && <span className="text-xs italic text-muted">changed</span>}
+                  <Toggle label={PERMISSION_LABEL[p.capability] ?? p.capability} checked={p.allowed} disabled={busy || !perms.can_change} onChange={v => onToggle(p.capability, v)} /></span>} />
+            ))}
+          </Group>
+          {perms.can_change && changed > 0 && (
+            <Group><Row label={`Reset to ${role} defaults (${changed} changed)`} destructive disabled={busy} onClick={onReset} /></Group>
+          )}
+        </>
+      )}
+      <Group footnote="Ledrix doesn’t email invites yet. This copies the three steps to paste into a text or an email.">
+        <Row label="Copy how to join" sub="Install Ledrix, create an account with this email, join your company" onClick={copy} />
+      </Group>
+      <Group><Row label="Revoke invitation" destructive disabled={busy} onClick={onRevoke} /></Group>
     </aside>
   );
 }
