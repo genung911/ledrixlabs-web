@@ -1346,6 +1346,14 @@ const RULES = {
   // THE CAMERA KEYS ARE MOBILE ONLY (owner 2026-11-24, w21: "Grey it out and add a note if clicked saying mobile function
   // only"): the phone's Shoot keys open the camera; the preview has none. All three (the main page's, a system/group page's
   // "Shoot ‹page›", the Details page's 📷 SHOOT) are grey, aria-disabled, and a tap only says "Mobile only" — no walk, no tour.
+  // THE HEAT PUMP TILES (app ScopeScreen sysLabelOf 2026-11-18; launch list w21): at a dual-fuel house Heating is Backup Heat
+  // (the furnace named under it) in Heat Pump · Backup Heat · Cooling order; a folded unit reads Heat Pump & Cooling.
+  'preview: Backup Heat and the unit tile are named as on the phone': all => {
+    const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    return /: fold\.backup && x\.id === 'heating' \? BACKUP_LABEL : unitLabel && x\.id === fold\.into \? unitLabel : displayLabel\(x\.label\)\);/.test(p)
+      && /const unitLabel = unitTileLabel\(fold\);/.test(p) && /return fold\.backup \? dualFuelOrder\(t\) : t;/.test(p)
+      && /\{fold\.backup && sys\.id === 'heating' \? <span className="pv-tl"/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
+  },
   'preview: the Shoot keys are grey and say Mobile only': all => {
     const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
     const keys = [...p.matchAll(/<button type="button" className="pv-(?:pstart|nb) pv-mobile"[\s\S]*?(?=<span>|📷 SHOOT<\/button>)/g)].map(m => m[0]);
@@ -1893,6 +1901,8 @@ const MUT = {
   'building types: publishing refuses an error — in the hook, before the RPC, and on the button': rep('lib/templates/useDraft.ts', "if (bad) throw new TemplateApiError('invalid', 'structure_types'", "if (false) throw new TemplateApiError('invalid', 'structure_types'"),
 };
 const MUT3 = [
+  ['preview: Backup Heat and the unit tile are named as on the phone', rep('components/templates/PhonePreview.tsx', ": fold.backup && x.id === 'heating' ? BACKUP_LABEL : unitLabel", ': unitLabel'), 'Backup Heat named Heating again'],
+  ['preview: Backup Heat and the unit tile are named as on the phone', rep('components/templates/PhonePreview.tsx', 'return fold.backup ? dualFuelOrder(t) : t;', 'return t;'), 'Backup Heat away from the Heat Pump'],
   ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('lib/templates/createModel.ts', "{ id: 'multi', label: 'Multi unit', soon: true }", "{ id: 'multi', label: 'Multi unit' }"), 'Multi unit is pickable again'],
   ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('app/app/templates/create/page.tsx', 'useState<HomeType[]>(DEFAULT_HOME_TYPES)', "useState<HomeType[]>(['single_family', 'manufactured', 'condo_townhome', 'multi'])"), 'a new template starts with Multi unit ticked'],
   ['create: Multi unit is coming soon — never ticked to start, never pickable; Overview can take it off but not put it on', rep('app/app/templates/create/page.tsx', '{HOME_TYPES.map(h => h.soon ? (', '{HOME_TYPES.map(h => false ? ('), 'the coming-soon tile is a live tile'],

@@ -36,7 +36,7 @@ import {
 import { previewNeeds } from '@/lib/templates/requirementModel';
 import { displayLabel } from './systemLabel';
 import { shotsFor } from '@/lib/scope/core/taxonomy/systemShots';
-import { hvacFold, COMBINED_LABEL } from '@/lib/scope/core/taxonomy/hvacUnits';
+import { hvacFold, COMBINED_LABEL, BACKUP_LABEL, unitTileLabel, dualFuelOrder } from '@/lib/scope/core/taxonomy/hvacUnits';
 import { HOUSE_FACTS } from '@/lib/scope/core/taxonomy/houseFacts';
 import { COLOR_ICONS, COLOR_SVGS } from './colorIcons';
 import { groupIconFor, itemIconFor } from './groupIcons';
@@ -162,9 +162,16 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
   const folded = fold.folded as string[];
   const tileOf = (sysId: string) => (fold.into && folded.includes(sysId) ? fold.into : sysId);
   // HEATING & COOLING (app 2026-11-14, hvacUnits): a furnace + a split AC fold into the Heating tile, named as the phone names it.
-  const sysName = (x: { id: string; label: string }) => (fold.into === 'heating' && x.id === 'heating' ? COMBINED_LABEL : displayLabel(x.label));
-  const tileSystems = useMemo(() => systems.filter(s => !(fold.into && folded.includes(s.id)) && (!UNIT_SYSTEMS.includes(s.id) || fold.into === s.id)),
-    [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // …and as the app names the rest (ScopeScreen sysLabelOf, 2026-11-18, launch list w21): at a dual-fuel house Heating is the
+  // Backup Heat tile, and a folded unit's tile reads Heat Pump & Cooling / Mini Split & Cooling (unitTileLabel).
+  const unitLabel = unitTileLabel(fold);
+  const sysName = (x: { id: string; label: string }) => (fold.into === 'heating' && x.id === 'heating' ? COMBINED_LABEL
+    : fold.backup && x.id === 'heating' ? BACKUP_LABEL : unitLabel && x.id === fold.into ? unitLabel : displayLabel(x.label));
+  // DUAL FUEL (app 2026-11-18): Heat Pump · Backup Heat · Cooling, together and in that order.
+  const tileSystems = useMemo(() => {
+    const t = systems.filter(s => !(fold.into && folded.includes(s.id)) && (!UNIT_SYSTEMS.includes(s.id) || fold.into === s.id));
+    return fold.backup ? dualFuelOrder(t) : t;
+  }, [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
   const walkSystems = useMemo(() => (fold.into
     ? systems.filter(s => !folded.includes(s.id)).flatMap(s => (s.id === fold.into ? [s, ...systems.filter(x => folded.includes(x.id))] : [s]))
     : systems), [systems, fold]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -405,6 +412,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 <span className="pv-sq"><TileIco name={sys.icon ?? 'shape-outline'} />
                   <span className="pv-prog" aria-hidden="true"><i className={done ? 'g' : ''} style={{ width: `${p.total > 0 ? Math.round((p.met / p.total) * 100) : 0}%` }} /></span></span>
                 <span className="pv-tl">{sysName(sys)}</span>
+                {fold.backup && sys.id === 'heating' ? <span className="pv-tl" style={{ color: '#8a959c', fontSize: 10 }}>{fold.backup}</span> : null}
               </button>
             );
           })}
