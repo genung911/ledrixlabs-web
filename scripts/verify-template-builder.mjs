@@ -1340,7 +1340,8 @@ const RULES = {
       /* 2026-11-15 (app 2b9ee2d27): Photos & details is no grid tile — Start here is the bottom pair's right key */
       && /className="pv-pstart pv-mobile"/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
       && /const allSteps = useMemo\(\(\) => \[\.\.\.previewSteps\(walkSystems, applies\), \.\.\.previewSteps\(spaces, applies\)\], \[walkSystems, spaces, applies\]\);/.test(p)   /* 2026-11-16: + the rooms */
-      && /<b>Review &amp; send<\/b>/.test(p) && /className=\{`pv-pcond\$\{covered \? ' ready' : ' dim'\}`\}/.test(p)   /* 2026-11-15: the grid's pair */ ? [] : ['components/templates/PhonePreview.tsx'];
+      && /<span className="pv-tl">Review &amp; send<\/span>/.test(p) && /<span className=\{`pv-sq pv-pin\$\{covered \? ' pv-ready' : ''\}`\}><TileIco name="send" \/><\/span>/.test(p)   /* 2026-11-24 app ap1: Review & send is a tile beside Before you start */
+      && /\{active === sole \? condTile\(\) : condTile\(active\.id\)\}/.test(p) && /<div className="pv-areacap">This system<\/div>\s*\{detailsTile\}\s*\{condTile\(\)\}/.test(p)   /* …and Condition a tile beside Details */ ? [] : ['components/templates/PhonePreview.tsx'];
   },
   // THE CAMERA KEYS ARE MOBILE ONLY (owner 2026-11-24, w21: "Grey it out and add a note if clicked saying mobile function
   // only"): the phone's Shoot keys open the camera; the preview has none. All three (the main page's, a system/group page's

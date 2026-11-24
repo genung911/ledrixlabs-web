@@ -371,11 +371,30 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         {systems.length === 0 ? <p className="pv-empty">No system starts in scope. Inspectors would add each one with Add system.</p> : null}
         {/* THE TILES (app CoverageGrid, 2026-11-13/14): four across, the icon in a square, the name below; Before you start
             pinned first; a unit tile counts what folded into it. */}
+        {/* THIS INSPECTION (app ap1, 2026-11-24, mockup 4CT9tfXGvMFEVShhNcq8Mk): Before you start and Review & send as tiles above
+            the systems; the bar is one camera button. */}
+        {(() => {
+          const sysSteps = steps.filter(st => !roomIds.has(st.systemId));
+          const left = systems.flatMap(x => condRowsOf(x.id)).filter(id => !cond[id]).length + sysSteps.filter(st => !stepDone(st)).length;
+          const covered = left === 0;
+          return (
+            <div className="pv-tiles">
+              <div className="pv-areacap">This inspection</div>
+              <button type="button" className="pv-cell" onClick={() => go({ kind: 'facts' })} aria-label="Before you start, the house facts. Open">
+                <span className="pv-sq pv-pin"><TileIco name="clipboard-text-outline" /></span>
+                <span className="pv-tl">Before you start</span>
+              </button>
+              <button type="button" className="pv-cell" onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
+                aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}>
+                <span className={`pv-sq pv-pin${covered ? ' pv-ready' : ''}`}><TileIco name="send" /></span>
+                <span className="pv-tl">Review &amp; send</span>
+                <span className="pv-tl" style={{ color: covered ? '#4fd88a' : '#8a959c', fontSize: 10 }}>{covered ? 'Everything covered' : 'Not all covered'}</span>
+              </button>
+            </div>
+          );
+        })()}
         <div className="pv-tiles">
-          <button type="button" className="pv-cell" onClick={() => go({ kind: 'facts' })} aria-label="Before you start, the house facts. Open">
-            <span className="pv-sq pv-pin"><TileIco name="clipboard-text-outline" /></span>
-            <span className="pv-tl">Before you start</span>
-          </button>
+          <div className="pv-areacap">Systems</div>
           {tileSystems.map(sys => {
             const p = [sys, ...(fold.into === sys.id ? systems.filter(x => folded.includes(x.id)) : [])].map(progressOfSystem)
               .reduce((a, q) => ({ met: a.met + q.met, total: a.total + q.total }), { met: 0, total: 0 });
@@ -405,19 +424,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             </div>
           </>
         ) : null}
-        {/* THE GRID'S PAIR (app 2026-11-15): Review & send on the left — grey with what is left until everything is covered,
-            never disabled (on the phone it opens Post-Inspect, which lists what still stands) — and Guided coverage on the
-            right, naming the TILE it picks up at (a folded Heating reads Heat Pump). */}
+        {/* THE ONE CAMERA BUTTON (app ap1, 2026-11-24): Review & send moved up into the tiles. */}
         {(() => {
-          // The Coverage page's pair reads the systems (app: Review & send counts the building's systems).
-          const sysSteps = steps.filter(st => !roomIds.has(st.systemId));
-          const rows = systems.flatMap(x => condRowsOf(x.id));
-          const left = rows.filter(id => !cond[id]).length + sysSteps.filter(st => !stepDone(st)).length;
-          const covered = left === 0;
           return (
-            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>Main structure</div><div className="pv-pair">
-              <button type="button" className={`pv-pcond${covered ? ' ready' : ' dim'}`} onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
-                aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}><b>Review &amp; send</b><small>{covered ? 'Everything covered' : `${left} left`}</small></button>
+            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-pair">
               {/* THE CONTEXT CAMERA (app 2026-11-17; owner 2026-11-24, w21: "Grey it out and add a note if clicked saying mobile
                   function only"): the phone's key opens the camera; the preview has none, so it is grey and says so. */}
               <button type="button" className="pv-pstart pv-mobile" aria-disabled="true" onClick={() => say('Mobile only: on the phone, Shoot opens the camera on the whole house, and you pick a system in the camera.')}
@@ -483,6 +493,22 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const start = () => { if (nextUp) { setWalkScope(sysId); openStep(nextUp); } else if (tour) finishSys(sysId); };
     const met = inGroup && active !== sole ? done : p.met, total = inGroup && active !== sole ? items.length : p.total;
     // THE DETAILS TILE (app 2026-11-16: "lets put the tile back"; named Details): first, opens the page without the camera.
+    // CONDITION AS A TILE (app ap1, 2026-11-24, mockup 4CT9tfXGvMFEVShhNcq8Mk): beside Details ("This system"); on a group page
+    // "‹Group› condition". Its line uses the tiles' words; it opens the same Condition page.
+    const condTile = (grp?: string) => {
+      const rows = condRowsOf(sysId, grp ?? null), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
+      const all = rows.length > 0 && doneN === rows.length;
+      const sub = finds ? `⚑ ${finds} finding${finds === 1 ? '' : 's'}` : all ? '✓ All OK' : '';
+      const gl = grp ? groups.find(g => g.id === grp)?.label : undefined;
+      return (
+        <button type="button" className="pv-cell" onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
+          aria-label={`${gl ? `${displayLabel(gl)} condition` : 'Condition'}${sub ? `. ${sub}` : ''}. Open`}>
+          <span className="pv-sq" style={finds ? { borderColor: 'rgba(240,122,110,0.6)' } : all ? { borderColor: 'rgba(79,216,138,0.6)' } : undefined}><TileIco name="stethoscope" /></span>
+          <span className="pv-tl">{gl ? `${displayLabel(gl)} condition` : 'Condition'}</span>
+          {sub ? <span className="pv-tl" style={{ color: finds ? '#f07a6e' : '#4fd88a', fontSize: 10 }}>{sub}</span> : null}
+        </button>
+      );
+    };
     const detailsTile = hasTile ? (
       <button type="button" className="pv-cell" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: true }))} aria-label="Details. Open to check or edit">
         <span className="pv-sq" style={{ borderColor: 'rgba(33,123,232,0.55)', background: 'rgba(33,123,232,0.12)' }}><TileIco name="camera-outline" /></span>
@@ -579,8 +605,10 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           );
         })() : photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            <div className="pv-areacap">System components</div>
+            <div className="pv-areacap">This system</div>
             {detailsTile}
+            {condTile()}
+            <div className="pv-areacap">System components</div>
             {groups.map(g => {
               const d = g.items.filter(isDone).length;
               const all = g.items.length > 0 && d === g.items.length;
@@ -601,6 +629,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
                 questions, then its first open item — then every item, a described one opening Photos & details. */}
             <div className="pv-itiles">
               {active === sole ? detailsTile : null}
+              {active === sole ? condTile() : condTile(active.id)}
               {/* The items to inspect only (app 2026-11-15, build 872): a described item is Photos & details'; Start here and
                   Condition are the bottom pair. */}
               {active.items.filter(st => !isDescribed(st)).map(st => {
@@ -876,12 +905,9 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       // The page's name, as the phone's key reads it: the group's label on a group page, else the system's.
       const grpLabel = grp ? allSteps.find(x => tileOf(x.systemId) === sysId && x.tileId === grp)?.tileLabel : undefined;
       const pageName = displayLabel(grpLabel ?? sysName(index.allSystems[sysId]!));
-      const rows = condRowsOf(sysId, grp), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
-      const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? (doneN ? 'Part reviewed' : 'To review') : finds ? `Finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
-        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>{pageName}</div><div className="pv-pair">
-          <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
-            aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
+        <div className="pv-walk"><div className="pv-pair">
+          {/* ap1 (app 2026-11-24): Condition is the page's tile now; the bar is one camera button. */}
           {/* THE CONTEXT CAMERA (app 2026-11-17, "Shoot ‹page›"; owner 2026-11-24, w21): grey here — the preview has no camera. */}
           <button type="button" className="pv-pstart pv-mobile" aria-disabled="true" aria-label={`Shoot ${pageName}. Mobile only`}
             onClick={() => say(`Mobile only: on the phone, Shoot opens the camera aimed at ${pageName}${grpLabel ? '' : ', and Ledrix fills Details from the photos'}.`)}>
@@ -1044,7 +1070,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
 .ldx-pv .pv-areacap{grid-column:1/-1;color:#6f8088;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:-4px}
-.ldx-pv .pv-pair{display:flex;gap:7px}
+.ldx-pv .pv-pair{display:flex;gap:7px}.ldx-pv .pv-sq.pv-ready{border-color:rgba(79,216,138,.6)}
 .ldx-pv .pv-iico{display:flex;justify-content:center;transform:scale(.8)}
 .ldx-pv .pv-pcond,.ldx-pv .pv-pstart{display:flex;align-items:center;justify-content:space-between;gap:6px;border-radius:12px;padding:9px 11px;font:inherit;text-align:left;cursor:pointer}
 .ldx-pv .pv-pcond{flex:1;flex-direction:column;align-items:flex-start;border:1px solid #26363b;background:#0d151b;color:#fff}
