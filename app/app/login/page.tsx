@@ -53,18 +53,24 @@ function LoginForm() {
           <h1 className="text-xl font-bold tracking-tight text-ink">Sign in to Ledrix Inspect</h1>
           <p className="mt-1.5 text-sm text-body">Use the account you sign in with in the Ledrix app.</p>
 
-          <label htmlFor="email" className="mt-6 block text-xs font-semibold uppercase tracking-wide text-muted">Email</label>
-          <input id="email" type="email" autoComplete="username" required autoFocus value={email} onChange={e => setEmail(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
-
-          <label htmlFor="password" className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted">Password</label>
-          <input id="password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20" />
+          {/* Website Apple pass (2026-11-23): the fields as one group with sentence-case labels, as on the phone's sign-in. */}
+          <div className="mt-6 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+            <label htmlFor="email" className="flex items-center gap-3 px-3 py-1">
+              <span className="w-20 shrink-0 text-sm text-ink">Email</span>
+              <input id="email" type="email" autoComplete="username" required autoFocus value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@company.com" className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-ink outline-none" />
+            </label>
+            <label htmlFor="password" className="flex items-center gap-3 px-3 py-1">
+              <span className="w-20 shrink-0 text-sm text-ink">Password</span>
+              <input id="password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Required" className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-ink outline-none" />
+            </label>
+          </div>
 
           {error && <p role="alert" className="mt-4 rounded-lg bg-safety/10 px-3 py-2 text-sm text-ink">{error}</p>}
 
           <button type="submit" disabled={busy || !email.trim() || !password}
-            className="mt-6 w-full rounded-full bg-ink py-2.5 text-sm font-semibold text-surface transition-colors hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            className="mt-6 w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:bg-hairline disabled:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
 

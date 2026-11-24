@@ -12,6 +12,7 @@ import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ConflictsCard } from '@/components/workspace/ConflictsCard';
 import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
 import dynamic from 'next/dynamic';
+import PACK from '@/lib/scope/core/taxonomy/ledrix.core.json';
 // Loaded only when Scope is opened: it carries the Ledrix core pack the checklist's keys are decided from.
 // Loaded only when Seal & send is opened (10c): it asks the server to assemble and check the job.
 const SealPanel = dynamic(() => import('@/components/workspace/SealPanel').then(m => m.SealPanel), { ssr: false, loading: () => <Card className="xl:col-span-2"><Loading label="Checking this report…" /></Card> });
@@ -107,6 +108,9 @@ export default function InspectionPage() {
     return by;
   }, [state]);
 
+  // Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): the findings list is grouped by system, as the
+  // phone's Findings list (968) and the report are. The system is the pack's for the item the finding is filed on, so an
+  // Electrical item reports under Electrical whichever tile it was found on; an unknown item goes under General, last.
   const list: FindingRow[] = section === 'review' ? groups.review : section === 'findings' ? groups.findings : section === 'rejected' ? groups.rejected : [];
   const current = list.find(r => r.id === selected) ?? list[0] ?? null;
 
@@ -143,21 +147,24 @@ export default function InspectionPage() {
   const phase = inspectionPhase(inspection);
   const assignee = inspection.assigned_inspector_id ?? inspection.inspector_id;
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
+    // The phone's words (website Apple pass, 2026-11-23): To review · Confirmed · Rejected · Checklist · Review & send.
     { id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },
-    { id: 'review', label: 'Review queue', count: groups.review.length, show: findingsVisible },
-    { id: 'findings', label: 'Confirmed findings', count: groups.findings.length, show: findingsVisible },
+    { id: 'review', label: 'To review', count: groups.review.length, show: findingsVisible },
+    { id: 'findings', label: 'Confirmed', count: groups.findings.length, show: findingsVisible },
     { id: 'rejected', label: 'Rejected', count: groups.rejected.length, show: findingsVisible && groups.rejected.length > 0 },
-    { id: 'scope', label: 'Scope', show: findingsVisible },
+    { id: 'scope', label: 'Checklist', show: findingsVisible },
     { id: 'specs', label: 'Specs', count: specs.length, show: findingsVisible },
     { id: 'photos', label: 'Photos', count: photos.length, show: findingsVisible },
-    { id: 'reports', label: 'Reports & delivery', count: reports.length, show: true },
-    { id: 'seal', label: 'Seal & send', show: true },
+    { id: 'reports', label: 'Reports', count: reports.length, show: true },
+    // "Seal & send" → "Review & send" (owner 2026-11-23: "Yes") — the phone's name; the seal is still how a report is frozen.
+    { id: 'seal', label: 'Review & send', show: true },
   ];
   const activeSection: Section = rail.find(r => r.id === section && r.show) ? section : 'reports';
+  const bySystem = groupBySystem(list);
 
   return (
     <Page>
-      <a href="/app/inspections" className="text-sm font-medium text-body hover:text-ink">← Inspections</a>
+      <a href="/app/inspections" className="text-sm font-medium text-accent-ink hover:underline">‹ Inspections</a>
       <div className="mb-5 mt-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-ink">{inspection.address || 'No address'}</h1>
@@ -170,18 +177,17 @@ export default function InspectionPage() {
         </div>
         <div className="flex items-center gap-3">
           <PhasePill phase={phase} />
-          <button onClick={load} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5">Refresh</button>
         </div>
       </div>
       <SyncLine lastSync={inspection.updated_at ?? null} />
       {teamInfo && (
         <div role="status" className="mb-5 rounded-xl border border-hairline bg-surface">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-4 py-2.5">
-            <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-muted">TEAM{teamInfo.live ? ` · ${teamInfo.live} EDITING NOW` : ''}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">Team{teamInfo.live ? ` · ${teamInfo.live} editing now` : ''}</span>
             {teamInfo.unsent.length > 0 && (
               <span className="flex flex-wrap gap-1.5">
                 {teamInfo.unsent.map(u => (
-                  <span key={u.user_id} className="rounded-full bg-amber-600/10 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-amber-700 dark:text-amber-400">{u.first.toUpperCase()} · {u.count} NOT SENT</span>
+                  <span key={u.user_id} className="rounded-full bg-amber-600/10 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-amber-700 dark:text-amber-400">{u.first} · {u.count} not sent</span>
                 ))}
               </span>
             )}
@@ -191,7 +197,7 @@ export default function InspectionPage() {
               <li key={c.user_id} className="flex items-center gap-2 rounded-full border border-hairline bg-ground py-1 pl-1 pr-3 text-sm text-ink">
                 <span aria-hidden className={`grid h-7 w-7 place-items-center rounded-full font-mono text-[10px] font-bold ${c.live ? 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-400' : 'bg-accent/10 text-accent-ink'}`}>{c.initials}</span>
                 <span className="font-medium">{c.first}</span>
-                {c.is_lead && <span className="font-mono text-[9px] font-bold tracking-wider text-amber-700 dark:text-amber-400">LEAD</span>}
+                {c.is_lead && <span className="font-mono text-[9px] font-bold tracking-wider text-amber-700 dark:text-amber-400">Lead</span>}
                 <span className="text-xs text-muted">· {c.detail}</span>
               </li>
             ))}
@@ -226,22 +232,29 @@ export default function InspectionPage() {
 
         {(activeSection === 'review' || activeSection === 'findings' || activeSection === 'rejected') && (
           <>
-            <Card title={activeSection === 'review' ? 'Proposed — awaiting the inspector' : activeSection === 'findings' ? 'Confirmed findings' : 'Rejected'} count={list.length}>
-              {activeSection === 'review' && <p className="border-b border-hairline px-4 py-2.5 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects, in the app or here. Nothing becomes a finding until they do.</p>}
-              {list.length === 0 ? <Empty>{activeSection === 'review' ? 'No proposals waiting.' : activeSection === 'findings' ? 'No confirmed findings yet.' : 'None.'}</Empty> : (
-                <ul role="listbox" aria-label="Findings" className="divide-y divide-hairline">
-                  {list.map(r => (
-                    <li key={r.id} role="option" aria-selected={current?.id === r.id}>
-                      <button onClick={() => setSelected(r.id)} className={`block w-full px-4 py-3 text-left focus:outline-none focus-visible:bg-ground ${current?.id === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
-                        <div className="flex items-center gap-2"><PriorityPill severity={r.severity} unset={isPriorityUnset(r)} suggested={isPrioritySuggested(r)} />{r.is_safety && <span className="rounded-full bg-safety/10 px-2 py-0.5 text-[11px] font-semibold text-safety">SAFETY</span>}</div>
-                        <p className="mt-1.5 line-clamp-2 text-sm text-ink">{r.description || r.ai_description || 'No description'}</p>
-                        <p className="mt-1 truncate text-xs text-muted">{uniq([r.room, r.location, titleCase(r.component)]).join(' · ') || 'No location'}</p>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
+            <div className="flex flex-col gap-4">
+              {activeSection === 'review' && <p className="px-3 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects, in the app or here. Nothing becomes a finding until they do.</p>}
+              {list.length === 0 ? <Card><Empty>{activeSection === 'review' ? 'Nothing waiting to review.' : activeSection === 'findings' ? 'No confirmed findings yet.' : 'None.'}</Empty></Card> : bySystem.map(g => (
+                <section key={g.label} className="flex flex-col gap-1.5">
+                  <h2 className="px-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">{g.label} · {g.rows.length}</h2>
+                  <ul role="listbox" aria-label={`${g.label} findings`} className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+                    {g.rows.map(r => (
+                      <li key={r.id} role="option" aria-selected={current?.id === r.id}>
+                        <button onClick={() => setSelected(r.id)} className={`flex w-full items-center gap-3 px-4 py-2.5 text-left focus:outline-none focus-visible:bg-ground ${current?.id === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
+                          <span className="min-w-0 flex-1">
+                            <span className="line-clamp-2 text-sm text-ink">{r.description || r.ai_description || 'No description'}</span>
+                            <span className="block truncate text-xs text-muted">{uniq([titleCase(r.component), r.room, r.location]).join(' · ') || 'No location'}</span>
+                          </span>
+                          {r.is_safety && <span className="shrink-0 rounded-full bg-safety/10 px-2 py-0.5 text-[11px] font-semibold text-safety">Safety</span>}
+                          <PriorityPill severity={r.severity} unset={isPriorityUnset(r)} suggested={isPrioritySuggested(r)} />
+                          <span aria-hidden className="shrink-0 text-muted">›</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
             <div className="lg:col-span-2 xl:col-span-1"><EvidencePanel finding={current} team={team} names={names} lock={lock} onSaved={onSaved} /></div>
           </>
         )}
@@ -476,4 +489,24 @@ function ReportsPanel({ reports, seals, portal, phase }: { reports: ReportRow[];
       </div>
     </div>
   );
+}
+
+// ── grouped by system (website Apple pass, 2026-11-23) ──────────────────────────────────────────────────────────────
+const NODE_SYSTEM: Map<string, { id: string; label: string; order: number }> = (() => {
+  const m = new Map<string, { id: string; label: string; order: number }>();
+  ((PACK as any).systems ?? []).forEach((sys: any, i: number) => {
+    const label = String(sys.label ?? sys.id).toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()).replace(/\bHvac\b/, 'HVAC');
+    for (const n of sys.nodes ?? []) if (n?.id) m.set(String(n.id), { id: String(sys.id), label, order: i });
+  });
+  return m;
+})();
+function groupBySystem(rows: readonly FindingRow[]): { label: string; rows: FindingRow[] }[] {
+  const out = new Map<string, { label: string; order: number; rows: FindingRow[] }>();
+  for (const r of rows) {
+    const base = String(r.node_id ?? '').split('~')[0].split('::')[0];
+    const sys = NODE_SYSTEM.get(base) ?? { id: 'general', label: 'General', order: 999 };
+    const g = out.get(sys.id) ?? { label: sys.label, order: sys.order, rows: [] };
+    g.rows.push(r); out.set(sys.id, g);
+  }
+  return [...out.values()].sort((a, b) => a.order - b.order);
 }

@@ -153,7 +153,7 @@ function suiteStatic() {
   ok('§3 the panel seals only through the route, after the attestation is ticked (never pre-ticked)', /disabled=\{!confirm\.attest \|\| confirm\.busy\}/.test(panel) && /attest: false/.test(panel) && !/record_report_version|report_seals|\.rpc\(/.test(panel));
   ok('§3 the seal route takes the bearer token; the seal holds no service key', /Bearer\\s\+\(\\S\+\)/.test(sroute) && !/SERVICE_ROLE|service_role/i.test(sroute + seal));
   ok('§3 the PDF goes through /api/render-pdf with the user\'s own session (its budget applies)', /\/api\/render-pdf/.test(seal) && /Authorization: H\.Authorization/.test(seal));
-  ok('§3 the page has the Seal & send section', /id: 'seal', label: 'Seal & send'/.test(page) && /<SealPanel inspectionId=\{id\} lock=\{lock\} onOpenItem=/.test(page));
+  ok('§3 the page has the Seal & send section', /id: 'seal', label: 'Review & send'/.test(page) /* 2026-11-23 owner: Seal & send → Review & send */ && /<SealPanel inspectionId=\{id\} lock=\{lock\} onOpenItem=/.test(page));
   // 2026-11-04: an item opens Scope at that item, and Scope can take you back
   ok('§3 a Seal & send item opens Scope at that item, with a way back', /onOpenItem=\{nodeId => \{ setScopeFocus\(\{ nodeId, n: Date\.now\(\) \}\); setSection\('scope'\)/.test(page)
     && /focus=\{scopeFocus\} onBackToSeal=/.test(page));

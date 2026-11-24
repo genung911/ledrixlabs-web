@@ -77,10 +77,10 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
     <div className="grid grid-cols-1 gap-5 xl:col-span-2 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       <section aria-labelledby="seal-title" className="flex flex-col rounded-xl border border-hairline bg-surface">
         <header className="border-b border-hairline px-5 py-4">
-          <p className={`font-mono text-[11px] font-bold tracking-[0.14em] ${locked ? 'text-safety' : 'text-emerald-700 dark:text-emerald-400'}`}>
-            BEFORE IT SHIPS{locked ? '' : ' · NOTHING BLOCKS'}
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.06em] ${locked ? 'text-safety' : 'text-emerald-700 dark:text-emerald-400'}`}>
+            Before it ships{locked ? '' : ' · nothing blocks'}
           </p>
-          <h2 id="seal-title" className="mt-1.5 text-base font-bold text-ink">Seal &amp; send</h2>
+          <h2 id="seal-title" className="mt-1.5 text-base font-bold text-ink">Review &amp; send</h2>
           <p className="mt-1 text-sm leading-relaxed text-body">
             {locked ? 'Locked items stop the seal until they are fixed — here or on a phone.' : 'The same checks your phone runs before a seal. These inform — sealing is your attestation.'}
           </p>
@@ -134,10 +134,10 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
             <span className="shrink-0 font-mono text-xs">{c.isFinalized ? `Re-seal: version ${c.nextVersion}` : `Next: version ${c.nextVersion}`}</span>
           </div>
           {locked ? (
-            <button type="button" disabled className="w-full cursor-not-allowed rounded-xl bg-ink/5 px-4 py-3.5 text-sm font-bold tracking-wide text-muted">FIX THE LOCKED ITEMS FIRST</button>
+            <button type="button" disabled className="w-full cursor-not-allowed rounded-xl bg-ink/5 px-4 py-3.5 text-sm font-semibold text-muted">Send report — fix the locked items first</button>
           ) : (
             <button type="button" onClick={() => setConfirm({ open: true, attest: false, busy: false, error: null })}
-              className="w-full rounded-xl bg-emerald-500 px-4 py-3.5 text-sm font-bold tracking-wide text-emerald-950 hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">SEAL &amp; SEND</button>
+              className="w-full rounded-xl bg-accent px-4 py-3.5 text-sm font-semibold text-white hover:bg-accent/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Send report</button>
           )}
           <button type="button" onClick={load} className="self-start text-xs font-semibold text-accent-ink hover:underline">Check again</button>
         </div>

@@ -4,16 +4,17 @@
 // once through set_stripe_secret_key and never read back: this page shows only Connected, the last four characters and
 // live/test (stripe_key_status). The server refuses anyone else once #115 is applied; before it, this page is still
 // shown only to the owner.
+// Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): one Stripe group (status, then the key), the help
+// as a footnote, and the one commit — Save key — pinned at the bottom, greyed with its reason until a key is typed. No
+// Disconnect row: no server call removes a key yet (the phone's Payment settings says the same, 970).
 import { useCallback, useEffect, useState } from 'react';
 import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, ErrorBox, Loading, Page } from '@/components/workspace/ui';
+import { ErrorBox, Group, Loading, Page, PageHeader, PinnedBar, Row } from '@/components/workspace/ui';
 import { mayManagePayments } from '@/lib/office/access';
 import { loadStripeStatus, saveStripeKey, type StripeStatus } from '@/lib/office/api';
 
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
-const LABEL = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-muted';
-const BTN = 'rounded-full bg-ink px-4 py-2 text-sm font-semibold text-surface hover:bg-ink/85 disabled:opacity-50';
 
 export default function PaymentsPage() {
   const { access } = useWorkspace();
@@ -30,9 +31,9 @@ export default function PaymentsPage() {
   }, []);
   useEffect(() => { if (owner) void load(); }, [owner, load]);
 
-  if (!owner) return <Page><CompanyTabs /><ErrorBox message="Only the company owner connects payments." /></Page>;
-  if (err && !status) return <Page><CompanyTabs /><ErrorBox message={err} onRetry={load} /></Page>;
-  if (!status) return <Page><CompanyTabs /><Loading /></Page>;
+  if (!owner) return <Page><PageHeader title="Payments" /><CompanyTabs /><ErrorBox message="Only the company owner connects payments." /></Page>;
+  if (err && !status) return <Page><PageHeader title="Payments" /><CompanyTabs /><ErrorBox message={err} onRetry={load} /></Page>;
+  if (!status) return <Page><PageHeader title="Payments" /><CompanyTabs /><Loading /></Page>;
 
   const save = async () => {
     setBusy(true); setErr(null); setMsg(null);
@@ -43,27 +44,28 @@ export default function PaymentsPage() {
 
   return (
     <Page>
+      <PageHeader title="Payments" subtitle={status.connected ? `Connected to Stripe${status.mode ? ` · ${status.mode} mode` : ''}` : 'Add your Stripe key to take payments online · owner only'} />
       <CompanyTabs />
-      <p className="mb-4 text-sm text-body">Owner only.</p>
-      <Card>
-        {status.connected
-          ? <p className="text-sm"><b className="text-[#1f8a4c]">● Connected to Stripe</b> <span className="text-muted">· key ending <span className="tabular-nums">…{status.last4 ?? '????'}</span>{status.mode ? ` · ${status.mode}` : ''}{status.restricted ? ' · restricted key' : ''}</span></p>
-          : <p className="text-sm text-ink"><b>Not connected.</b> <span className="text-muted">Invoices can’t be paid online until you add your Stripe key.</span></p>}
-      </Card>
-      <Card title="What this does" className="mt-4">
-        <p className="text-sm text-body">Invoices get a “Pay online” link, and online bookings take payment at checkout. Payments made through Stripe are recorded on the invoice automatically. Card fees are Stripe’s.</p>
-      </Card>
-      <Card title={status.connected ? 'Replace key' : 'Add your key'} className="mt-4">
-        <div className="max-w-md space-y-3">
-          <div><label className={LABEL} htmlFor="pay-key">Stripe secret key</label>
-            <input id="pay-key" className={FIELD} type="password" autoComplete="off" placeholder="sk_live_…" value={key} onChange={e => setKey(e.target.value)} />
-            <p className="mt-1 text-xs text-muted">Stored on the server. It is never shown again, here or on the phone.</p></div>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-body"><li>Sign in at dashboard.stripe.com</li><li>Developers › API keys</li><li>Reveal the Secret key and paste it here</li></ol>
-          <button className={BTN} disabled={busy || !key.trim()} onClick={save}>{busy ? 'Saving…' : 'Save key'}</button>
-          {msg && <p role="status" className="text-sm font-semibold text-[#1f8a4c]">{msg}</p>}
-          {err && <p role="alert" className="text-sm text-[#b42318]">{err}</p>}
-        </div>
-      </Card>
+      <div className="flex max-w-3xl flex-col gap-6">
+        <Group heading="Stripe"
+          footnote="Invoices get a “Pay online” link, and online bookings take payment at checkout. Payments made through Stripe are recorded on the invoice automatically. Card fees are Stripe’s. The key is stored on the server and never shown again, here or on the phone.">
+          <Row label="Status" value={status.connected ? 'Connected' : 'Not connected'} valueTone={status.connected ? 'ok' : 'need'} />
+          {status.connected && <Row label="Connected key" value={`…${status.last4 ?? '????'}${status.restricted ? ' · restricted' : ''}`} />}
+          <label className="flex min-h-[44px] items-center gap-3 px-4 py-2">
+            <span className="w-40 shrink-0 text-sm text-ink">{status.connected ? 'Replace key' : 'Secret key'}</span>
+            <input id="pay-key" className={FIELD} type="password" autoComplete="off" placeholder="sk_live_… or rk_live_…" value={key} onChange={e => setKey(e.target.value)} />
+          </label>
+        </Group>
+        <Group heading="How to find your key" footnote="Use a test key (sk_test_ / rk_test_) while you set up and test.">
+          <Row label="1. Sign in at dashboard.stripe.com" />
+          <Row label="2. Developers › API keys" />
+          <Row label="3. Reveal the secret key (or make a restricted one) and paste it above" />
+        </Group>
+        {msg && <p role="status" className="px-3 text-sm font-semibold text-[#1f8a4c]">{msg}</p>}
+        {err && <p role="alert" className="px-3 text-sm text-[#b42318]">{err}</p>}
+      </div>
+      <PinnedBar label="Save key" onClick={save} busy={busy} disabled={!key.trim()}
+        reason={status.connected ? 'Your current key is kept. Paste a new key to replace it.' : 'Paste your Stripe key first.'} />
     </Page>
   );
 }

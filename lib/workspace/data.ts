@@ -241,3 +241,4 @@ export async function loadPortalLink(inspectionId: string): Promise<string | nul
   const token = (res.data as { share_token?: string | null } | null)?.share_token;
   return !res.error && token ? `https://www.ledrixlabs.com/share/${encodeURIComponent(token)}` : null;
 }
+

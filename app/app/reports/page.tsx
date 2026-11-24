@@ -5,7 +5,7 @@
 // dashboard and the phone's "reports to send" use (lib/workspace/model.ts buildReportsList).
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader, SyncLine, formatWhen, titleCase } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Loading, Page, PageHeader, Seg, SyncLine, formatWhen, titleCase, useReloadOnFocus } from '@/components/workspace/ui';
 import { loadFindingCounts, loadInspections, loadReports, signReportFile } from '@/lib/workspace/data';
 import { buildReportsList, latestUpdate, type InspectionRow, type ReportsList } from '@/lib/workspace/model';
 
@@ -30,6 +30,8 @@ export default function ReportsPage() {
     }
   }, [findingsVisible]);
   useEffect(() => { load(); }, [load]);
+  useReloadOnFocus(load);
+  const [tab, setTab] = useState<'send' | 'review' | 'sent'>('send');
 
   async function open(path: string | null) {
     if (!path) return;
@@ -50,33 +52,43 @@ export default function ReportsPage() {
     </li>
   );
 
+  // Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): the three cards are three tabs; no Refresh.
+  const n = state.kind === 'ready' ? state.list : null;
   return (
     <Page>
-      <PageHeader title="Reports" subtitle="Finalized inspections and where their reports stand" actions={
-        <button onClick={load} className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5">Refresh</button>
-      } />
+      <PageHeader title="Reports"
+        subtitle={n ? `${n.toSend.length} to send · ${n.review.length} waiting on review · ${n.sent.length} sent` : 'Finalized inspections and where their reports stand'} />
       <SyncLine lastSync={state.kind === 'ready' ? state.lastSync : undefined} />
       {state.kind === 'loading' && <Card><Loading label="Loading reports…" /></Card>}
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {state.kind === 'ready' && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <Card title="To send" count={state.list.toSend.length}>
-            {state.list.toSend.length ? (
-              <ul className="divide-y divide-hairline">
-                {state.list.toSend.map(i => <Row key={i.id} i={i} right={<span>Deliver from the Ledrix app</span>} />)}
-              </ul>
-            ) : <Empty>Nothing finalized is waiting to be sent.</Empty>}
-          </Card>
-          <Card title="Waiting on review" count={state.list.review.length}>
-            {!findingsVisible && <p className="border-b border-hairline px-4 py-2.5 text-xs text-muted">Proposed findings aren’t visible to the Office role, so review items don’t appear here.</p>}
-            {state.list.review.length ? (
-              <ul className="divide-y divide-hairline">
-                {state.list.review.map(i => <Row key={i.id} i={i} right={<span>Proposed findings to review first</span>} />)}
-              </ul>
-            ) : <Empty>No finalized inspection is waiting on review.</Empty>}
-          </Card>
-          <div className="lg:col-span-2">
-            <Card title="Sent" count={state.list.sent.length}>
+        <div className="flex flex-col gap-4">
+          <Seg label="Report status" value={tab} onChange={setTab} options={[
+            { key: 'send', label: `To send · ${state.list.toSend.length}` },
+            { key: 'review', label: `Waiting on review · ${state.list.review.length}` },
+            { key: 'sent', label: `Sent · ${state.list.sent.length}` },
+          ]} />
+          {tab === 'send' && (
+            <Card>
+              {state.list.toSend.length ? (
+                <ul className="divide-y divide-hairline">
+                  {state.list.toSend.map(i => <Row key={i.id} i={i} right={<span>Deliver from the Ledrix app</span>} />)}
+                </ul>
+              ) : <Empty>Nothing finalized is waiting to be sent.</Empty>}
+            </Card>
+          )}
+          {tab === 'review' && (
+            <Card>
+              {!findingsVisible && <p className="border-b border-hairline px-4 py-2.5 text-xs text-muted">Proposed findings aren’t visible to the Office role, so review items don’t appear here.</p>}
+              {state.list.review.length ? (
+                <ul className="divide-y divide-hairline">
+                  {state.list.review.map(i => <Row key={i.id} i={i} right={<span>Findings to review first</span>} />)}
+                </ul>
+              ) : <Empty>No finalized inspection is waiting on review.</Empty>}
+            </Card>
+          )}
+          {tab === 'sent' && (
+            <Card>
               {state.list.sent.length ? (
                 <ul className="divide-y divide-hairline">
                   {state.list.sent.map(({ inspection: i, latest, versions }) => (
@@ -84,7 +96,7 @@ export default function ReportsPage() {
                       <span>{`Version ${latest.version ?? versions}${latest.published_at ? ` · ${formatWhen(latest.published_at)}` : ''}`}</span>
                       {latest.pdf_path && (
                         <button onClick={() => open(latest.pdf_path)} disabled={opening === latest.pdf_path}
-                          className="rounded-full border border-hairline px-3 py-1 font-semibold text-ink hover:bg-ink/5 disabled:opacity-50">
+                          className="font-semibold text-accent-ink hover:underline disabled:opacity-50">
                           {opening === latest.pdf_path ? 'Opening…' : failed === latest.pdf_path ? 'Try again' : 'Open PDF'}
                         </button>
                       )}
@@ -93,7 +105,7 @@ export default function ReportsPage() {
                 </ul>
               ) : <Empty>No reports delivered yet.</Empty>}
             </Card>
-          </div>
+          )}
         </div>
       )}
       <p className="mt-6 text-xs text-muted">Reports are finalized and delivered from the Ledrix app. Delivering from here comes later.</p>

@@ -5,9 +5,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { NewInspectionButton } from '@/components/office/NewInspectionButton';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader, PhasePill, SyncLine, formatDate, formatWhen, titleCase } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Group, Loading, Page, PageHeader, Row, SyncLine, formatDate, formatWhen, titleCase, useReloadOnFocus } from '@/components/workspace/ui';
 import { loadFindingCounts, loadInspections, loadOrders, loadReports } from '@/lib/workspace/data';
-import { addDays, buildDashboard, inspectionPhase, latestUpdate, localDate, type Dashboard, type OrderRow } from '@/lib/workspace/model';
+import { addDays, buildDashboard, latestUpdate, localDate, type Dashboard, type OrderRow } from '@/lib/workspace/model';
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; d: Dashboard; lastSync: string | null };
 
@@ -30,104 +30,69 @@ export default function DashboardPage() {
   }, [findingsVisible]);
 
   useEffect(() => { load(); }, [load]);
+  useReloadOnFocus(load);
 
-  const greeting = access.name ? `Welcome back, ${access.name.split(' ')[0]}` : 'Dashboard';
-  const scope = access.managesCompany ? `${companyName ?? 'Your company'} — every inspection your role can see` : 'Inspections you created or are assigned to';
+  // Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): the phone's Home on a wider screen — Today on
+  // the left, Needs attention on the right, as grouped rows; In progress and Recently delivered are rows in those two
+  // groups' columns, not cards of their own. No Refresh: the page reloads when you come back to it. One button: New inspection.
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = access.name ? `${hello}, ${access.name.split(' ')[0]}` : hello;
+  const dateLine = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const todayN = state.kind === 'ready' ? state.d.today.length : null;
+  const scope = access.managesCompany ? (companyName ?? 'Your company') : 'Inspections you created or are assigned to';
 
   return (
     <Page>
-      <PageHeader title={greeting} subtitle={scope} actions={
-        <button onClick={load} className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5">Refresh</button>
-      } />
+      <PageHeader title={greeting}
+        subtitle={[dateLine, todayN === null ? null : `${todayN} ${todayN === 1 ? 'job' : 'jobs'} today`, scope].filter(Boolean).join(' · ')}
+        actions={<NewInspectionButton />} />
       <SyncLine lastSync={state.kind === 'ready' ? state.lastSync : undefined} />
 
       {state.kind === 'loading' && <Card><Loading label="Loading your company’s work…" /></Card>}
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {state.kind === 'ready' && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <Card title="Today" count={state.d.today.length}>
-            {state.d.today.length ? <OrderList rows={state.d.today} showDate={false} /> : <Empty>Nothing scheduled today.</Empty>}
-          </Card>
-          <Card title="Next 14 days" count={state.d.upcoming.length}>
-            {state.d.upcoming.length ? <OrderList rows={state.d.upcoming} showDate /> : <Empty>Nothing scheduled in the next two weeks.</Empty>}
-          </Card>
-          <Card title="Needs attention" count={state.d.attention.length}>
-            {!findingsVisible && <p className="border-b border-hairline px-4 py-2.5 text-xs text-muted">Proposed findings aren’t visible to the Office role, so review items don’t appear here.</p>}
-            {state.d.attention.length ? (
-              <ul className="divide-y divide-hairline">
-                {state.d.attention.map(a => (
-                  <li key={`${a.reason}-${a.inspection.id}`}>
-                    <a href={`/app/inspections/${encodeURIComponent(a.inspection.id)}${a.reason === 'review' ? '#review' : ''}`} className="block px-4 py-3 hover:bg-ground focus:bg-ground focus:outline-none">
-                      <p className="truncate text-sm font-medium text-ink">{a.inspection.address || 'No address'}</p>
-                      <p className="mt-0.5 text-xs text-body">{a.reason === 'review' ? 'Proposed findings awaiting the inspector’s decision' : 'Completed — no report delivered yet'}</p>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : <Empty>Nothing waiting on anyone.</Empty>}
-          </Card>
-
-          <Card title="In progress" count={state.d.inProgress.length} className="lg:col-span-2">
-            {state.d.inProgress.length ? (
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-wide text-muted"><tr><th className="px-4 py-2 font-semibold">Property</th><th className="hidden px-4 py-2 font-semibold sm:table-cell">Type</th><th className="px-4 py-2 font-semibold">Last synced</th></tr></thead>
-                <tbody className="divide-y divide-hairline">
-                  {state.d.inProgress.slice(0, 8).map(i => (
-                    <tr key={i.id} className="hover:bg-ground">
-                      <td className="max-w-0 px-4 py-2.5"><a href={`/app/inspections/${encodeURIComponent(i.id)}`} className="block truncate font-medium text-ink hover:underline">{i.address || 'No address'}</a></td>
-                      <td className="hidden px-4 py-2.5 text-body sm:table-cell">{titleCase(i.inspection_type) || '—'}</td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-body">{formatWhen(i.updated_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : <Empty>No inspections in progress.</Empty>}
-            {state.d.inProgress.length > 8 && <a href="/app/inspections" className="block border-t border-hairline px-4 py-2.5 text-sm font-semibold text-accent-ink hover:underline">All inspections</a>}
-          </Card>
-
-          <Card title="Recently delivered" count={state.d.delivered.length}>
-            {state.d.delivered.length ? (
-              <ul className="divide-y divide-hairline">
-                {state.d.delivered.slice(0, 6).map(({ inspection, latest }) => (
-                  <li key={inspection.id}>
-                    <a href={`/app/inspections/${encodeURIComponent(inspection.id)}#reports`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ground">
-                      <span className="min-w-0"><span className="block truncate text-sm font-medium text-ink">{inspection.address || 'No address'}</span><span className="text-xs text-body">Published {formatWhen(latest.published_at)}</span></span>
-                      <PhasePill phase={inspectionPhase(inspection)} />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : <Empty>No reports delivered yet.</Empty>}
-          </Card>
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-6">
+            <Group heading={`Today · ${state.d.today.length}`}>
+              {state.d.today.length ? state.d.today.map(o => <OrderRowItem key={o.id} o={o} showDate={false} />) : <Empty>Nothing scheduled today.</Empty>}
+            </Group>
+            <Group heading={`Next 14 days · ${state.d.upcoming.length}`}>
+              {state.d.upcoming.length ? state.d.upcoming.map(o => <OrderRowItem key={o.id} o={o} showDate />) : <Empty>Nothing scheduled in the next two weeks.</Empty>}
+            </Group>
+            <Group heading={`In progress · ${state.d.inProgress.length}`}
+              footnote={state.d.inProgress.length > 8 ? <a href="/app/inspections" className="font-semibold text-accent-ink hover:underline">All inspections ›</a> : null}>
+              {state.d.inProgress.length ? state.d.inProgress.slice(0, 8).map(i => (
+                <Row key={i.id} href={`/app/inspections/${encodeURIComponent(i.id)}`} label={i.address || 'No address'}
+                  sub={titleCase(i.inspection_type) || undefined} value={`synced ${formatWhen(i.updated_at)}`} />
+              )) : <Empty>No inspections in progress.</Empty>}
+            </Group>
+          </div>
+          <div className="flex flex-col gap-6">
+            <Group heading={`Needs attention · ${state.d.attention.length}`}
+              footnote={!findingsVisible ? 'Proposed findings aren’t visible to the Office role, so review items don’t appear here.' : null}>
+              {state.d.attention.length ? state.d.attention.map(a => (
+                <Row key={`${a.reason}-${a.inspection.id}`}
+                  href={`/app/inspections/${encodeURIComponent(a.inspection.id)}${a.reason === 'review' ? '#review' : ''}`}
+                  label={a.inspection.address || 'No address'}
+                  sub={a.reason === 'review' ? 'Findings to review' : 'Completed — report not sent'} valueTone="need" value="•" />
+              )) : <Empty>Nothing waiting on anyone.</Empty>}
+            </Group>
+            <Group heading={`Recently delivered · ${state.d.delivered.length}`}>
+              {state.d.delivered.length ? state.d.delivered.slice(0, 6).map(({ inspection, latest }) => (
+                <Row key={inspection.id} href={`/app/inspections/${encodeURIComponent(inspection.id)}#reports`}
+                  label={inspection.address || 'No address'} sub={`Published ${formatWhen(latest.published_at)}`} />
+              )) : <Empty>No reports delivered yet.</Empty>}
+            </Group>
+            <p className="px-3 text-xs text-muted">Start a job here or in the Ledrix app — both make the same inspection, and it reaches the inspector’s phone at the next sync.</p>
+          </div>
         </div>
       )}
-
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <NewInspectionButton />
-        <p className="text-xs text-muted">Start a job here or in the Ledrix app — both make the same inspection, and it reaches the inspector’s phone at the next sync.</p>
-      </div>
     </Page>
   );
 }
 
-function OrderList({ rows, showDate }: { rows: OrderRow[]; showDate: boolean }) {
-  return (
-    <ul className="divide-y divide-hairline">
-      {rows.map(o => {
-        const body = (
-          <>
-            <p className="truncate text-sm font-medium text-ink">{o.address || 'No address'}</p>
-            <p className="mt-0.5 text-xs text-body">{[showDate ? formatDate(o.order_date, { weekday: 'short', month: 'short', day: 'numeric' }) : null, titleCase(o.status ?? 'scheduled')].filter(Boolean).join(' · ')}</p>
-          </>
-        );
-        return (
-          <li key={o.id}>
-            {o.inspection_id
-              ? <a href={`/app/inspections/${encodeURIComponent(o.inspection_id)}`} className="block px-4 py-3 hover:bg-ground">{body}</a>
-              : <div className="px-4 py-3">{body}</div>}
-          </li>
-        );
-      })}
-    </ul>
-  );
+function OrderRowItem({ o, showDate }: { o: OrderRow; showDate: boolean }) {
+  const sub = [showDate ? formatDate(o.order_date, { weekday: 'short', month: 'short', day: 'numeric' }) : null, titleCase(o.status ?? 'scheduled')].filter(Boolean).join(' · ');
+  return <Row label={o.address || 'No address'} sub={sub} href={o.inspection_id ? `/app/inspections/${encodeURIComponent(o.inspection_id)}` : undefined} />;
 }

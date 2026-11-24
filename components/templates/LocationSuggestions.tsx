@@ -34,14 +34,14 @@ function SuggestionCard({ s, onDone }: { s: LocationSuggestion; onDone: (next: L
   const std = STANDARD_LOCATIONS.find(l => l.id === mapsTo);
   return (
     <div className="rounded-xl border border-hairline bg-surface p-5">
-      <p className="text-[10px] font-semibold tracking-[0.16em] text-accent">LOCATION SUGGESTION</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-accent">Location suggestion</p>
       <h3 className="mt-1 text-lg font-semibold text-ink">“{s.label}” keeps being added</h3>
       <div className="mt-3 grid grid-cols-3 gap-3 border-t-2 border-ink pt-3">
         <Stat n={s.inspections} k={`of the last ${s.recent_total} inspections`} />
         <Stat n={s.inspectors} k={s.inspectors === 1 ? 'inspector' : 'inspectors'} />
         <Stat n={s.findings} k="findings filed there" />
       </div>
-      <p className="mt-3 text-sm text-body"><span className="mr-2 text-[10px] font-semibold tracking-[0.14em] text-muted">AS TYPED</span>{typed.map(([w, n]) => `${w} ×${n}`).join(' · ')}</p>
+      <p className="mt-3 text-sm text-body"><span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">As typed</span>{typed.map(([w, n]) => `${w} ×${n}`).join(' · ')}</p>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className={label}>Name it<input className={field} value={name} onChange={e => setName(e.target.value)} /></label>
         <label className={label}>Group

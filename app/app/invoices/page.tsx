@@ -3,17 +3,21 @@
 // and server functions as the phone: the list, the jobs not invoiced yet, and the selected invoice beside it — its
 // lines (editable while a draft), payments (reversible), balance, and the ways to send it. Every change goes to the
 // server through lib/invoices/api.ts and is shown only once the server confirms it.
+// Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): the totals are the grey line under the title; the
+// status is a segmented control with a search; "Jobs not invoiced" is ONE link that opens the list (a sheet); an invoice
+// has ONE main button — Email invoice on a draft, Record a payment once it is sent and owed — the rest is a Share group,
+// and Revise / Void sit in a ⋯ menu, Void in red.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Group, Loading, Page, PageHeader, Row, Seg, Sheet } from '@/components/workspace/ui';
 import {
   STATUS_LABEL, createInvoice, emailIt, invoiceNumber, isUnpaid, loadCollected, loadInvoice, loadInvoices,
   loadUninvoicedJobs, markSent, money, payLink, recordPayment, reversePayment, revise, setDetails, setLines, toCents,
   voidIt, InvoiceError, type InvoiceDetail, type InvoiceRow, type ShownStatus, type UninvoicedJob,
 } from '@/lib/invoices/api';
 
-const BTN = 'rounded-full bg-ink px-4 py-2 text-sm font-semibold text-surface hover:bg-ink/85 disabled:opacity-50';
-const BTN_QUIET = 'rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/5 disabled:opacity-50';
+const BTN = 'rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50';
+const BTN_QUIET = 'px-1 py-2 text-sm font-semibold text-accent-ink hover:underline disabled:opacity-50';
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const PILL: Record<ShownStatus, string> = {
   overdue: 'bg-red-50 text-red-800', sent: 'bg-accent/10 text-accent-ink', partly_paid: 'bg-amber-50 text-amber-900',
@@ -32,6 +36,9 @@ export default function InvoicesPage() {
   const [sel, setSel] = useState<InvoiceDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [filter, setFilter] = useState<'all' | 'unpaid' | 'draft' | 'paid'>('all');
+  const [q, setQ] = useState('');
+  const [jobsOpen, setJobsOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -57,7 +64,7 @@ export default function InvoicesPage() {
 
   const create = async (orderId?: string) => {
     setBusy(true); setNotice(null);
-    try { const id = await createInvoice(orderId); await load(); setSelId(id); }
+    try { const id = await createInvoice(orderId); setJobsOpen(false); await load(); setSelId(id); }
     catch (e) { setNotice({ ok: false, text: msg(e) }); }
     finally { setBusy(false); }
   };
@@ -87,7 +94,9 @@ export default function InvoicesPage() {
 
   return (
     <Page>
-      <PageHeader title="Invoices" subtitle={companyName ?? 'Your invoices'} actions={<>
+      <PageHeader title="Invoices"
+        subtitle={state.kind === 'ready' && totals ? `${money(state.collected)} collected this month · ${money(totals.outstanding)} outstanding · ${totals.overdueCount} overdue` : companyName ?? 'Your invoices'}
+        actions={<>
         <button type="button" onClick={exportCsv} disabled={state.kind !== 'ready'} className={BTN_QUIET}>Export CSV</button>
         <button type="button" onClick={() => create()} disabled={busy} className={BTN}>New invoice</button>
       </>} />
@@ -99,26 +108,14 @@ export default function InvoicesPage() {
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {state.kind === 'ready' && totals && (
         <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat label="Collected this month" value={money(state.collected)} tone="text-emerald-800" />
-            <Stat label="Outstanding" value={money(totals.outstanding)} tone="text-amber-900" />
-            <Stat label="Overdue" value={`${money(totals.overdue)} · ${totals.overdueCount}`} tone="text-red-800" />
-            <Stat label="Jobs not invoiced" value={String(state.jobs.length)} />
+          <div className="flex flex-wrap items-center gap-3">
+            <Seg label="Invoice status" value={filter} onChange={setFilter} options={[
+              { key: 'all', label: 'All' }, { key: 'unpaid', label: 'Unpaid' }, { key: 'draft', label: 'Drafts' }, { key: 'paid', label: 'Paid' },
+            ]} />
+            <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search client or address" aria-label="Search invoices"
+              className="w-full rounded-lg border border-hairline bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-accent sm:w-64" />
+            {state.jobs.length > 0 && <button type="button" onClick={() => setJobsOpen(true)} className="ml-auto text-sm font-semibold text-accent-ink hover:underline">Jobs not invoiced · {state.jobs.length} ›</button>}
           </div>
-
-          {state.jobs.length > 0 && (
-            <Card title="Jobs not invoiced" count={state.jobs.length}>
-              <ul className="divide-y divide-hairline">
-                {state.jobs.slice(0, 10).map(j => (
-                  <li key={j.order_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="min-w-0 text-sm"><span className="font-medium text-ink">{j.client_name ?? j.address}</span>
-                      <span className="text-body"> · {[j.client_name ? j.address : null, j.order_date, j.fee > 0 ? money(j.fee * 100) : null].filter(Boolean).join(' · ')}</span></span>
-                    <button type="button" disabled={busy} onClick={() => create(j.order_id)} className={BTN_QUIET}>Create invoice</button>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
 
           <div className="flex flex-wrap items-start gap-5">
             <section aria-label="Invoices" className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-xl border border-hairline bg-surface">
@@ -129,8 +126,9 @@ export default function InvoicesPage() {
                       <tr><th className="px-4 py-2.5 font-semibold">Invoice</th><th className="px-4 py-2.5 font-semibold">Client</th><th className="px-4 py-2.5 font-semibold">Status</th><th className="px-4 py-2.5 font-semibold">Due</th><th className="px-4 py-2.5 text-right font-semibold">Balance</th></tr>
                     </thead>
                     <tbody className="divide-y divide-hairline">
-                      {state.rows.map(r => (
-                        <tr key={r.id} className={selId === r.id ? 'bg-accent/5' : undefined}>
+                      {state.rows.filter(r => (filter === 'all' || (filter === 'unpaid' ? isUnpaid(r) : filter === 'draft' ? r.status === 'draft' : r.shown_status === 'paid'))
+                        && (!q.trim() || [r.bill_to_name, r.property_address, invoiceNumber(r)].some(v => String(v ?? '').toLowerCase().includes(q.trim().toLowerCase())))).map(r => (
+                        <tr key={r.id} onClick={() => setSelId(r.id)} className={`cursor-pointer ${selId === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
                           <td className="px-4 py-2.5"><button type="button" onClick={() => setSelId(r.id)} className="font-semibold text-accent-ink hover:underline">{invoiceNumber(r)}</button></td>
                           <td className="px-4 py-2.5 text-ink">{r.bill_to_name ?? '—'}<span className="block text-xs text-body">{r.property_address ?? ''}</span></td>
                           <td className="px-4 py-2.5"><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PILL[r.shown_status]}`}>{STATUS_LABEL[r.shown_status]}</span></td>
@@ -146,6 +144,16 @@ export default function InvoicesPage() {
             {sel && <InvoicePanel inv={sel} busy={busy} business={companyName} act={act} />}
           </div>
         </div>
+      )}
+      {jobsOpen && state.kind === 'ready' && (
+        <Sheet title="Jobs not invoiced" onCancel={() => setJobsOpen(false)}>
+          <Group footnote="Click a job to create its invoice. It opens as a draft for you to check before sending.">
+            {state.jobs.map(j => (
+              <Row key={j.order_id} label={j.client_name ?? j.address} disabled={busy} onClick={() => create(j.order_id)}
+                sub={[j.client_name ? j.address : null, j.order_date].filter(Boolean).join(' · ')} value={j.fee > 0 ? money(j.fee * 100) : 'Create'} />
+            ))}
+          </Group>
+        </Sheet>
       )}
     </Page>
   );
@@ -293,16 +301,25 @@ function InvoicePanel({ inv, busy, business, act }: {
       )}
 
       {!isVoid && !lines && (
-        <div className="flex flex-wrap gap-2 border-t border-hairline p-4">
-          {(isDraft || owed) && <button type="button" disabled={busy} className={BTN} onClick={() => act(() => emailIt(inv), isDraft ? `Emailed to ${inv.bill_to_email ?? 'the client'}.` : 'Reminder emailed.')}>{isDraft ? 'Email invoice' : 'Send reminder'}</button>}
-          {owed && !pay && <button type="button" disabled={busy} className={BTN_QUIET} onClick={() => setPay({ amount: (inv.balance_cents / 100).toFixed(2), method: 'check', ref: '', date: new Date().toISOString().split('T')[0] })}>Record a payment</button>}
-          {owed && <button type="button" className={BTN_QUIET} onClick={async () => { await navigator.clipboard.writeText(payLink(inv)); act(async () => {}, 'Pay link copied.'); }}>Copy pay link</button>}
-          <button type="button" className={BTN_QUIET} onClick={printPdf}>Download PDF</button>
-          {isDraft && inv.total_cents > 0 && <button type="button" disabled={busy} className={BTN_QUIET} onClick={() => act(() => markSent(inv, 'share'), 'Marked as sent.')}>Mark as sent</button>}
-          {inv.status === 'sent' && <button type="button" disabled={busy} className={BTN_QUIET} onClick={() => { if (window.confirm('Revise this invoice? It becomes a draft again so its lines can change; its number and payments stay.')) act(() => revise(inv), 'Revised — now a draft.'); }}>Revise</button>}
-          <button type="button" disabled={busy} className="rounded-full px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-            onClick={() => { if (inv.paid_cents !== 0) { act(async () => { throw new InvoiceError('Reverse the recorded payments before voiding this invoice.'); }); return; }
-              if (window.confirm(`Void ${invoiceNumber(inv)}? It stays on record as void; its number is never reused.`)) act(() => voidIt(inv, 'Voided on the website'), 'Voided.'); }}>Void</button>
+        <div className="flex flex-col gap-3 border-t border-hairline p-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">Share</span>
+            {owed && <button type="button" disabled={busy} className={BTN_QUIET} onClick={() => act(() => emailIt(inv), 'Reminder emailed.')}>Send reminder</button>}
+            {owed && <button type="button" className={BTN_QUIET} onClick={async () => { await navigator.clipboard.writeText(payLink(inv)); act(async () => {}, 'Pay link copied.'); }}>Copy pay link</button>}
+            <button type="button" className={BTN_QUIET} onClick={printPdf}>Download PDF</button>
+            {isDraft && inv.total_cents > 0 && <button type="button" disabled={busy} className={BTN_QUIET} onClick={() => act(() => markSent(inv, 'share'), 'Marked as sent.')}>Mark as sent</button>}
+            <details className="relative ml-auto">
+              <summary aria-label="More" className="cursor-pointer list-none rounded-full px-2 py-1 text-lg leading-none text-accent-ink hover:bg-ink/5">⋯</summary>
+              <div className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg">
+                {inv.status === 'sent' && <button type="button" disabled={busy} className="px-4 py-2.5 text-left text-sm text-ink hover:bg-ground" onClick={() => { if (window.confirm('Revise this invoice? It becomes a draft again so its lines can change; its number and payments stay.')) act(() => revise(inv), 'Revised — now a draft.'); }}>Revise</button>}
+                <button type="button" disabled={busy} className="px-4 py-2.5 text-left text-sm text-safety hover:bg-ground disabled:opacity-50"
+                  onClick={() => { if (inv.paid_cents !== 0) { act(async () => { throw new InvoiceError('Reverse the recorded payments before voiding this invoice.'); }); return; }
+                    if (window.confirm(`Void ${invoiceNumber(inv)}? It stays on record as void; its number is never reused.`)) act(() => voidIt(inv, 'Voided on the website'), 'Voided.'); }}>Void invoice</button>
+              </div>
+            </details>
+          </div>
+          {isDraft && <button type="button" disabled={busy} className={`${BTN} w-full py-2.5`} onClick={() => act(() => emailIt(inv), `Emailed to ${inv.bill_to_email ?? 'the client'}.`)}>Email invoice</button>}
+          {owed && !pay && <button type="button" disabled={busy} className={`${BTN} w-full py-2.5`} onClick={() => setPay({ amount: (inv.balance_cents / 100).toFixed(2), method: 'check', ref: '', date: new Date().toISOString().split('T')[0] })}>Record a payment</button>}
         </div>
       )}
       <p className="border-t border-hairline px-4 py-3 text-xs text-muted">Only people with “Invoices &amp; payments” see this. Every change and payment is kept in the invoice’s history.</p>

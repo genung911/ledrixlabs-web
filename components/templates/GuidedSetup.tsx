@@ -120,7 +120,7 @@ export function GuidedSetup({ tree, onOps, disabled, onFocus, onAllSettings }: P
               <button type="button" className={btn.secondary} onClick={back}>‹ Back</button>
               <button type="button" className={btn.secondary} onClick={next}>Skip</button>
               <button type="button" className={`${btn.primary} min-w-[180px]`} onClick={next}>Next</button>
-              <span className="ml-auto hidden text-xs text-muted sm:inline">Enter = Next · ← Back</span>
+              <span className="ml-auto hidden text-xs text-muted sm:inline">Enter = Next · ← key = Back</span>
             </div>
           </>
         )}

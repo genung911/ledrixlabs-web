@@ -145,7 +145,7 @@ async function suite(src) {
   const page = strip(src.page);
   ok('§4 the page writes nothing directly (only through lib/team)', !/\.(insert|update|upsert|delete|rpc)\s*\(/.test(page));
   ok('§4 the invite form, the pending list and the role picker are each gated on the role',
-    /\{manages && \(\s*<Card title="Invite someone">/.test(page) && /manages && state\.invites\.length > 0/.test(page) && /manages && !lock \?/.test(page));
+    /\{manages && inviting && \(\s*<Sheet title="Invite someone"/.test(page) /* 2026-11-23 website Apple pass: the invite is a sheet */ && /manages && state\.invites\.length > 0/.test(page) && /manages && !lock \?/.test(page));
   ok('§4 the invite note says no email is sent', /Ledrix doesn’t send an email/.test(page));
   ok('§4 a role change asks first (a dialog), then calls the server', /setPending\(\{ member: m, role: e\.target\.value \}\)/.test(page) && /role="dialog"/.test(page) && /await setMemberRole\(pending\.member\.id, pending\.role\)/.test(page));
   ok('§4 no member removal is offered (the server has no such operation)', !/remove member|removeMember|Remove from team/i.test(page));
@@ -206,7 +206,7 @@ const MUTANTS = [
   { f: 'api', from: "  if ((member.data ?? []).length) throw new TeamError('That email already belongs to a team member');\n", to: '', why: 'an existing member is invited again', expect: /^§3/ },
   { f: 'api', from: "  if (!(res.data ?? []).length) throw new TeamError('The invitation was not revoked — it may already be gone, or you may not be allowed');\n", to: '', why: 'a silent revoke refusal looks like success', expect: /^§3/ },
   { f: 'api', from: "  if (back.error || (back.data as { role?: string } | null)?.role !== role) {", to: "  if (back.error) {", why: 'a role change is shown without the read-back agreeing', expect: /^§3/ },
-  { f: 'page', from: "{manages && (\n          <Card title=\"Invite someone\">", to: "{(\n          <Card title=\"Invite someone\">", why: 'the invite form shows for every role', expect: /^§4/ },
+  { f: 'page', from: "{manages && inviting && (\n        <Sheet title=\"Invite someone\"", to: "{inviting && (\n        <Sheet title=\"Invite someone\"", why: 'the invite form shows for every role', expect: /^§4/ },
   { f: 'page', from: "disabled={!perms.can_change || busy}", to: "disabled={busy}", why: 'a manager gets live permission switches', expect: /^§6/ },
   { f: 'perm', from: "  if (res.error || !res.data) throw new PermissionError('Permissions were not reset', res.error);", to: "  if (res.error) throw new PermissionError('Permissions were not reset', res.error);", why: 'an unconfirmed reset looks done', expect: /^§6/ },
   { f: 'page', from: "const manages = typeof caps?.team === 'boolean' ? caps.team : canManageTeam(access.role);", to: "const manages = canManageTeam(access.role);", why: 'the page ignores the owner’s team permission', expect: /^§6/ },

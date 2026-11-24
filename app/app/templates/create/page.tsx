@@ -301,7 +301,7 @@ export default function CreateTemplatePage() {
   return (
     <Page>
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link href="/app/templates" className="text-sm text-muted hover:text-ink">← Templates</Link>
+        <Link href="/app/templates" className="text-sm text-accent-ink hover:underline">‹ Templates</Link>
       </div>
       {problem && <div className="mb-4"><Banner tone="error" title={problem} /></div>}
       <section className="mx-auto flex min-h-[460px] max-w-3xl flex-col gap-5 rounded-2xl border border-hairline bg-surface px-6 py-7 md:px-10"

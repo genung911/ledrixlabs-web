@@ -209,7 +209,7 @@ export default function NewInspectionPage() {
 
   return (
     <Page>
-      <PageHeader title="New inspection" subtitle={<Link href="/app/inspections" className="text-accent-ink">← Inspections</Link>} />
+      <PageHeader title="New inspection" subtitle={<Link href="/app/inspections" className="text-accent-ink">‹ Inspections</Link>} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
           <Card title="Property and time">

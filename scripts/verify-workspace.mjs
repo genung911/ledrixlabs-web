@@ -317,7 +317,7 @@ const NAV_RULES = {
     const bad = [];
     for (const f of ['app/app/company/page.tsx', 'app/app/team/page.tsx', 'app/app/company/services/page.tsx', 'app/app/company/payments/page.tsx'])
       if (!existsSync(join(ROOT, f))) bad.push(`${f} missing`);
-    if (!/if \(!owner\) return <Page><CompanyTabs \/><ErrorBox message="Only the company owner connects payments\." \/><\/Page>;/.test(s.payments)) bad.push('Payments no longer refuses a non-owner');
+    if (!/if \(!owner\) return <Page><PageHeader title="Payments" \/><CompanyTabs \/><ErrorBox message="Only the company owner connects payments\." \/><\/Page>;/.test(s.payments)) /* 2026-11-23 website Apple pass: the page has its title */ bad.push('Payments no longer refuses a non-owner');
     if (!/setEditable\(mayEditServices\(/.test(s.services)) bad.push('Services no longer checks who may edit');
     return bad;
   },
@@ -351,7 +351,7 @@ const NAV_MUT = [
   ['menu: seven items in order, each gated as before', 'shell', "{ href: '/app/company', label: 'Company', show: !!access.companyId || canServices || canPayments },", "{ href: '/app/company', label: 'Company', show: !!access.companyId || canServices || canPayments },\n    { href: '/app/team', label: 'Team', show: !!access.companyId },"],
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'tabs', "label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role })", "label: 'Payments', show: true"],
   ['company: Profile · Team · Services & prices · Payments, gated as their menu items were', 'team', "<CompanyTabs />", "<div />"],
-  ['old URLs: each company page keeps its route, and refuses as before', 'payments', "if (!owner) return <Page><CompanyTabs /><ErrorBox", "if (false) return <Page><CompanyTabs /><ErrorBox"],
+  ['old URLs: each company page keeps its route, and refuses as before', 'payments', "if (!owner) return <Page><PageHeader title=\"Payments\" /><CompanyTabs /><ErrorBox", "if (false) return <Page><PageHeader title=\"Payments\" /><CompanyTabs /><ErrorBox"],
   ['template: three steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', "{ id: 'systems', label: 'What you inspect',", "{ id: 'systems', label: 'Systems',"],
   ['template: three steps in order (Overview the summary), Back / Next, publish controls in the header, version box on Overview', 'tpl', '<section aria-label="Template version"', '<section aria-label="Version"'],
 ];

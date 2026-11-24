@@ -69,7 +69,7 @@ async function suite(src) {
   ok('§3 a phone holding work is named NOT SENT; a server before #87 warns nobody',
     JSON.stringify(strip_.unsent) === '[{"user_id":"s","first":"Sam","count":3}]'
     && M.teamStrip({ ...TEAM, people: TEAM.people.map(({ unsent, ...p }) => p) }, {}).unsent.length === 0, JSON.stringify(strip_.unsent));
-  ok('§3 the page shows the chips and the NOT SENT warning', /teamInfo\.chips\.map/.test(page) && /NOT SENT/.test(page) && /teamInfo\.unsent\.length > 0 && \(/.test(page));
+  ok('§3 the page shows the chips and the NOT SENT warning', /teamInfo\.chips\.map/.test(page) && /not sent<\/span>/.test(page) /* 2026-11-23 website Apple pass: sentence case */ && /teamInfo\.unsent\.length > 0 && \(/.test(page));
   const names = { k: 'Kelly Genung', s: 'Sam Rivera' };
   ok('§3 history lines say who did what, in words', M.eventLine({ action: 'section_assigned', actor: 'k', subject_user: 's', detail: 'roofing' }, names, { roofing: 'Roof' }) === 'Kelly assigned Roof to Sam'
     && M.eventLine({ action: 'take_over', actor: 'k', subject_user: 'k', device_name: 'Kelly’s iPad' }, names, {}) === 'Kelly took over editing on Kelly’s iPad'

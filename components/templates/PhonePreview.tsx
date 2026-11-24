@@ -365,7 +365,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     const tot = systems.reduce((a, s) => { const p = progressOfSystem(s); a.met += p.met; a.total += p.total; return a; }, { met: 0, total: 0 });
     return (
       <>
-        <div className="pv-bldg"><b>MAIN STRUCTURE <Glyph d={G.chevD} size={12} /></b></div>
+        <div className="pv-bldg"><b>Main structure <Glyph d={G.chevD} size={12} /></b></div>
         {/* NO COUNTS (app 2026-11-16: "lets use the status bar everywhere"): the bar says it. */}
         <div className="pv-bar3" aria-label={`${tot.met} of ${tot.total} checkpoints addressed`}><i style={{ width: `${tot.total ? Math.round((tot.met / tot.total) * 100) : 0}%`, background: '#2F8CE8' }} /></div>
         {systems.length === 0 ? <p className="pv-empty">No system starts in scope. Inspectors would add each one with Add system.</p> : null}
@@ -393,7 +393,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         </div>
         {spaces.length ? (
           <>
-            <div className="pv-bldg" style={{ marginTop: 18 }}><b>SPACES</b></div>
+            <div className="pv-bldg" style={{ marginTop: 18 }}><b>Spaces</b></div>
             <div className="pv-bmeta">Walk with the camera. Shows the systems&apos; items that live there.</div>
             <div className="pv-tiles">
               {spaces.map(sp => (
@@ -417,7 +417,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           const left = rows.filter(id => !cond[id]).length + sysSteps.filter(st => !stepDone(st)).length;
           const covered = left === 0;
           return (
-            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>GUIDED COVERAGE</div><div className="pv-pair">
+            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>Guided coverage</div><div className="pv-pair">
               <button type="button" className={`pv-pcond${covered ? ' ready' : ' dim'}`} onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
                 aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}><b>Review &amp; send</b><small>{covered ? 'Everything covered' : `${left} left`}</small></button>
               <button type="button" className="pv-pstart" disabled={!nx} onClick={() => { const first = tourOrder[0]; if (first) { setTour(true); enterSys(first); } }}
@@ -506,7 +506,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             and suggests the Details answers to confirm; here it lists the shots this draft asks for. */}
         {photosOpen ? (
           <div className="pv-group">
-            <div className="pv-ghead"><span>DETAILS · PHOTOS THAT HELP LEDRIX</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
+            <div className="pv-ghead"><span>Details · photos that help Ledrix</span><button type="button" className="pv-linkbtn" onClick={() => setOpened(o => ({ ...o, [`photos:${sysId}`]: false }))}>Back</button></div>
             <div className="pv-shots">
               {shots.map(sh => <div key={sh.id} className="pv-shot"><b>{sh.label}</b><span>{sh.hint}</span></div>)}
             </div>
@@ -579,7 +579,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
           );
         })() : photosOpen ? null : !active ? (
           <div className="pv-tiles">
-            <div className="pv-areacap">SYSTEM COMPONENTS</div>
+            <div className="pv-areacap">System components</div>
             {detailsTile}
             {groups.map(g => {
               const d = g.items.filter(isDone).length;
@@ -776,7 +776,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (
       <>
         <div className="pv-toprow"><span className="pv-eyebrow" style={{ margin: 0 }}>{address.toUpperCase()} · MAIN STRUCTURE</span>
-          <button type="button" className="pv-exit" onClick={() => go({ kind: 'landing' })}>EXIT GUIDED</button></div>
+          <button type="button" className="pv-exit" onClick={() => go({ kind: 'landing' })}>Exit guided</button></div>
         <div className="pv-sysrow" style={{ marginTop: 4 }}>
           <button type="button" className="pv-sysbtn" onClick={() => go({ kind: 'system', systemId: st.systemId })} aria-label={`Open the ${displayLabel(st.systemLabel)} page`}>
             <Glyph d={G.chevL} size={20} color="#2F8CE8" /><span className="pv-big1">{displayLabel(st.systemLabel)}</span>
@@ -804,12 +804,12 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     return (
       <>
         <div className="pv-eyebrow">{address.toUpperCase()} · MAIN STRUCTURE</div>
-        <div className="pv-xcap">SUGGESTED NEXT</div>
+        <div className="pv-xcap">Suggested next</div>
         <div className="pv-xsys">{name(to)}</div>
         <div className="pv-bar3"><i style={{ width: `${pctOf(to)}%`, background: '#2F8CE8' }} /></div>
-        <div className="pv-xcard"><em>STARTS WITH</em><b>{pageOfSys(to) ? 'Details' : toPool[0]?.label ?? 'Condition'}</b></div>
+        <div className="pv-xcard"><em>Starts with</em><b>{pageOfSys(to) ? 'Details' : toPool[0]?.label ?? 'Condition'}</b></div>
         {others.length ? (<>
-          <div className="pv-xcap" style={{ marginTop: 12 }}>STILL TO DO</div>
+          <div className="pv-xcap" style={{ marginTop: 12 }}>Still to do</div>
           {others.map(id => (
             <button key={id} type="button" className="pv-crow" style={{ width: '100%', textAlign: 'left', font: 'inherit' }} onClick={() => enterSys(id)} aria-label={`Go to ${name(id)}`}>
               <div style={{ flex: 1, minWidth: 0 }}><b>{name(id)}</b></div>
@@ -882,7 +882,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       const rows = condRowsOf(sysId, grp), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
       const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? (doneN ? 'Part reviewed' : 'To review') : finds ? `Finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
-        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>GUIDED WALK</div><div className="pv-pair">
+        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>Guided walk</div><div className="pv-pair">
           <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
             aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
           <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
@@ -928,7 +928,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <div className="pv-sheetbg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
           <div className="pv-sheet" role="dialog" aria-label={`${n.label} — camera`}>
             <div className="pv-hd" />
-            <div className="pv-hh">{title} — CAMERA<button type="button" onClick={close}>CANCEL</button></div>
+            <div className="pv-hh">{title} — Camera<button type="button" onClick={close}>Cancel</button></div>
             <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'finding', nodeId: n.id })}>Finding</button>
             <button type="button" className="pv-row" onClick={() => setSheet({ kind: 'limit', nodeId: n.id })}>Limitation</button>
             <p className="pv-foot">In the app, the camera opens on this item with three shutters: Coverage, Finding, Limitation. Holding the camera icon asks Finding or Limitation, then shows that quick list — these are those lists.</p>
@@ -942,7 +942,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         <div className="pv-sheetbg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
           <div className="pv-sheet" role="dialog" aria-label={`${n.label} — limitation`}>
             <div className="pv-hd" />
-            <div className="pv-hh">{title} — LIMITATION<button type="button" onClick={close}>CANCEL</button></div>
+            <div className="pv-hh">{title} — Limitation<button type="button" onClick={close}>Cancel</button></div>
             {limitationReasonsFor(n).map(r => <button key={r} type="button" className="pv-row" onClick={() => pick(r)}>{r}</button>)}
             <button type="button" className="pv-big" onClick={() => pick('Photographed — Ledrix drafts it for Review')}>PHOTOGRAPH IT — LEDRIX DRAFTS IT FOR REVIEW</button>
             <p className="pv-foot">In the app, holding the camera icon and choosing Limitation shows this list (saved without a photo).</p>
@@ -956,8 +956,8 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
       <div className="pv-sheetbg" onClick={e => { if (e.target === e.currentTarget) close(); }}>
         <div className="pv-sheet" role="dialog" aria-label={`${n.label} — new finding`}>
           <div className="pv-hd" />
-          <div className="pv-hh">{title} — NEW FINDING<button type="button" onClick={close}>CANCEL</button></div>
-          <div className="pv-cap2">TAP WHAT YOU SEE</div>
+          <div className="pv-hh">{title} — New finding<button type="button" onClick={close}>Cancel</button></div>
+          <div className="pv-cap2">Tap what you see</div>
           {shortcuts.length
             ? shortcuts.map(s => <button key={s.id} type="button" className="pv-row f" onClick={() => pick(s.label)}>{s.label}</button>)
             : <p className="pv-foot">No shortcuts for this component yet — the findings you log most will build this list.</p>}
@@ -1038,7 +1038,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-rail button.on{color:#EAF1FB;font-weight:800}
 .ldx-pv .pv-rail .pv-railcam span{width:44px;height:44px;border-radius:50%;background:#217BE8;display:flex;align-items:center;justify-content:center;margin-top:-16px;border:3px solid #05070b}
 .ldx-pv .pv-bldg{display:flex;justify-content:center;min-height:30px;align-items:center}
-.ldx-pv .pv-bldg b{color:#e8ecef;font-size:11.5px;font-weight:800;letter-spacing:1.6px;display:inline-flex;gap:4px;align-items:center}
+.ldx-pv .pv-bldg b{color:#e8ecef;font-size:11.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;display:inline-flex;gap:4px;align-items:center}
 .ldx-pv .pv-bmeta{text-align:center;color:#8a959c;font-size:11px;font-weight:600;margin-top:-2px;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-cov{display:flex;align-items:center;gap:10px;margin-top:6px;padding:12px 13px;border-radius:14px;background:#11171b;border:1px solid #222b30}
 .ldx-pv .pv-cl{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
@@ -1048,7 +1048,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-n{color:#eef3f5;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .ldx-pv .pv-n small{color:#7c878e;font-size:13px;font-weight:700}
 .ldx-pv .pv-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:14px}
-.ldx-pv .pv-areacap{grid-column:1/-1;color:#6f8088;font-size:9.5px;font-weight:800;letter-spacing:1.4px;margin-bottom:-4px}
+.ldx-pv .pv-areacap{grid-column:1/-1;color:#6f8088;font-size:9.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:-4px}
 .ldx-pv .pv-pair{display:flex;gap:7px}
 .ldx-pv .pv-iico{display:flex;justify-content:center;transform:scale(.8)}
 .ldx-pv .pv-pcond,.ldx-pv .pv-pstart{display:flex;align-items:center;justify-content:space-between;gap:6px;border-radius:12px;padding:9px 11px;font:inherit;text-align:left;cursor:pointer}
@@ -1170,7 +1170,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-hd{width:36px;height:4px;border-radius:2px;background:#222;margin:10px auto 4px}
 .ldx-pv .pv-hh{display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid #111;color:#8fa0ad;font-size:9px;font-weight:900;letter-spacing:2.2px}
 .ldx-pv .pv-hh button{margin-left:auto;color:#EAF1FB;font-size:10px;font-weight:900;letter-spacing:1.2px}
-.ldx-pv .pv-cap2{color:#46525a;font-size:8.5px;font-weight:800;letter-spacing:2.2px;padding:12px 20px 4px}
+.ldx-pv .pv-cap2{color:#46525a;font-size:8.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;padding:12px 20px 4px}
 .ldx-pv .pv-row{display:block;width:100%;padding:12px 20px;border-bottom:1px solid #0d0d0d;color:#ffe6bf;font-size:13px;font-weight:600}
 .ldx-pv .pv-row.f{color:#e8ecef}
 .ldx-pv .pv-big{display:block;margin:12px 20px 0;padding:12px;border-radius:12px;text-align:center;background:rgba(33,123,232,.16);border:1px solid rgba(33,123,232,.45);color:#9cc4f2;font-size:10px;font-weight:900;letter-spacing:.8px;width:calc(100% - 40px)}
@@ -1201,6 +1201,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-knownr b{flex:1;min-width:0;color:#e6ebee;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ldx-pv .pv-knownr em,.ldx-pv .pv-knownr button{font-style:normal;color:#8fc0f2;font-weight:800;font-size:10.5px;background:none;border:0;margin-left:auto}
 .ldx-pv .pv-ghead{display:flex;justify-content:space-between;align-items:center;padding:0 3px 5px;border-bottom:1px solid #1b2429;color:#8a959c;font-size:9.5px;font-weight:900;letter-spacing:1.3px}
+.ldx-pv .pv-ghead > span{text-transform:uppercase}
 .ldx-pv .pv-ghead em{font-style:normal;color:#2F8CE8;font-size:11px;font-weight:700;letter-spacing:0}
 .ldx-pv .pv-itiles{margin-top:8px}
 .ldx-pv .pv-itile{height:100px;min-height:0;gap:3px;cursor:pointer;font:inherit}
@@ -1227,7 +1228,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-kindrow small{color:#7f9197;font-size:9.5px}
 .ldx-pv .pv-pill{border:1px solid;border-radius:999px;padding:2px 8px;font-size:9.5px;font-weight:800;letter-spacing:0;white-space:nowrap}
 .ldx-pv .pv-steptitle{color:#dfe7ec;font-size:16px;font-weight:700;margin:2px 0 12px}
-.ldx-pv .pv-xcap{color:#8cc4ff;font-size:10px;font-weight:900;letter-spacing:1.5px;margin-top:22px}
+.ldx-pv .pv-xcap{color:#8cc4ff;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-top:22px}
 .ldx-pv .pv-xsys{color:#eef3f5;font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:3px}
 .ldx-pv .pv-xstat{color:#8fa0ad;font-size:11.5px;font-weight:600;margin-top:5px}
 .ldx-pv .pv-xcard{display:flex;flex-direction:column;gap:3px;margin-top:18px;padding:12px;border:1px solid #1f2d37;background:#0d151b;border-radius:12px}

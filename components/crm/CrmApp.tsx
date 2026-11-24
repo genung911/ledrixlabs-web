@@ -18,7 +18,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
-import { Card, Empty, ErrorBox, Loading, Page, PageHeader, formatDate } from '@/components/workspace/ui';
+import { Card, Empty, ErrorBox, Group, Loading, Page, PageHeader, Row, Sheet, formatDate } from '@/components/workspace/ui';
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import {
   CONTACT_TYPE_LABEL, detectISNCSV, parseCSVHeaders, parseGenericCSV, parseISNCSV,
@@ -136,7 +136,7 @@ function CrmTabBar({ tab }: { tab: CrmTab }) {
       {TABS.map(t => (
         <Link key={t.tab} href={t.href} aria-current={tab === t.tab ? 'page' : undefined}
           className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm ${tab === t.tab ? 'border-accent font-semibold text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
-          {t.label}{t.planned && <span className="rounded-full bg-ground px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted">Planned</span>}
+          {t.label}{t.planned && <span className="rounded-full bg-ground px-1.5 py-0.5 text-[10px] font-semibold text-muted">Being built</span>}
         </Link>
       ))}
     </nav>
@@ -616,13 +616,29 @@ function HomeTab({ data, act, busy }: { data: Data; act: Act; busy: boolean }) {
   const recent = recentlyAdded(data.contacts);
   const diff = k.jobsThisMonth - k.jobsLastMonth;
   const tomorrow = addDays(today, 1);
+  // Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): one blue button (New inspection), the other two
+  // as quiet links; a booking request is a row that opens its Confirm / Decline choice instead of two buttons per row.
+  const [booking, setBooking] = useState<(typeof data.bookings)[number] | null>(null);
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-end gap-2">
-        <Link className={BTN_QUIET + ' px-3 py-1.5 text-xs'} href="/app/crm/contacts">Contacts</Link>
-        <Link className={BTN_QUIET + ' px-3 py-1.5 text-xs'} href="/app/crm/schedule">+ Schedule a job</Link>
-        <Link className={BTN + ' px-3 py-1.5 text-xs'} href="/app/inspections/new">New inspection</Link>
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <Link className="text-sm font-semibold text-accent-ink hover:underline" href="/app/crm/contacts">Contacts</Link>
+        <Link className="text-sm font-semibold text-accent-ink hover:underline" href="/app/crm/schedule">Schedule a job</Link>
+        <Link className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/90" href="/app/inspections/new">New inspection</Link>
       </div>
+      {booking && (
+        <Sheet title="Booking request" onCancel={() => setBooking(null)} busy={busy} doneLabel="Confirm"
+          onDone={() => { const b = booking; setBooking(null); void act(() => confirmBooking(b), 'Booking confirmed — it is on the schedule.'); }}>
+          <Group footnote="Confirm puts it on the schedule. The client’s details come with it.">
+            <Row label={booking.address || 'No address yet'} sub={booking.client_name} />
+            {booking.preferred_date && <Row label="Wants" value={`${formatDate(booking.preferred_date)}${booking.preferred_time ? `, ${booking.preferred_time}` : ''}`} />}
+            <Row label="Payment" value={booking.payment_status === 'paid' ? 'Paid online' : 'Not paid'} />
+          </Group>
+          <Group>
+            <Row label="Decline request" destructive disabled={busy} onClick={() => { const b = booking; if (window.confirm('Decline this booking request?')) { setBooking(null); void act(() => declineBooking(b), 'Booking declined.'); } }} />
+          </Group>
+        </Sheet>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Jobs this month" value={String(k.jobsThisMonth)} sub={`${diff >= 0 ? '+' : '−'}${Math.abs(diff)} vs last month`} />
         {k.invoicedThisMonthCents != null
@@ -637,13 +653,15 @@ function HomeTab({ data, act, busy }: { data: Data; act: Act; busy: boolean }) {
             {data.bookings.length + overdue.length ? (
               <ul className="divide-y divide-hairline">
                 {data.bookings.map(b => (
-                  <li key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-ink">Booking request · {b.address || 'No address yet'}</p>
-                      <p className="text-xs text-muted">{b.client_name}{b.preferred_date ? ` · wants ${formatDate(b.preferred_date)}${b.preferred_time ? `, ${b.preferred_time}` : ''}` : ''}{b.payment_status === 'paid' ? ' · paid online' : ''}</p>
-                    </div>
-                    <button className={BTN_QUIET + ' px-3 py-1.5 text-xs'} disabled={busy} onClick={() => act(() => declineBooking(b), 'Booking declined.')}>Decline</button>
-                    <button className={BTN + ' px-3 py-1.5 text-xs'} disabled={busy} onClick={() => act(() => confirmBooking(b), 'Booking confirmed — it is on the schedule.')}>Confirm</button>
+                  <li key={b.id}>
+                    <button type="button" onClick={() => setBooking(b)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-ground">
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold text-ink">Booking request · {b.address || 'No address yet'}</span>
+                        <span className="block text-xs text-muted">{b.client_name}{b.preferred_date ? ` · wants ${formatDate(b.preferred_date)}${b.preferred_time ? `, ${b.preferred_time}` : ''}` : ''}{b.payment_status === 'paid' ? ' · paid online' : ''}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-[#c47a12]">To confirm</span>
+                      <span aria-hidden className="text-muted">›</span>
+                    </button>
                   </li>
                 ))}
                 {overdue.map(i => (
@@ -659,7 +677,7 @@ function HomeTab({ data, act, busy }: { data: Data; act: Act; busy: boolean }) {
             ) : <Empty>Nothing waiting on you.</Empty>}
             {data.homeInvoices == null && <p className="px-4 pb-3 text-xs text-muted">Overdue invoices show here for people with the Invoices permission.</p>}
           </Card>
-          <Card title="Today and tomorrow" count={soon.length}>
+          <Card title="Today & tomorrow" count={soon.length}>
             {soon.length ? (
               <ul className="divide-y divide-hairline">
                 {soon.map(o => (
@@ -760,7 +778,8 @@ function PlannedPage({ tab }: { tab: PlannedTab }) {
   const p = PLANNED_TABS[tab];
   return (
     <section className="max-w-2xl space-y-3 rounded-2xl border border-dashed border-hairline px-6 py-7">
-      <span className="inline-block rounded-full bg-ground px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-muted">Planned · being built</span>
+      {/* Owner 2026-11-23 ("No just say being built"): the planned tabs stay, and say they are being built. */}
+      <span className="inline-block rounded-full bg-ground px-2.5 py-0.5 text-[11px] font-semibold text-muted">Being built</span>
       <h2 className="text-xl font-bold text-ink">{p.title}</h2>
       <p className="text-body">{p.line}</p>
       <p className="text-sm text-muted">What this page will do:</p>

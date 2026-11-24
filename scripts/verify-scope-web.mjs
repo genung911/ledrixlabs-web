@@ -96,7 +96,7 @@ ok('§3 a refused "changed" shows the phone’s value and says so', /r\.reason =
 ok('§3 picks only for someone who may change the section, and not while their phone has the job', /const editable = access === 'edit' && !lock\.heldBy;/.test(panel));
 ok('§3 Satisfactory is off while the item has a finding', /disabled=\{!editable \|\| busy \|\| \(noOk && !ok\)\}/.test(panel) && /const noOk = row\.findings > 0;/.test(panel));
 ok('§3 a spec pick keeps the entry’s other fields (room, age)', /\{ \.\.\.prev, label: f\.label, value: joinSpecPicks\(picked\) \}/.test(panel));
-ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 'scope', label: 'Scope', show: findingsVisible \}/.test(page) && /<ScopePanel inspectionId=\{id\} team=\{team\} names=\{names\} lock=\{lock\}/.test(page));
+ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 'scope', label: 'Checklist', show: findingsVisible \}/.test(page) /* 2026-11-23 website Apple pass: the phone's word */ && /<ScopePanel inspectionId=\{id\} team=\{team\} names=\{names\} lock=\{lock\}/.test(page));
 
 // §5 the job's other buildings (step 3 F6, option A — owner 2026-11-03: "A"), from the template snapshot, read-only
 {

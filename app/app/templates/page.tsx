@@ -86,7 +86,9 @@ export default function TemplatesPage() {
 
   return (
     <Page>
-      <PageHeader title="Templates" subtitle="Your company’s inspection templates"
+      {/* Website Apple pass (owner 2026-11-23, mockup CXThxTV8YKrVAaDGGa64to): the counts are the grey line (no stat cards);
+          the lists are grouped; a type's × is a red Remove with its confirm. */}
+      <PageHeader title="Templates" subtitle={data ? `${data.templates.length} template${data.templates.length === 1 ? '' : 's'} · ${data.types.length} inspection type${data.types.length === 1 ? '' : 's'}${server && unassigned ? ` · ${unassigned} without a template` : ''}` : 'Your company’s inspection templates'}
         actions={author && (
           server
             ? <Link className={btn.primary} href="/app/templates/create"><span aria-hidden>+</span> New template</Link>
@@ -120,12 +122,6 @@ export default function TemplatesPage() {
       {state.kind === 'error' && <ErrorBox message={state.message} onRetry={load} />}
       {data && (
         <>
-          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Stat label="Live templates" value={data.templates.length} />
-            <Stat label="Inspection types" value={data.types.length} />
-            <Stat label="Types without a template" value={server ? unassigned : '—'} warn={server && unassigned > 0} />
-          </div>
-
           <Card title="Inspection types" count={data.types.length} className="mb-6">
             <ul className="divide-y divide-hairline">
               {data.types.map(t => (
@@ -142,12 +138,13 @@ export default function TemplatesPage() {
                         title={owner ? undefined : 'Only the company owner can change this.'}
                         onChange={e => run(() => assignTemplate(access.companyId!, t, e.target.value || null))}
                         className={`${field} w-56 py-1.5`}>
-                        <option value="">— choose a template —</option>
+                        <option value="">Choose a template</option>
                         {data.templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
                       </select>
                     ) : <span className="text-xs text-muted">Set in the Ledrix app for now</span>}
                     {server && owner && !t.stock && t.id && (
-                      <button className={btn.icon} aria-label={`Remove ${t.name}`} onClick={() => run(() => removeInspectionType(t))}>×</button>
+                      <button className="text-sm font-semibold text-safety hover:underline" aria-label={`Remove ${t.name}`}
+                        onClick={() => { if (window.confirm(`Remove the inspection type “${t.name}”? Its template stays.`)) run(() => removeInspectionType(t)); }}>Remove</button>
                     )}
                   </div>
                 </li>
@@ -159,7 +156,7 @@ export default function TemplatesPage() {
                 : <p className="text-xs text-muted">{server ? 'Only the company owner can add inspection types or change which template each one uses.' : NEEDS_SERVER}</p>}
             </div>
           </Card>
-          <Card title="Templates" count={data.templates.length + newDrafts.length}>
+          <Card title="Your templates" count={data.templates.length + newDrafts.length}>
             {usedTypes.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 border-b border-hairline px-4 py-2.5" role="group" aria-label="Filter by property type">
                 {[null, ...usedTypes].map(id => (

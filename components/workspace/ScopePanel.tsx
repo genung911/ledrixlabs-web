@@ -170,7 +170,7 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
           {lock.error && access === 'edit' && <Banner tone="bad">{lock.error}</Banner>}
           {focus && onBackToSeal && (
             <Banner tone="info">{missing ? <><b>That item isn’t on this list here.</b> It may be set on the phone.</> : <>Fix the highlighted item, then go back to seal.</>}
-              <button type="button" onClick={onBackToSeal} className="ml-2 text-xs font-semibold text-accent-ink hover:underline">‹ Back to Seal &amp; send</button></Banner>
+              <button type="button" onClick={onBackToSeal} className="ml-2 text-xs font-semibold text-accent-ink hover:underline">‹ Back to Review &amp; send</button></Banner>
           )}
           {note && <Banner tone={note.tone}>{note.text}</Banner>}
           {current.limit && <AreaLimit limit={current.limit} />}
