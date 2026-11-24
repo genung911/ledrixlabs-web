@@ -1338,9 +1338,20 @@ const RULES = {
       && /onClick=\{\(\) => go\(\{ kind: 'facts' \}\)\} aria-label="Before you start, the house facts\. Open"/.test(p) && /\{HOUSE_FACTS\.map\(f => \(/.test(p)
       && /const xml = COLOR_ICONS \? COLOR_SVGS\[name\] : undefined;/.test(p) && /<TileIco name=\{groupIconFor\(g\.label, \(\) => 'shape-outline'\)\} \/>/.test(p)
       /* 2026-11-15 (app 2b9ee2d27): Photos & details is no grid tile — Start here is the bottom pair's right key */
-      && /className="pv-pstart"/.test(p) && /if \(grp \? gLeft > 0 : hasPage\) \{ setOpened\(o => \(\{ \.\.\.o, \[`photos:\$\{sysId\}`\]: true \}\)\);/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
+      && /className="pv-pstart pv-mobile"/.test(p) && /return hvacFold\(\{ heating: sv\('hvac_heating::fuel_source'\), cooling: sv\('hvac_cooling::spec'\) \}\);/.test(p)
       && /const allSteps = useMemo\(\(\) => \[\.\.\.previewSteps\(walkSystems, applies\), \.\.\.previewSteps\(spaces, applies\)\], \[walkSystems, spaces, applies\]\);/.test(p)   /* 2026-11-16: + the rooms */
-      && /const tile = nx \? systems\.find\(x => x\.id === tileOf\(nx\.systemId\)\) : null;/.test(p) && /<b>Review &amp; send<\/b>/.test(p) && /className=\{`pv-pcond\$\{covered \? ' ready' : ' dim'\}`\}/.test(p)   /* 2026-11-15: the grid's pair */ ? [] : ['components/templates/PhonePreview.tsx'];
+      && /<b>Review &amp; send<\/b>/.test(p) && /className=\{`pv-pcond\$\{covered \? ' ready' : ' dim'\}`\}/.test(p)   /* 2026-11-15: the grid's pair */ ? [] : ['components/templates/PhonePreview.tsx'];
+  },
+  // THE CAMERA KEYS ARE MOBILE ONLY (owner 2026-11-24, w21: "Grey it out and add a note if clicked saying mobile function
+  // only"): the phone's Shoot keys open the camera; the preview has none. All three (the main page's, a system/group page's
+  // "Shoot ‹page›", the Details page's 📷 SHOOT) are grey, aria-disabled, and a tap only says "Mobile only" — no walk, no tour.
+  'preview: the Shoot keys are grey and say Mobile only': all => {
+    const p = strip(all['components/templates/PhonePreview.tsx'] ?? '');
+    const keys = [...p.matchAll(/<button type="button" className="pv-(?:pstart|nb) pv-mobile"[\s\S]*?(?=<span>|📷 SHOOT<\/button>)/g)].map(m => m[0]);
+    return keys.length === 3 && keys.every(k => /aria-disabled="true"/.test(k) && /onClick=\{\(\) => say\(['`]Mobile only: on the phone, Shoot opens the camera/.test(k) && !/setTour|openStep|enterSys|go\(/.test(k))
+      && /<b>📷 Shoot \{pageName\}<\/b><small>Mobile only<\/small>/.test(p) && /<b>📷 Shoot the house<\/b><small>Mobile only<\/small>/.test(p)
+      && /\.ldx-pv \.pv-pstart\.pv-mobile,\.ldx-pv \.pv-nb\.pv-mobile\{background:#1b2328;color:#7d8a91;[^}]*cursor:not-allowed\}/.test(p)
+      && !/<b>(Start here|Guided coverage)<\/b>/.test(p) ? [] : ['components/templates/PhonePreview.tsx'];
   },
   // ONE LIST FOR MATERIALS (owner 2026-11-14, mockup WGxSxwd2gAzkxGr4VRhMK2): a material's card has no switch of its own
   // ("Comes with …" in its place); a materials item's material field is edited only on its Material type list (no Details

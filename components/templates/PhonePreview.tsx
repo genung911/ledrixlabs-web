@@ -411,18 +411,18 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
         {(() => {
           // The Coverage page's pair reads the systems (app: Review & send counts the building's systems).
           const sysSteps = steps.filter(st => !roomIds.has(st.systemId));
-          const nx = sysSteps.length && !sysSteps.every(stepDone) ? sysSteps[resumeIndex(sysSteps, stepDone, 0)] : null;
-          const tile = nx ? systems.find(x => x.id === tileOf(nx.systemId)) : null;
           const rows = systems.flatMap(x => condRowsOf(x.id));
           const left = rows.filter(id => !cond[id]).length + sysSteps.filter(st => !stepDone(st)).length;
           const covered = left === 0;
           return (
-            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>Guided coverage</div><div className="pv-pair">
+            <div className="pv-walk" style={{ marginTop: 12 }}><div className="pv-areacap" style={{ margin: 0 }}>Main structure</div><div className="pv-pair">
               <button type="button" className={`pv-pcond${covered ? ' ready' : ' dim'}`} onClick={() => say(covered ? 'On the phone, Review & send opens Post-Inspect.' : 'On the phone, Review & send opens Post-Inspect, which lists what is still left.')}
                 aria-label={covered ? 'Review and send. Everything is covered' : `Review and send: ${left} left`}><b>Review &amp; send</b><small>{covered ? 'Everything covered' : `${left} left`}</small></button>
-              <button type="button" className="pv-pstart" disabled={!nx} onClick={() => { const first = tourOrder[0]; if (first) { setTour(true); enterSys(first); } }}
-                aria-label={nx ? `Guided coverage, picking up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Guided coverage: everything walked'}>
-                <span><b>Guided coverage</b><small>{nx ? `Picks up at ${displayLabel(tile?.label ?? nx.systemLabel)}` : 'Everything walked'}</small></span><i>▶</i></button>
+              {/* THE CONTEXT CAMERA (app 2026-11-17; owner 2026-11-24, w21: "Grey it out and add a note if clicked saying mobile
+                  function only"): the phone's key opens the camera; the preview has none, so it is grey and says so. */}
+              <button type="button" className="pv-pstart pv-mobile" aria-disabled="true" onClick={() => say('Mobile only: on the phone, Shoot opens the camera on the whole house, and you pick a system in the camera.')}
+                aria-label="Shoot the house. Mobile only">
+                <span><b>📷 Shoot the house</b><small>Mobile only</small></span></button>
             </div></div>
           );
         })()}
@@ -513,7 +513,7 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
             <div className="pv-guide">On the phone, Ledrix reads these photos and suggests this system's Details answers for the inspector to confirm; whatever they don't settle is listed under Still needed.</div>
             {/* LAYOUT RULE screen 4 (app 2026-11-15): one equal row — 📷 Shoot (on the phone) · Next into the items. */}
             <div className="pv-nav">
-              <button type="button" className="pv-nb" style={{ flex: 1 }} onClick={() => say('On the phone, Shoot opens the camera for this system.')} aria-label="Shoot (on the phone)">📷 SHOOT</button>
+              <button type="button" className="pv-nb pv-mobile" style={{ flex: 1 }} aria-disabled="true" onClick={() => say('Mobile only: on the phone, Shoot opens the camera for this system.')} aria-label="Shoot. Mobile only">📷 SHOOT</button>
               <button type="button" className="pv-nn" style={{ flex: 1 }} onClick={() => { setOpened(o => ({ ...o, [`photos:${sysId}`]: false })); start(); }} aria-label="Next step">NEXT<Glyph d={G.chevR} size={16} /></button>
             </div>
           </div>
@@ -873,24 +873,19 @@ export function PhonePreview({ tree, selection, onSelect, address = 'Sample insp
     if (screen.kind === 'system' && screen.group !== '__condition__' && !opened[`photos:${screen.systemId}`] && index.allSystems[screen.systemId]) {
       const sysId = screen.systemId, grp = screen.group;
       const parts = [sysId, ...(fold.into === sysId ? folded : [])];
-      const hasPage = parts.some(id => shotsFor(id).length > 0 || (describeBy[id]?.total ?? 0) > 0);
-      const dLeft = parts.reduce((n, id) => n + (describeBy[id]?.left ?? 0), 0);
-      const pool = steps.filter(x => tileOf(x.systemId) === sysId && (!grp || x.tileId === grp));
-      const nextUp = pool.length && !pool.every(stepDone) ? pool[resumeIndex(pool, stepDone, 0)] : null;
-      const gLeft = grp ? allSteps.filter(x => tileOf(x.systemId) === sysId && x.tileId === grp && describedStep(x) && !describedStep(x)!.set).length : 0;
-      const startMeta = grp ? (gLeft ? 'Details to answer' : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done') : hasPage && dLeft ? '✦ Details to answer' : nextUp ? `Walk: ${displayLabel(nextUp.label)}` : 'All done';
+      // The page's name, as the phone's key reads it: the group's label on a group page, else the system's.
+      const grpLabel = grp ? allSteps.find(x => tileOf(x.systemId) === sysId && x.tileId === grp)?.tileLabel : undefined;
+      const pageName = displayLabel(grpLabel ?? sysName(index.allSystems[sysId]!));
       const rows = condRowsOf(sysId, grp), doneN = rows.filter(id => !!cond[id]).length, finds = rows.filter(id => cond[id] === 'fnd').length;
       const condMeta = !rows.length ? 'Nothing yet' : doneN < rows.length ? (doneN ? 'Part reviewed' : 'To review') : finds ? `Finding${finds === 1 ? '' : 's'}` : 'All OK';
       return (
-        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>Guided walk</div><div className="pv-pair">
+        <div className="pv-walk"><div className="pv-areacap" style={{ margin: 0 }}>{pageName}</div><div className="pv-pair">
           <button type="button" className={`pv-pcond${doneN === rows.length && rows.length ? (finds ? ' fnd' : ' ok') : ''}`} onClick={() => { setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' }); }}
             aria-label={`Condition: ${condMeta}. Open`}><b>Condition</b><small>{condMeta}</small></button>
-          <button type="button" className="pv-pstart" aria-label={`Start here: ${startMeta}`} onClick={() => {
-            setTour(false);
-            if (grp ? gLeft > 0 : hasPage) { setOpened(o => ({ ...o, [`photos:${sysId}`]: true })); if (grp) go({ kind: 'system', systemId: sysId }); return; }
-            if (pool.length) { setWalkScope(sysId); openStep(nextUp ?? pool[0]); return; }
-            setCondGrp(grp ?? null); go({ kind: 'system', systemId: sysId, group: '__condition__' });
-          }}><span><b>Start here</b><small>{startMeta}</small></span><i>▶</i></button>
+          {/* THE CONTEXT CAMERA (app 2026-11-17, "Shoot ‹page›"; owner 2026-11-24, w21): grey here — the preview has no camera. */}
+          <button type="button" className="pv-pstart pv-mobile" aria-disabled="true" aria-label={`Shoot ${pageName}. Mobile only`}
+            onClick={() => say(`Mobile only: on the phone, Shoot opens the camera aimed at ${pageName}${grpLabel ? '' : ', and Ledrix fills Details from the photos'}.`)}>
+            <span><b>📷 Shoot {pageName}</b><small>Mobile only</small></span></button>
         </div></div>
       );
     }
@@ -1057,6 +1052,7 @@ const CSS_TEXT = `
 .ldx-pv .pv-pstart{flex:1.25;border:0;background:#217BE8;color:#fff}.ldx-pv .pv-pstart span{display:flex;flex-direction:column}
 .ldx-pv .pv-pcond b,.ldx-pv .pv-pstart b{font-size:12.5px;font-weight:800}.ldx-pv .pv-pcond small{font-size:9.5px;color:#8fa0ad}.ldx-pv .pv-pstart small{font-size:9.5px;color:#d6e7fb}
 .ldx-pv .pv-pstart i{font-style:normal;font-size:14px}
+.ldx-pv .pv-pstart.pv-mobile,.ldx-pv .pv-nb.pv-mobile{background:#1b2328;color:#7d8a91;border:1px solid #26333a;cursor:not-allowed}.ldx-pv .pv-pstart.pv-mobile small{color:#6a777e}
 .ldx-pv .pv-gridkey{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid #26363b;border-radius:8px;color:#c7d0d6}
 .ldx-pv .pv-1count{font-size:12px;font-weight:600;color:#eef2f4;margin:2px 0 4px}
 .ldx-pv .pv-1bar{height:3px;border-radius:2px;background:#2c2c2e;overflow:hidden;margin-bottom:12px}.ldx-pv .pv-1bar i{display:block;height:3px;background:#30d158}
