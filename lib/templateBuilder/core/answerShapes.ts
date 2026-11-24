@@ -38,7 +38,7 @@ export function offeredValues(all: readonly string[], picked: readonly string[],
   if (!Array.isArray(rules) || !rules.length) return [...all];
   const entries = (v: string | null | undefined) => String(v ?? '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
   const anyHits = rules.filter(r => r && typeof r.specNodeId === 'string' && Array.isArray(r.includesAny)
-    && entries(read(r.specNodeId)).some(e => r.includesAny!.some(w => String(w).toLowerCase() === e)));
+    && entries(read(r.specNodeId)).some(e => r.includesAny!.some((w: string) => String(w).toLowerCase() === e)));
   const hit = anyHits.length ? null : rules.find(r => r && typeof r.specNodeId === 'string' && typeof r.equals === 'string' && one(read(r.specNodeId)) === r.equals);
   if (!anyHits.length && !hit) return [...all];
   const allowed = anyHits.length ? anyHits.flatMap(r => [...r.values]) : [...hit!.values];
