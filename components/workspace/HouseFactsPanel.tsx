@@ -38,7 +38,12 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
   useEffect(() => { void load(); }, [load]);
 
   const views = useMemo(() => (state.kind === 'ready' && state.row ? factsView(state.systems, state.values, state.row) : []), [state]);
-  const left = views.filter(v => !v.value).length;
+  // APPLIANCES COUNT AS A QUESTION (w22, 2026-11-23 — the phone's BeforeYouStart): answered once `appliances_asked` is
+  // stamped, by the phone's Continue or by closing the Appliances row here.
+  const applianceCount = state.kind === 'ready' ? applianceItems(state.systems).length : 0;
+  const appliancesAnswered = state.kind === 'ready' && !!state.row?.appliances_asked?.trim();
+  const asked = views.length + (applianceCount ? 1 : 0);
+  const left = views.filter(v => !v.value).length + (applianceCount && !appliancesAnswered ? 1 : 0);
   useEffect(() => { if (state.kind === 'ready') onLeft?.(left); }, [left, state.kind]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.kind === 'loading') return <Card className="xl:col-span-2"><Loading label="Loading the house facts…" /></Card>;
@@ -110,13 +115,26 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
       else setNote({ tone: 'bad', text: r.message });
     } finally { setBusy(false); }
   };
+  /** Closing the opened Appliances row answers the question, as Continue does on the phone: what is lit is here, each one
+   *  off is already marked Not present on its row. Stamped once; an answered job is left alone. */
+  const stampAppliances = async () => {
+    if (appliancesAnswered || !applianceCount) return;
+    setBusy(true);
+    try {
+      const lease = await lock.ensure(); if (!lease) return;
+      const r = await saveFactColumn(row, 'appliances_asked', new Date().toISOString(), lease);
+      if (r.kind === 'saved' || r.kind === 'changed') setState(s => s.kind === 'ready' ? { ...s, row: r.row } : s);
+      else if (r.kind === 'locked') { lock.lost(); setNote({ tone: 'warn', text: 'Your phone has this job open. Use “Edit here instead” to change it here.' }); }
+      else setNote({ tone: 'bad', text: r.message });
+    } finally { setBusy(false); }
+  };
   const appliancesOpen = open === 'appliances';
   const appliancesRow = appliances.length ? (
     <div className={`border-t border-hairline ${appliancesOpen ? 'bg-accent/10' : ''}`}>
       <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
         <span className="text-sm text-body">Appliances</span>
-        <span className="order-3 col-span-2 min-w-0 text-sm font-semibold text-ink sm:order-none sm:col-span-1">{appliancesDisplay(appliances)}</span>
-        {editable ? <button type="button" onClick={() => setOpen(appliancesOpen ? null : 'appliances')} className="text-sm font-semibold text-accent-ink hover:underline">{appliancesOpen ? 'Close' : 'Change'}</button> : <span />}
+        <span className={`order-3 col-span-2 min-w-0 text-sm font-semibold sm:order-none sm:col-span-1 ${appliancesAnswered ? 'text-ink' : 'text-amber-700 dark:text-amber-400'}`}>{appliancesAnswered ? appliancesDisplay(appliances) : 'Not answered'}</span>
+        {editable ? <button type="button" onClick={() => { if (appliancesOpen) { setOpen(null); void stampAppliances(); } else setOpen('appliances'); }} className="text-sm font-semibold text-accent-ink hover:underline">{appliancesOpen ? 'Close' : appliancesAnswered ? 'Change' : 'Answer'}</button> : <span />}
       </div>
       {appliancesOpen ? (
         <div className="px-4 pb-4">
@@ -140,7 +158,7 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
   return (
     <Card title="This house has" className="xl:col-span-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-hairline px-4 py-2.5 text-xs text-muted">
-        <span>{views.length - left} of {views.length} answered · Scope is built from these</span>
+        <span>{asked - left} of {asked} answered · Scope is built from these</span>
         {!canEdit ? <span>View only. You aren’t on this job.</span> : lock.heldBy ? <span>View only while {lock.heldBy} has this job open.</span> : null}
       </div>
       {note ? <div role="status" className={`mx-4 mt-3 rounded-xl px-3 py-2.5 text-sm text-ink ${note.tone === 'warn' ? 'bg-amber-600/10' : 'bg-safety/10'}`}>{note.text}</div> : null}

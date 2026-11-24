@@ -31,7 +31,9 @@ export const EXTRAS_OPTIONS: Record<ExtrasKey, readonly string[]> = {
 /** An absence a pick stands alone with — the app's ABSENCE_PICKS. */
 export const ABSENCE_PICKS = new Set(['No gas service', 'None — all electric', 'None']);
 /** The job row's own fields the page reads and writes. */
-export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null; front_faces: string | null; stories: string | null };
+export type FactsRow = { id: string; row_version: number | null; gas_supply: string | null; water_source: string | null; sewer_type: string | null; garage_type: string | null; front_faces: string | null; stories: string | null;
+  /** When the appliances question was answered (ISO; #134) — the phone's InspectionExtras.appliancesAsked. Null = not answered. */
+  appliances_asked?: string | null };
 
 export type FactView = {
   fact: HouseFact;

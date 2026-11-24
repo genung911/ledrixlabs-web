@@ -77,9 +77,16 @@ function suite() {
     api.includes('if (Number(current.row_version) !== Number(row.row_version)) return { kind: \'changed\', row: current };')
     && api.includes('sync_base_version: row.row_version, sync_device: webDevice(), lease_epoch: lease.epoch'));
   ok('§3 the lock is taken before any save; a type goes through put_inspection_values; recorded work is checked first',
-    panel.includes('const lease = await lock.ensure();') && panel.includes("await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });")
+    (panel.match(/const lease = await lock\.ensure\(\);/g) ?? []).length === 3   // Save, an appliance tap, the appliances stamp (2026-11-23)
+    && panel.includes("await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });")
     && panel.includes('if (blocked.length) { setNote({ tone: \'bad\', text: blockedSentence(blocked) }); return; }'));
   ok('§4 Before you start is first in the menu, with what is left', page.includes("{ id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },\n    { id: 'review',"));
+  // §5 w22 (2026-11-23): the appliances question is answered by the server's appliances_asked, as on the phone
+  ok('§5 the page reads appliances_asked', /COLS = '[^']*appliances_asked'/.test(api));
+  ok('§5 Appliances reads Not answered until stamped, and counts in what is left',
+    panel.includes("appliancesAnswered ? appliancesDisplay(appliances) : 'Not answered'") && panel.includes('+ (applianceCount && !appliancesAnswered ? 1 : 0)'));
+  ok('§5 closing the opened Appliances row stamps it answered, under the lock',
+    panel.includes("if (appliancesOpen) { setOpen(null); void stampAppliances(); }") && panel.includes("saveFactColumn(row, 'appliances_asked', new Date().toISOString(), lease)") && panel.includes('const lease = await lock.ensure(); if (!lease) return;'));
   ok('§4 view only for someone not on the job (and the Office role)', page.includes('canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))}')
     && panel.includes('const editable = canEdit && !lock.heldBy;'));
   return out;
@@ -96,7 +103,10 @@ const MUT = [
   [MODEL, 'recorded work is not protected', '    if (before && !after) out.push(', '    if (false) out.push('],
   [MODEL, 'a house fact is not read as the phone reads house::garage', "Object.keys(HOUSE_KEY).find(k => HOUSE_KEY[k] === (v.target as { key: ExtrasKey }).key)!", '(v.target as { key: ExtrasKey }).key'],
   [API, 'a save does not name its version', 'sync_base_version: row.row_version, ', ''],
-  [PANEL, 'a save skips the lock', '      const lease = await lock.ensure();\n      if (!lease) return;\n', '      const lease = { epoch: 0 };\n'],
+  [PANEL, 'a save skips the lock', "      const lease = await lock.ensure();\n      if (!lease) return;\n      if (v.target.kind === 'extras') {", "      const lease = { epoch: 0 };\n      if (v.target.kind === 'extras') {"],   // anchored on Save (2026-11-23: two saves share the lock lines)
+  [API, 'appliances_asked is not read', ", stories, appliances_asked'", ", stories'"],
+  [PANEL, 'Appliances never reads Not answered', "appliancesAnswered ? appliancesDisplay(appliances) : 'Not answered'", 'appliancesDisplay(appliances)'],
+  [PANEL, 'closing does not stamp', "if (appliancesOpen) { setOpen(null); void stampAppliances(); }", "if (appliancesOpen) { setOpen(null); }"],
   [PAGE, 'anyone can change it', 'canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))}', 'canEdit={true}'],
 ];
 for (const [path, why, a, b] of MUT) {
