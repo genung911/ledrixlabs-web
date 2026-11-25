@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.25.1",
+  "packVersion": "2026.11.25.2",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -14630,6 +14630,11 @@
           "effect": "qualify",
           "phrase": "in the areas entered",
           "line": "Attic partially entered: conditions reported for the attic are for the areas entered."
+        },
+        {
+          "value": "No attic — manufactured home",
+          "effect": "remove",
+          "cause": "No attic — manufactured home"
         }
       ]
     },
