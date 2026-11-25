@@ -43,7 +43,7 @@ function checks(src) {
     && src.includes("await supabase.rpc('claim_my_reports');")
     && src.includes("if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN });"));
   ok('6 an inspector\'s email is told to use another', (src.match(/This email is registered as an inspector\. Use a different email for Ledrix Home\./g) ?? []).length === 2);
-  ok('6 "Claim your home" shows to someone not signed in', src.includes('claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : undefined}'));
+  ok('6 "Claim your home" shows to someone not signed in', src.includes('claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : needAnswer ? '));
   ok('5 no 3D house or sensors on the web', !/SpatialTwinGL|Dollhouse|SensorsLens|sensor_readings/.test(src));
   return out;
 }

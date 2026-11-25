@@ -26,7 +26,50 @@ function PlanCard({ title, price, sub, highlight }: { title: string; price: stri
   );
 }
 
-function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolean; onClose: () => void; signedIn?: boolean; onSubscribe?: () => void }) {
+// ─── "IS THIS HOME YOURS YET?" (owner 2026-11-25, SQL #153; DECISIONS "who holds a home's data") ─────────────────────────
+// Asked before a claim. "Yes, I own it" claims as before; "Not yet — I'm buying it" + the closing date files the claim
+// under a WAITING tenure: the Home Record stays look-only (no repair marking) until "Did you close?".
+type ClaimAnswer = { owned: boolean; closesOn: string | null };
+/** A date input's value (YYYY-MM-DD), `days` from today, in local time. */
+const isoIn = (days: number): string => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+/** "Dec 18, 2026" from a YYYY-MM-DD date — read as a LOCAL day (a UTC read prints the day before in Mountain time). */
+const closingLabel = (iso: string | null | undefined): string => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? '')); if (!m) return '';
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+function ClaimQuestion({ onAnswer, cta = 'Continue' }: { onAnswer: (a: ClaimAnswer) => void; cta?: string }) {
+  const [owned, setOwned] = useState<boolean | null>(null);
+  const [date, setDate] = useState(isoIn(30));
+  const ok = owned === true || (owned === false && /^\d{4}-\d{2}-\d{2}$/.test(date));
+  const opt = (on: boolean, label: string, sub: string, pick: () => void) => (
+    <button type="button" role="radio" aria-checked={on} onClick={pick} style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', cursor: 'pointer',
+      background: CARD, border: `1.5px solid ${on ? ACCENT : BORDER}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
+      <span aria-hidden style={{ width: 18, height: 18, borderRadius: 9, border: `2px solid ${on ? ACCENT : BORDER}`, display: 'grid', placeItems: 'center', flex: 'none', marginTop: 1 }}>
+        {on && <span style={{ width: 8, height: 8, borderRadius: 4, background: ACCENT }} />}</span>
+      <span><span style={{ display: 'block', color: TEXT, fontSize: 14.5, fontWeight: 700 }}>{label}</span><span style={{ display: 'block', color: MED, fontSize: 12, marginTop: 2, lineHeight: 1.45 }}>{sub}</span></span>
+    </button>
+  );
+  return (
+    <div role="radiogroup" aria-label="Is this home yours yet?">
+      <div style={{ color: TEXT, fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Is this home yours yet?</div>
+      {opt(owned === true, 'Yes, I own it', 'The record goes on your account now.', () => setOwned(true))}
+      {opt(owned === false, 'Not yet — I\u2019m buying it', 'You can read everything now. Tracking repairs opens when you close.', () => setOwned(false))}
+      {owned === false && (
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '10px 14px', marginBottom: 8 }}>
+          <span style={{ color: TEXT, fontSize: 14, fontWeight: 600 }}>Closing date</span>
+          <input type="date" value={date} min={isoIn(-60)} max={isoIn(365)} onChange={e => setDate(e.target.value)} aria-label="Closing date"
+            style={{ border: 'none', background: 'none', color: TEXT, fontSize: 14, fontFamily: 'inherit' }} />
+        </label>
+      )}
+      <button type="button" disabled={!ok} onClick={() => ok && onAnswer({ owned: owned === true, closesOn: owned === true ? null : date })}
+        style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700, cursor: ok ? 'pointer' : 'default', opacity: ok ? 1 : 0.45, marginTop: 4 }}>{cta}</button>
+    </div>
+  );
+}
+
+function SubscribeSheet({ open, onClose, signedIn, onSubscribe, answer, onAnswer }: { open: boolean; onClose: () => void; signedIn?: boolean; onSubscribe?: () => void;
+  /** The claim question's answer, held by the page until sign-in; asked first when not signed in (claimable link only). */
+  answer?: ClaimAnswer | null; onAnswer?: (a: ClaimAnswer) => void }) {
   const [email, setEmail] = useState('');
   const [sent,  setSent]  = useState(false);
   const [busy,  setBusy]  = useState(false);
@@ -79,7 +122,9 @@ function SubscribeSheet({ open, onClose, signedIn, onSubscribe }: { open: boolea
             </div>
           </>
         )}
-        {BILLING_ENABLED && signedIn ? (
+        {!signedIn && onAnswer && !answer ? (
+          <ClaimQuestion onAnswer={onAnswer} />
+        ) : BILLING_ENABLED && signedIn ? (
           <button onClick={onSubscribe} style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 15, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Subscribe — {PLAN_BASE_PRICE}/mo</button>
         ) : sent ? (
           <div style={{ padding: '6px 0 2px' }}>
@@ -284,4 +329,5 @@ function LedrixPanel({ open, onClose, shareId, seed }: { open: boolean; onClose:
     </div>
   );
 }
-export { BILLING_ENABLED, PLAN_BASE_PRICE, PLAN_BASE_TOKENS, PLAN_PAYG, PlanCard, SubscribeSheet, InsightSection, LedrixPanel };
+export { isoIn, closingLabel, ClaimQuestion, BILLING_ENABLED, PLAN_BASE_PRICE, PLAN_BASE_TOKENS, PLAN_PAYG, PlanCard, SubscribeSheet, InsightSection, LedrixPanel };
+export type { ClaimAnswer };

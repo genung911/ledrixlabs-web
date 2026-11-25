@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import ValOrbVoice from '@/components/ValOrbVoice';
 import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
@@ -13,7 +13,7 @@ import { ProjectsTab, RemindersTab, MaintainTab, HistoryTab } from './MaintainTa
 import { ReportTab } from './ReportTab';
 import { SystemsTab } from './SystemsTab';
 import { ClaimCard, DocsTab } from './RecordsTab';
-import { SubscribeSheet, LedrixPanel } from './LedrixPanel';
+import { SubscribeSheet, LedrixPanel, ClaimQuestion, closingLabel, isoIn, type ClaimAnswer } from './LedrixPanel';
 import { RepairsTab } from './RepairsTab';
 
 export default function SharePage() {
@@ -73,6 +73,15 @@ export default function SharePage() {
   // resident; a spouse). Once per page load; the server decides everything.
   const [claim, setClaim] = useState<null | { kind: 'claimed' | 'waiting' | 'refused'; text: string }>(null);
   const claimTried = useRef(false);
+  // "IS THIS HOME YOURS YET?" (owner 2026-11-25, SQL #153): the answer is asked before the claim (the claim sheet, or the
+  // Home tab for someone already signed in) and recorded (set_claim_intent) before claiming. A buyer's claim waits for
+  // closing — `buying` holds the date; the page is look-only until "Did you close?" (confirm_closing).
+  const [claimAnswer, setClaimAnswer] = useState<ClaimAnswer | null>(null);
+  const [needAnswer, setNeedAnswer] = useState(false);
+  const [buying, setBuying] = useState<{ closesOn: string | null } | null>(null);
+  const [closeBusy, setCloseBusy] = useState(false);
+  const [newDate, setNewDate] = useState<string | null>(null);
+  const markBuying = (closesOn: string | null) => { setPortalScope('read'); setBuying({ closesOn }); setClaim(null); };
   useEffect(() => {
     const uid = session?.user?.id;
     if (!uid || !shareId || claimTried.current) return;
@@ -81,16 +90,39 @@ export default function SharePage() {
       const inspector = (m?: string) => !!m && /inspector/i.test(m);
       const prof = await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });
       if (inspector(prof.error?.message)) { setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' }); return; }
+      const st0 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
+      if (st0.data?.state === 'home') { setClaim({ kind: 'claimed', text: 'This home is on your account.' }); return; }
+      if (st0.data?.state === 'buying') { markBuying(st0.data.closes_on ?? null); return; }
+      if (canEdit() && PORTAL_TOKEN) {
+        if (!claimAnswer) { setNeedAnswer(true); claimTried.current = false; return; }
+        setNeedAnswer(false);
+        const ir = await supabase.rpc('set_claim_intent', { raw_token: PORTAL_TOKEN, p_owned: claimAnswer.owned, p_closes_on: claimAnswer.owned ? null : claimAnswer.closesOn });
+        if (ir.error) { setClaim({ kind: 'refused', text: ir.error.message || 'Couldn\u2019t record your answer. Try again.' }); claimTried.current = false; return; }
+      }
       const mine = await supabase.rpc('claim_my_reports');
       const homes = Array.isArray(mine.data) ? mine.data : [];
       let viaLink: unknown = null; let linkErr = '';
       if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN }); viaLink = r.data ?? null; linkErr = r.error?.message ?? ''; }
-      if (homes.length || viaLink) setClaim({ kind: 'claimed', text: 'This home is on your account.' });
+      const st1 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
+      if (st1.data?.state === 'buying') markBuying(st1.data.closes_on ?? null);
+      else if (homes.length || viaLink) setClaim({ kind: 'claimed', text: 'This home is on your account.' });
       else if (inspector(linkErr)) setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' });
       else if (!canEdit()) setClaim({ kind: 'refused', text: 'This is a view-only link. Ask for the report’s own link to claim the home.' });
       else setClaim({ kind: 'waiting', text: 'Your claim is waiting: the current owner hands the home over when they move out.' });
     })().catch(() => { claimTried.current = false; });
-  }, [session, shareId]);
+  }, [session, shareId, claimAnswer]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const confirmClosed = async () => {
+    setCloseBusy(true);
+    const r = await supabase.rpc('confirm_closing', { p_share_id: shareId });
+    setCloseBusy(false);
+    if (r.error) { setClaim({ kind: 'refused', text: r.error.message || 'Couldn\u2019t confirm. Try again.' }); return; }
+    if (r.data) { setPortalScope('edit'); setBuying(null); setClaim({ kind: 'claimed', text: 'Congratulations — this home is on your account.' }); }
+    else setClaim({ kind: 'waiting', text: 'Thanks. The seller still holds this home on Ledrix; it moves to you when they hand it over.' });
+  };
+  const moveClosing = async (d: string) => {
+    const r = await supabase.rpc('set_closing_date', { p_share_id: shareId, p_closes_on: d });
+    if (!r.error) { setBuying({ closesOn: d }); setNewDate(null); }
+  };
   useEffect(() => {
     if (!BILLING_ON || !session?.user?.id) { setSubscribed(false); return; }
     supabase.from('home_subscriptions').select('status').eq('user_id', session.user.id).maybeSingle()
@@ -307,14 +339,42 @@ export default function SharePage() {
       {claim && (
         <div role="status" style={{ background: claim.kind === 'claimed' ? '#EAF5EE' : claim.kind === 'waiting' ? '#EEF4FD' : '#FDF0EC', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, fontWeight: 600, padding: '9px 18px', textAlign: 'center' }}>{claim.text}</div>
       )}
-      {!canEdit() && (
+      {buying && (() => {
+        // BUYING (owner 2026-11-25): look-only until closing; on or after the date, "Did you close?".
+        const due = !!buying.closesOn && buying.closesOn <= isoIn(0);
+        const btn = (primary: boolean): CSSProperties => ({ border: primary ? 'none' : `1px solid ${BORDER}`, background: primary ? ACCENT : CARD, color: primary ? '#fff' : TEXT,
+          borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' });
+        return (
+          <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: TEXT, padding: '11px 18px', textAlign: 'center' }}>
+            {due ? <>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Did you close on {record.address ?? 'this home'}?</div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                <button disabled={closeBusy} onClick={confirmClosed} style={btn(true)}>{closeBusy ? 'Confirming…' : 'Yes, I closed'}</button>
+                <button onClick={() => setNewDate(isoIn(14))} style={btn(false)}>Not yet</button>
+              </div>
+            </> : <>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>You&apos;re buying this home{buying.closesOn ? ` · closes ${closingLabel(buying.closesOn)}` : ''}</div>
+              <div style={{ fontSize: 12.5, color: MED, marginTop: 3 }}>You can read everything. Tracking repairs and upkeep opens when you close. <button onClick={() => setNewDate(buying.closesOn ?? isoIn(14))} style={{ background: 'none', border: 'none', color: ACCENT, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>Change date</button></div>
+            </>}
+            {newDate !== null && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                <input type="date" value={newDate} min={isoIn(-60)} max={isoIn(365)} onChange={e => setNewDate(e.target.value)} aria-label="New closing date"
+                  style={{ border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 8px', fontSize: 13, background: CARD, color: TEXT }} />
+                <button onClick={() => newDate && moveClosing(newDate)} style={btn(true)}>Save date</button>
+                <button onClick={() => setNewDate(null)} style={btn(false)}>Cancel</button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      {!canEdit() && !buying && (
         <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
           View-only link — you can look, but changes are turned off.
         </div>
       )}
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix}
-        claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : undefined} />}
+        claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : needAnswer ? <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 14 }}><ClaimQuestion cta="Claim my home" onAnswer={setClaimAnswer} /></div> : undefined} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
       {(tab === 'systems' || tab === 'specs') && <SystemsTab record={record} anomalies={anomalies} onAllFindings={() => go('findings')} />}
       {tab === 'maintain'  && <MaintainTab reminders={reminders} log={log} projects={projects} repairs={repairs} anomalies={anomalies} record={record} shareId={shareId} access={access} onUnlock={() => setSubOpen(true)}
@@ -355,7 +415,8 @@ export default function SharePage() {
           </div>
         </div>
       )}
-      <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} signedIn={!!session} onSubscribe={startCheckout} />
+      <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} signedIn={!!session} onSubscribe={startCheckout}
+        answer={claimAnswer} onAnswer={canEdit() && PORTAL_TOKEN ? setClaimAnswer : undefined} />
       <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
     </div>
   );
