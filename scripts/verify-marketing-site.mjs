@@ -9,20 +9,22 @@
 //   6 Pricing shows no price, and its button is no link while APP_STORE_URL is null
 //   7 every image a marketing page names exists in public/, so the site can't ship with a missing screenshot
 //   8 no hardware on the site: nothing says Sensors (manifesto)
+//  10 Privacy and Terms: the Δ mark and readable body text (owner 2026-11-24, w8 "Fix these")
 //   9 the sample links share one real share token (the old report token matched no home)
 // Mutants change an in-memory copy; nothing on disk is edited.
 import fs from 'fs';
 import path from 'path';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const F = p => fs.readFileSync(path.join(root, p), 'utf8');
-const PAGES = ['app/page.tsx', 'app/inspect/page.tsx', 'app/home/page.tsx', 'app/about/page.tsx', 'app/ethix/page.tsx', 'app/app/login/page.tsx',
+const PAGES = ['app/privacy/page.tsx', 'app/terms/page.tsx', 'app/page.tsx', 'app/inspect/page.tsx', 'app/home/page.tsx', 'app/about/page.tsx', 'app/ethix/page.tsx', 'app/app/login/page.tsx',
   ...fs.readdirSync(path.join(root, 'components/marketing')).filter(f => f.endsWith('.tsx')).map(f => 'components/marketing/' + f)];
 const SRC = Object.fromEntries(PAGES.map(p => [p, F(p)]));
 // Code only: drop // and /* */ comments so a comment that explains a change can't fail (or pass) a check.
 const code = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 function checks(S, exists = p => fs.existsSync(path.join(root, 'public', p))) {
   const out = []; const ok = (n, v) => out.push([n, !!v]);
-  const all = Object.values(S).map(code).join('\n');
+  // The legal pages disclose what the app can collect (voice sessions included); they are checked only by check 10.
+  const all = Object.entries(S).filter(([k]) => !/^app\/(privacy|terms)\//.test(k)).map(([, v]) => code(v)).join('\n');
   ok('1 no voice or VAL promise on the public pages', !/\bby voice\b|\bvoice\b|\bVAL\b|you talk/i.test(all));
   ok('2 no Request a demo, and Start goes to #pricing',
     !/Request a demo|#demo\b/.test(all)
@@ -52,9 +54,14 @@ function checks(S, exists = p => fs.existsSync(path.join(root, 'public', p))) {
   const tok = f => (f.match(/const SAMPLE_PORTAL_ID = '([0-9a-f]{32})';/) ?? [])[1];
   ok('9 both sample links use one share token (32 hex), and the report link is built from it',
     !!tok(sd) && tok(sd) === tok(fh) && sd.includes('const SAMPLE_WEB_REPORT_URL = `/share/${SAMPLE_PORTAL_ID}?tab=report`;'));
+  const legal = [S['app/privacy/page.tsx'], S['app/terms/page.tsx']];
+  ok('10 Privacy and Terms carry the Ledrix Δ mark and readable body text (not the old LX logo, not #555 on near-black)',
+    legal.every(l => l.includes('<LedrixDelta size={22} sheen />') && !l.includes('/logo.png') && l.includes("fontSize: 14, color: '#B4BCC4', lineHeight: 1.8")));
   return out;
 }
 const MUT = [
+  ['app/terms/page.tsx', "fontSize: 14, color: '#B4BCC4', lineHeight: 1.8", "fontSize: 14, color: '#555', lineHeight: 1.8", 'the Terms body goes back to dark grey'],
+  ['app/privacy/page.tsx', '<LedrixDelta size={22} sheen />', '<Image src="/logo.png" alt="Ledrix" width={80} height={40} />', 'Privacy shows the old LX logo again'],
   ['components/marketing/ForHomeowners.tsx', "const SAMPLE_PORTAL_ID = '3278d9ad528e73043203892cdfee2fb2';", "const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';", 'the homeowners link drifts to another sample'],
   ['components/marketing/SampleDeliverables.tsx', 'const SAMPLE_WEB_REPORT_URL = `/share/${SAMPLE_PORTAL_ID}?tab=report`;', "const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report';", 'the report link goes back to a token that matches no home'],
   ['components/marketing/VisionManifesto.tsx', 'You shoot, Ledrix fills in the details', 'You look, you talk, you confirm', 'the opener promises voice again'],

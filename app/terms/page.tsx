@@ -1,5 +1,7 @@
+// 2026-11-24 (owner, w8 "Fix these"): the Ledrix Δ mark in place of the old LX logo, and readable greys on the
+// near-black page (the body text was #555 on #080808, hard to read on a phone). Nothing else changed.
 import Link from 'next/link';
-import Image from 'next/image';
+import { LedrixDelta } from '@/components/LedrixDelta';
 
 export default function TermsOfService() {
   return (
@@ -9,9 +11,9 @@ export default function TermsOfService() {
         padding: '20px 40px', borderBottom: '1px solid #111',
       }}>
         <Link href="/">
-          <Image src="/logo.png" alt="Ledrix" width={80} height={40} style={{ objectFit: 'contain' }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><LedrixDelta size={22} sheen /><span style={{ color: '#fff', fontSize: 16, fontWeight: 800 }}>Ledrix</span></span>
         </Link>
-        <Link href="/" style={{ color: '#555', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>← BACK</Link>
+        <Link href="/" style={{ color: '#9AA3AC', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>← BACK</Link>
       </nav>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '80px 24px' }}>
@@ -19,7 +21,7 @@ export default function TermsOfService() {
           LEGAL
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Terms of Service</h1>
-        <p style={{ color: '#333', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
+        <p style={{ color: '#8A939C', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
           Effective Date: January 1, 2026 · Last Updated: October 19, 2026 · Ledrix Labs
         </p>
 
@@ -99,14 +101,14 @@ export default function TermsOfService() {
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: '#fff' }}>{s.title}</h2>
-            <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{s.body}</p>
+            <p style={{ fontSize: 14, color: '#B4BCC4', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{s.body}</p>
           </div>
         ))}
       </main>
 
       <footer style={{ borderTop: '1px solid #0d0d0d', padding: '24px 40px', textAlign: 'center' }}>
-        <span style={{ color: '#222', fontSize: 11, fontFamily: 'Roboto Mono, monospace' }}>
-          © 2026 Ledrix Labs · <Link href="/privacy" style={{ color: '#333', textDecoration: 'none' }}>Privacy Policy</Link>
+        <span style={{ color: '#6F7880', fontSize: 11, fontFamily: 'Roboto Mono, monospace' }}>
+          © 2026 Ledrix Labs · <Link href="/privacy" style={{ color: '#8A939C', textDecoration: 'none' }}>Privacy Policy</Link>
         </span>
       </footer>
     </div>
