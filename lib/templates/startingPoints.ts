@@ -14,6 +14,7 @@
 //     "compliant" — a template does not satisfy a standard because it is recommended;
 //   · association MEMBERSHIP and standards FOLLOWED are separate answers; both are the company's own declaration;
 //   · no individual credential is asked for here — an inspector's license stays on that inspector's profile.
+import { LEDRIX_GATES } from '@/lib/templates/limitationModel';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { CompanyContext, InspectionType, LiveTemplate } from './api';
 import { isCovered } from './editorModel';
@@ -195,7 +196,7 @@ export function buildStarterTree(kind: StartKind, tree: InspectionTemplate, sour
   if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });
   if (plan.condo && c.associationPremark) fields.push({ op: 'setTemplateField', field: 'associationNotInspected', value: [...ASSOCIATION_SYSTEMS] });
   // Manufactured (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG): its two foundation types and the no-attic reason.
-  if (plan.kinds.includes('manufactured')) fields.push(...manufacturedExtrasOps(base));
+  if (plan.kinds.includes('manufactured')) fields.push(...manufacturedExtrasOps(base, LEDRIX_GATES));
   const all = [...r.ops, ...fields];
   if (!all.length) return { ok: true, tree: base };
   const rep = validateOps(base, all);

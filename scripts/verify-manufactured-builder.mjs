@@ -14,12 +14,12 @@ const rd = p => readFileSync(join(ROOT, p), 'utf8');
 const SRC = { sp: rd('lib/templates/startingPoints.ts'), hk: rd('components/templates/HomeKinds.tsx'), ep: rd('components/templates/EditorParts.tsx'), sh: rd('components/templates/SpecialHomesPanel.tsx') };
 function checks(S) {
   const out = []; const ok = (n, v) => out.push([n, !!v]);
-  ok('1 a new Manufactured template gets the extras', /if \(plan\.kinds\.includes\('manufactured'\)\) fields\.push\(\.\.\.manufacturedExtrasOps\(base\)\);/.test(S.sp)
-    && S.sp.indexOf('manufacturedExtrasOps(base)') < S.sp.indexOf('const all = [...r.ops, ...fields];'));
-  ok('2 ticking Manufactured adds the extras with its checkpoints', /const extras = pending\.added\.includes\('manufactured'\) \? manufacturedExtrasOps\(tree\) : \[\];/.test(S.hk)
+  ok('1 a new Manufactured template gets the extras', /if \(plan\.kinds\.includes\('manufactured'\)\) fields\.push\(\.\.\.manufacturedExtrasOps\(base, LEDRIX_GATES\)\);/.test(S.sp)
+    && S.sp.indexOf('manufacturedExtrasOps(base, LEDRIX_GATES)') < S.sp.indexOf('const all = [...r.ops, ...fields];'));
+  ok('2 ticking Manufactured adds the extras with its checkpoints', /const extras = pending\.added\.includes\('manufactured'\) \? manufacturedExtrasOps\(tree, LEDRIX_GATES\) : \[\];/.test(S.hk)
     && S.hk.includes('onOps([...pending.fields, ...r.ops, ...extras])'));
-  ok('3 Apply shows only for a Manufactured template with something missing', S.hk.includes("{!pending && now.includes('manufactured') && manufacturedExtrasOps(tree).length > 0 ? ("));
-  ok('3 Apply applies the extras', S.hk.includes('onClick={() => onOps(manufacturedExtrasOps(tree))}>Apply manufactured updates</button>'));
+  ok('3 Apply shows only for a Manufactured template with something missing', S.hk.includes("{!pending && now.includes('manufactured') && manufacturedExtrasOps(tree, LEDRIX_GATES).length > 0 ? ("));
+  ok('3 Apply applies the extras', S.hk.includes('onClick={() => onOps(manufacturedExtrasOps(tree, LEDRIX_GATES))}>Apply manufactured updates</button>'));
   ok('4 the banner sits at the top of every system', /<div className="space-y-5 px-4 py-4">[\s\S]{0,200}<SpecialHomesBanner tree=\{tree\} system=\{system\}/.test(S.ep));
   ok('4 the banner lists only held checkpoints of the template\'s own kinds', S.sh.includes('specialRows(tree, system, source).filter(r => own.has(r.kind) && r.inTemplate)'));
   ok('4 the banner names the kind and count', S.sh.includes("manufactured: 'Manufactured home'") && S.sh.includes("{BANNER_NOUN[k.id]} · {mine.length} item{mine.length === 1 ? '' : 's'}"));
@@ -29,12 +29,14 @@ const base = checks(SRC); let fail = 0;
 for (const [n, v] of base) { console.log(`${v ? '✓' : '✗'} ${n}`); if (!v) fail++; }
 const mut = (label, key, a, b) => ({ label, key, a, b });
 const mutants = [
-  mut('new templates skip the extras', 'sp', "  if (plan.kinds.includes('manufactured')) fields.push(...manufacturedExtrasOps(base));\n", ''),
+  mut('new templates skip the extras', 'sp', "  if (plan.kinds.includes('manufactured')) fields.push(...manufacturedExtrasOps(base, LEDRIX_GATES));\n", ''),
   mut('extras on every new template', 'sp', "if (plan.kinds.includes('manufactured')) fields.push", 'if (true) fields.push'),
   mut('ticking Manufactured drops the extras', 'hk', 'onOps([...pending.fields, ...r.ops, ...extras])', 'onOps([...pending.fields, ...r.ops])'),
-  mut('Apply always shown', 'hk', " && manufacturedExtrasOps(tree).length > 0 ? (", ' ? ('),
+  mut('Apply always shown', 'hk', " && manufacturedExtrasOps(tree, LEDRIX_GATES).length > 0 ? (", ' ? ('),
   mut('Apply on any template', 'hk', "{!pending && now.includes('manufactured') && ", '{!pending && '),
-  mut('Apply does nothing', 'hk', 'onClick={() => onOps(manufacturedExtrasOps(tree))}', 'onClick={() => onOps([])}'),
+  mut('new templates lose the attic situation', 'sp', 'manufacturedExtrasOps(base, LEDRIX_GATES)', 'manufacturedExtrasOps(base)'),
+  mut('Apply loses the attic situation', 'hk', 'onClick={() => onOps(manufacturedExtrasOps(tree, LEDRIX_GATES))}', 'onClick={() => onOps(manufacturedExtrasOps(tree))}'),
+  mut('Apply does nothing', 'hk', 'onClick={() => onOps(manufacturedExtrasOps(tree, LEDRIX_GATES))}', 'onClick={() => onOps([])}'),
   mut('banner removed', 'ep', '<SpecialHomesBanner tree={tree} system={system}', '<SpecialHomesPanel tree={tree} system={system}'),
   mut('banner lists offered (not held) checkpoints', 'sh', '&& r.inTemplate)', ')'),
   mut('banner shows every kind', 'sh', 'filter(r => own.has(r.kind) && r.inTemplate)', 'filter(r => r.inTemplate)'),

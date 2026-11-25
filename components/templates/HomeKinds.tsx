@@ -6,6 +6,7 @@
 //   · ADDING a kind lists its checkpoints, ticked, and adds the ticked ones with the field change as ONE change set;
 //   · REMOVING a kind asks: switch its checkpoints off (templates never delete an item — it moves to the Off list), or
 //     keep them as ordinary items. Either way the field change and the checkpoints are one change set, one undo.
+import { LEDRIX_GATES } from '@/lib/templates/limitationModel';
 import { useEffect, useMemo, useState } from 'react';
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
@@ -63,7 +64,7 @@ export function HomeKindsCard({ tree, onOps, disabled }: { tree: InspectionTempl
     const r = starterOps(tree, ids, source);
     if (!r.ok) { setProblem(r.error); return; }
     // Manufactured added (owner 2026-11-25): its two foundation types and the no-attic reason come with it.
-    const extras = pending.added.includes('manufactured') ? manufacturedExtrasOps(tree) : [];
+    const extras = pending.added.includes('manufactured') ? manufacturedExtrasOps(tree, LEDRIX_GATES) : [];
     if (onOps([...pending.fields, ...r.ops, ...extras])) setPending(null);
   };
   const applyRemove = (off: boolean) => {
@@ -82,10 +83,10 @@ export function HomeKindsCard({ tree, onOps, disabled }: { tree: InspectionTempl
       {/* APPLY MANUFACTURED UPDATES (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG): a Manufactured template made before
           the two foundation types and the no-attic reason existed gets them in one tap — added to its own lists, nothing
           it changed is touched. Gone once applied. */}
-      {!pending && now.includes('manufactured') && manufacturedExtrasOps(tree).length > 0 ? (
+      {!pending && now.includes('manufactured') && manufacturedExtrasOps(tree, LEDRIX_GATES).length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2.5">
           <p className="min-w-0 text-sm text-ink"><b>Manufactured updates</b><span className="block text-xs text-muted">Adds the foundation types Piers &amp; Tie-Downs and Permanent Foundation, and the attic reason “No attic — manufactured home”. Everything you changed stays.</span></p>
-          <button type="button" className={btn.primary + ' px-3 py-1.5'} disabled={disabled} onClick={() => onOps(manufacturedExtrasOps(tree))}>Apply manufactured updates</button>
+          <button type="button" className={btn.primary + ' px-3 py-1.5'} disabled={disabled} onClick={() => onOps(manufacturedExtrasOps(tree, LEDRIX_GATES))}>Apply manufactured updates</button>
         </div>
       ) : null}
       <div>

@@ -331,10 +331,19 @@ export const MANUFACTURED_FOUNDATION_TYPES: readonly string[] = ['Piers & Tie-Do
 /** The Attic Access limitation a Manufactured template carries ready: the report reads "Not inspected. No attic — …". */
 export const MANUFACTURED_NO_ATTIC = 'No attic — manufactured home';
 
+/** A gate as this module needs it (gates.ts's Gate, structurally — this module imports no runtime code). */
+type GateLike = { id: string; reasons: { value: string; effect: string; cause?: string }[]; removed?: true };
+/** The Attic access situation's id (the pack's gate on the Attic Access row). */
+export const ATTIC_GATE_ID = 'attic_access';
+
 /** The ops that give a Manufactured template its two foundation types and the no-attic reason — only what is missing,
  *  appended to the template's own lists (never replacing them), so it is safe to run again (Apply manufactured updates).
- *  Empty when there is nothing to add or the template holds neither item. */
-export function manufacturedExtrasOps(tpl: InspectionTemplate): TemplateOp[] {
+ *  Empty when there is nothing to add or the template holds neither item.
+ *  The reason is offered on the Attic Access row (`limitations`) AND is a reason of the Attic access situation that takes
+ *  the whole attic off, like No Access (owner 2026-11-25 on the website: "I do not see that limitation" — Attic ›
+ *  Limitations shows the situation). A template's own gate entry replaces Ledrix's whole gate (effectiveGates), so the
+ *  entry written is the one in effect (the template's, else `ledrixGates`') plus the reason, keeping every other entry. */
+export function manufacturedExtrasOps(tpl: InspectionTemplate, ledrixGates: readonly GateLike[] = []): TemplateOp[] {
   const ops: TemplateOp[] = [];
   const node = (id: string): TemplateNode | null => {
     let hit: TemplateNode | null = null;
@@ -351,6 +360,16 @@ export function manufacturedExtrasOps(tpl: InspectionTemplate): TemplateOp[] {
   const aa = node('attic_access');
   const lims = aa && Array.isArray((aa as { limitations?: unknown }).limitations) ? (aa as { limitations: string[] }).limitations : null;
   if (aa && lims && !lims.includes(MANUFACTURED_NO_ATTIC)) ops.push({ op: 'setNodeField', nodeId: aa.id, field: 'limitations', value: [...lims, MANUFACTURED_NO_ATTIC] });
+  if (aa) {
+    const own: GateLike[] = Array.isArray((tpl as { gates?: unknown }).gates) ? (tpl as unknown as { gates: GateLike[] }).gates : [];
+    const mine = own.find(g => g.id === ATTIC_GATE_ID);
+    const gate = mine ? (mine.removed ? null : mine) : ledrixGates.find(g => g.id === ATTIC_GATE_ID) ?? null;
+    if (gate && Array.isArray(gate.reasons) && !gate.reasons.some(r => r.value === MANUFACTURED_NO_ATTIC)) {
+      const next = { ...gate, reasons: [...gate.reasons, { value: MANUFACTURED_NO_ATTIC, effect: 'remove', cause: MANUFACTURED_NO_ATTIC }] };
+      const list = mine ? own.map(g => (g.id === ATTIC_GATE_ID ? next : g)) : [...own, next];
+      ops.push({ op: 'setTemplateField', field: 'gates', value: list });
+    }
+  }
   return ops;
 }
 

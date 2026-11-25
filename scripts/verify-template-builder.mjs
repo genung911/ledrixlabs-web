@@ -143,6 +143,10 @@ const sourceFiles = () => Object.fromEntries([
   ['scope/taxonomy/houseFacts.ts', read('lib/scope/core/taxonomy/houseFacts.ts')],   // 2026-11-13: whatsHere imports it
   ['scope/taxonomy/instances.ts', read('lib/scope/core/taxonomy/instances.ts')],
   ['scope/taxonomy/applicability.ts', read('lib/scope/core/taxonomy/applicability.ts')],
+  // 2026-11-25 (manufactured): startingPoints passes Ledrix's access situations to manufacturedExtrasOps.
+  ['limitationModel.ts', read('lib/templates/limitationModel.ts')],
+  ['scope/taxonomy/gates.ts', read('lib/scope/core/taxonomy/gates.ts')],
+  ['scope/taxonomy/ledrix.core.json', read('lib/scope/core/taxonomy/ledrix.core.json')],
 ]);
 
 const clone = x => JSON.parse(JSON.stringify(x));
