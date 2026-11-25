@@ -1,10 +1,9 @@
 'use client';
 
-// §2 — the inspection pipeline, as a staggered 3-step reveal. Capture → Draft &
-// Confirm → Deliver. Draft and Confirm are ONE step: Ledrix proposes, the inspector
-// confirms (the human-in-the-loop truth engine — the middle tile, gently highlighted).
-// Equal-height cards on one uniform image frame; the photo fills (cover) while the two
-// UI screens are contained (nothing crops), so the mismatched sizes stay balanced.
+// §2 — the inspection pipeline, as a staggered 4-step reveal (owner 2026-11-24, mockup PAVcpwJ9d4gDpC17efHUJ7: "Four
+// steps, not 3"). Shoot → Details fill in → Findings → Review & send. Step 2 is the one gently highlighted: photos doing
+// the data entry is what sets Ledrix apart, and the inspector approves every page (the human-in-the-loop truth engine).
+// Screenshots: one test job at a test address, never a client's (public/screenshots/site-2026-11/).
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -25,29 +24,37 @@ const STEPS: Array<{
 }> = [
   {
     n: '01',
-    img: '/screenshots/capture-water-heater.jpg',
+    img: '/screenshots/site-2026-11/s1-camera.jpg',
     fit: 'contain',
-    title: 'Capture',
-    body: 'Point your camera. Ledrix Vision reads the structure the way you do — roof to crawlspace.',
+    title: 'Shoot',
+    body: 'Photograph it the way you already do. One camera, three shutters — Coverage, Finding and Limitation — and each photo lands on the system in front of you.',
     icon: (
       <path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L18 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
     ),
   },
   {
     n: '02',
-    img: '/screenshots/finding-flue.jpg',
+    img: '/screenshots/site-2026-11/s2-details.jpg',
     fit: 'contain',
-    title: 'Draft & Confirm',
-    body: 'Ledrix Intelligence drafts the finding from what you shoot and say; you stay the source of truth — Confirm, Adjust, or Reject, by tap or by voice.',
+    title: 'Details fill in',
+    body: 'Ledrix reads the data plate — brand, fuel, capacity, age — fills the details from your photos, and asks only what it couldn’t see. You approve the page.',
     icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3Z M9.5 11.5l1.8 1.8 3.4-3.6" />,
     featured: true,
   },
   {
     n: '03',
-    img: '/screenshots/finalize-delivery.jpg',
+    img: '/screenshots/site-2026-11/s3-finding.jpg',
     fit: 'contain',
-    title: 'Deliver',
-    body: 'It compiles into a clean, professional PDF and a client home portal — before you leave the driveway.',
+    title: 'Findings',
+    body: 'Ledrix drafts the finding from what it sees and files it to the right system. You stay the source of truth — Confirm, Adjust, or Reject every one.',
+    icon: <path d="M5 21V4 M5 4h11l-2 4 2 4H5" />,
+  },
+  {
+    n: '04',
+    img: '/screenshots/site-2026-11/s4-review-send.jpg',
+    fit: 'contain',
+    title: 'Review & send',
+    body: 'A full report and a summary — a professional PDF and a live home portal for your client, sent before you leave the driveway.',
     icon: <path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4Z M9 13l2 2 4-4" />,
   },
 ];
@@ -59,7 +66,7 @@ export function HowItWorks() {
         <SectionHeading
           eyebrow="How it works"
           title="From the photo to the report, in one pass."
-          sub="Ledrix suggests, you decide. The human-in-the-loop truth engine is the product, not a setting. Nothing makes it to the report without a human in the loop."
+          sub="Ledrix suggests, you decide. Nothing reaches the report until you’ve confirmed it."
         />
 
         <motion.ol
@@ -67,7 +74,7 @@ export function HowItWorks() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
-          className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3"
+          className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4"
         >
           {STEPS.map((s) => (
             <motion.li
@@ -82,8 +89,8 @@ export function HowItWorks() {
             >
 
               {/* screenshot — uniform light stage; every step's screen sits in the same phone bezel. */}
-              <div className="relative mb-6 flex h-[26rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee] sm:h-[30rem] lg:h-[34rem] xl:h-[38rem]">
-                <PhoneBezel className="aspect-[9/19.5] h-[24.5rem] sm:h-[28.5rem] lg:h-[32.5rem] xl:h-[36.5rem]">
+              <div className="relative mb-6 flex h-[26rem] w-full items-center justify-center overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-[#eef2f5] to-[#e2e8ee] sm:h-[30rem] lg:h-[34rem] xl:h-[30rem]">
+                <PhoneBezel className="aspect-[9/19.5] h-[24.5rem] sm:h-[28.5rem] lg:h-[32.5rem] xl:h-[28rem]">
                   <Image
                     src={s.img}
                     alt={s.title}
@@ -92,7 +99,7 @@ export function HowItWorks() {
                       'transition-transform duration-500 group-hover:scale-[1.03]',
                       s.fit === 'cover' ? 'object-cover object-[50%_35%]' : 'object-contain',
                     ].join(' ')}
-                    sizes="(min-width: 1280px) 270px, (min-width: 1024px) 240px, (min-width: 640px) 210px, 185px"
+                    sizes="(min-width: 1280px) 230px, (min-width: 1024px) 250px, (min-width: 640px) 210px, 185px"
                   />
                 </PhoneBezel>
               </div>

@@ -10,9 +10,11 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { PhoneBezel } from './PhoneBezel';
 
-const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';   // the featured sample home (128 Eval House Ct)
+// 2026-11-24 (owner: "make a new sample or use this one"): the featured sample is 123 Test St, by its share_token —
+// the old SAMPLE_WEB_REPORT token matched no home. Re-sealing the same job with more findings refreshes it, same link.
+const SAMPLE_PORTAL_ID = '3278d9ad528e73043203892cdfee2fb2';   // the featured sample home (123 Test St)
 // The Web Report tile deep-links the same home's tokenized share URL straight to its Reports view.
-const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report';
+const SAMPLE_WEB_REPORT_URL = `/share/${SAMPLE_PORTAL_ID}?tab=report`;
 
 const PORTAL_POINTS = [
   'The living portal your buyer keeps — every finding in plain language.',
@@ -20,7 +22,8 @@ const PORTAL_POINTS = [
   'Tap any finding: repair videos, Ask Ledrix, and top-rated local pros where they fit.',
 ];
 const PDF_POINTS = [
-  'An at-a-glance summary, then every finding grouped by system.',
+  'A full report and a one-page summary for the agent.',
+  'Every finding grouped by system, then component.',
   'Every finding backed by the inspector’s own timestamped photos.',
   'Checklists built from your company’s own template — no generic noise.',
   'Verified and signed by the inspector.',
@@ -76,7 +79,7 @@ export function SampleDeliverables() {
             <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-8 sm:p-10">
               <PhoneBezel className="aspect-[1000/2053] w-full max-w-[220px] transition-transform duration-500 group-hover:scale-[1.03] sm:max-w-[260px] lg:max-w-[300px]">
                 <Image
-                  src="/sample-home-portal.jpg"
+                  src="/screenshots/site-2026-11/s7-share-page.jpg"
                   alt="The live Ledrix client home portal"
                   fill
                   className="object-contain"
@@ -106,7 +109,7 @@ export function SampleDeliverables() {
             <div className="relative flex justify-center overflow-hidden bg-[#e2e8ee] p-8 sm:p-10">
               <div className="relative aspect-[772/1000] w-full max-w-[220px] overflow-hidden rounded-md shadow-[0_14px_34px_-16px_rgba(10,15,20,0.4)] ring-1 ring-black/10 transition-transform duration-500 group-hover:scale-[1.03] sm:max-w-[260px] lg:max-w-[300px]">
                 <Image
-                  src="/sample-pdf-cover.jpg"
+                  src="/screenshots/site-2026-11/s6-report-cover.jpg"
                   alt="The Ledrix inspection report cover page"
                   fill
                   className="object-contain"

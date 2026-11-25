@@ -10,11 +10,11 @@ import { SectionHeading } from './ui/SectionHeading';
 const FAQS = [
   {
     q: 'What is Ledrix?',
-    a: 'Ledrix is an AI-assisted platform for home inspectors. It drafts a structured finding the moment you capture a photo — system, location, priority, and the spec behind it — then compiles a clean, professional PDF and a live client home portal. You inspect the house; Ledrix handles the write-up.',
+    a: 'Ledrix is an AI-assisted platform for home inspectors. Photos of the equipment fill in the details — brand, fuel, capacity, age — for you to approve, and a Finding photo becomes a drafted finding with its system, location and priority. Then Ledrix compiles a clean, professional PDF and a live client home portal. You inspect the house; Ledrix handles the write-up.',
   },
   {
     q: 'Does Ledrix replace the inspector?',
-    a: 'No — and it never will. Ledrix proposes; you decide. Every finding passes through your Confirm, Adjust, or Reject review before it goes anywhere. That human-in-the-loop review is the core of the product, not an optional setting — nothing ships that you did not sign off on.',
+    a: 'No — and it never will. Ledrix proposes; you decide. Every finding passes through your Confirm, Adjust, or Reject review — one tap — before it goes anywhere. That human-in-the-loop review is the core of the product, not an optional setting — nothing ships that you did not sign off on.',
   },
   {
     q: 'How accurate is the AI?',
@@ -26,7 +26,7 @@ const FAQS = [
   },
   {
     q: 'What devices does it run on?',
-    a: 'iPhone today, with Android on the roadmap. Ledrix runs on a cloud-baseline AI architecture, so every device — new or old — shares the same intelligence. No special hardware required.',
+    a: 'iPhone today, with Android on the roadmap. Ledrix runs on a cloud-baseline AI architecture, so every device — new or old — shares the same intelligence. No special hardware required. Office work — templates, inspections, reports and invoices — also runs on the website.',
   },
   {
     q: 'How does the client Home Portal work?',
@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: 'Does it catch duplicate or overlapping findings?',
-    a: 'Yes. After analysis, Ledrix automatically flags likely duplicate photos and related findings across your inspection for you to review — never merged silently. You decide what combines and what stays separate. (This is photo/finding-level review, not automatic detection of separate physical equipment — that stays a judgment call for the inspector.)',
+    a: 'Yes. When the same issue turns up in more than one place, Ledrix shows it as one row and asks: Merge into one, or Keep separate. Nothing merges without you.',
   },
   {
     q: 'Who owns my data, and is it secure?',
@@ -42,7 +42,7 @@ const FAQS = [
   },
   {
     q: 'Can my whole team use it?',
-    a: 'Yes. Bring your whole crew onto one company account — owners, managers, office staff, and inspectors each get the right level of access, with templates and settings synced across everyone. Want to see it with your team? Request a demo below.',
+    a: 'Yes. Bring your whole crew onto one company account — owners, managers, office staff, and inspectors each get the right level of access, with templates and settings synced across everyone. Ready to start? See Start below.',
   },
 ];
 

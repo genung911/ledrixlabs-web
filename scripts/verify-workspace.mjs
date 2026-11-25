@@ -213,7 +213,8 @@ for (const [name, rule] of Object.entries(RULES)) { const bad = rule(srcs); ok(n
   ok('Navbar renders Sign in from the prop (desktop + mobile)', (nav.match(/\{signInHref && \(/g) ?? []).length === 2);
   const others = ['app/page.tsx', 'app/home/page.tsx', 'app/about/page.tsx', 'app/ethix/page.tsx'].filter(p => existsSync(join(ROOT, p)) && /signInHref/.test(read(p)));
   ok('Sign in link not on non-Inspect pages', others.length === 0, others.join(', '));
-  ok('Request a demo CTA still present', /Request a demo/.test(nav));
+  // 2026-11-24 (owner: "Pricing start, no demo anymore"): the nav's CTA is Start → /inspect#pricing, not Request a demo.
+  ok('Start CTA present (Request a demo retired)', nav.includes("ctaHref = '/inspect#pricing', ctaLabel = 'Start'") && !/Request a demo/.test(nav));
   // 2026-10-21: one vocabulary with the phone, and the permanent banner replaced by the sync line.
   const shell = read('components/workspace/WorkspaceShell.tsx');
   const labels = [...shell.matchAll(/\{ href: '([^']+)', label: '([^']+)'/g)].map(m => m[2]);

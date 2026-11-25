@@ -76,7 +76,7 @@ function LoginForm() {
 
           <p className="mt-5 text-xs leading-relaxed text-muted">
             No account yet? Ledrix accounts are created in the app or by invitation from your company.{' '}
-            <a href="/inspect#demo" className="font-semibold text-body hover:text-ink">Request a demo</a>
+            <a href="/inspect#pricing" className="font-semibold text-body hover:text-ink">How to start</a>
           </p>
         </form>
       </main>

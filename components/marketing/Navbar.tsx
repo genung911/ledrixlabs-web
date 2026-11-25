@@ -10,13 +10,13 @@ import { GlowButton } from './ui/GlowButton';
 import { LedrixDelta } from '@/components/LedrixDelta';
 
 const LINKS = [
-  { href: '/#how', label: 'How it works' },
-  { href: '/#features', label: 'Why Ledrix' },
-  { href: '/#homeowners', label: 'For Homeowners' },
+  { href: '/inspect#how', label: 'How it works' },
+  { href: '/inspect#features', label: 'Why Ledrix' },
+  { href: '/inspect#homeowners', label: 'For Homeowners' },
   { href: '/about', label: 'About' },
   { href: '/ethix', label: 'Ethix' },
-  { href: '/#faq', label: 'FAQ' },
-  { href: '/#demo', label: 'Contact' },
+  { href: '/inspect#faq', label: 'FAQ' },
+  { href: '/inspect#pricing', label: 'Pricing' },
 ];
 
 // `overLight` — the opener is now a LIGHT stage (the isometric dollhouse), so the
@@ -24,7 +24,7 @@ const LINKS = [
 // omit the prop and keep the white-over-dark treatment.
 // `signInHref` — the inspector sign-in (/app/login). Opt-in per page: only the Inspect product page
 // passes it, since homeowners never sign in here (they open their portal from the inspector's link).
-export function Navbar({ overLight = false, links = LINKS, ctaHref = '/#demo', ctaLabel = 'Request a demo', signInHref }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string; ctaLabel?: string; signInHref?: string }) {
+export function Navbar({ overLight = false, links = LINKS, ctaHref = '/inspect#pricing', ctaLabel = 'Start', signInHref }: { overLight?: boolean; links?: { href: string; label: string }[]; ctaHref?: string; ctaLabel?: string; signInHref?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 

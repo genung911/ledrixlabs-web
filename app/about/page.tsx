@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: 'What it does',
-    body: "In the field, the inspector captures evidence by photo and voice; Ledrix drafts the finding (system attribution, priority, written narrative, and recommended action) and surfaces defects a tired eye might miss. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a legally-formatted PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
+    body: "In the field, the inspector captures evidence by photo; Ledrix fills in the equipment details from the photos and drafts the findings (system, priority, written narrative, and recommended action) for the inspector to confirm. Nothing reaches the client until the inspector confirms it. On completion, Ledrix delivers a professional PDF report and a live client Home Portal in one tap — no late-night write-ups, no assembling documents at the office.",
   },
   {
     heading: "How it's different",

@@ -83,7 +83,7 @@ export default function LedrixHomePage() {
               </div>
             </div>
             <div className="flex justify-center md:justify-end">
-              <Shot src="/screenshots/home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
+              <Shot src="/screenshots/site-2026-11/h1-home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
             </div>
           </div>
         </section>
@@ -110,14 +110,14 @@ export default function LedrixHomePage() {
         <section id="baseline" className="bg-ground px-6 py-24">
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 md:grid-cols-2">
             <div className="order-2 flex justify-center md:order-1 md:justify-start">
-              <Shot src="/screenshots/home-maintain.jpg" alt="Ledrix Home — what your home needs, on a schedule built for it" />
+              <Shot src="/screenshots/site-2026-11/h2-home-maintain.jpg" alt="Ledrix Home — what your home needs, on a schedule built for it" />
             </div>
             <div className="order-1 md:order-2">
               <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent-ink">
                 Where it starts
               </span>
               <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink [text-wrap:balance] md:text-4xl">
-                It begins with a real inspection.
+                Today, it begins with a real inspection.
               </h2>
               <p className="mt-5 max-w-md leading-relaxed text-body">
                 When a Ledrix-equipped inspector walks your home, their findings become your

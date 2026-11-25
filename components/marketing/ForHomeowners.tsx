@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/lib/motion';
 import { GlowButton } from './ui/GlowButton';
 
-const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';
+const SAMPLE_PORTAL_ID = '3278d9ad528e73043203892cdfee2fb2'; // 123 Test St — keep in sync with SampleDeliverables.tsx
 
 export function ForHomeowners() {
   const [form, setForm] = useState({ name: '', email: '' });

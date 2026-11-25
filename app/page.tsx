@@ -38,7 +38,7 @@ export default function LedrixLabsHome() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
       <AuthHashForwarder />
-      <Navbar links={PARENT_LINKS} ctaHref="/inspect#demo" />
+      <Navbar links={PARENT_LINKS} ctaHref="/inspect#pricing" ctaLabel="Start" />
 
       <main>
         {/* ── HERO — the company thesis ── */}
@@ -121,7 +121,7 @@ export default function LedrixLabsHome() {
               </div>
             </div>
             <div className="flex justify-center pt-2 md:justify-start">
-              <Shot src="/screenshots/capture-water-heater.jpg" alt="Ledrix Inspect — live capture reading a water heater data plate" />
+              <Shot src="/screenshots/site-2026-11/s1-camera.jpg" alt="Ledrix Inspect — live capture reading a water heater data plate" />
             </div>
           </article>
 
@@ -157,7 +157,7 @@ export default function LedrixLabsHome() {
               </div>
             </div>
             <div className="flex justify-center pt-2 md:justify-start">
-              <Shot src="/screenshots/home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
+              <Shot src="/screenshots/site-2026-11/h1-home-systems.jpg" alt="Ledrix Home — every system in the home, tracked" />
             </div>
           </article>
         </section>

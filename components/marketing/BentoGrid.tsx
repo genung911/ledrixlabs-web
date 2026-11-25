@@ -25,26 +25,9 @@ type Tile = {
   draft?: boolean; // lead tile: the rendered structured-finding card (what a capture becomes)
   pills?: { label: string; color: string }[]; // priority-levels tile: the real pills, not a sentence
   shot?: { src: string; alt: string }; // a single supporting artifact image (e.g. the PDF cover)
-  orb?: boolean; // the VAL mark, in its glass orb shell
+  chips?: { label: string; on?: boolean }[]; // template tile: checklist items the house turned on (owner 2026-11-24, replaces the VAL tile)
   devices?: boolean; // the "two devices, one brain" mark
 };
-
-// A static rendition of ValOrbVoice's "light" glass shell (no interactivity needed here —
-// this is a feature-grid illustration, not the live VAL button).
-function StaticValOrb() {
-  return (
-    <div
-      className="flex h-28 w-28 items-center justify-center rounded-full lg:h-32 lg:w-32"
-      style={{
-        background: 'radial-gradient(125% 130% at 50% 0%, rgba(255,255,255,0.96), rgba(238,244,251,0.86))',
-        border: '1.25px solid rgba(33,123,232,0.4)',
-        boxShadow: '0 10px 30px rgba(12,28,54,0.14), 0 2px 8px rgba(12,28,54,0.08), 0 0 20px rgba(33,123,232,0.2)',
-      }}
-    >
-      <LedrixDelta size={44} sheen />
-    </div>
-  );
-}
 
 // Two phone outlines flanking the Ledrix delta — "every device, one brain." Hand-drawn SVG
 // to match the site's icon language (no icon-library dependency). Devices neutral; the
@@ -94,16 +77,16 @@ function StructuredFindingCard() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" /> Live
           </span>
         </div>
-        <div className="mt-4 text-xl font-bold leading-snug text-ink">Moisture-damaged wall finish at tub side</div>
+        <div className="mt-4 text-xl font-bold leading-snug text-ink">Corrosion at water heater connection</div>
         <div className="mt-5">
-          {row('System', 'Interior · Bathroom')}
-          {row('Location', 'Wall adjacent to tub/shower')}
+          {row('Filed on', 'Water Heater › Water Heater')}
+          {row('Location', 'Utility closet')}
           {row('Priority', (
-            <span className="rounded-full border px-3 py-1 font-mono text-xs font-bold" style={{ color: '#64748B', borderColor: '#64748B55', backgroundColor: '#64748B14' }}>
-              MAINT &amp; IMPROVE
+            <span className="rounded-full border px-3 py-1 font-mono text-xs font-bold" style={{ color: '#EAB308', borderColor: '#EAB30855', backgroundColor: '#EAB30814' }}>
+              MINOR REPAIR
             </span>
           ))}
-          {row('Spec', 'Painted drywall — wet-area side')}
+          {row('Spec', 'Tank — natural gas, 50 gallon')}
         </div>
         <div className="mt-5 grid grid-cols-3 gap-3 border-t border-hairline pt-5">
           {['Reject', 'Adjust', 'Confirm'].map((v) => (
@@ -147,13 +130,22 @@ const TILES: Tile[] = [
     body: 'Ledrix proposes; you Confirm, Adjust, or Reject. What you approve is exactly what ships — never quietly rewritten.',
   },
   { className: '', stat: '5', title: 'Priority levels', pills: PRIORITY_PILLS },
-  { className: '', kicker: 'Hands-free', title: 'Log by voice with VAL', body: 'Speak the finding; VAL files it to the right system and waits for your confirm.', orb: true },
+  {
+    className: '',
+    kicker: 'Your company',
+    title: 'Your template, your checklist.',
+    body: 'Scope is built from your company’s template and adapts to the house — gas or all-electric, crawlspace or slab.',
+    chips: [
+      { label: 'Gas furnace', on: true }, { label: 'Heat pump' }, { label: 'Crawlspace', on: true },
+      { label: 'Slab' }, { label: 'Detached garage', on: true },
+    ],
+  },
   {
     className: '',
     kicker: 'Deliverable',
     title: 'A report clients read',
     body: 'A clean, professional PDF and a live client home portal — generated, not assembled.',
-    shot: { src: '/sample-pdf-cover.jpg', alt: 'The Ledrix inspection report cover page' },
+    shot: { src: '/screenshots/site-2026-11/s6-report-cover.jpg', alt: 'The Ledrix inspection report cover page' },
   },
   {
     // Single-width so the six tiles tessellate exactly (2×2 lead + 2 stacked right = rows 1-2;
@@ -239,9 +231,14 @@ export function BentoGrid() {
                     ))}
                   </ul>
                 )}
-                {t.orb && (
-                  <div className="mt-auto flex justify-start pt-6">
-                    <StaticValOrb />
+                {t.chips && (
+                  <div className="mt-auto flex flex-wrap gap-2 pt-6">
+                    {t.chips.map((c) => (
+                      <span key={c.label}
+                        className={`rounded-full border px-3 py-1 text-sm ${c.on ? 'border-[#217BE8] text-[#217BE8]' : 'border-hairline text-muted'}`}>
+                        {c.on ? '✓ ' : ''}{c.label}
+                      </span>
+                    ))}
                   </div>
                 )}
                 {t.devices && (

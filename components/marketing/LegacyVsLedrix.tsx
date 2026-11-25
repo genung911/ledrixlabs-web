@@ -19,11 +19,15 @@ const ROWS: { legacy: string; ledrix: string }[] = [
   },
   {
     legacy: 'The report is the end of the relationship.',
-    ledrix: 'The report is the start of one — a living Home App the client keeps.',
+    ledrix: 'The report is the start of one — a living home portal the client keeps.',
   },
   {
-    legacy: 'You catch duplicate photos and contradictions yourself, manually.',
-    ledrix: 'Ledrix flags likely duplicate photos and related findings — you decide, nothing merges silently.',
+    legacy: 'You catch the same issue logged twice yourself, manually.',
+    ledrix: 'Ledrix spots the same finding in more than one place and asks: Merge into one, or Keep separate. Nothing merges without you.',
+  },
+  {
+    legacy: 'Type the brand, model and age off every data plate.',
+    ledrix: 'Ledrix reads the data plate and fills in the details. You approve.',
   },
   {
     legacy: '"AI" means canned phrases pulled from a template library.',

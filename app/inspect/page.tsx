@@ -9,7 +9,7 @@ import { SampleDeliverables } from '@/components/marketing/SampleDeliverables';
 import { ForHomeowners } from '@/components/marketing/ForHomeowners';
 import { VisionManifesto } from '@/components/marketing/VisionManifesto';
 import { FAQ } from '@/components/marketing/FAQ';
-import { ContactCTA } from '@/components/marketing/ContactCTA';
+import { Pricing } from '@/components/marketing/Pricing';
 
 // The Ledrix Inspect product page — the premium landing for licensed home inspectors (formerly the
 // root homepage; moved here when ledrixlabs.com became the two-product parent). Its section anchors
@@ -21,7 +21,7 @@ const INSPECT_LINKS = [
   { href: '/about', label: 'About' },
   { href: '/ethix', label: 'Ethix' },
   { href: '/inspect#faq', label: 'FAQ' },
-  { href: '/inspect#demo', label: 'Contact' },
+  { href: '/inspect#pricing', label: 'Pricing' },
 ];
 
 export const metadata = {
@@ -33,7 +33,7 @@ export const metadata = {
 export default function InspectPage() {
   return (
     <div id="top" className="min-h-screen bg-ground font-sans text-body antialiased">
-      <Navbar links={INSPECT_LINKS} ctaHref="/inspect#demo" signInHref="/app/login" />
+      <Navbar links={INSPECT_LINKS} ctaHref="/inspect#pricing" ctaLabel="Start" signInHref="/app/login" />
       <main>
         <VisionManifesto />
         <HowItWorks />
@@ -43,7 +43,7 @@ export default function InspectPage() {
         <ForHomeowners />
         <Hero />
         <FAQ />
-        <ContactCTA />
+        <Pricing />
       </main>
       <Footer
         tagline="— the AI backup for home inspectors."
@@ -53,7 +53,7 @@ export default function InspectPage() {
           { href: '/about', label: 'About' },
           { href: '/ethix', label: 'Ethix' },
           { href: '/inspect#faq', label: 'FAQ' },
-          { href: '/inspect#demo', label: 'Request a demo' },
+          { href: '/inspect#pricing', label: 'Pricing' },
         ]}
       />
       <MarketingOrb />
