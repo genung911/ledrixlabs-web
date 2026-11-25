@@ -124,7 +124,9 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
   }, [gate]);
 
   const signOut = useCallback(async () => {
-    await workspace.auth.signOut();
+    // 2026-11-24 (owner: "I'm not able to sync" — a website sign-out at 8:48 PM ended the phone's session too, and it went
+    // View only at its next token refresh): sign out THIS device only. Supabase's default scope is 'global' (every device).
+    await workspace.auth.signOut({ scope: 'local' });
     router.replace('/app/login');
   }, [router]);
 

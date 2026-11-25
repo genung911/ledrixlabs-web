@@ -3341,7 +3341,7 @@ export default function SharePage() {
         }
       `}</style>
 
-      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut()} />
+      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut({ scope: 'local' })} />
       <HomeRail active={tab} onPick={pick} />
       {claim && (
         <div role="status" style={{ background: claim.kind === 'claimed' ? '#EAF5EE' : claim.kind === 'waiting' ? '#EEF4FD' : '#FDF0EC', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, fontWeight: 600, padding: '9px 18px', textAlign: 'center' }}>{claim.text}</div>
