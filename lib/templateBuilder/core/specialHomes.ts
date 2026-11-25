@@ -324,6 +324,36 @@ export function starterOps(tpl: InspectionTemplate, pickIds: readonly string[], 
   return { ok: true, ops };
 }
 
+// ── manufactured: foundation types and the no-attic reason (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG approved) ──
+/** The foundation types a Manufactured template offers besides Ledrix's five. Ledrix's crawlspace items show for both
+ *  (the pack's dependsOnSpec: "piers & tie-downs", "permanent foundation"); the crawl sump for the permanent one only. */
+export const MANUFACTURED_FOUNDATION_TYPES: readonly string[] = ['Piers & Tie-Downs (Manufactured)', 'Permanent Foundation (Manufactured)'];
+/** The Attic Access limitation a Manufactured template carries ready: the report reads "Not inspected. No attic — …". */
+export const MANUFACTURED_NO_ATTIC = 'No attic — manufactured home';
+
+/** The ops that give a Manufactured template its two foundation types and the no-attic reason — only what is missing,
+ *  appended to the template's own lists (never replacing them), so it is safe to run again (Apply manufactured updates).
+ *  Empty when there is nothing to add or the template holds neither item. */
+export function manufacturedExtrasOps(tpl: InspectionTemplate): TemplateOp[] {
+  const ops: TemplateOp[] = [];
+  const node = (id: string): TemplateNode | null => {
+    let hit: TemplateNode | null = null;
+    const walk = (n: TemplateNode) => { if (hit) return; if (n.id === id) { hit = n; return; } (n.children ?? []).forEach(walk); };
+    (tpl.systems ?? []).forEach(walk);
+    return hit;
+  };
+  const ft = node('found_type');
+  const attr = ft ? (ft.attributes ?? []).find(a => Array.isArray((a as { values?: unknown }).values)) as { id: string; values: string[] } | undefined : undefined;
+  if (ft && attr) {
+    const missing = MANUFACTURED_FOUNDATION_TYPES.filter(v => !attr.values.includes(v));
+    if (missing.length) ops.push({ op: 'setAttributeField', nodeId: ft.id, attrId: attr.id, field: 'values', value: [...attr.values, ...missing] });
+  }
+  const aa = node('attic_access');
+  const lims = aa && Array.isArray((aa as { limitations?: unknown }).limitations) ? (aa as { limitations: string[] }).limitations : null;
+  if (aa && lims && !lims.includes(MANUFACTURED_NO_ATTIC)) ops.push({ op: 'setNodeField', nodeId: aa.id, field: 'limitations', value: [...lims, MANUFACTURED_NO_ATTIC] });
+  return ops;
+}
+
 // ── condo / townhome: association responsibility (ruling 3) ───────────────────────────────────────────────────────
 
 /** What "pre-mark" sets when the company ticks it: the roof, the foundation and the shared exterior. */

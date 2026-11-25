@@ -11,7 +11,7 @@ import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTe
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { propertyTypesOf, type PropertyTypeId } from '@/lib/templateBuilder/core/propertyTypes';
 import {
-  SPECIAL_HOMES, SPECIAL_KINDS, activeKindCheckpoints, specialRows, starterOps, templateKinds, type SpecialKind,
+  SPECIAL_HOMES, SPECIAL_KINDS, activeKindCheckpoints, manufacturedExtrasOps, specialRows, starterOps, templateKinds, type SpecialKind,
 } from '@/lib/templateBuilder/core/specialHomes';
 import { ops } from '@/lib/templates/editorModel';
 import { PropertyTypePicker } from './PropertyTypes';
@@ -62,7 +62,9 @@ export function HomeKindsCard({ tree, onOps, disabled }: { tree: InspectionTempl
     const ids = offer.map(r => r.id).filter(id => !unticked.has(id));
     const r = starterOps(tree, ids, source);
     if (!r.ok) { setProblem(r.error); return; }
-    if (onOps([...pending.fields, ...r.ops])) setPending(null);
+    // Manufactured added (owner 2026-11-25): its two foundation types and the no-attic reason come with it.
+    const extras = pending.added.includes('manufactured') ? manufacturedExtrasOps(tree) : [];
+    if (onOps([...pending.fields, ...r.ops, ...extras])) setPending(null);
   };
   const applyRemove = (off: boolean) => {
     if (!pending) return;
@@ -77,6 +79,15 @@ export function HomeKindsCard({ tree, onOps, disabled }: { tree: InspectionTempl
   return (
     <div className="space-y-3">
       <PropertyTypePicker value={pts} disabled={disabled || !!pending} onChange={v => propose(v, also)} />
+      {/* APPLY MANUFACTURED UPDATES (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG): a Manufactured template made before
+          the two foundation types and the no-attic reason existed gets them in one tap — added to its own lists, nothing
+          it changed is touched. Gone once applied. */}
+      {!pending && now.includes('manufactured') && manufacturedExtrasOps(tree).length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2.5">
+          <p className="min-w-0 text-sm text-ink"><b>Manufactured updates</b><span className="block text-xs text-muted">Adds the foundation types Piers &amp; Tie-Downs and Permanent Foundation, and the attic reason “No attic — manufactured home”. Everything you changed stays.</span></p>
+          <button type="button" className={btn.primary + ' px-3 py-1.5'} disabled={disabled} onClick={() => onOps(manufacturedExtrasOps(tree))}>Apply manufactured updates</button>
+        </div>
+      ) : null}
       <div>
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Also</p>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Also">

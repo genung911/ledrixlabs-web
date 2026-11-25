@@ -17,7 +17,7 @@
 import type { InspectionTemplate } from '@/lib/templateBuilder/core/InspectionTemplate';
 import type { CompanyContext, InspectionType, LiveTemplate } from './api';
 import { isCovered } from './editorModel';
-import { ASSOCIATION_SYSTEMS, starterCheckpoints, starterKinds, starterOps, withoutSetAsideSpecials, type SpecialKind } from '@/lib/templateBuilder/core/specialHomes';
+import { ASSOCIATION_SYSTEMS, starterCheckpoints, starterKinds, starterOps, withoutSetAsideSpecials, type SpecialKind, manufacturedExtrasOps } from '@/lib/templateBuilder/core/specialHomes';
 import type { TemplateOp } from '@/lib/templateBuilder/core/templateOps';
 import { validateOps } from '@/lib/templateBuilder/core/templateValidate';
 
@@ -194,6 +194,8 @@ export function buildStarterTree(kind: StartKind, tree: InspectionTemplate, sour
   const also = plan.kinds.filter((k): k is 'log' | 'new_construction' => k === 'log' || k === 'new_construction');
   if (also.length) fields.push({ op: 'setTemplateField', field: 'alsoKinds', value: also });
   if (plan.condo && c.associationPremark) fields.push({ op: 'setTemplateField', field: 'associationNotInspected', value: [...ASSOCIATION_SYSTEMS] });
+  // Manufactured (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG): its two foundation types and the no-attic reason.
+  if (plan.kinds.includes('manufactured')) fields.push(...manufacturedExtrasOps(base));
   const all = [...r.ops, ...fields];
   if (!all.length) return { ok: true, tree: base };
   const rep = validateOps(base, all);

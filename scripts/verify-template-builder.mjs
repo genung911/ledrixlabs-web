@@ -1572,7 +1572,7 @@ const RULES = {
   'only what you pick: changing a kind on the Overview adds its checkpoints only after review (starterOps) and switches them off only on request (trimNode)': all => {
     const h = strip(all['components/templates/HomeKinds.tsx'] ?? '');
     return /if \(!added\.length && !removedActive\.length\) \{ onOps\(fields\); setPending\(null\); return; \}/.test(h) && /const r = starterOps\(tree, ids, source\);/.test(h)
-      && /onOps\(\[\.\.\.pending\.fields, \.\.\.r\.ops\]\)/.test(h) && /\.\.\.\(off \? switchOff\.map\(id => \(\{ op: 'trimNode', nodeId: id \}\)/.test(h) && !/op: 'addNode'/.test(h) ? [] : ['components/templates/HomeKinds.tsx'];
+      && /onOps\(\[\.\.\.pending\.fields, \.\.\.r\.ops(, \.\.\.extras)?\]\)/.test(h) && /\.\.\.\(off \? switchOff\.map\(id => \(\{ op: 'trimNode', nodeId: id \}\)/.test(h) && !/op: 'addNode'/.test(h) ? [] : ['components/templates/HomeKinds.tsx'];
   },
   'group first: a system without type chips lists its groups (no Materials first / Full list switch), a group opens its own screen with everything set in it; typed systems keep their chips and draw a materials section as rows': all => {
     const ep = strip(all['components/templates/EditorParts.tsx'] ?? ''), tb = strip(all['components/templates/TypeBuilder.tsx'] ?? '');

@@ -98,3 +98,46 @@ export function SpecialHomesPanel({ tree, system, onOps, disabled }: {
     </div>
   );
 }
+
+// ── WHAT LEDRIX ADDED, AT THE TOP (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG item 3) ─────────────────────────────
+// "Ledrix should recognize that and give me manufactured home options inside systems": the special-home checkpoints this
+// template holds for its kinds were listed only at the bottom (and the panel hides once all are added). A line at the top
+// of each system names them — "Manufactured home · 4 items" — and Show lists them; each opens its own panel (switch one
+// off there, from its ⋯ menu). Only for a template whose kinds include them; a single-family template never shows it.
+const BANNER_NOUN: Record<SpecialKind, string> = { manufactured: 'Manufactured home', multi_unit: 'Multi-unit home', log: 'Log home', new_construction: 'New construction' };
+export function SpecialHomesBanner({ tree, system, onOpen }: {
+  tree: InspectionTemplate; system: TemplateNode; onOpen: (id: string) => void;
+}) {
+  const [source, setSource] = useState<InspectionTemplate | null>(null);
+  useEffect(() => { let live = true; void loadShipped().then(s => { if (live) setSource(s); }); return () => { live = false; }; }, []);
+  const own = useMemo(() => new Set(templateKinds(tree)), [tree]);
+  const rows = useMemo(() => (source ? specialRows(tree, system, source).filter(r => own.has(r.kind) && r.inTemplate) : []), [tree, system, source, own]);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { setOpen(false); }, [system.id]);
+  if (isCopiedSystem(system) || !rows.length) return null;
+  const kinds = SPECIAL_KINDS.filter(k => rows.some(r => r.kind === k.id));
+  return (
+    <div className="rounded-xl border border-accent/40 bg-accent/5 px-3 py-2.5" aria-label="What Ledrix added for this kind of home">
+      {kinds.map(k => {
+        const mine = rows.filter(r => r.kind === k.id);
+        return (
+          <div key={k.id}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="min-w-0 text-sm text-ink"><b className="text-accent-ink">{BANNER_NOUN[k.id]} · {mine.length} item{mine.length === 1 ? '' : 's'}</b>
+                <span className="text-muted"> · {mine.map(r => r.label).join(', ')}</span></p>
+              <button type="button" className="text-sm font-semibold text-accent-ink" onClick={() => setOpen(o => !o)} aria-expanded={open}>{open ? 'Hide' : 'Show ›'}</button>
+            </div>
+            {open && (
+              <ul className="mt-2 divide-y divide-hairline rounded-lg border border-hairline bg-surface">
+                {mine.map(r => (
+                  <li key={r.id}><button type="button" className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink hover:bg-ground" onClick={() => onOpen(r.id)}>
+                    <span>{r.label}<span className="block text-xs text-muted">{r.why}</span></span><span className="text-muted">›</span></button></li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

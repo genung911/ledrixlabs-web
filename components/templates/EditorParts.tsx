@@ -15,7 +15,7 @@ import { LedrixSuggestions } from './CatalogPanel';
 import { catalogTypesForSystem } from '@/lib/templates/catalogModel';
 import { FULL_LIST, SECTION_ID, TypeBuilder, TypeChips } from './TypeBuilder';
 import type { TypeLayout } from '@/lib/templates/typeLayout';
-import { SpecialHomesPanel } from './SpecialHomesPanel';
+import { SpecialHomesPanel, SpecialHomesBanner } from './SpecialHomesPanel';
 import { GroupList } from './GroupList';
 import { useBuildingLens } from './BuildingLens';
 import { GroupItems } from './MaterialsBuilder';
@@ -147,7 +147,8 @@ export function ItemsPanel({ tree, system, sel, onSelect, onOps, onOpen, disable
 
   return (
     <div className="space-y-5 px-4 py-4">
-
+      {/* What Ledrix added for this kind of home, at the top (owner 2026-11-25, mockup Et7QWWPTN1UPWWjvcBPTGG item 3). */}
+      <SpecialHomesBanner tree={tree} system={system} onOpen={id => { onSelect({ systemId: system.id, nodeId: id }); onOpen(id); }} />
 
       {typeView && <TypeChips layout={typeView.layout} pick={typeView.pick} onPick={typeView.onPick} systemLabel={system.label} />}
       {about}
