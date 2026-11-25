@@ -63,6 +63,31 @@ async function selectOne(column: 'share_id', value: string) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+/** "What wasn't inspected" (Home Record redesign, owner 2026-11-25, mockup 1CCUJycYwNKA8862rsStQ4): the inspection's
+ *  limitations — each condition answer recorded as "<reason> (Limitation)", with its item's name. Only the item label
+ *  and the reason leave the server. A read failure returns none; the page then says it has none to show. */
+async function selectLimitations(shareId: string): Promise<{ item: string; reason: string }[]> {
+  const url = `${SUPA_URL}/rest/v1/inspection_values?inspection_id=eq.${encodeURIComponent(shareId)}&kind=eq.condition&select=node_key,value&limit=500`;
+  const r = await fetch(url, { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` }, cache: 'no-store' });
+  if (!r.ok) return [];
+  const rows = await r.json().catch(() => []);
+  const out: { item: string; reason: string }[] = [];
+  const seen = new Set<string>();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const v = row?.value ?? {};
+    const vals: unknown[] = Array.isArray(v.values) ? v.values : [];
+    for (const x of vals) {
+      if (typeof x !== 'string' || !/\(limitation\)\s*$/i.test(x)) continue;
+      const item = String(v.label ?? row.node_key ?? '').trim().slice(0, 120);
+      const reason = x.replace(/\s*\(limitation\)\s*$/i, '').trim().slice(0, 200);
+      const k = `${item}|${reason}`;
+      if (!item || !reason || seen.has(k)) continue;
+      seen.add(k); out.push({ item, reason });
+    }
+  }
+  return out;
+}
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   if (!SUPA_URL || !SERVICE) return NextResponse.json({ error: 'Not available.' }, { status: 500 });
 
@@ -100,7 +125,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       let reportGroups: unknown = null;
       try { reportGroups = (await import('../../../../lib/report/render.mjs')).groupReportFindings(anomalies as Record<string, any>[]); }
       catch { reportGroups = null; }
-      return NextResponse.json({ ...rec, anomalies, reportGroups, specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
+      const limitations = await selectLimitations(access.shareId).catch(() => []);
+      return NextResponse.json({ ...rec, anomalies, reportGroups, limitations, specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
     }
 
     // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old

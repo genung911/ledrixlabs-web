@@ -64,10 +64,13 @@ ok('insight no longer asks for "the home\'s overall condition"', !/overall condi
 ok('insight says no score, grade or overall rating', /No score, grade or overall rating\./.test(insight));
 
 console.log('Part 3 · what is NOT a home rating still renders');
-ok('finding counts still render (Repairs Needed pillar)', /\['findings', 'findings', 'Repairs Needed', anomalies\.filter/.test(home));
-ok('repair status still renders (resolved / total)', /'Repair Status', `\$\{projects\.filter\(p => p\.status === 'resolved'\)\.length\}\/\$\{projects\.length\}`/.test(home));
-ok('maintenance schedule still renders', /'Maintenance', dueReminders\.length/.test(home));
-ok('severity priorities still computed per finding', /const prioCount = anomalies\.reduce/.test(home));
+// RE-ANCHORED 2026-11-25 (Home Record redesign, mockup 1CCUJycYwNKA8862rsStQ4 "Approved"): the Home tab shows the four
+// counts (Safety · Major · Minor · Upkeep), the next maintenance, and links to Repairs / Maintain; repair status lives
+// on the Maintain tab. Same promises, new places.
+ok('finding counts still render (the four counts on Home)', /const count = \(k: HrPrio\) => listed\.filter\(a => hrPrioOf\(a\) === k\)\.length;/.test(home) && /\{HR_RANK\.map\(k => \(/.test(home));
+ok('repair status still renders (Maintain › Repair status)', share.includes("const parts: [typeof part, string][] = [['upkeep', 'Upkeep'], ['projects', 'Repair status'], ['repairs', 'Repair request']];"));
+ok('maintenance schedule still renders (Home: the next reminder)', /const nextUp = reminders\.find\(r => !r\.completed\);/.test(home) && home.includes('`Next: ${nextUp.title}`'));
+ok('severity priorities still computed per finding', /const hrPrioOf = \(a: Anomaly\): HrPrio \| null => \{ const k = priorityOf\(a\)\.key;/.test(share));
 ok('the PDF report cover counts are untouched by this site (no score in report routes)',
   !/score/i.test(read('app/api/reports/seal/[hash]/route.ts')));   // the live /api/reports route is retired (2026-11-04)
 
