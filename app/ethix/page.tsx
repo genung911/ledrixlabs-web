@@ -98,7 +98,7 @@ export default function Ethix() {
           <p className="mt-4 text-base leading-relaxed text-slate-400 md:text-lg">
             We’re building Ethix carefully, and we’d rather be slow than sloppy with something this important.
             <span className="text-slate-200"> Nothing is being sold today.</span> You can set your preference now
-            in your Home App — opt in, choose your categories — and it’ll be ready when the program goes live.
+            in Ledrix Home — opt in, choose your categories — and it’ll be ready when the program goes live.
             We’ll ask you again before a single dollar ever changes hands, and you’ll see every cent.
           </p>
         </section>

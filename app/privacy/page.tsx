@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: -1.5, marginBottom: 8 }}>Privacy Policy</h1>
         <p style={{ color: '#8A939C', fontSize: 12, fontFamily: 'Roboto Mono, monospace', marginBottom: 56 }}>
-          Effective Date: January 1, 2026 · Last Updated: November 10, 2026 · Ledrix Labs
+          Effective Date: January 1, 2026 · Last Updated: November 25, 2026 · Ledrix Labs
         </p>
 
         {[
@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '2. How We Use Your Information',
-            body: `Your information is used to provide and improve the Ledrix platform, generate inspection reports on your behalf, sync your data across your devices, and deliver inspection results to your clients through the Ledrix Home App portal. We do not sell your personal or identifying data, and we do not use your data for advertising purposes. The one exception is Ethix, our optional, opt-in program (see the Ethix section below), under which a homeowner may choose to share only anonymized, aggregate, non-personal signals about their home and keep the proceeds — Ledrix does not profit from it. Personal or identifying data is never sold, with or without Ethix.`,
+            body: `Your information is used to provide and improve the Ledrix platform, generate inspection reports on your behalf, sync your data across your devices, and deliver inspection results to your clients through their Home Record. We do not sell your personal or identifying data, and we do not use your data for advertising purposes. The one exception is Ethix, our optional, opt-in program (see the Ethix section below), under which a homeowner may choose to share only anonymized, aggregate, non-personal signals about their home and keep the proceeds — Ledrix does not profit from it. Personal or identifying data is never sold, with or without Ethix.`,
           },
           {
             title: '3. Voice and Audio Recording',
@@ -76,7 +76,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '13. Ethix — Optional, Opt-In Data Sharing',
-            body: `Ethix is an optional, opt-in program that lets a homeowner share anonymized, aggregate, non-personal signals about their home — and, in the future, earn a share of any value that data generates. Participation is OFF by default. Nothing is ever shared unless the homeowner explicitly opts in from their Home App, and they may revoke at any time.\n\nWhat may be shared (only if opted in, and only for the categories the homeowner selects): coarse, de-identified signals such as property attributes (year built, size), the types of systems and materials present, counts of findings by system and their priority band (major repair / minor repair / maintenance / typical wear / good), with safety concerns flagged separately, maintenance cadence, and a coarsened regional area.\n\nWhat is NEVER shared under Ethix: your name, street address, full ZIP, GPS coordinates, photos, inspector or contractor names, serial numbers, costs, free-text notes, or anything that could identify you or your property.\n\nLedrix does not profit from Ethix. Ledrix is compensated through inspector subscriptions; any Ethix proceeds flow to participating homeowners, less at most a thin, fully-disclosed cost-recovery fee. As of the effective date of this section, no data is being sold under Ethix — the program is in development, opt-in preferences are being collected, and homeowners will be asked to reconfirm consent before any sale ever occurs.`,
+            body: `Ethix is an optional, opt-in program that lets a homeowner share anonymized, aggregate, non-personal signals about their home — and, in the future, earn a share of any value that data generates. Participation is OFF by default. Nothing is ever shared unless the homeowner explicitly opts in from Ledrix Home, and they may revoke at any time.\n\nWhat may be shared (only if opted in, and only for the categories the homeowner selects): coarse, de-identified signals such as property attributes (year built, size), the types of systems and materials present, counts of findings by system and their priority band (major repair / minor repair / maintenance / typical wear / good), with safety concerns flagged separately, maintenance cadence, and a coarsened regional area.\n\nWhat is NEVER shared under Ethix: your name, street address, full ZIP, GPS coordinates, photos, inspector or contractor names, serial numbers, costs, free-text notes, or anything that could identify you or your property.\n\nLedrix does not profit from Ethix. Ledrix is compensated through inspector subscriptions; any Ethix proceeds flow to participating homeowners, less at most a thin, fully-disclosed cost-recovery fee. As of the effective date of this section, no data is being sold under Ethix — the program is in development, opt-in preferences are being collected, and homeowners will be asked to reconfirm consent before any sale ever occurs.`,
           },
           {
             title: '14. Changes to This Policy',
