@@ -107,6 +107,9 @@ export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown
   // unit has no condenser, a mini-split shows as many Indoor Heads as its count — follows the same resolver as the phone
   // (applicability.ts, copied byte for byte). The node's own rule (snapshot) wins over the pack's, per field; a unit's
   // facts are read at its own ordinal (`plumb_wh_type~i2` reads `…~i2::type`); recorded work always keeps an item.
+  const frozenDefs = (template as { ruleDefinitions?: { nodes?: unknown } } | null)?.ruleDefinitions?.nodes;
+  const frozenRules = frozenDefs && typeof frozenDefs === 'object' && !Array.isArray(frozenDefs)
+    ? frozenDefs as Record<string, { requires?: unknown; dependsOnSpec?: unknown } | undefined> : null;
   const packNodes = new Map<string, ApplicabilityNode>();
   for (const sys of ((ledrixPack as unknown as { systems?: { nodes?: ApplicabilityNode[] }[] }).systems ?? [])) for (const n of sys.nodes ?? []) packNodes.set(n.id, n);
   const typeApplies = (id: string, n: TemplateNode): boolean => {
@@ -114,7 +117,13 @@ export function buildScope(template: { systems?: TemplateNode[]; gates?: unknown
     const m = id.match(/~i(\d+)$/); const ord = m ? Number(m[1]) : 1;
     const pk = packNodes.get(base);
     const own = n as unknown as ApplicabilityNode;
-    const node: ApplicabilityNode = { id, requires: own.requires ?? pk?.requires, dependsOnSpec: own.dependsOnSpec ?? pk?.dependsOnSpec };
+    // THE JOB'S OWN RULES FIRST (2026-11-24, owner: the website showed Garage Door items on a job whose Garage isn't
+    // Attached, and took a limitation on one the phone hides). As the phone's inspectionRulesLookup: a job created with a
+    // frozen rule set (`ruleDefinitions`) runs ONLY those; one without falls back to the node's own rule over the pack's.
+    const fr = frozenRules?.[base];
+    const node: ApplicabilityNode = frozenRules
+      ? { id, requires: (fr?.requires ?? undefined) as ApplicabilityNode['requires'], dependsOnSpec: (fr?.dependsOnSpec ?? undefined) as ApplicabilityNode['dependsOnSpec'] }
+      : { id, requires: own.requires ?? pk?.requires, dependsOnSpec: own.dependsOnSpec ?? pk?.dependsOnSpec };
     const scoped = (key: string) => { if (ord <= 1) return key; const [b, a] = key.split('::'); const sk = `${b.split('~i')[0]}~i${ord}`; return a ? `${sk}::${a}` : sk; };
     const r = resolveApplicability(node, { specValue: k => ruleValue(k, scoped), hasRecordedAssessment: x => conditionValues(values, x).length > 0 });
     return r.state !== 'not_applicable';
