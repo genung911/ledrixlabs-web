@@ -50,7 +50,19 @@ function pick(row: unknown, fields: readonly string[]): Row | null {
 }
 
 /** One finding as the homeowner record may carry it. */
-export function toPublishedFinding(row: unknown): Row | null { return pick(row, PUBLISHED_FINDING_FIELDS); }
+/** Bullets that no longer read as the description are stale — it was changed somewhere the bullets never saw (the
+ *  website, 2026-11-24) — so the description wins. Same rule as findingText.currentBullets, inline here (this file stays import-free). */
+function withoutStaleBullets<T>(a: T): T {
+  const r = a as any;
+  if (!r || !Array.isArray(r.observationBullets) || !r.observationBullets.length) return a;
+  const d = typeof r.description === 'string' ? r.description.replace(/\s+/g, ' ').trim() : '';
+  if (!d) return a;
+  const joined = r.observationBullets.filter((b: unknown) => typeof b === 'string').map((b: string) => b.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  if (joined === d) return a;
+  const { observationBullets: _stale, ...rest } = r;
+  return rest as T;
+}
+export function toPublishedFinding(row: unknown): Row | null { return pick(withoutStaleBullets(row), PUBLISHED_FINDING_FIELDS); }
 
 /** One spec as the homeowner record may carry it. */
 export function toPublishedSpec(row: unknown): Row | null { return pick(row, PUBLISHED_SPEC_FIELDS); }

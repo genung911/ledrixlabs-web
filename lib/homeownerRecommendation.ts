@@ -195,7 +195,12 @@ export type HomeownerFinding = {
 
 export function forHomeowner(a: FindingLike): HomeownerFinding {
   const repairTier = REPAIR_TIER.has(String(a.severity ?? '').toLowerCase());
-  const bullets = (a.observationBullets ?? []).filter(b => typeof b === 'string' && b.trim());
+  const own = (a.observationBullets ?? []).filter(b => typeof b === 'string' && b.trim());
+  // Stale bullets (the description was changed elsewhere — the website, 2026-11-24) give way to the description.
+  // Same rule as findingText.currentBullets, inline because this file is import-free.
+  const nrm = (t: string) => t.replace(/\s+/g, ' ').trim();
+  const desc = nrm(a.description ?? '');
+  const bullets = own.length && (!desc || nrm(own.join(' ')) === desc) ? own : [];
   const source = bullets.length ? bullets : [a.description ?? ''];
   const findingText = `${a.issue ?? ''} ${a.unit ?? ''} ${source.join(' ')}`;
   const needsReview: string[] = [];
