@@ -413,7 +413,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .repfoot .fchip{display:flex;align-items:center;gap:6px}
 .repfoot svg{width:12px;height:12px}
 
-/* ============ HOME APP VIEW ============ */
+/* ============ HOME RECORD VIEW ============ */
 .homeapp{display:none}
 .paper.mode-home .homeapp{display:block}
 .paper.mode-home .reportview{display:none}
@@ -513,7 +513,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
           </button>
           <button class="abtn" id="act_toggle" data-tone="green">
             <span class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></span>
-            <span class="atxt"><b id="toggleTitle">View Client Home App</b><small id="toggleSub">The report becomes a living asset the homeowner keeps — your brand stays on their phone for years</small></span>
+            <span class="atxt"><b id="toggleTitle">View Client Home Record</b><small id="toggleSub">The report becomes a living asset the homeowner keeps — your brand stays on their phone for years</small></span>
           </button>
         </div>
       </div>
@@ -540,7 +540,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
 
     <div class="resetrow" style="gap:8px;flex-wrap:wrap;">
-      <a href="https://www.ledrixlabs.com/share/eval-house-seed-v1" target="_blank" rel="noopener" class="resetbtn" style="text-decoration:none;color:#2fb6e8;border-color:rgba(47,182,232,0.4);">Real Home App ↗</a>
+      <a href="https://www.ledrixlabs.com/share/eval-house-seed-v1" target="_blank" rel="noopener" class="resetbtn" style="text-decoration:none;color:#2fb6e8;border-color:rgba(47,182,232,0.4);">Real Home Record ↗</a>
       <a href="https://www.ledrixlabs.com/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report" target="_blank" rel="noopener" class="resetbtn" style="text-decoration:none;color:#2fb6e8;border-color:rgba(47,182,232,0.4);">Real Web Report ↗</a>
       <button class="resetbtn" id="resetBtn">↺ Reset demo</button>
     </div>
@@ -792,7 +792,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
       </div>
 
-      <!-- ============ HOME APP VIEW ============ -->
+      <!-- ============ HOME RECORD VIEW ============ -->
       <div class="homeapp">
         <div class="ha-hero">
           <div class="eyebrow">After closing, the report doesn't die in a drawer</div>
@@ -1170,15 +1170,15 @@ async function runAction(key){
 }
 
 /* ============================================================
-   HOME APP TOGGLE
+   HOME RECORD TOGGLE
    ============================================================ */
 function toggleHome(force){
   S.homeMode = (typeof force==="boolean") ? force : !S.homeMode;
   els.paper.classList.toggle("mode-home", S.homeMode);
   els.viewTag.textContent = S.homeMode
-    ? "CLIENT HOME APP · WHAT THE HOMEOWNER KEEPS AFTER CLOSING"
+    ? "CLIENT HOME RECORD · WHAT THE HOMEOWNER KEEPS AFTER CLOSING"
     : "CLIENT DELIVERABLE · LIVE PREVIEW — UPDATES AS YOU SPEAK";
-  els.toggleTitle.textContent = S.homeMode ? "Back to Live Report" : "View Client Home App";
+  els.toggleTitle.textContent = S.homeMode ? "Back to Live Report" : "View Client Home Record";
   els.toggleSub.textContent = S.homeMode
     ? "Return to the report the owner is watching build in real time"
     : "The report becomes a living asset the homeowner keeps — your brand stays on their phone for years";

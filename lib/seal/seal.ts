@@ -7,12 +7,12 @@
 //   1 the job is read and checked again (lib/seal/check.ts readJob → the phone's own record assembly, release gates,
 //     phone-only reports, unsent work): any lock, or a version that moved since the person looked, refuses
 //   2 the record, assembled with the photos' real bytes (its evidence hashes them, as a phone seal does)
-//   3 the share token: the Home App link the report's QR code prints — the existing one, or a new one (never guessed)
+//   3 the share token: the Home Record link the report's QR code prints — the existing one, or a new one (never guessed)
 //   4 the seal row (report_seals: the phone's payload, its SHA-256, chained to the previous seal)
 //   5 the record object (inspection-records/<id>/<digest>.json, create-only) and its version (record_report_version)
 //   6 the report: rendered from the record by the phone's report builder, printed to PDF by /api/render-pdf (the
 //     same hosted browser and render budget the phone uses)
-//   7 the Home App: finding photos and the cover copied to the public bucket, the PDF and web report staged under
+//   7 the Home Record: finding photos and the cover copied to the public bucket, the PDF and web report staged under
 //     a new version folder, then ONE home_records write switches the homeowner's record to them, then the fixed
 //     report.html, then the history row — pushHomeRecord's order (S-14)
 //   8 the inspection marked completed (a versioned write under the edit lock)
@@ -94,7 +94,7 @@ export async function sealFromWebsite(inspectionId: string, req: SealRequest, de
   let shareToken: string;
   {
     const r = await f(`${base}/rest/v1/home_records?share_id=eq.${encodeURIComponent(inspectionId)}&select=share_token`, { headers: H, cache: 'no-store' });
-    if (!r.ok) return refuse(502, 'unavailable', 'Couldn’t confirm this report’s Home App link. Nothing was sealed — try again.');
+    if (!r.ok) return refuse(502, 'unavailable', 'Couldn’t confirm this report’s Home Record link. Nothing was sealed — try again.');
     const t = ((await r.json()) as any[])[0]?.share_token;
     shareToken = typeof t === 'string' && t.length > 0 ? t : randomBytes(16).toString('hex');
   }
@@ -148,7 +148,7 @@ export async function sealFromWebsite(inspectionId: string, req: SealRequest, de
   const pdf = await renderPdf(html).catch(() => null);
   if (!pdf || pdf.length < 100) return refuse(502, 'pdf_failed', `Sealed (version ${version}), but the PDF couldn’t be made, so nothing was sent. Seal again to send it.`, true);
 
-  // 7 · the Home App — stage, then one commit
+  // 7 · the Home Record — stage, then one commit
   const warnings: string[] = [];
   const store = async (path: string, body: Uint8Array | string, type: string, overwrite = false): Promise<'ok' | 'exists' | 'failed'> => {
     const r = await f(`${base}/storage/v1/object/inspection-pdfs/${path}`, { method: 'POST', headers: { ...H, 'Content-Type': type, 'x-upsert': overwrite ? 'true' : 'false' }, body: body as any });
@@ -168,12 +168,12 @@ export async function sealFromWebsite(inspectionId: string, req: SealRequest, de
   }
   const vid = reportVersionId((deps.now ?? (() => new Date()))());
   const pdfPath = `${inspectionId}/reports/${vid}/report.pdf`, htmlPath = `${inspectionId}/reports/${vid}/report.html`;
-  if ((await store(pdfPath, pdf, 'application/pdf')) !== 'ok') return refuse(502, 'publish_failed', `Sealed (version ${version}), but the PDF didn’t upload — nothing on the Home App changed. Seal again to send it.`, true);
-  if ((await store(htmlPath, html, 'text/html')) !== 'ok') return refuse(502, 'publish_failed', `Sealed (version ${version}), but the web report didn’t upload — nothing on the Home App changed. Seal again to send it.`, true);
+  if ((await store(pdfPath, pdf, 'application/pdf')) !== 'ok') return refuse(502, 'publish_failed', `Sealed (version ${version}), but the PDF didn’t upload — nothing on the Home Record changed. Seal again to send it.`, true);
+  if ((await store(htmlPath, html, 'text/html')) !== 'ok') return refuse(502, 'publish_failed', `Sealed (version ${version}), but the web report didn’t upload — nothing on the Home Record changed. Seal again to send it.`, true);
   const commit = { ...rec.homeRecord, share_token: shareToken, pdf_url: pubUrl(pdfPath), ...(coverUrl ? { cover_url: coverUrl } : {}) };
   const cr = await f(`${base}/rest/v1/home_records?on_conflict=share_id`, { method: 'POST', headers: { ...json, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(commit) });
-  if (!cr.ok) return refuse(502, 'publish_failed', `Sealed (version ${version}), but the Home App record couldn’t be saved — nothing on it changed. Seal again to send it.`, true);
-  if ((await store(`${inspectionId}/report.html`, html, 'text/html', true)) !== 'ok') warnings.push('The Home App’s web report didn’t refresh. Seal again to retry.');
+  if (!cr.ok) return refuse(502, 'publish_failed', `Sealed (version ${version}), but the Home Record couldn’t be saved — nothing on it changed. Seal again to send it.`, true);
+  if ((await store(`${inspectionId}/report.html`, html, 'text/html', true)) !== 'ok') warnings.push('The Home Record’s web report didn’t refresh. Seal again to retry.');
   const ar = await f(`${base}/rest/v1/home_reports`, { method: 'POST', headers: { ...json, Prefer: 'return=minimal' },
     body: JSON.stringify({ share_id: inspectionId, version: vid, inspection_date: (rec.homeRecord as any).inspection_date ?? null, pdf_path: pdfPath, html_path: htmlPath }) });
   if (!ar.ok) warnings.push('The report history didn’t record this version.');

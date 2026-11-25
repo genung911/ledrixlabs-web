@@ -184,7 +184,7 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
           <p className="text-sm leading-relaxed text-body">Sealing records the report exactly as it is now, under your name. Later changes make a new version; this one never changes.</p>
           <ol className="flex flex-col gap-2.5 text-sm leading-relaxed">
             {[`The report’s record is frozen on the server and sealed`, `The PDF is made from that record — the same page the phone makes`,
-              `${c.clientName ? `${c.clientName}’s` : 'The homeowner’s'} Home App report goes live at their link`].map((t, i) => (
+              `${c.clientName ? `${c.clientName}’s` : 'The homeowner’s'} Home Record report goes live at their link`].map((t, i) => (
               <li key={i} className="flex gap-3"><span aria-hidden className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border border-hairline bg-ground text-xs font-semibold">{i + 1}</span><span>{t}</span></li>
             ))}
           </ol>
@@ -211,13 +211,13 @@ function SealedView({ sealed, client, report }: { sealed: Sealed; client: string
     <div className="flex flex-col gap-5 xl:col-span-2">
       <div role="status" className="flex items-center gap-2.5 rounded-xl border border-emerald-600/35 bg-emerald-600/10 px-4 py-3 text-sm text-ink">
         <CheckIcon />
-        <span><strong className="font-semibold">Sealed and sent.</strong> Version {sealed.version} is live on {client ? `${client}’s` : 'the homeowner’s'} Home App.</span>
+        <span><strong className="font-semibold">Sealed and sent.</strong> Version {sealed.version} is live on {client ? `${client}’s` : 'the homeowner’s'} Home Record.</span>
       </div>
       {sealed.warnings.length > 0 && (
         <ul className="rounded-xl bg-amber-600/10 px-4 py-3 text-sm text-ink">{sealed.warnings.map(w => <li key={w}>{w}</li>)}</ul>
       )}
       <div className="flex flex-wrap gap-2">
-        <a href={sealed.shareUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-surface hover:opacity-90">Open Home App report</a>
+        <a href={sealed.shareUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-surface hover:opacity-90">Open Home Record report</a>
         <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(sealed.shareUrl); setCopied(true); } catch { /* no clipboard */ } }}
           className="rounded-lg border border-hairline bg-surface px-3.5 py-2 text-sm font-semibold text-ink hover:bg-ink/5">{copied ? 'Link copied' : 'Copy homeowner link'}</button>
       </div>
