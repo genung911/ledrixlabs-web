@@ -12,7 +12,7 @@
 //     the job stays.
 // The form asks what the phone's New Inspection asks, with the phone's choices (lib/newJob/intake.ts).
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { Card, ErrorBox, Loading, Page, PageHeader } from '@/components/workspace/ui';
 import { workspace } from '@/lib/workspace/client';
@@ -40,7 +40,7 @@ type Person = { mode: 'pick' | 'new'; id: string; name: string; email: string; p
 const NO_PERSON: Person = { mode: 'pick', id: '', name: '', email: '', phone: '' };
 
 // WHAT THE TEMPLATE OFFERS AT INTAKE (owner 2026-11-14, mockup B6BhhbaEivmUiE9GtETeqi): the app's intakeOffer.ts, copied.
-import { HOME_TYPE_LABEL, MAX_UNIT_BUILDINGS, PROPERTY_FEATURES, buildingsNamed, intakeAddOns, intakeExtras, intakeHomeTypes, intakeLayouts, unitBuildingNames, type UnitLayout } from '@/lib/templateBuilder/core/intakeOffer';
+import { HOME_TYPE_LABEL, MAX_UNIT_BUILDINGS, PROPERTY_FEATURES, buildingsNamed, intakeAddOns, intakeExtras, intakeHomeTypesAcross, intakeLayouts, templateForHomeType, unitBuildingNames, type UnitLayout } from '@/lib/templateBuilder/core/intakeOffer';
 
 export default function NewInspectionPage() {
   const { access } = useWorkspace();
@@ -96,11 +96,19 @@ export default function NewInspectionPage() {
   }, [access.companyId, access.userId]);
 
   // the type picks the template: the company's own for the type, else the phone's stock fallback
+  const typeDefaultOf = (name: string) => types.find(x => x.name === name)?.templateId ?? TYPE_DEFAULT_TEMPLATE[name] ?? 'internachi';
+  // THE HOME TYPE PICKS THE TEMPLATE (owner 2026-11-25, same rule as the phone — intakeOffer.templateForHomeType): the
+  // type's default when it is for this home, else the ONE template that is. A template the user picked stays (autoTpl).
+  const autoTpl = useRef<string>('');
+  const autoPick = (typeName: string, homeType: string) => {
+    const pick = templateForHomeType(homeType, typeDefaultOf(typeName), templates.map(t => ({ id: t.id, propertyTypes: t.tree?.propertyTypes ?? [] })));
+    setTemplateId(cur => { if (cur && cur !== autoTpl.current) return cur; autoTpl.current = pick; return pick; });
+  };
   const pickType = (name: string) => {
     set('inspectionType', name);
-    const t = types.find(x => x.name === name);
-    setTemplateId(t?.templateId ?? TYPE_DEFAULT_TEMPLATE[name] ?? 'internachi');
+    autoPick(name, f.homeType);
   };
+  const pickHome = (h: string) => { set('homeType', h); autoPick(f.inspectionType, h); };
   const typeNames = types.length ? types.map(t => t.name) : Object.keys(TYPE_DEFAULT_TEMPLATE);
   const templateChoices = [...templates.map(t => ({ id: t.id, name: t.name })), ...BASELINES];
   const offerTpl = templates.find(t => t.id === templateId)?.tree ?? null;
@@ -250,7 +258,7 @@ export default function NewInspectionPage() {
                 <div><label className={LABEL} htmlFor="ni-ba">Bathrooms</label><input id="ni-ba" className={FIELD} value={f.bathrooms} onChange={e => set('bathrooms', e.target.value)} /></div>
               </div>
               <div><span className={LABEL}>Home type *</span>
-                <div className="flex flex-wrap gap-1.5">{intakeHomeTypes(offerTpl).map(h => <button key={h} type="button" className={CHIP(f.homeType === h)} onClick={() => set('homeType', h)}>{HOME_TYPE_LABEL[h]}</button>)}</div></div>
+                <div className="flex flex-wrap gap-1.5">{intakeHomeTypesAcross([offerTpl, ...templates.map(t => t.tree)]).map(h => <button key={h} type="button" className={CHIP(f.homeType === h)} onClick={() => pickHome(h)}>{HOME_TYPE_LABEL[h]}</button>)}</div></div>
               {f.homeType === 'Multi-Unit' && (() => {
                 const made = unitBuildingNames({ homeType: 'Multi-Unit', unitCount: f.unitCount, buildingCount: layout === 'many' ? f.buildingCount : '1' });
                 return (

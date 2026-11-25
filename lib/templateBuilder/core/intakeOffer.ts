@@ -31,6 +31,28 @@ export function intakeHomeTypes(tpl: Pick<InspectionTemplate, 'propertyTypes'> |
   return own.size ? ORDER.filter(t => own.has(t)) : [...ORDER];
 }
 
+/** THE HOME TYPE PICKS THE TEMPLATE (owner 2026-11-25): the template home types (propertyTypes ids) a job's home type
+ *  is — the inverse of FROM_PROPERTY. Mobile is Manufactured. */
+export function propertyKindsOf(homeType: string | null | undefined): string[] {
+  const h = homeType === 'Mobile' ? 'Manufactured' : String(homeType ?? '');
+  return Object.keys(FROM_PROPERTY).filter(p => FROM_PROPERTY[p] === h);
+}
+/** The home types to offer when the home type picks the template: every type any of these templates is for (a template
+ *  that says none offers all four), so choosing one never hides the others. */
+export function intakeHomeTypesAcross(tpls: ReadonlyArray<Pick<InspectionTemplate, 'propertyTypes'> | null | undefined>): IntakeHomeType[] {
+  const on = new Set<IntakeHomeType>(tpls.flatMap(t => (t ? intakeHomeTypes(t) : [])));
+  return on.size ? ORDER.filter(t => on.has(t)) : [...ORDER];
+}
+/** Which template a home type picks: the type's default when it is for this home; else the ONE template that is;
+ *  several or none → the type's default (never a guess by list order). */
+export function templateForHomeType(homeType: string | null | undefined, typeDefault: string,
+  templates: ReadonlyArray<{ id: string; propertyTypes?: readonly string[] | null }>): string {
+  const kinds = propertyKindsOf(homeType);
+  if (!kinds.length) return typeDefault;
+  const hits = templates.filter(t => (t.propertyTypes ?? []).some(p => kinds.includes(p))).map(t => t.id);
+  return hits.includes(typeDefault) ? typeDefault : hits.length === 1 ? hits[0] : typeDefault;
+}
+
 export type UnitLayout = 'one' | 'many';
 /** The multi unit layouts this template offers; none said = both. */
 export function intakeLayouts(tpl: Pick<InspectionTemplate, 'propertyTypes'> | null | undefined): UnitLayout[] {
