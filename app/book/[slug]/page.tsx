@@ -136,9 +136,11 @@ export default function BookingPage() {
           headers: { ...API_HEADERS, origin: window.location.origin },
           body:    JSON.stringify({ booking_id: booking.id, inspector_id: profile.id }),
         });
-        const { url, error: cErr } = await cRes.json();
-        if (cErr) throw new Error(cErr);
-        window.location.href = url;
+        // 2026-11-24 (owner, w8: "Stripe not configured for this inspector" after the booking WAS saved): the booking
+        // exists by now, so a payment step that can't start — no Stripe connected, or Stripe unreachable — never shows
+        // an error that invites a second booking. The client lands on "Booking Received"; payment follows by invoice.
+        const { url, error: cErr } = await cRes.json().catch(() => ({ url: null, error: 'checkout_unavailable' }));
+        window.location.href = !cErr && url ? url : `/book/${slug}/success?booking_id=${booking.id}`;
       } else {
         window.location.href = `/book/${slug}/success?booking_id=${booking.id}`;
       }

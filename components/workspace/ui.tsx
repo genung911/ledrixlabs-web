@@ -200,19 +200,25 @@ export function PinnedBar({ label, onClick, disabled, reason, busy }: { label: s
 export function FieldRow({ label, value, onSave, placeholder, type = 'text', disabled }: { label: string; value: string; onSave: (v: string) => Promise<void> | void; placeholder?: string; type?: string; disabled?: boolean }) {
   const [v, setV] = React.useState(value);
   const [state, setState] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  // 2026-11-24 (owner, w8: "I do not see a save option" — two fields read only "Not saved"): the reason is shown.
+  const [why, setWhy] = React.useState('');
   React.useEffect(() => { setV(value); }, [value]);
   return (
+    <div>
     <label className="flex min-h-[44px] items-center gap-3 px-4 py-2">
       <span className="w-40 shrink-0 text-sm text-ink">{label}</span>
       <input type={type} value={v} placeholder={placeholder} disabled={disabled} onChange={e => setV(e.target.value)}
         onBlur={async () => {
           if (v === value) return;
           setState('saving');
-          try { await onSave(v); setState('saved'); } catch { setState('error'); }
+          try { await onSave(v); setState('saved'); setWhy(''); }
+          catch (e) { setState('error'); setWhy(e instanceof Error && e.message ? e.message : 'It could not be saved. Try again.'); }
         }}
         className="min-w-0 flex-1 rounded-md border border-hairline bg-ground/40 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent" />
       <span className="w-16 shrink-0 text-right text-xs text-muted" aria-live="polite">{state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved' : state === 'error' ? <span className="text-safety">Not saved</span> : ''}</span>
     </label>
+    {state === 'error' && why && <p role="alert" className="px-4 pb-2 pl-[11.5rem] text-xs text-safety">{why}</p>}
+    </div>
   );
 }
 

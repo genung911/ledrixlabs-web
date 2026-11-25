@@ -22,7 +22,7 @@ import { listInspectionTypes, listTemplates, detectBackend, type InspectionType,
 import { addContact, loadContacts, loadContactTypes, loadOrderSources, type Contact } from '@/lib/crm/api';
 import { NO_SOURCE, sourceFields, type OrderSource, type SourceChoice } from '@/lib/crm/crmHome';
 import { SourcePicker } from '@/components/crm/CrmApp';
-import { loadServices, orderForJob, draftInvoiceFor, type Service } from '@/lib/office/api';
+import { loadServices, orderForJob, draftInvoiceFor, REFERRER_DROPPED, type Service } from '@/lib/office/api';
 import { webDevice } from '@/lib/findings/edit';
 import { GAS_SUPPLY_OPTIONS, SEWER_TYPE_OPTIONS, TYPE_DEFAULT_TEMPLATE, WATER_SOURCE_OPTIONS, cents, splitPicks, togglePick } from '@/lib/newJob/intake';
 
@@ -155,8 +155,10 @@ export default function NewInspectionPage() {
             : agent.mode === 'new' && a.name ? await addContact({ type: 'agent', name: a.name, email: a.email, phone: a.phone }) : null;
           // The job's source — the phone's own rule (crmHome.sourceFields): a job with an agent came from that agent
           // unless something else was picked.
-          orderId = await orderForJob({ inspectionId: out.id, contactId: clientId, address: f.address, date: f.date, packageId: base?.id ?? null,
+          const order = await orderForJob({ inspectionId: out.id, contactId: clientId, address: f.address, date: f.date, packageId: base?.id ?? null,
             source: sourceFields(came, sources, agentId) });
+          orderId = order.id;
+          if (order.referrerDropped) warnings.push(REFERRER_DROPPED);
         } catch (e) { warnings.push(`Contacts and the job’s order were not saved: ${(e as Error).message}`); }
       } else warnings.push('Contacts and the job’s order were not saved — your account has no access to Contacts.');
       if (orderId && (base || addonList.length)) {

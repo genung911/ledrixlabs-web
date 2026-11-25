@@ -14,7 +14,7 @@ import { ErrorBox, FieldRow, Group, Loading, Page, PageHeader, Row, Sheet, Toggl
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import { mayEditServices } from '@/lib/office/access';
 import {
-  OfficeError, addService, loadBookingPage, loadServices, removeService, saveBookingPage, saveService,
+  OfficeError, addService, bookingSlugOf, loadBookingPage, loadServices, removeService, saveBookingPage, saveService,
   type BookingPage, type Service, type ServiceInput,
 } from '@/lib/office/api';
 
@@ -59,7 +59,8 @@ export default function ServicesPage() {
   const shown = services.filter(x => x.active).length;
   const inputOf = (x: Service): ServiceInput => ({ name: x.name, description: x.description ?? '', price: x.price, duration_minutes: x.duration_minutes, active: x.active });
   const dur = (m: number | null) => m ? `${Math.floor(m / 60) ? `${Math.floor(m / 60)} h` : ''}${m % 60 ? ` ${m % 60} min` : ''}`.trim() : null;
-  const saveBook = (next: BookingPage) => { setPage(next); return saveBookingPage(next, { userId: access.userId }); };
+  // The Link box shows what is kept: a pasted full address reads back as just its link part (bookingSlugOf).
+  const saveBook = (next: BookingPage) => { setPage({ ...next, slug: next.slug == null ? next.slug : bookingSlugOf(next.slug) }); return saveBookingPage(next, { userId: access.userId }); };
 
   return (
     <Page>

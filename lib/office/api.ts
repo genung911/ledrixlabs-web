@@ -88,8 +88,14 @@ export async function loadBookingPage(me: { userId: string; ownsIt: boolean }): 
   return { slug: d.booking_slug ?? null, active: !!d.booking_active, businessName: d.business_name ?? null, website: d.website ?? null,
     agreement: d.agreement_template ?? null, editable: me.ownsIt, source: 'own' };
 }
+/** The link part only: a pasted "https://www.ledrixlabs.com/book/labs-home-inspections/" becomes
+ *  "labs-home-inspections" (owner 2026-11-24, w8: the whole address in the Link box read only "Not saved"). */
+export function bookingSlugOf(input: string | null | undefined): string {
+  return (input ?? '').trim().toLowerCase()
+    .replace(/^https?:\/\//, '').replace(/^(www\.)?ledrixlabs\.com\/?/, '').replace(/^book\/+/, '').replace(/\/+$/, '');
+}
 export async function saveBookingPage(page: BookingPage, me: { userId: string }): Promise<void> {
-  const slug = (page.slug ?? '').trim().toLowerCase();
+  const slug = bookingSlugOf(page.slug);
   if (page.source === 'company') {
     const r = await workspace.rpc('set_company_booking_settings', { p_slug: slug, p_active: page.active, p_business_name: page.businessName ?? '',
       p_website: page.website ?? '', p_agreement: page.agreement ?? '' });
@@ -122,13 +128,23 @@ export async function saveStripeKey(key: string): Promise<StripeStatus> {
 /** The job's CRM order — like the phone's create (one order per job, pointing at its inspection). No fee: money is the
  *  invoice's. The service, when picked, rides as package_id. */
 export async function orderForJob(j: { inspectionId: string; contactId: string | null; address: string; date: string; packageId: string | null;
-  source?: Record<string, string | null> }): Promise<string> {
+  source?: Record<string, string | null> }): Promise<{ id: string; referrerDropped: boolean }> {
   // `source`: where the job came from (#114), shaped by lib/crm/crmHome.ts sourceFields ({} when the server takes none).
-  const res = await workspace.from('crm_orders').insert({ inspection_id: j.inspectionId, contact_id: j.contactId, address: j.address.trim(),
-    order_date: j.date, status: 'scheduled', package_id: j.packageId, ...(j.source ?? {}) }).select('id').single();
+  const row = { inspection_id: j.inspectionId, contact_id: j.contactId, address: j.address.trim(), order_date: j.date, status: 'scheduled',
+    package_id: j.packageId };
+  let res = await workspace.from('crm_orders').insert({ ...row, ...(j.source ?? {}) }).select('id').single();
+  // 2026-11-24 (owner: a website job missing from the CRM Schedule): the server refuses a referrer that is not one of
+  // this company's contacts (crm_order_source_guard). The job still gets its order — without where it came from — and
+  // the caller says so (referrerDropped → REFERRER_DROPPED). Any other refusal fails as before.
+  if (res.error && REFERRER_REFUSED.test(res.error.message ?? '') && j.source && Object.keys(j.source).length) {
+    res = await workspace.from('crm_orders').insert(row).select('id').single();
+    if (!res.error) return { id: (res.data as { id: string }).id, referrerDropped: true };
+  }
   if (res.error) fail(res.error, 'The job’s order was not saved.');
-  return (res.data as { id: string }).id;
+  return { id: (res.data as { id: string }).id, referrerDropped: false };
 }
+export const REFERRER_REFUSED = /referring contact must be one of this company/i;
+export const REFERRER_DROPPED = 'The job is on the Schedule, but where it came from was not saved: that contact is not one of your company’s contacts.';
 /** A DRAFT invoice for the order: created by create_invoice, its lines set to the services picked. Never sent here —
  *  the office sends it from Invoices. */
 export async function draftInvoiceFor(orderId: string, lines: { description: string; quantity: number; unit_cents: number }[]): Promise<string> {
