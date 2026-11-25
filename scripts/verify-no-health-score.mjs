@@ -15,6 +15,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => readFileSync(join(root, p), 'utf8');
@@ -42,7 +43,7 @@ for (const [re, what] of BANNED) {
   const hits = files.filter(f => re.test(f.src)).map(f => f.rel);
   ok(`no ${what}`, hits.length === 0, hits.join(', '));
 }
-const share = read('app/share/[id]/page.tsx');
+const share = shareSource(root);
 const home = (share.match(/function HomeTab\([\s\S]*?\n}\n/) ?? [''])[0];
 ok('HomeTab found', home.length > 2000);
 ok('HomeTab hero draws no ring (no strokeDasharray arc)', !/strokeDasharray/.test(home));

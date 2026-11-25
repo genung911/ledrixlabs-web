@@ -17,6 +17,8 @@
 import { registerHooks } from 'node:module';
 import { webcrypto, createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
+import { fileURLToPath } from 'node:url';
 
 registerHooks({
   resolve(spec, ctx, next) {
@@ -629,7 +631,7 @@ addLink(A.share, READ_A, 'read');
 // ══ Client contract: the portal page's own code, end to end ═════════════════════════════════
 reset();
 {
-  const page = readFileSync(new URL('../app/share/[id]/page.tsx', import.meta.url), 'utf8');
+  const page = shareSource(fileURLToPath(new URL('..', import.meta.url)));
   const repairsPage = readFileSync(new URL('../app/share/[id]/repairs/page.tsx', import.meta.url), 'utf8');
   const tab = page.slice(page.indexOf('function DocsTab('), page.indexOf('// ── Category detail'));
   ok('C upload is sign → PUT → complete, with the token, never a shareId or a file through the route',

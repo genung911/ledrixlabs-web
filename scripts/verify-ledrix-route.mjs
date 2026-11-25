@@ -16,6 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src  = process.env.WEB_SRC ? join(process.env.WEB_SRC) : repo;
@@ -289,7 +290,7 @@ for (const mode of ['http500', 'drop', 'badjson']) {
 
 // ── The portal sends its token on every call ──────────────────────────────────────────
 {
-  const page = readFileSync(join(src, 'app/share/[id]/page.tsx'), 'utf8');
+  const page = shareSource(src);
   const calls = [...page.matchAll(/fetch\('\/api\/ledrix',[\s\S]{0,400}?JSON\.stringify\(\{([^}]*)\}/g)].map(m => m[1]);
   ok('every /api/ledrix call in the portal is found', calls.length === 5, `${calls.length} calls`);
   ok('every /api/ledrix call sends token: PORTAL_TOKEN', calls.length > 0 && calls.every(b => /token:\s*PORTAL_TOKEN/.test(b)),

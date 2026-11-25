@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src  = process.env.WEB_SRC ? join(process.env.WEB_SRC) : repo;
@@ -206,7 +207,7 @@ const live = build('live', { NEXT_PUBLIC_SUPABASE_URL: SUPA, SUPABASE_SERVICE_RO
     const r = await call(live.asset, url.searchParams.toString());
     ok('R5 the rewritten stored URL resolves through /api/report-asset', r.status >= 300 && r.status < 400 && r.signed[0]?.[1] === `report/${A}/0.jpg`, `status ${r.status}`);
   }
-  const page = readFileSync(join(src, 'app/share/[id]/page.tsx'), 'utf8').replace(/\/\/.*$/gm, '');
+  const page = shareSource(src).replace(/\/\/.*$/gm, '');
   ok('R5 the portal builds no tokenless /api/photo or /api/report-asset URL',
     !/\/api\/(photo|report-asset)\?path=/.test(page),
     'every asset URL must go through assetUrl(…, PORTAL_TOKEN)');

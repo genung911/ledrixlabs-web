@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(repo, 'package.json'));
@@ -134,7 +135,7 @@ t = await loadFirstReport([], fakeFetch({}, []));
 ok('no candidates → null', t === null);
 
 console.log('\npage wiring (SOURCE-TEXT — the client component is not rendered here)');
-const page = readFileSync(join(repo, 'app/share/[id]/page.tsx'), 'utf8');
+const page = shareSource(repo);
 ok('[source] a selected history version still reads ONLY its own html_path',
   /const reportUrls: string\[\] = selected\?\.html_path\s*\?\s*\[assetUrl\('report-asset', selected\.html_path, PORTAL_TOKEN\)\]/.test(page));
 ok('[source] the default reads defaultReportHtmlPaths(record.share_id, record.pdf_url) — pdf_url is the source of truth',

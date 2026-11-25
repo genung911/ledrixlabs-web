@@ -80,7 +80,7 @@ for (const t of TIERS) {
     m.label === title(SC.SEVERITY_SHORT_LABELS[t]) && m.rank === SC.SEVERITY_ORDER[t], JSON.stringify(m));
 }
 
-const share = web('app/share/[id]/page.tsx') ?? '';
+const share = web('app/share/[id]/shared.tsx') ?? '';   // the PRIO table's file since the 2026-11-25 split
 const prioSrc = /const PRIO = (\{[\s\S]*?\n\}) as const;/.exec(share)?.[1];
 const mapSrc = /const SEV_TO_PRIO: Record<string, PrioKey> = (\{[\s\S]*?\});/.exec(share)?.[1];
 ok('share page: the PRIO table and its severity map are found', !!prioSrc && !!mapSrc);
@@ -169,7 +169,7 @@ process.exit(fail ? 1 : 0);
 async function mutate() {
   const MUT = [
     ['W1 a copied rule drifts on the website', 'web', 'lib/scope/core/taxonomy/scopeRules.ts', s => s + '\n// drift\n'],
-    ['W2 the share page renames a tier', 'web', 'app/share/[id]/page.tsx', s => s.replace("minor:  { label: 'MINOR REPAIR'", "minor:  { label: 'MINOR FIX'")],
+    ['W2 the share page renames a tier', 'web', 'app/share/[id]/shared.tsx', s => s.replace("minor:  { label: 'MINOR REPAIR'", "minor:  { label: 'MINOR FIX'")],
     ['W3 the sealed page reorders two tiers', 'web', 'lib/sopTemplate.ts', s => s.replace("color: '#CA8A04', rank: 1", "color: '#CA8A04', rank: 2")],
     ['W4 the website forgets Ledrix\'s suggestion in "no priority yet"', 'web', 'lib/findings/rules.ts', s => s.replace("&& !str(row.ai_severity)", '')],
     ['W5 the website stops requiring a location to confirm', 'web', 'lib/findings/rules.ts', s => s.replace("if (!str(d.room)) m.push('Location');", '')],

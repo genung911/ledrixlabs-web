@@ -10,8 +10,9 @@
 //     a photo on each finding row, the finding opens the existing detail
 // Mutants: in-memory copies. Nothing on disk is edited.
 import { readFileSync } from 'node:fs'; import { join, dirname } from 'node:path'; import { fileURLToPath } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = { page: readFileSync(join(ROOT, 'app/share/[id]/page.tsx'), 'utf8'), api: readFileSync(join(ROOT, 'app/api/share/[token]/route.ts'), 'utf8') };
+const SRC = { page: shareSource(ROOT), api: readFileSync(join(ROOT, 'app/api/share/[token]/route.ts'), 'utf8') };
 function checks(S) {
   const out = []; const ok = (n, v) => out.push([n, !!v]);
   const home = (S.page.match(/function HomeTab\([\s\S]*?\n}\n/) ?? [''])[0];

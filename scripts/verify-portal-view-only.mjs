@@ -22,6 +22,7 @@ import { registerHooks, createRequire } from 'node:module';
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(repo, 'package.json'));
@@ -30,7 +31,7 @@ const ts = require('typescript');
 let checks = 0; const failures = [];
 const ok = (label, cond, detail) => { checks++; if (!cond) failures.push(detail ? `${label}\n      ${detail}` : label); };
 
-const pageSrc = readFileSync(join(repo, 'app/share/[id]/page.tsx'), 'utf8');
+const pageSrc = shareSource(repo);
 
 // ── 3 · Rules ─────────────────────────────────────────────────────────────────────────────
 const { portalCan, PORTAL_WRITE_ACTIONS } = await import(pathToFileURL(join(repo, 'lib/portalActions.ts')).href);

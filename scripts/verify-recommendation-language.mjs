@@ -17,6 +17,7 @@ import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => readFileSync(join(root, p), 'utf8');
@@ -83,7 +84,7 @@ if (existsSync(twin)) {
 } else console.log('  skip twin drift check (ledrix-app not beside this repo)');
 
 console.log('Part 2 · the share page never shows a stored pro');
-const share = read('app/share/[id]/page.tsx');
+const share = shareSource(root);
 const renders = share.match(/\{a\.prosToCall[^}]*\}|>\{a\.prosToCall\}<|a\.prosToCall \?/g) ?? [];
 ok('no JSX renders a.prosToCall', renders.length === 0, renders.join(' | '));
 ok('pros fetch uses the neutral search, and only when there is one',

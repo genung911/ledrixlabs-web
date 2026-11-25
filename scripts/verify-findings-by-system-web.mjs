@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { shareSource } from './lib/shareSource.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const APP = process.env.LEDRIX_APP ?? join(ROOT, '..', 'ledrix-app');
@@ -26,7 +27,7 @@ const F = {
   sections: process.env.FINDING_SECTIONS_MODULE ?? join(ROOT, 'lib/report/findingSections.ts'),
   seal: process.env.SEAL_ROUTE_SRC ?? join(ROOT, 'app/api/reports/seal/[hash]/route.ts'),
   shareRoute: process.env.SHARE_ROUTE_SRC ?? join(ROOT, 'app/api/share/[token]/route.ts'),
-  sharePage: process.env.SHARE_PAGE_SRC ?? join(ROOT, 'app/share/[id]/page.tsx'),
+  sharePage: process.env.SHARE_PAGE_SRC ?? (() => { const f = join(mkdtempSync(join(tmpdir(), 'fbs-share-')), 'page.tsx'); writeFileSync(f, shareSource(ROOT)); return f; })(),   // the split page (2026-11-25) as one module
   sop: process.env.SOP_TEMPLATE_MODULE ?? join(ROOT, 'lib/sopTemplate.ts'),
 };
 const MUTANT = !!process.env.FBS_MUTANT;

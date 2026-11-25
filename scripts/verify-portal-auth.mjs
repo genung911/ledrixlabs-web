@@ -12,6 +12,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 let checks = 0; const failures = [];
@@ -22,7 +23,7 @@ const read = (rel) => existsSync(join(root, rel))
 const strip = (t) => t ? t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1') : t;
 const route   = read('app/api/portal/route.ts');
 const routeCode = strip(route);
-const page    = read('app/share/[id]/page.tsx');
+const page    = shareSource(root);
 const repairs = read('app/share/[id]/repairs/page.tsx');
 const sql     = read('supabase_portal_lockdown.sql');
 // The allow-list and filter grammar moved here 2026-10-19; the route enforces them.

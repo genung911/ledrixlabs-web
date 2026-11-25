@@ -13,8 +13,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shareSource } from './lib/shareSource.mjs';   // the share page, split into files 2026-11-25, as one module
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PAGE = readFileSync(join(repo, 'app/share/[id]/page.tsx'), 'utf8');
+const PAGE = shareSource(repo);
 
 function checks(src) {
   const out = [];
