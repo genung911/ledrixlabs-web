@@ -44,11 +44,24 @@ function suite() {
   ok('§1 the facts this job asks, in the app\'s order — the types only where their item is in the checklist',
     // RE-ANCHORED 2026-11-14 (app 6f9f84020, #127): Front faces is the first fact
     // RE-ANCHORED 2026-11-15 (app b24196efb, #128): Stories, a job column like the utilities, is always asked
-    ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace' })) === 'front,gas,water,sewer,heats,cools,stories,garage');
-  ok('§1 the phone\'s This-visit pages (Weather, Occupancy, Utilities on) are not asked here — the website has no choices for them (app 2026-11-18)',
-    !/weather|occupancy|utilities_on/.test(ids(vm({}))));
+    // RE-ANCHORED 2026-11-25 (z22): the three This-visit pages follow the utilities, as on the phone
+    ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace' })) === 'front,gas,water,sewer,weather,occupancy,utilities_on,heats,cools,stories,garage');
+  // §6 z22 (owner 2026-11-25, approval pack item 8): the phone's This-visit pages, asked here with the phone's own choices
+  const visit = (row) => Object.fromEntries(M.factsView(SYSTEMS, vm({}), row).filter(x => x.target.kind === 'visit').map(x => [x.fact.id, x]));
+  const v0 = visit(ROW);
+  ok('§6 Weather, Occupancy and Utilities on are asked, unanswered on a new job', ['weather', 'occupancy', 'utilities_on'].every(k => v0[k] && v0[k].value === ''));
+  const v1 = visit({ ...ROW, weather: 'Rain', ground: 'Wet', occupancy: 'Vacant', water_state: 'On', gas_state: 'Off', power_state: 'On' });
+  ok('§6 answered from the job\'s own columns; weather shows the ground too', v1.weather?.display === 'Rain · Wet' && v1.occupancy?.display === 'Vacant');
+  ok('§6 Utilities on is answered only when water, power and (a house with gas) gas are', v1.utilities_on?.value === 'Water on · Gas off · Power on'
+    && visit({ ...ROW, water_state: 'On', power_state: 'On' }).utilities_on?.value === ''
+    && visit({ ...ROW, gas_supply: 'No gas service', water_state: 'On', power_state: 'Off' }).utilities_on?.value === 'Water on · Power off');
+  ok('§6 the phone\'s lists, word for word', JSON.stringify(M.WEATHER_OPTIONS) === JSON.stringify(['Clear', 'Cloudy', 'Rain', 'Snow', 'Wind', 'Fog'])
+    && JSON.stringify(M.GROUND_OPTIONS) === JSON.stringify(['Dry', 'Wet', 'Snow-covered', 'Frozen', 'Standing water'])
+    && JSON.stringify(M.OCCUPANCY_OPTIONS) === JSON.stringify(['Occupied', 'Vacant', 'Occupied · furnished', 'Vacant · staged'])
+    && JSON.stringify(M.UTILITY_STATE_OPTIONS) === JSON.stringify(['On', 'Off', 'Not determined']));
+  ok('§6 Gas is asked only for a house with gas (or gas not answered yet)', M.visitHasGas({ gas_supply: 'Propane' }) && M.visitHasGas({ gas_supply: null }) && !M.visitHasGas({ gas_supply: 'No gas service' }));
   ok('§1 Backup heat follows What heats only for a heat pump or a mini-split',
-    ids(vm({ 'hvac_heating::fuel_source': 'Heat Pump' })) === 'front,gas,water,sewer,heats,backup_heat,cools,stories,garage'
+    ids(vm({ 'hvac_heating::fuel_source': 'Heat Pump' })) === 'front,gas,water,sewer,weather,occupancy,utilities_on,heats,backup_heat,cools,stories,garage'
     && ids(vm({ 'hvac_heating::fuel_source': 'Gas Furnace, Ductless Mini-Split' })).includes('backup_heat'));
   const v = M.factsView(SYSTEMS, vm({ 'hvac_heating::fuel_source': 'Heat Pump' }), ROW);
   const by = (id) => v.find(x => x.fact.id === id);
@@ -77,12 +90,15 @@ function suite() {
     api.includes('if (Number(current.row_version) !== Number(row.row_version)) return { kind: \'changed\', row: current };')
     && api.includes('sync_base_version: row.row_version, sync_device: webDevice(), lease_epoch: lease.epoch'));
   ok('§3 the lock is taken before any save; a type goes through put_inspection_values; recorded work is checked first',
-    (panel.match(/const lease = await lock\.ensure\(\);/g) ?? []).length === 3   // Save, an appliance tap, the appliances stamp (2026-11-23)
+    (panel.match(/const lease = await lock\.ensure\(\);/g) ?? []).length === 4   // Save, a visit page's Save (z22), an appliance tap, the appliances stamp
     && panel.includes("await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });")
     && panel.includes('if (blocked.length) { setNote({ tone: \'bad\', text: blockedSentence(blocked) }); return; }'));
+  ok('§6 a visit page saves its columns together, under the lock; the weather Save confirms it', panel.includes('const r = await saveFactColumns(row, patch, lease);')
+    && panel.includes("if (v.target.id === 'weather' && visit.weather) {") && panel.includes('weather_confirmed_at: new Date().toISOString(), weather_confirmed_weather: visit.weather,')
+    && api.includes(".update({ ...patch, updated_at:") && /COLS = '[^']*water_state, gas_state, power_state'/.test(api));
   ok('§4 Before you start is first in the menu, with what is left', page.includes("{ id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },\n    { id: 'review',"));
   // §5 w22 (2026-11-23): the appliances question is answered by the server's appliances_asked, as on the phone
-  ok('§5 the page reads appliances_asked', /COLS = '[^']*appliances_asked'/.test(api));
+  ok('§5 the page reads appliances_asked', /COLS = '[^']*appliances_asked,/.test(api));
   ok('§5 Appliances reads Not answered until stamped, and counts in what is left',
     panel.includes("appliancesAnswered ? appliancesDisplay(appliances) : 'Not answered'") && panel.includes('+ (applianceCount && !appliancesAnswered ? 1 : 0)'));
   ok('§5 closing the opened Appliances row stamps it answered, under the lock',
@@ -104,7 +120,12 @@ const MUT = [
   [MODEL, 'a house fact is not read as the phone reads house::garage', "Object.keys(HOUSE_KEY).find(k => HOUSE_KEY[k] === (v.target as { key: ExtrasKey }).key)!", '(v.target as { key: ExtrasKey }).key'],
   [API, 'a save does not name its version', 'sync_base_version: row.row_version, ', ''],
   [PANEL, 'a save skips the lock', "      const lease = await lock.ensure();\n      if (!lease) return;\n      if (v.target.kind === 'extras') {", "      const lease = { epoch: 0 };\n      if (v.target.kind === 'extras') {"],   // anchored on Save (2026-11-23: two saves share the lock lines)
-  [API, 'appliances_asked is not read', ", stories, appliances_asked'", ", stories'"],
+  [API, 'appliances_asked is not read', ", stories, appliances_asked,", ", stories,"],
+  [MODEL, 'the visit pages are left to the phone again', 'const inTemplate = HOUSE_FACTS.filter(f => VISIT_IDS.has(f.id) || (', 'const inTemplate = HOUSE_FACTS.filter(f => ('],
+  [MODEL, 'utilities answered with gas unasked', "return utilitiesOnValue({ gasSupply: row.gas_supply, waterState: row.water_state, gasState: row.gas_state, powerState: row.power_state });", "return utilitiesOnValue({ gasSupply: 'No gas service', waterState: row.water_state, gasState: row.gas_state, powerState: row.power_state });"],
+  [MODEL, 'a list drifts from the phone', "export const OCCUPANCY_OPTIONS = ['Occupied', 'Vacant', 'Occupied · furnished', 'Vacant · staged'] as const;", "export const OCCUPANCY_OPTIONS = ['Occupied', 'Vacant'] as const;"],
+  [PANEL, 'the weather Save does not confirm it', 'weather_confirmed_at: new Date().toISOString(), weather_confirmed_weather: visit.weather,', 'weather_confirmed_weather: visit.weather,'],
+  [API, 'a visit page saves one column only', '.update({ ...patch, updated_at:', '.update({ [Object.keys(patch)[0]]: Object.values(patch)[0], updated_at:'],
   [PANEL, 'Appliances never reads Not answered', "appliancesAnswered ? appliancesDisplay(appliances) : 'Not answered'", 'appliancesDisplay(appliances)'],
   [PANEL, 'closing does not stamp', "if (appliancesOpen) { setOpen(null); void stampAppliances(); }", "if (appliancesOpen) { setOpen(null); }"],
   [PAGE, 'anyone can change it', 'canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))}', 'canEdit={true}'],

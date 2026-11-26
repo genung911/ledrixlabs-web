@@ -11,8 +11,8 @@ import { Card, Empty, Loading } from './ui';
 import type { EditLock } from './FindingEditor';
 import { loadTemplate, loadValues, putValue } from '@/lib/scope/api';
 import { valueId, valueMapOf, type ServerValue, type ValueMap } from '@/lib/scope/model';
-import { loadFactsRow, saveFactColumn } from '@/lib/houseFacts/api';
-import { blockedBy, blockedSentence, factsView, nextAnswer, picksOf, NONE_ANSWER, type FactView, type FactsRow } from '@/lib/houseFacts/model';
+import { loadFactsRow, saveFactColumn, saveFactColumns } from '@/lib/houseFacts/api';
+import { blockedBy, blockedSentence, factsView, nextAnswer, picksOf, NONE_ANSWER, WEATHER_OPTIONS, GROUND_OPTIONS, OCCUPANCY_OPTIONS, UTILITY_STATE_OPTIONS, visitHasGas, type FactView, type FactsRow } from '@/lib/houseFacts/model';
 import type { TemplateNode } from '@/lib/scope/core/templates/InspectionTemplate';
 import { conditionValues } from '@/lib/scope/model';
 import { sectionsOfTemplate } from '@/lib/scope/core/taxonomy/scopeRules';
@@ -28,6 +28,8 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // THIS VISIT (z22): a page's own answers, column by column, while it is open.
+  const [visit, setVisit] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -52,8 +54,34 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
   const row = state.row;
   const editable = canEdit && !lock.heldBy;
 
-  const start = (v: FactView) => { setOpen(v.fact.id); setDraft(v.value); setNote(null); };
+  const start = (v: FactView) => {
+    setOpen(v.fact.id); setDraft(v.value); setNote(null);
+    const c = (k: keyof FactsRow) => String(row[k] ?? '');
+    if (v.target.kind === 'visit') setVisit(v.target.id === 'weather' ? { weather: c('weather'), ground: c('ground') }
+      : v.target.id === 'occupancy' ? { occupancy: c('occupancy') }
+      : { water_state: c('water_state'), power_state: c('power_state'), ...(visitHasGas(row) ? { gas_state: c('gas_state') } : {}) });
+  };
+  /** A visit page's Save: its columns together. The weather Save is the inspector confirming it (the phone's Continue). */
+  const saveVisit = async (v: FactView) => {
+    if (v.target.kind !== 'visit') return;
+    const patch: Record<string, string | null> = Object.fromEntries(Object.entries(visit).map(([k, x]) => [k, x || null]));
+    if (v.target.id === 'weather' && visit.weather) {
+      Object.assign(patch, { weather_confirmed_at: new Date().toISOString(), weather_confirmed_weather: visit.weather,
+        weather_confirmed_temp_f: row.temp_f != null && String(row.temp_f).trim() ? String(row.temp_f) : null });
+    }
+    setBusy(true); setNote(null);
+    try {
+      const lease = await lock.ensure();
+      if (!lease) return;
+      const r = await saveFactColumns(row, patch, lease);
+      if (r.kind === 'saved') { setState(s => s.kind === 'ready' ? { ...s, row: r.row } : s); setOpen(null); }
+      else if (r.kind === 'changed') { setState(s => s.kind === 'ready' ? { ...s, row: r.row } : s); setNote({ tone: 'warn', text: `${v.fact.label} changed on a phone first. Your change wasn’t saved. Theirs is showing now.` }); setOpen(null); }
+      else if (r.kind === 'locked') { lock.lost(); setNote({ tone: 'warn', text: 'Your phone has this job open. Use “Edit here instead” to change it here.' }); }
+      else setNote({ tone: 'bad', text: r.message });
+    } finally { setBusy(false); }
+  };
   const save = async (v: FactView) => {
+    if (v.target.kind === 'visit') return saveVisit(v);
     if (draft === v.value) { setOpen(null); return; }
     const blocked = blockedBy(v, draft, state.systems, state.values, row, id => findings[id] ?? 0);
     if (blocked.length) { setNote({ tone: 'bad', text: blockedSentence(blocked) }); return; }
@@ -70,6 +98,7 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
         return;
       }
       const t = v.target;
+      if (t.kind !== 'spec') return;
       const prev = (state.values.get(valueId('spec', t.key))?.value as Record<string, unknown> | null) ?? {};
       const value = { ...prev, label: (prev as { label?: string }).label ?? `${t.node.label}`, value: draft };
       const r = await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });
@@ -179,7 +208,36 @@ export function HouseFactsPanel({ inspectionId, lock, canEdit, findings, onLeft 
                     </button>
                   ) : <span />}
                 </div>
-                {isOpen ? (
+                {isOpen && v.target.kind === 'visit' ? (() => {
+                  const id = v.target.id;
+                  const one = (col: string, opts: readonly string[], label: string) => (
+                    <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
+                      {opts.map(o => { const on = visit[col] === o;
+                        return <button key={o} type="button" aria-pressed={on} className={chip(on)} onClick={() => setVisit(d => ({ ...d, [col]: d[col] === o ? '' : o }))}>{on ? `✓ ${o}` : o}</button>; })}
+                    </div>
+                  );
+                  const changed = Object.entries(visit).some(([k, x]) => x !== String(row[k as keyof FactsRow] ?? ''));
+                  const ready = id === 'weather' ? !!visit.weather : id === 'occupancy' ? !!visit.occupancy : Object.values(visit).every(Boolean);
+                  return (
+                    <div className="px-4 pb-4">
+                      <p className="mb-1 text-sm text-body">{v.fact.question ?? v.fact.label}</p>
+                      {v.fact.hint ? <p className="mb-2.5 text-xs text-muted">{v.fact.hint}</p> : null}
+                      {id === 'weather' ? <div className="flex flex-col gap-2.5">{one('weather', WEATHER_OPTIONS, 'Weather')}
+                        <span className="text-xs font-semibold text-muted">Ground</span>{one('ground', GROUND_OPTIONS, 'Ground')}</div>
+                        : id === 'occupancy' ? one('occupancy', OCCUPANCY_OPTIONS, 'Occupancy')
+                        : <div className="flex flex-col gap-2">
+                            {([['water_state', 'Water'], ...(visitHasGas(row) ? [['gas_state', 'Gas']] : []), ['power_state', 'Power']] as [string, string][]).map(([col, label]) => (
+                              <div key={col} className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-2"><span className="text-sm text-ink">{label}</span>{one(col, UTILITY_STATE_OPTIONS, label)}</div>
+                            ))}
+                          </div>}
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button type="button" onClick={() => setOpen(null)} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5">Cancel</button>
+                        <button type="button" disabled={busy || !ready || (!changed && !(id === 'weather' && !row.weather_confirmed_at))} onClick={() => void saveVisit(v)}
+                          className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Saving…' : id === 'weather' && !changed ? 'Confirm' : 'Save'}</button>
+                      </div>
+                    </div>
+                  );
+                })() : isOpen ? (
                   <div className="px-4 pb-4">
                     <p className="mb-2.5 text-sm text-body">{v.fact.question ?? v.fact.label}{v.fact.multi ? ' Pick every one.' : ''}</p>
                     <div className="flex flex-wrap gap-2" role="group" aria-label={v.fact.label}>
