@@ -137,8 +137,12 @@ async function suite(src) {
   // §4
   const api = strip(src.api);
   const writeCalls = [...api.matchAll(/\.(insert|update|upsert|delete|rpc)\s*\(/g)].map(m => m[1]);
-  ok('§4 lib/team writes exactly: one insert, one delete, one rpc — no update, no upsert',
-    JSON.stringify(writeCalls.sort()) === JSON.stringify(['delete', 'insert', 'rpc']), JSON.stringify(writeCalls));
+  // 2026-11-26 (#157): the insert is tried once with the name + mobile and, only if those columns don't exist yet, once
+  // without — both on company_invitations. The email goes through the send-invite function, which writes nothing.
+  ok('§4 lib/team writes exactly: the invitation insert (with its pre-#157 retry), one delete, one rpc — no update, no upsert',
+    JSON.stringify(writeCalls.sort()) === JSON.stringify(['delete', 'insert', 'insert', 'rpc']) && (api.match(/from\('company_invitations'\)\.insert\(/g) ?? []).length === 2
+    && /if \(noContactCols\(res\.error\)\) res = await workspace\.from\('company_invitations'\)\.insert\(row\)/.test(api), JSON.stringify(writeCalls));
+  ok('§4 the invite email goes through send-invite as the signed-in user', /workspace\.functions\.invoke\('send-invite', \{ body: \{ invitation_id: id, again \} \}\)/.test(api));
   ok('§4 …the insert and delete are on company_invitations, the rpc is set_company_member_role',
     /from\('company_invitations'\)\.insert\(/.test(api) && /from\('company_invitations'\)\.delete\(/.test(api) && /\.rpc\('set_company_member_role'/.test(api));
   ok('§4 lib/team uses the signed-in workspace client and no service key', /from '@\/lib\/workspace\/client'/.test(src.api) && !/SERVICE_ROLE|service_role/i.test(api));
@@ -146,7 +150,8 @@ async function suite(src) {
   ok('§4 the page writes nothing directly (only through lib/team)', !/\.(insert|update|upsert|delete|rpc)\s*\(/.test(page));
   ok('§4 the invite form, the pending list and the role picker are each gated on the role',
     /\{manages && inviting && \(\s*<Sheet title="Invite someone"/.test(page) /* 2026-11-23 website Apple pass: the invite is a sheet */ && /\{manages && state\.invites\.length > 0 && <Group heading="Waiting to join"/.test(page) && /\{state\.invites\.map\(inv => \{/.test(page) /* 2026-11-25 batch 4 (mockup Xz88Phv45CdsgNoCuuhaEA): invitations in their own group, Waiting to join */ && /manages && !lock \?/.test(page));
-  ok('§4 the invite note says no email is sent', /Ledrix doesn’t send an email/.test(page));
+  ok('§4 Send invite saves the invitation, then emails it; a failed email says why and the invitation stands', /let mailed = ''; try \{ await sendInviteEmail\(id\); mailed = 'ok'; \} catch \(e\) \{ mailed = msg\(e\); \}/.test(page)
+    && /the email wasn’t sent: \$\{mailed\}/.test(page));
   ok('§4 a role change asks first (a dialog), then calls the server', /setPending\(\{ member: m, role: e\.target\.value \}\)/.test(page) && /role="dialog"/.test(page) && /await setMemberRole\(pending\.member\.id, pending\.role\)/.test(page));
   ok('§4 no member removal is offered (the server has no such operation)', !/remove member|removeMember|Remove from team/i.test(page));
 
@@ -178,7 +183,7 @@ async function suite(src) {
   // §7 PERMISSIONS ON AN INVITATION (#150, owner 2026-11-24): the sheet's changes go onto the new invitation; an invited
   // person opens beside the list with the server's list (owner-only switches), Copy how to join and Revoke.
   ok('§7 Send sets the sheet\'s changes on the new invitation, through the server',
-    /const id = await createInvitation\(access\.companyId, clean, inviteRole\);/.test(page)
+    /const id = await createInvitation\(access\.companyId, clean, inviteRole, \{ fullName: cleanInviteName\(invName\), phone \}\);/.test(page)
     && /for \(const \[cap, allowed\] of Object\.entries\(inviteChanges\) as Array<\[Capability, boolean\]>\) \{\s*await setInvitationPermission\(id, cap, allowed\)/.test(page)
     && /return \(res\.data as Array<\{ id: string \}>\)\[0\]\.id;/.test(api));
   ok('§7 the sheet\'s switches are the owner\'s only, and never for an Owner invite',
@@ -186,7 +191,9 @@ async function suite(src) {
   ok('§7 an invitation\'s switches show the server\'s list and are live only when it says can_change',
     /const p = await setInvitationPermission\(id, cap, allowed\); setInvPerms\(prev => \(\{ \.\.\.prev, \[id\]: p \}\)\);/.test(page)
     && /disabled=\{busy \|\| !perms\.can_change\}/.test(page));
-  ok('§7 an invitation\'s panel copies the join steps and revokes', /navigator\.clipboard\.writeText\(joinSteps\(invite\.email\)\)/.test(page) && /label="Revoke invitation" destructive/.test(page));
+  ok('§7 an invitation\'s panel: Text invite (Messages, the steps filled in), Email again, Copy how to join, Revoke',
+    /const steps = joinSteps\(invite\.email, invite\.full_name, company\);/.test(page) && /navigator\.clipboard\.writeText\(steps\)/.test(page)
+    && /<Row label="Text invite" [^>]*href=\{textInviteHref\(invite\.phone, steps\)\} \/>/.test(page) && /<Row label="Email again" [^>]*onClick=\{onEmail\} \/>/.test(page) && /label="Revoke invitation" destructive/.test(page));
   ok('§6 who manages the team comes from the server’s team permission, the role only as fallback',
     /const manages = typeof caps\?\.team === 'boolean' \? caps\.team : canManageTeam\(access\.role\);/.test(page));
   ok('§6 a switch can be changed only when the server says this viewer may (the owner)', /disabled=\{!perms\.can_change \|\| busy\}/.test(page));
@@ -226,6 +233,9 @@ const MUTANTS = [
   { f: 'page', from: "disabled={busy || !perms.can_change}", to: "disabled={busy}", why: 'a manager gets live switches on an invitation', expect: /^§7/ },
   { f: 'page', from: "disabled={!isOwner || inviteRole === 'owner' || busy}", to: "disabled={busy}", why: 'a manager changes permissions on the invite sheet', expect: /^§7/ },
   { f: 'page', from: "await setInvitationPermission(id, cap, allowed).catch(() => { refused++; });", to: "void (cap && allowed);", why: 'Send drops the sheet\'s changes', expect: /^§7/ },
+  { f: 'page', from: "let mailed = ''; try { await sendInviteEmail(id); mailed = 'ok'; } catch (e) { mailed = msg(e); }", to: "const mailed = 'ok';", why: 'Send says emailed without emailing', expect: /^§4/ },
+  { f: 'api', from: "  if (noContactCols(res.error)) res = await workspace.from('company_invitations').insert(row).select('id');   // before #157", to: '', why: 'no fallback before #157 (every invite fails until the SQL runs)', expect: /^§4/ },
+  { f: 'page', from: "href={textInviteHref(invite.phone, steps)} />", to: "href={textInviteHref(invite.phone, joinSteps(invite.email))} />", why: 'the text loses the name and company', expect: /^§7/ },
 ];
 for (const m of MUTANTS) {
   if (SRC[m.f].split(m.from).length !== 2) { fail++; console.log(`  ✗ mutation anchor present once: ${m.why}`); continue; }

@@ -50,6 +50,17 @@ export function cleanInviteEmail(raw: string): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
 }
 
+/** The invited person's name (#157: optional, trimmed, ≤ 120) — null when blank. */
+export function cleanInviteName(raw: string): string | null { const n = raw.trim().replace(/\s+/g, ' '); return n ? n.slice(0, 120) : null; }
+/** A mobile number as typed, if it looks like one (#157: 7–32 of digits, spaces, + ( ) . -) — null when blank or not. */
+export function cleanInvitePhone(raw: string): string | null { const p = raw.trim(); return /^[0-9+() .-]{7,32}$/.test(p) && (p.match(/\d/g) ?? []).length >= 7 ? p : null; }
+/** TEXT INVITE (owner 2026-11-26, mockup TAkpXQ7zjLD23S3kRusWdz): opens Messages addressed to them with the steps filled
+ *  in; the owner presses send, from their own number. Ledrix sends no text itself. `?&body=` works on iPhone and Android. */
+export function textInviteHref(phone: string | null | undefined, body: string): string {
+  const to = (phone ?? '').replace(/[^\d+]/g, '');
+  return `sms:${to}?&body=${encodeURIComponent(body)}`;
+}
+
 export const INVITE_DAYS = 7;   // the phone's createInvitation uses the same window
 
 /** "Oct 28 · 7 days" / "Oct 22 · 1 day" / "Expired" — from now. */

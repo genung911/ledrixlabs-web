@@ -7,8 +7,8 @@ import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { roleLabel, useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { Card, Empty, ErrorBox, Group, Loading, Page, PageHeader, Row, Sheet, Toggle } from '@/components/workspace/ui';
 import { loadMembers, type MemberRow } from '@/lib/workspace/data';
-import { createInvitation, loadPendingInvitations, revokeInvitation, setMemberRole, type InvitationRow } from '@/lib/team/api';
-import { ROLE_SUMMARY, assignableRoles, canManageTeam, cleanInviteEmail, expiresLabel, roleLockReason } from '@/lib/team/model';
+import { createInvitation, loadPendingInvitations, revokeInvitation, sendInviteEmail, setMemberRole, type InvitationRow } from '@/lib/team/api';
+import { ROLE_SUMMARY, assignableRoles, canManageTeam, cleanInviteEmail, cleanInviteName, cleanInvitePhone, expiresLabel, roleLockReason, textInviteHref } from '@/lib/team/model';
 import { PERMISSION_LABEL, accessLabel, loadMemberPermissions, loadMyCapabilities, resetMemberPermissions, setMemberPermission,
   loadRolePreset, loadInvitationPermissions, setInvitationPermission, resetInvitationPermissions, joinSteps,
   type Capability, type MemberPermissions } from '@/lib/team/permissions';
@@ -44,6 +44,9 @@ export default function TeamPage() {
   const roles = assignableRoles(access.role);
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [email, setEmail] = useState('');
+  // Invite by text (owner 2026-11-26, mockup TAkpXQ7zjLD23S3kRusWdz; SQL #157): the person's name and mobile, both optional.
+  const [invName, setInvName] = useState('');
+  const [invPhone, setInvPhone] = useState('');
   const [inviteRole, setInviteRole] = useState('inspector');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
@@ -82,20 +85,27 @@ export default function TeamPage() {
   const invite = async () => {
     const clean = cleanInviteEmail(email);
     if (!clean) { setNotice({ ok: false, text: 'Enter a valid email address.' }); return; }
+    const phone = cleanInvitePhone(invPhone);
+    if (invPhone.trim() && !phone) { setNotice({ ok: false, text: 'That mobile number doesn’t look right. Use digits, spaces, + ( ) or -.' }); return; }
     if (!access.companyId) return;
     setBusy(true); setNotice(null);
     try {
-      const id = await createInvitation(access.companyId, clean, inviteRole);
+      const id = await createInvitation(access.companyId, clean, inviteRole, { fullName: cleanInviteName(invName), phone });
       // #150: the sheet's permission changes go onto the new invitation; the server's answer decides.
       let refused = 0;
       for (const [cap, allowed] of Object.entries(inviteChanges) as Array<[Capability, boolean]>) {
         await setInvitationPermission(id, cap, allowed).catch(() => { refused++; });
       }
       setInviteChanges({});
+      // Then the email (send-invite, Resend). The invitation stands either way; a failed email says why.
+      let mailed = ''; try { await sendInviteEmail(id); mailed = 'ok'; } catch (e) { mailed = msg(e); }
       setNotice(refused
-        ? { ok: false, text: `Invitation saved for ${clean}, but ${refused} permission change${refused === 1 ? ' was' : 's were'} not saved. Open them under People to set ${refused === 1 ? 'it' : 'them'} again.` }
-        : { ok: true, text: `Invitation saved for ${clean} as ${roleLabel(inviteRole)}. Ledrix doesn’t email it yet: open them under People and Copy how to join.` });
-      setEmail('');
+        ? { ok: false, text: `Invitation saved for ${clean}, but ${refused} permission change${refused === 1 ? ' was' : 's were'} not saved. Open them under Waiting to join to set ${refused === 1 ? 'it' : 'them'} again.` }
+        : mailed === 'ok'
+          ? { ok: true, text: `Invitation emailed to ${clean} as ${roleLabel(inviteRole)}. Open them under Waiting to join to text it too.` }
+          : { ok: false, text: `Invitation saved for ${clean}, but the email wasn’t sent: ${mailed}. Open them under Waiting to join to text it or copy the steps.` });
+      setEmail(''); setInvName(''); setInvPhone('');
+      setOpenInvite(id);
       setInviting(false);
       await load();
     } catch (e) { setNotice({ ok: false, text: msg(e) }); }
@@ -207,12 +217,12 @@ export default function TeamPage() {
                 })}
               </Group>
               {/* Invitations in their own group, as drawn (batch 4): who hasn't joined yet. */}
-              {manages && state.invites.length > 0 && <Group heading="Waiting to join" footnote="Open one to copy how to join, or to revoke it.">
+              {manages && state.invites.length > 0 && <Group heading="Waiting to join" footnote="Open one to text the invite, email it again, copy how to join, or revoke it.">
                 {state.invites.map(inv => {
                   const n = invPerms[inv.id]?.permissions.filter(x => x.changed).length ?? 0;
                   return (
-                    <Row key={inv.id} label={inv.email}
-                      sub={[`${roleLabel(inv.role)} · ${expiresLabel(inv.expires_at)}`, n ? `${n} permission${n === 1 ? '' : 's'} changed` : null].filter(Boolean).join(' · ')}
+                    <Row key={inv.id} label={inv.full_name || inv.email}
+                      sub={[`${roleLabel(inv.role)}${inv.phone ? ` · ${inv.phone}` : ''} · ${expiresLabel(inv.expires_at)}`, inv.full_name ? inv.email : null, n ? `${n} permission${n === 1 ? '' : 's'} changed` : null].filter(Boolean).join(' · ')}
                       value="Invited"
                       onClick={() => { setOpenPerm(null); setOpenInvite(openInvite === inv.id ? null : inv.id); }} />
                   );
@@ -248,6 +258,8 @@ export default function TeamPage() {
                 onReset={() => resetInvite(openInv.id, openInv.email)}
                 onRevoke={() => revoke(openInv)}
                 onCopied={ok => setNotice(ok ? { ok: true, text: `Copied the steps for ${openInv.email}. Paste them into a text or an email.` } : { ok: false, text: 'Could not copy. Select the steps and copy them yourself.' })}
+                company={companyName ?? null}
+                onEmail={async () => { setBusy(true); setNotice(null); try { await sendInviteEmail(openInv.id, true); setNotice({ ok: true, text: `Invitation emailed to ${openInv.email} again.` }); } catch (e) { setNotice({ ok: false, text: msg(e) }); } finally { setBusy(false); } }}
                 onClose={() => setOpenInvite(null)} />
             )}
           </div>
@@ -257,7 +269,11 @@ export default function TeamPage() {
       {manages && inviting && (
         <Sheet title="Invite someone" onCancel={() => setInviting(false)} busy={busy} doneLabel="Send invite" doneDisabled={!email.trim()}
           onDone={async () => { await invite(); }}>
-          <Group footnote={<>Ledrix doesn’t send an email yet. After you send, open them under People and <strong className="text-ink">Copy how to join</strong> to text or email them the steps. Invitations expire after 7 days.</>}>
+          <Group footnote="Send invite emails them the steps. Then Text invite opens your Messages to text them too, from your own number. Invitations expire after 7 days.">
+            <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Name</span>
+              <input id="inv-name" type="text" autoComplete="off" value={invName} placeholder="Optional" onChange={e => setInvName(e.target.value)} className={FIELD} /></label>
+            <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Mobile</span>
+              <input id="inv-phone" type="tel" autoComplete="off" value={invPhone} placeholder="Optional, for Text invite" onChange={e => { setInvPhone(e.target.value); setNotice(null); }} className={FIELD} /></label>
             <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Email</span>
               <input id="inv-email" type="email" autoComplete="off" value={email} onChange={e => { setEmail(e.target.value); setNotice(null); }} className={FIELD} /></label>
             <label className="flex items-center gap-3 px-4 py-2"><span className="w-24 text-sm text-ink">Role</span>
@@ -342,18 +358,19 @@ function PermissionsPanel({ member, perms, busy, role: roleControl, grantable, o
 
 // Team → an invited person, beside the list (#150): the permissions they will start with — set before they accept, copied
 // onto them when they do — then Copy how to join and Revoke. The role is fixed on an invitation (revoke and invite again).
-function InvitationPanel({ invite, perms, busy, onToggle, onReset, onRevoke, onCopied, onClose }: {
+function InvitationPanel({ invite, perms, busy, onToggle, onReset, onRevoke, onCopied, onClose, company, onEmail }: {
   invite: InvitationRow; perms: MemberPermissions | null; busy: boolean;
   onToggle: (cap: Capability, allowed: boolean) => void; onReset: () => void; onRevoke: () => void;
-  onCopied: (ok: boolean) => void; onClose: () => void;
+  onCopied: (ok: boolean) => void; onClose: () => void; company: string | null; onEmail: () => void;
 }) {
   const role = roleLabel(perms?.role ?? invite.role);
   const changed = perms?.permissions.filter(p => p.changed).length ?? 0;
-  const copy = async () => { try { await navigator.clipboard.writeText(joinSteps(invite.email)); onCopied(true); } catch { onCopied(false); } };
+  const steps = joinSteps(invite.email, invite.full_name, company);
+  const copy = async () => { try { await navigator.clipboard.writeText(steps); onCopied(true); } catch { onCopied(false); } };
   return (
     <aside aria-label={`Invitation for ${invite.email}`} className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
       <div className="flex items-center justify-between gap-3 px-3">
-        <h2 className="min-w-0 break-all text-base font-bold text-ink">{invite.email}</h2>
+        <h2 className="min-w-0 break-all text-base font-bold text-ink">{invite.full_name || invite.email}</h2>
         <button type="button" onClick={onClose} className="text-sm text-accent-ink hover:underline">Done</button>
       </div>
       <Group heading="Role" footnote="Invited, not joined yet. To change the role, revoke this invitation and invite them again.">
@@ -374,7 +391,10 @@ function InvitationPanel({ invite, perms, busy, onToggle, onReset, onRevoke, onC
           )}
         </>
       )}
-      <Group footnote="Ledrix doesn’t email invites yet. This copies the three steps to paste into a text or an email.">
+      {/* TEXT INVITE first (owner 2026-11-26): Messages opens addressed to them with the steps; you press send. */}
+      <Group footnote="Text invite opens Messages on this device (a Mac or a phone) with the steps filled in; you press send. On a Windows PC, Copy how to join.">
+        <Row label="Text invite" sub={invite.phone ? `To ${invite.phone}` : 'No mobile saved; Messages will ask for the number'} href={textInviteHref(invite.phone, steps)} />
+        <Row label="Email again" sub={invite.email} disabled={busy} onClick={onEmail} />
         <Row label="Copy how to join" sub="Install Ledrix, create an account with this email, join your company" onClick={copy} />
       </Group>
       <Group><Row label="Revoke invitation" destructive disabled={busy} onClick={onRevoke} /></Group>

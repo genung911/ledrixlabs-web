@@ -97,8 +97,8 @@ export async function resetInvitationPermissions(invitationId: string): Promise<
 }
 
 /** The steps an invited person follows, until invites are emailed (b3, Resend) — the same words as the phone. */
-export const joinSteps = (email: string) =>
-  `You're invited to join our team on Ledrix.\n\n1. Install Ledrix Inspect from the App Store.\n2. Tap Create account and use this email: ${email}\n3. Confirm the email Ledrix sends, sign in, and tap "I'm joining my company".`;
+export const joinSteps = (email: string, name?: string | null, company?: string | null) =>
+  `${(name ?? '').trim() ? `Hi ${(name ?? '').trim().split(/\s+/)[0]}, you're` : `You're`} invited to join ${(company ?? '').trim() || 'our team'} on Ledrix.\n\n1. Install Ledrix Inspect from the App Store.\n2. Tap Create account and use this email: ${email}\n3. Confirm the email Ledrix sends, sign in, and tap "I'm joining my company".`;
 
 /** "Everything" / "Custom · 2 changes" / "Office defaults" — the Access column. */
 export function accessLabel(role: string | null | undefined, perms: MemberPermissions | null | undefined): string {
