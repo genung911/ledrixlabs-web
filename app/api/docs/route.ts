@@ -32,7 +32,7 @@
 // (supabase_home_documents_private.sql). Signed URLs work whether or not it is private yet.
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { shareIdForToken, editShareIdForToken, shareAccessConfigured, tenureForShare } from '../../../lib/shareAccess';
+import { shareIdForToken, editShareIdForToken, shareAccessConfigured, tenureForShare, holdsShare } from '../../../lib/shareAccess';
 import { scopeTerm, stampRow, endedRefuses } from '../../../lib/portalPolicy';
 import {
   DOC_BUCKET, DOC_MAX_BYTES, DOC_URL_TTL_SECONDS, DOC_KINDS,
@@ -120,6 +120,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return bad('Bad request.'); }
   const shareId = await editShareIdForToken(body.token);
   if (!shareId) return notFound();
+  if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to add documents.' }, { status: 403 });   // h2
   const tenure = await tenureForShare(shareId);
   if (endedRefuses('home_documents', 'insert', tenure)) return notFound();   // the owner let the home go: read-only
   const name = String(body.name ?? '').slice(0, 200);
@@ -236,6 +237,7 @@ export async function DELETE(req: NextRequest) {
   if (!isDocId(body.id)) return notFound();
   const shareId = await editShareIdForToken(body.token);
   if (!shareId) return notFound();
+  if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to remove documents.' }, { status: 403 });   // h2
   if (endedRefuses('home_documents', 'delete', await tenureForShare(shareId))) return notFound();
   try {
     const doc = await docInShare(body.id, shareId);

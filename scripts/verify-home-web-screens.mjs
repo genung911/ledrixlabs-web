@@ -41,7 +41,7 @@ function checks(src) {
   ok('6 signed in: a homeowner, the client\'s reports, and (on the report\'s own link only) this home as resident',
     src.includes("await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });")
     && src.includes("await supabase.rpc('claim_my_reports');")
-    && src.includes("if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN });"));
+    && src.includes("if (isEditLink() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN });"));
   ok('6 an inspector\'s email is told to use another', (src.match(/This email is registered as an inspector\. Use a different email for Ledrix Home\./g) ?? []).length === 2);
   ok('6 "Claim your home" shows to someone not signed in', src.includes('claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : needAnswer ? '));
   ok('5 no 3D house or sensors on the web', !/SpatialTwinGL|Dollhouse|SensorsLens|sensor_readings/.test(src));
@@ -58,7 +58,7 @@ const MUT = [
   ['an unchecked manual is linked from the page', '{s.manual && (', '{(s.manual || record.specs?.[0]) && ('],
   ['Maintain shows the history twice', 'showHistory={false} />}', 'showHistory />}'],
   ['History has no documents', '      <DocsTab record={record} />\n    </div>\n  );\n}\n\n/** "Make this home yours"', '    </div>\n  );\n}\n\n/** "Make this home yours"'],
-  ['a view-only link claims the home', 'if (canEdit() && PORTAL_TOKEN) { const r', 'if (PORTAL_TOKEN) { const r'],
+  ['a view-only link claims the home', 'if (isEditLink() && PORTAL_TOKEN) { const r', 'if (PORTAL_TOKEN) { const r'],
   ['the code is checked as a magic link', "token: t, type: 'email' });", "token: t, type: 'magiclink' });"],
   ['the claim card shows when signed in', 'claim={!session ? <ClaimCard', 'claim={true ? <ClaimCard'],
   ['the client\'s own reports are never claimed', "await supabase.rpc('claim_my_reports');", "({ data: [] });"],

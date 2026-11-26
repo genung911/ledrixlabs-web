@@ -13,6 +13,7 @@ type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 
 export function mintErrorMessage(status: number): string {
   if (status === 503) return 'Sharing a view-only link is not available yet. Nothing was shared.';
+  if (status === 403) return 'Claim this home first to send a repair request. Nothing was shared.';
   if (status === 409) return 'This home has too many active shared links. Nothing was shared.';
   return 'Could not create a shareable link right now. Nothing was shared — please try again.';
 }

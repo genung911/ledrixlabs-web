@@ -113,6 +113,28 @@ export async function editShareIdForToken(token: unknown): Promise<string | null
   return access && access.scope === 'edit' ? access.shareId : null;
 }
 
+// ── LOOK-ONLY UNTIL CLAIMED (h2, owner 2026-11-25: "We can't have non owners making changes") ───────────────────────
+// Possession of the report link is not ownership. Every CHANGE through the share page also needs a signed-in person who
+// holds this home: my_claim_state(share) = 'home' (#153 — an ACTIVE tenure the caller may write; a buyer only after
+// "Did you close?"). The person's own Supabase access token is the proof; it is checked by the database with the anon
+// key, so the server never vouches for anyone itself. Missing, expired or refused: false — fail closed.
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const BEARER = /^Bearer\s+([A-Za-z0-9._-]{20,4096})$/;
+export async function holdsShare(req: { headers: { get(name: string): string | null } }, shareId: string): Promise<boolean> {
+  if (!SUPA_URL || !ANON || !plainId(shareId)) return false;
+  const m = BEARER.exec(req.headers.get('authorization') ?? '');
+  if (!m || m[1] === ANON) return false;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/my_claim_state`, {
+      method: 'POST', headers: { apikey: ANON, Authorization: `Bearer ${m[1]}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_share_id: shareId }), cache: 'no-store',
+    });
+    if (!r.ok) return false;
+    const j = await r.json().catch(() => null);
+    return j?.state === 'home';
+  } catch { return false; }
+}
+
 /** True when a bucket-relative object path belongs to the share. */
 export function pathInShare(path: string | null | undefined, shareId: string): boolean {
   const p = String(path ?? '');

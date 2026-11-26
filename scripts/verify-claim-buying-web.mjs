@@ -24,14 +24,14 @@ function checks(S) {
   ok('1 no answer yet → ask, and claim nothing', eff.includes('if (!claimAnswer) { setNeedAnswer(true); claimTried.current = false; return; }'));
   ok('2 a home already held or waiting is not asked again', eff.indexOf("if (st0.data?.state === 'home')") >= 0 && eff.indexOf("if (st0.data?.state === 'buying')") >= 0
     && eff.indexOf("if (st0.data?.state === 'buying')") < eff.indexOf('if (!claimAnswer)'));
-  ok('3 buying makes the page look-only', S.includes("const markBuying = (closesOn: string | null) => { setPortalScope('read'); setBuying({ closesOn }); setClaim(null); };"));
+  ok('3 buying makes the page look-only', S.includes("const markBuying = (closesOn: string | null) => { markHolds(false); setBuying({ closesOn }); setClaim(null); };"));
   ok('3 the band names the closing date', S.includes("You&apos;re buying this home{buying.closesOn ? ` · closes ${closingLabel(buying.closesOn)}` : ''}"));
   const f = labelFn(S);
   ok('3 the date is the LOCAL day (Dec 18 stays Dec 18)', !!f && f('2026-12-18') === 'Dec 18, 2026' && f('') === '');
   ok('4 on or after the date: Did you close? → confirm_closing', S.includes("const due = !!buying.closesOn && buying.closesOn <= isoIn(0);") && S.includes("supabase.rpc('confirm_closing', { p_share_id: shareId })"));
-  ok('4 confirmed → editable and on their account; a seller still holding → waiting', S.includes("if (r.data) { setPortalScope('edit'); setBuying(null);") && S.includes("The seller still holds this home on Ledrix"));
+  ok('4 confirmed → editable and on their account; a seller still holding → waiting', S.includes("if (r.data) { markHolds(true); setBuying(null);") && S.includes("The seller still holds this home on Ledrix"));
   ok('4 a new closing date goes to the server', S.includes("supabase.rpc('set_closing_date', { p_share_id: shareId, p_closes_on: d })"));
-  ok('5 the sheet asks first when not signed in', S.includes('{!signedIn && onAnswer && !answer ? (') && S.includes('answer={claimAnswer} onAnswer={canEdit() && PORTAL_TOKEN ? setClaimAnswer : undefined}'));
+  ok('5 the sheet asks first when not signed in', S.includes('{!signedIn && onAnswer && !answer ? (') && S.includes('answer={claimAnswer} onAnswer={isEditLink() && PORTAL_TOKEN ? setClaimAnswer : undefined}'));
   ok('5 signed in but unanswered → the question on Home', S.includes('needAnswer ? <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 14 }}><ClaimQuestion cta="Claim my home" onAnswer={setClaimAnswer} /></div>'));
   ok('5 "not yet" needs a closing date', S.includes("const ok = owned === true || (owned === false && /^\\d{4}-\\d{2}-\\d{2}$/.test(date));"));
   return out;
@@ -39,13 +39,13 @@ function checks(S) {
 const base = checks(SRC); let fail = 0;
 for (const [n, v] of base) { console.log(`${v ? '✓' : '✗'} ${n}`); if (!v) fail++; }
 const mutants = [
-  ['the claim runs before the answer is recorded', s => s.replace("      const mine = await supabase.rpc('claim_my_reports');", "      const pre = await supabase.rpc('claim_my_reports');\n      const mine = pre;").replace("      if (canEdit() && PORTAL_TOKEN) {\n        if (!claimAnswer)", "      await supabase.rpc('claim_my_reports');\n      if (canEdit() && PORTAL_TOKEN) {\n        if (!claimAnswer)")],
+  ['the claim runs before the answer is recorded', s => s.replace("      const mine = await supabase.rpc('claim_my_reports');", "      const pre = await supabase.rpc('claim_my_reports');\n      const mine = pre;").replace("      if (isEditLink() && PORTAL_TOKEN) {\n        if (!claimAnswer)", "      await supabase.rpc('claim_my_reports');\n      if (isEditLink() && PORTAL_TOKEN) {\n        if (!claimAnswer)")],
   ['no answer → claims anyway', s => s.replace('if (!claimAnswer) { setNeedAnswer(true); claimTried.current = false; return; }', 'if (!claimAnswer) { setNeedAnswer(true); }')],
   ['a buyer asked again on every visit', s => s.replace("      if (st0.data?.state === 'buying') { markBuying(st0.data.closes_on ?? null); return; }\n", '')],
-  ['buying stays editable', s => s.replace("const markBuying = (closesOn: string | null) => { setPortalScope('read');", "const markBuying = (closesOn: string | null) => {")],
+  ['buying stays editable', s => s.replace("const markBuying = (closesOn: string | null) => { markHolds(false);", "const markBuying = (closesOn: string | null) => {")],
   ['the date read as UTC', s => s.replace("return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });", "return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Denver' });")],
   ['"I closed" asked before the date', s => s.replace('const due = !!buying.closesOn && buying.closesOn <= isoIn(0);', 'const due = true;')],
-  ['confirming keeps it look-only', s => s.replace("if (r.data) { setPortalScope('edit'); setBuying(null);", "if (r.data) { setBuying(null);")],
+  ['confirming keeps it look-only', s => s.replace("if (r.data) { markHolds(true); setBuying(null);", "if (r.data) { setBuying(null);")],
   ['the sheet skips the question', s => s.replace('{!signedIn && onAnswer && !answer ? (', '{false ? (')],
   ['"not yet" without a date', s => s.replace("const ok = owned === true || (owned === false && /^\\d{4}-\\d{2}-\\d{2}$/.test(date));", 'const ok = owned !== null;')],
 ];

@@ -60,7 +60,7 @@ ok('RULES every action the page checks is a declared action', usedActions.length
     }
   }
   ok('HANDLERS every write stops for a link that cannot make it', unguarded.length === 0, unguarded.join('\n      '));
-  ok('HANDLERS seeding still runs only for edit links', /if \(!seeded\.current && canEdit\(\)\)/.test(pageSrc)
+  ok('HANDLERS seeding still runs only for edit links, once the person holds the home (h2)', /if \(!holds \|\| !shareId \|\| !record \|\| seeded\.current \|\| !canEdit\(\)\) return;/.test(pageSrc)
     && /async function seedIfEmpty\([^)]*\) \{\n  if \(!can\('seed'\)\) return;/.test(pageSrc)
     && /async function seedManualDocs\([^)]*\) \{\n  if \(!can\('seed'\)\) return;/.test(pageSrc));
   ok('HANDLERS a view-only link\'s speech goes to the chat, never the log parser', /if \(can\('log\.add'\)\) try \{\n[^\n]*\n[^\n]*mode: 'logparse'/.test(pageSrc));
@@ -80,7 +80,7 @@ const js = ts.transpileModule(forced, {
 let __OPEN = false;
 export const __test = {
   ProjectCard, ReminderCard, ProjectsTab, RepairsTab, LogServiceForm,
-  setScope: (s) => { PORTAL_SCOPE = s; }, setOpen: (v) => { __OPEN = v; },
+  setScope: (s) => { PORTAL_SCOPE = s; }, setHolds: (h) => { PORTAL_HOLDS = h; }, setOpen: (v) => { __OPEN = v; },
 };
 `;
 writeFileSync(join(out, 'page.mjs'), js);
@@ -113,8 +113,8 @@ const anomaly = { id: 'f1', unit: 'Electrical', description: 'Blocked panel cove
 const anomaly2 = { id: 'f2', unit: 'Roof', description: 'Lifted shingles', severity: 'maintenance' };
 const record = { id: 'h', share_id: 'insp_A', address: '1 Alpha Ln', inspection_date: '2026-10-01', anomalies: [anomaly, anomaly2], specs: [], created_at: '' };
 
-function renderAll(scope) {
-  T.setScope(scope);
+function renderAll(scope, holds = true) {
+  T.setScope(scope); T.setHolds(holds);
   const r = {};
   T.setOpen(false);
   r.projectClosed = html(T.ProjectCard, { p: project, onUpdate: noop, shareId: 'insp_A' });
@@ -135,8 +135,12 @@ function renderAll(scope) {
 }
 
 const edit = renderAll('edit');
-const read = renderAll('read');
-const reps = renderAll('repairs');
+// A view-only or repairs link's visitor seldom holds the home; render them as not holding (h2's look-only state must
+// still never appear on them).
+const read = renderAll('read', false);
+const reps = renderAll('repairs', false);
+// h2: the report's own link before its holder has claimed the home here (signed out, buying, waiting).
+const look = renderAll('edit', false);
 
 // Full access keeps everything it had.
 ok('RENDER edit: project actions offered', /MARK /.test(edit.projectOpen) && /ADD PHOTO/.test(edit.projectOpen) && /REPLACE APPLIANCE/.test(edit.projectOpen) && /TAP FOR ACTIONS/.test(edit.projectClosed));
@@ -145,6 +149,15 @@ ok('RENDER edit: reminder complete and snooze offered', /COMPLETE/.test(edit.rem
 ok('RENDER edit: log a service offered', /\+ Log a service or improvement/.test(edit.logClosed) && /<input/.test(edit.logOpen));
 ok('RENDER edit: repair request editable and shareable', /SHARE REQUEST LINK/.test(edit.repairs) && /ADD FROM FINDINGS/.test(edit.repairs)
   && /<textarea/.test(edit.repairs) && /title="Remove from request"/.test(edit.repairs));
+
+// h2 look-only: every change is gone, and where one would be there is a lock and "claim to add".
+ok('RENDER look-only: no project actions, the project still shows', !/MARK |ADD PHOTO|REPLACE APPLIANCE/.test(look.projectOpen) && /TAP FOR DETAILS/.test(look.projectClosed) && /Water heater venting/i.test(look.projectOpen));
+ok('RENDER look-only: no add-project form; "Track a repair or project · claim to add" instead', !/New project…/.test(look.projectsAdd) && !/OR ADD FROM A FINDING/.test(look.projectsAdd) && /🔒/.test(look.projectsTab) && /Track a repair or project/.test(look.projectsTab) && /claim to add/.test(look.projectsTab));
+ok('RENDER look-only: reminders cannot be completed; a lock says why', !/COMPLETE|SNOOZE/.test(look.reminder) && /Replace furnace filter/.test(look.reminder) && /Claim this home to mark it done/.test(look.reminder));
+ok('RENDER look-only: no log form; "Log a service or improvement · claim to add"', !/<input/.test(look.logOpen) && /claim to add/.test(look.logClosed) && /Log a service or improvement/.test(look.logClosed));
+ok('RENDER look-only: the repair request reads, and cannot be changed or shared', !/SHARE REQUEST LINK/.test(look.repairs) && !/ADD FROM FINDINGS/.test(look.repairs) && !/<textarea/.test(look.repairs)
+  && /Please clear access to the electrical panel\./.test(look.repairs) && /claim to add/.test(look.repairs));
+ok('RENDER view-only links show no "claim to add" (they cannot claim)', !/claim to add|Claim this home to mark/.test(Object.values(read).join('')));
 
 for (const [name, r] of [['view-only', read], ['repairs-only', reps]]) {
   ok(`RENDER ${name}: no project actions`, !/MARK |ADD PHOTO|REPLACE APPLIANCE/.test(r.projectOpen) && /TAP FOR DETAILS/.test(r.projectClosed) && !/TAP FOR ACTIONS/.test(r.projectClosed));

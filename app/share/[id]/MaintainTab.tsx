@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { canEdit, can, supaPost, supaDelete, ACCENT, GREEN, BG, CARD, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, priorityOf, fmtDate } from './shared';
-import { homeView, ProjectCard, ReminderCard } from './ui';
+import { homeView, ProjectCard, ReminderCard, ClaimToAdd } from './ui';
 import { DocsTab } from './RecordsTab';
 import { RepairsTab } from './RepairsTab';
 
@@ -68,6 +68,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         </div>
       )}
       {/* Add a project — manually or from a finding */}
+      <ClaimToAdd label="Track a repair or project" />
       {can('project.add') && <button onClick={() => setShowAdd(v => !v)} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 9, padding: 12, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, cursor: 'pointer', marginBottom: 12 }}>{showAdd ? 'Close' : '+ Track a repair or project'}</button>}
       {showAdd && can('project.add') && (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 13, padding: 14, marginBottom: 14 }}>
@@ -118,7 +119,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
     await supaPost('home_maintenance_log', [{ share_id: shareId, title: title.trim(), system: system.trim() || null, kind: 'service', note: note.trim() || null, done_date: date, source: 'manual' }]).catch(() => {});
     setTitle(''); setSystem(''); setNote(''); setSaving(false); setOpen(false); onSaved();
   };
-  if (!can('log.add')) return null;
+  if (!can('log.add')) return <ClaimToAdd label="Log a service or improvement" />;
   if (!open) return (
     <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 14, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>+ Log a service or improvement</button>
   );

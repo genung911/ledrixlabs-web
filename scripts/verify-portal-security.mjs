@@ -32,6 +32,10 @@ registerHooks({
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fake.supabase.test/rest/v1';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role';
+// h2 (2026-11-25): every change also needs a signed-in person holding the home. This guard is about what a LINK may
+// reach, so its callers hold the home (HOLDER); who may change is proved in verify-portal-home-scope.mjs.
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-0123456789abcdef';
+const HOLDER = 'jwt.holder-0123456789abcdef';
 
 // ── The stand-in ──────────────────────────────────────────────────────────────────────────
 const BASE = 'https://fake.supabase.test';
@@ -120,6 +124,9 @@ globalThis.fetch = async (input, init = {}) => {
     const head = body?.slice ? new Uint8Array(await body.slice(0, 64).arrayBuffer()) : new Uint8Array();
     objects.set(path, { size: body?.size ?? 0, mimetype: headers['content-type'] ?? '', head });
     return Response.json({ Key: path });
+  }
+  if (url.pathname === '/rest/v1/rpc/my_claim_state') {
+    return Response.json({ state: headers.apikey === 'test-anon-key-0123456789abcdef' && headers.authorization === `Bearer ${HOLDER}` ? 'home' : 'none' });
   }
   if (headers.authorization !== 'Bearer test-service-role') return new Response('no', { status: 401 });
 
@@ -222,7 +229,7 @@ const bulkDeletes = [];
 let checks = 0; const failures = [];
 const ok = (label, cond, detail) => { checks++; if (!cond) failures.push(detail ? `${label}\n      ${detail}` : label); };
 const req = (url, init) => new NextRequest(new URL(url, 'https://ledrixlabs.test'), init);
-const json = (url, body, method = 'POST') => req(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const json = (url, body, method = 'POST') => req(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${HOLDER}` }, body: JSON.stringify(body) });
 const callPortal = (body) => portal.POST(json('/api/portal', body));
 const callLinks  = (body) => links.POST(json('/api/portal-links', body));
 const getShare   = (token) => shareMod.GET(req(`/api/share/${token}`), { params: Promise.resolve({ token }) });
@@ -374,7 +381,8 @@ reset();
 // ══ Share buttons fail closed (lib/portalShareLink.ts against the real /api/portal-links) ═══
 reset();
 {
-  const viaRoute = (u, init) => links.POST(req(u, init));
+  // As the page's shareUrlFor does: the signed-in holder's token rides along (shared.tsx authHeaders, h2).
+  const viaRoute = (u, init) => links.POST(req(u, { ...init, headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${HOLDER}` } }));
   const portalShareUrl = shareLinkLib.portalShareUrl ?? (async () => ({ ok: true, url: `https://ledrixlabs.test/share/${A.token}` }));
   const share = (o) => portalShareUrl({ fetchFn: viaRoute, origin: 'https://ledrixlabs.test', token: A.token, pageScope: 'edit',
     currentHref: `https://ledrixlabs.test/share/${A.token}`, ...o });
@@ -645,13 +653,13 @@ reset();
     && /\{canEdit\(\) && <button onClick=\{\(\) => removeDoc\(d\)\}/.test(page) && /canEdit\(\) && \['manual', 'task', 'voice'\]\.includes/.test(page));
   ok('C the page shares a minted view-only link, and repair links are minted repairs links',
     /shareUrlFor\('read'\)/.test(page) && /shareUrlFor\('repairs'\)/.test(page) && !/\/share\/\$\{shareId\}\/repairs/.test(page)
-      && /from '@\/lib\/portalShareLink'/.test(page) && /fetchFn: \(u, i\) => fetch\(u, i\)/.test(page));
+      && /from '@\/lib\/portalShareLink'/.test(page) && /fetchFn: \(u, i\) => fetch\(u, \{ \.\.\.i, headers: \{ \.\.\.\(i\?\.headers as Record<string, string> \| undefined\), \.\.\.authHeaders\(\) \} \}\)/.test(page));
   const handleShare = page.slice(page.indexOf('const handleShare = async'), page.indexOf('if (loading)', page.indexOf('const handleShare = async')));
   ok('C Share stops on a failed mint and has no fallback to the page URL',
     /if \(!link\.ok\) \{ window\.alert\(link\.message\); return; \}/.test(handleShare) && !/window\.location\.href/.test(handleShare) && !/mintPortalLink/.test(page));
   ok('C the repair Share stops on a failed mint', /if \(!link\.ok\) \{ window\.alert\(`\$\{link\.message\} You can use Copy text instead\.`\); return; \}/.test(page));
   ok('C a repairs link opening the main page is sent to the repairs page', /rec\?\.access === 'repairs'\) \{ window\.location\.replace/.test(page));
-  ok('C seeding writes run only for edit links', /if \(!seeded\.current && canEdit\(\)\)/.test(page));
+  ok('C seeding writes run only for edit links, once the person holds the home (h2)', /if \(!holds \|\| !shareId \|\| !record \|\| seeded\.current \|\| !canEdit\(\)\) return;/.test(page));
   ok('C the repairs page accepts a repairs-only record', /d\?\.access === 'repairs'/.test(repairsPage));
 
   const src = /const docHref = \(d: any\): string \| undefined =>([\s\S]*?);\n/.exec(tab)?.[1];

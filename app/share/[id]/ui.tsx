@@ -4,7 +4,7 @@ import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import { LedrixEye } from '@/components/LedrixEye';
 import { assetUrl } from '@/lib/portalAssets';
 import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
-import { PORTAL_TOKEN, can, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto } from './shared';
+import { PORTAL_TOKEN, can, lookOnly, openClaim, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto } from './shared';
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
 // Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
@@ -618,6 +618,7 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
           </div>
         </div>
       </div>
+      {!r.completed && lookOnly() && <div style={{ marginTop: 8, color: DIM, fontSize: 11 }}><span aria-hidden>🔒</span> Claim this home to mark it done</div>}
       {!r.completed && can('reminder.update') && (
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <button onClick={complete} disabled={saving} style={{
@@ -710,6 +711,18 @@ function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut 
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
+// h2 — where a change would be, on the report's own link before its holder has claimed the home: a lock and
+// "claim to add", one tap from claiming (approval pack item 1). Renders nothing for a holder or a view-only link.
+function ClaimToAdd({ label }: { label: string }) {
+  if (!lookOnly()) return null;
+  return (
+    <button onClick={openClaim} aria-label={`${label} — claim this home to add`}
+      style={{ width: '100%', background: 'transparent', border: `1px dashed ${BORDER}`, color: DIM, borderRadius: 9, padding: 12, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <span aria-hidden>🔒</span>{label}<span style={{ fontWeight: 500 }}> · claim to add</span>
+    </button>
+  );
+}
+
 function Footer() {
   return (
     <div style={{ padding: '22px 16px 100px', textAlign: 'center', borderTop: `1px solid ${BORDER}` }}>
@@ -793,5 +806,5 @@ function HomeRail({ active, onPick }: { active: Tab; onPick: (t: Tab) => void })
     </nav>
   );
 }
-export { Icon, Logo, photoUrl, Lightbox, homeView, projectSeverity, splitBullets, FLabel, pdfHref, FindingCard, CardSection, FindingDetailModal, ProjectCard, ApplianceModal, ReminderCard, Skeleton, NotFound, NavBar, Footer, PhotoAnalyze, HomeRail };
+export { ClaimToAdd, Icon, Logo, photoUrl, Lightbox, homeView, projectSeverity, splitBullets, FLabel, pdfHref, FindingCard, CardSection, FindingDetailModal, ProjectCard, ApplianceModal, ReminderCard, Skeleton, NotFound, NavBar, Footer, PhotoAnalyze, HomeRail };
 export type { IconName };

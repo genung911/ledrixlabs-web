@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
-import { can, shareUrlFor, portal, supaPost, supaPatch, supaDelete, GREEN, INFO, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type RepairRow, SEV_COLOR, SEV_LABEL } from './shared';
-import { homeView } from './ui';
+import { can, lookOnly, shareUrlFor, portal, supaPost, supaPatch, supaDelete, GREEN, INFO, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type RepairRow, SEV_COLOR, SEV_LABEL } from './shared';
+import { homeView, ClaimToAdd } from './ui';
 
 function repairRefOf(a: Anomaly, i: number): string { return a.id || `a${i}`; }
 function repairFp(a: Anomaly): string { return `${a.id ?? ''}:${a.severity ?? ''}:${(a.description ?? '').slice(0, 40)}`; }
@@ -165,12 +165,13 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
         <div style={{ textAlign: 'center', padding: '20px 0 26px', color: DIM }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>📝</div>
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, fontFamily: 'Roboto Mono, monospace' }}>NOTHING REQUESTED YET</div>
-          <div style={{ fontSize: 10.5, marginTop: 6, color: MED }}>{can('repair.edit') ? 'Add findings below to build your request.' : 'This view-only link cannot change the request.'}</div>
+          <div style={{ fontSize: 10.5, marginTop: 6, color: MED }}>{can('repair.edit') ? 'Add findings below to build your request.' : lookOnly() ? 'Claim this home to build a repair request.' : 'This view-only link cannot change the request.'}</div>
         </div>
       ) : included.map((r, i) => (
         <RepairItemCard key={r.id} r={r} index={i + 1} busy={busy.has(r.anomaly_ref ?? '')} onRemove={() => remove(r)} onSave={t => saveText(r, t)} readOnly={!can('repair.edit')} />
       ))}
 
+      <ClaimToAdd label="Add findings to the request" />
       {can('repair.edit') && <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '22px 0 12px' }}>
         <div style={{ color: MED, fontSize: 9, fontWeight: 600, letterSpacing: 2, fontFamily: 'Roboto Mono, monospace' }}>ADD FROM FINDINGS</div>

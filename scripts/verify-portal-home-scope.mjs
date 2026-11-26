@@ -46,6 +46,10 @@ registerHooks({
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fake.supabase.test/rest/v1';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key-0123456789abcdef';
+// h2 (owner 2026-11-25): a change needs a signed-in person who HOLDS the home (my_claim_state = 'home', #153).
+const HOLDER = 'jwt.holder-0123456789abcdef', BUYER = 'jwt.buyer-0123456789abcdef', ANON_KEY = 'test-anon-key-0123456789abcdef';
+let CLAIM_FAIL = false;
 const BASE = 'https://fake.supabase.test';
 
 const T0 = '00000000-0000-4000-8000-0000000000a0', T1 = '00000000-0000-4000-8000-0000000000a1';
@@ -85,6 +89,13 @@ function match(row, [k, v]) {
 globalThis.fetch = async (input, init = {}) => {
   const u = new URL(String(input)); const method = (init.method ?? 'GET').toUpperCase();
   if (!u.href.startsWith(BASE)) throw new Error('network');
+  if (u.pathname === '/rest/v1/rpc/my_claim_state') {
+    const bearer = String(init.headers?.Authorization ?? '').replace(/^Bearer /, '');
+    if (init.headers?.apikey !== ANON_KEY) return new Response('{}', { status: 401 });   // checked with the anon key, never the service role
+    if (CLAIM_FAIL) return new Response('{}', { status: 500 });
+    if (bearer === ANON_KEY) return new Response('{}', { status: 401 });                  // anon may not call it
+    return Response.json({ state: bearer === HOLDER ? 'home' : bearer === BUYER ? 'buying' : 'none' });
+  }
   if (u.pathname === '/rest/v1/rpc/share_tenure') {
     if (!RPC) return new Response('{}', { status: 404 });
     return Response.json(RPC[JSON.parse(init.body).p_share] ?? []);
@@ -114,13 +125,15 @@ globalThis.fetch = async (input, init = {}) => {
 
 const ROUTE = new URL('../app/api/portal/route.ts', import.meta.url).href;
 const DOCS = new URL('../app/api/docs/route.ts', import.meta.url).href;
-const req = (body) => ({ json: async () => body });
+const LINKS = new URL('../app/api/portal-links/route.ts', import.meta.url).href;
+const req = (body, bearer = HOLDER) => ({ json: async () => body, headers: { get: (n) => (n.toLowerCase() === 'authorization' && bearer ? `Bearer ${bearer}` : null) } });
 
 async function checks() {
   const out = []; const ok = (name, c, info = '') => out.push({ name, pass: !!c, info });
   RUN++;
   const { POST } = await import(ROUTE + '?run=' + RUN);
   const docs = await import(DOCS + '?run=' + RUN);
+  const links = await import(LINKS + '?run=' + RUN);
   const call = async (b, tok = 'tok_S1_abcdef') => { const r = await POST(req({ token: tok, ...b })); return { status: r.status, data: r.status === 200 ? await r.json() : null }; };
   const titles = (d) => (d ?? []).map(r => r.title).sort();
 
@@ -178,6 +191,38 @@ async function checks() {
   const src = readFileSync(new URL('../app/api/docs/route.ts', import.meta.url), 'utf8');
   ok('/api/docs checks a file path against the row\'s own share', (src.match(/docPathInShare\(doc\.path, doc\.share\)/g) ?? []).length === 2);
 
+  // h2 — look-only until claimed: the link reads; only the person who holds the home changes it
+  for (const [who, bearer] of [['signed out', null], ['a buyer before closing', BUYER], ['the anon key as a bearer', ANON_KEY]]) {
+    seed();
+    const as = async (b) => { const x = await POST(req({ token: 'tok_S1_abcdef', ...b }, bearer)); return x.status; };
+    const rd = await POST(req({ token: 'tok_S1_abcdef', table: 'home_reminders', op: 'select' }, bearer));
+    const s1 = await as({ table: 'home_reminders', op: 'insert', body: { title: 'intruder' } });
+    const s2 = await as({ table: 'home_reminders', op: 'update', filter: 'id=eq.r1', body: { completed: true } });
+    const s3 = await as({ table: 'home_reminders', op: 'delete', filter: 'id=eq.r1' });
+    ok(`h2 ${who}: reads the home`, rd.status === 200, `${rd.status}`);
+    ok(`h2 ${who}: cannot add, change or delete`, s1 === 403 && s2 === 403 && s3 === 403 && !DB.home_reminders.some(x => x.title === 'intruder')
+      && DB.home_reminders.find(x => x.id === 'r1')?.completed !== true && DB.home_reminders.some(x => x.id === 'r1'), `${s1} ${s2} ${s3}`);
+  }
+  seed(); CLAIM_FAIL = true;
+  const cf = await call({ table: 'home_reminders', op: 'insert', body: { title: 'unchecked' } });
+  CLAIM_FAIL = false;
+  ok('h2: when the claim cannot be checked, the change is refused', cf.status === 403 && !DB.home_reminders.some(x => x.title === 'unchecked'), `${cf.status}`);
+  seed(); DB.home_documents.push({ id: '11111111-2222-4333-8444-555555555556', share_id: 'S1', tenure_id: T1, path: null, name: 'keep.pdf' });
+  const hu = await docs.POST(req({ token: 'tok_S1_abcdef', action: 'complete', name: 'x.pdf', path: 'S1/_incoming/1730000000000_aaaaaaaaaaaa_x.pdf', kind: 'other' }, null));
+  const hd = await docs.DELETE(req({ token: 'tok_S1_abcdef', id: '11111111-2222-4333-8444-555555555556' }, BUYER));
+  ok('h2 /api/docs: no upload or delete without holding the home', hu.status === 403 && hd.status === 403 && DB.home_documents.length === 1, `${hu.status} ${hd.status}`);
+  seed(); DB.portal_links = [];
+  const lr = await links.POST(req({ action: 'create', token: 'tok_S1_abcdef', scope: 'read' }, null));
+  const lp = await links.POST(req({ action: 'create', token: 'tok_S1_abcdef', scope: 'repairs' }, null));
+  const lh = await links.POST(req({ action: 'create', token: 'tok_S1_abcdef', scope: 'repairs' }));
+  ok('h2 /api/portal-links: anyone with the link can pass on a view-only link', lr.status === 200, `${lr.status}`);
+  ok('h2 /api/portal-links: a repair request link needs the holder', lp.status === 403 && lh.status === 200, `${lp.status} ${lh.status}`);
+  const rid = DB.portal_links.find(x => x.scope === 'read')?.id ?? '00000000-0000-4000-8000-000000000001';
+  DB.portal_links.forEach(x => { if (!/^[0-9a-f-]{36}$/.test(x.id)) x.id = '00000000-0000-4000-8000-00000000000' + DB.portal_links.indexOf(x); });
+  const target = DB.portal_links.find(x => x.scope === 'read');
+  const rv = await links.POST(req({ action: 'revoke', token: 'tok_S1_abcdef', id: target?.id }, BUYER));
+  ok('h2 /api/portal-links: turning off a link needs the holder', rv.status === 403 && !target?.revoked_at, `${rv.status} ${rid}`);
+
   // #110: a receipt names its system; a receipt already passed to the house's history keeps its file
   seed();
   await docs.POST(req({ token: 'tok_S1_abcdef', action: 'complete', name: 'r.pdf', path: 'S1/_incoming/1730000000000_aaaaaaaaaaaa_r.pdf', kind: 'receipt', system: 'HVAC' }));
@@ -203,6 +248,15 @@ async function checks() {
 }
 
 const MUTS = [
+  ['h2: the portal route lets the link alone write', 'app/api/portal/route.ts', "  if (op !== 'select' && !(await holdsShare(req, shareId))) return fail(403, 'Claim this home to make changes.');", ''],
+  ['h2: any signed-in claim state counts', 'lib/shareAccess.ts', "    return j?.state === 'home';", "    return !!j?.state;"],
+  ['h2: an unchecked claim counts', 'lib/shareAccess.ts', "    if (!r.ok) return false;\n    const j = await r.json().catch(() => null);", "    if (!r.ok) return true;\n    const j = await r.json().catch(() => null);"],
+  ['h2: the anon key passes as a person', 'lib/shareAccess.ts', "  if (!m || m[1] === ANON) return false;", "  if (!m) return false;\n  if (m[1] === ANON) return true;"],
+  ['h2: docs upload without the holder', 'app/api/docs/route.ts', "  if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to add documents.' }, { status: 403 });   // h2\n", ''],
+  ['h2: docs delete without the holder', 'app/api/docs/route.ts', "  if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to remove documents.' }, { status: 403 });   // h2\n", ''],
+  ['h2: a repair link without the holder', 'app/api/portal-links/route.ts', "      if (scope === 'repairs' && !(await holdsShare(req, shareId)))", "      if (false)"],
+  ['h2: a view-only link needs the holder too', 'app/api/portal-links/route.ts', "      if (scope === 'repairs' && !(await holdsShare(req, shareId)))", "      if (!(await holdsShare(req, shareId)))"],
+  ['h2: revoke without the holder', 'app/api/portal-links/route.ts', "      if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to turn off a link.' }, { status: 403 });   // h2", ''],
   ['the portal scope ignores the tenure', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId) && PLAIN_ID.test(shareId)) {", 'if (false) {'],
   ['the scope is the whole home', 'lib/portalPolicy.ts', '(share_id.eq."${shareId}",tenure_id.eq.${tenure.tenureId})', '(share_id.eq."${shareId}",home_id.eq.H1)'],
   ['inserts are not filed under the tenure', 'lib/portalPolicy.ts', "if (UPKEEP_TABLES.has(table) && tenure && UUID.test(tenure.tenureId)) out.tenure_id = tenure.tenureId;", ''],

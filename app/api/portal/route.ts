@@ -33,7 +33,7 @@
 // (`supabase_portal_lockdown.sql`) and there is no path to them except a valid token.
 import { NextRequest, NextResponse } from 'next/server';
 import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, scopeTerm, stampRow, endedRefuses, UPKEEP_TABLES, type Op, type TenureRef } from '../../../lib/portalPolicy';
-import { resolvePortalToken, tenureForShare } from '../../../lib/shareAccess';
+import { resolvePortalToken, tenureForShare, holdsShare } from '../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
 
@@ -82,6 +82,8 @@ export async function POST(req: NextRequest) {
   if (!access || !scopeAllows(access.scope, table, op)) return notFound();
   const shareId = access.shareId;
   if (access.scope === 'repairs') terms.push(REPAIRS_SCOPE_TERM);
+  // h2: the link reads; only a signed-in person who holds this home changes it (lib/shareAccess.ts holdsShare).
+  if (op !== 'select' && !(await holdsShare(req, shareId))) return fail(403, 'Claim this home to make changes.');
   // The share's tenure, decided here from the share — never from the client (null: the share alone, as before).
   const tenure = UPKEEP_TABLES.has(table) ? await tenureForShare(shareId) : null;
   if (endedRefuses(table, op, tenure)) return notFound();     // the owner let the home go: read-only

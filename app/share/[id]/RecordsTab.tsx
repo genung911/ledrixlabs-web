@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PORTAL_TOKEN, canEdit, can, supaGet, ACCENT, WARN, CARD, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type HomeRecord, fmtDate } from './shared';
+import { PORTAL_TOKEN, canEdit, can, lookOnly, openClaim, authHeaders, supaGet, ACCENT, WARN, CARD, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type HomeRecord, fmtDate } from './shared';
 import { Icon, pdfHref, Footer } from './ui';
 function ClaimCard({ onClaim }: { onClaim: () => void }) {
   return (
@@ -33,7 +33,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
       // Three steps, so the file never passes through Vercel (4.5 MB request cap): /api/docs signs an
       // upload for one fresh path under this home, the browser sends the file straight to storage,
       // then /api/docs checks what was stored and writes the row itself.
-      const post = (body: object) => fetch('/api/docs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: PORTAL_TOKEN, ...body }) });
+      const post = (body: object) => fetch('/api/docs', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ token: PORTAL_TOKEN, ...body }) });
       const fail = async (r: Response) => { const j = await r.json().catch(() => ({})); window.alert(j.error || 'Upload failed.'); };
       const signed = await post({ action: 'upload-url', name: f.name, size: f.size, kind });
       if (!signed.ok) { await fail(signed); return; }
@@ -47,7 +47,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
   // Removes the stored file and its row together (/api/docs), not just the row.
   const removeDoc = async (d: any) => {
     if (!can('doc.delete')) return;
-    await fetch('/api/docs', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: PORTAL_TOKEN, id: d.id }) }).catch(() => {});
+    await fetch('/api/docs', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ token: PORTAL_TOKEN, id: d.id }) }).catch(() => {});
     await loadDocs();
   };
   // A stored file opens through a short-lived signed link; a manufacturer-manual row is an outside link.
@@ -68,6 +68,9 @@ function DocsTab({ record }: { record: HomeRecord }) {
         <button onClick={() => setOpenCat(null)} style={{ background: 'none', border: 'none', color: TEXT, fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', padding: '2px 0', marginBottom: 12, fontFamily: 'Roboto Mono, monospace' }}>← DOCS</button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ color: TEXT, fontSize: 12, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace' }}>{label.toUpperCase()}</div>
+          {openCat !== 'reports' && lookOnly() && (
+            <button onClick={openClaim} style={{ background: 'none', border: `1px dashed ${BORDER}`, color: DIM, borderRadius: 8, padding: '8px 12px', fontSize: 9, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: 'pointer' }}>🔒 CLAIM TO ADD</button>
+          )}
           {openCat !== 'reports' && canEdit() && (
             <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '8px 12px', fontSize: 9, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', cursor: uploading ? 'default' : 'pointer' }}>{uploading ? 'UPLOADING…' : '+ UPLOAD'}</button>
           )}

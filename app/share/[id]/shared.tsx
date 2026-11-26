@@ -33,13 +33,31 @@ function setPortalScope(s: 'edit' | 'read') { PORTAL_SCOPE = s; }
 // What this link may do (/api/share returns it; lib/shareAccess.ts). The server enforces it on every
 // call — this only stops the page offering changes a view-only link cannot make.
 let PORTAL_SCOPE: 'edit' | 'read' = 'edit';
-const canEdit = () => PORTAL_SCOPE === 'edit';
+// LOOK-ONLY UNTIL CLAIMED (h2, owner 2026-11-25: "We can't have non owners making changes"). The report's own link
+// reads; changes need a signed-in person who HOLDS this home (my_claim_state = 'home', #153 — a buyer only after closing).
+// The server checks it on every write (lib/shareAccess.ts holdsShare, with the person's access token below); this flag
+// only decides what the page offers. PORTAL_SCOPE stays the LINK's scope — never flipped to 'read' for a non-holder,
+// or the Share button would hand out this edit link as if it were a view-only one.
+let PORTAL_HOLDS = false;
+function setPortalHolds(h: boolean) { PORTAL_HOLDS = h; }
+let PORTAL_BEARER = '';
+/** The signed-in person's Supabase access token, sent with every portal call (the page keeps it current). */
+function setPortalBearer(t: string) { PORTAL_BEARER = t; }
+const authHeaders = (): Record<string, string> => (PORTAL_BEARER ? { Authorization: `Bearer ${PORTAL_BEARER}` } : {});
+/** This is the report's own link (not a minted view-only one). */
+const isEditLink = () => PORTAL_SCOPE === 'edit';
+/** The report's own link, but its holder hasn't claimed the home here: everything reads, changes show "Claim to add". */
+const lookOnly = () => PORTAL_SCOPE === 'edit' && !PORTAL_HOLDS;
+let CLAIM_OPENER: () => void = () => {};
+function setClaimOpener(f: () => void) { CLAIM_OPENER = f; }
+const openClaim = () => CLAIM_OPENER();
+const canEdit = () => PORTAL_SCOPE === 'edit' && PORTAL_HOLDS;
 /** Whether this page offers an action (lib/portalActions.ts). Every write handler checks it first. */
-const can = (a: PortalAction) => portalCan(PORTAL_SCOPE, a);
+const can = (a: PortalAction) => PORTAL_HOLDS && portalCan(PORTAL_SCOPE, a);
 
 /** The link a Share button may hand out (lib/portalShareLink.ts) — never the edit link. */
 const shareUrlFor = (kind: 'read' | 'repairs') => portalShareUrl({
-  fetchFn: (u, i) => fetch(u, i), origin: window.location.origin, token: PORTAL_TOKEN,
+  fetchFn: (u, i) => fetch(u, { ...i, headers: { ...(i?.headers as Record<string, string> | undefined), ...authHeaders() } }), origin: window.location.origin, token: PORTAL_TOKEN,
   pageScope: PORTAL_SCOPE, kind, currentHref: window.location.href,
 });
 
@@ -59,7 +77,7 @@ function splitPath(path: string): { table: string; filter: string; select?: stri
 
 async function portal(op: string, table: string, extra: Record<string, unknown>): Promise<Response> {
   return fetch('/api/portal', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(op === 'select' ? {} : authHeaders()) },
     body: JSON.stringify({ token: PORTAL_TOKEN, table, op, ...extra }),
   });
 }
@@ -448,5 +466,5 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
 
   await seedManualDocs(shareId, specs);
 }
-export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
+export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, setPortalHolds, setPortalBearer, authHeaders, isEditLink, lookOnly, setClaimOpener, openClaim, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
 export type { Anomaly, Spec, HomeRecord, Project, Reminder, RepairRow, MaintenanceLog, FPRoom, FPLayout, FloorPlanRow, Tab, PrioKey };

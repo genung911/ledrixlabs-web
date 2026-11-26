@@ -22,7 +22,7 @@
 // 503 "not available yet"; nothing else changes.
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { editShareIdForToken, shareAccessConfigured, tokenHash } from '../../../lib/shareAccess';
+import { editShareIdForToken, shareAccessConfigured, tokenHash, holdsShare } from '../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
 
@@ -59,6 +59,9 @@ export async function POST(req: NextRequest) {
     if (body.action === 'create') {
       const scope = body.scope === 'read' || body.scope === 'repairs' ? body.scope : null;
       if (!scope) return bad();
+      // h2: anyone with the report link may pass on a VIEW-ONLY link (it grants nothing they don't have); sending a
+      // repair request to a contractor is the home holder's.
+      if (scope === 'repairs' && !(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to send a repair request.' }, { status: 403 });
       const active = await fetch(`${base}?share_id=eq.${sid}&revoked_at=is.null&scope=in.(read,repairs)&select=id`,
         { headers: svc, cache: 'no-store' });
       if (active.status === 404) return unavailable();
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
 
     if (body.action === 'revoke') {
       if (typeof body.id !== 'string' || !UUID.test(body.id)) return notFound();
+      if (!(await holdsShare(req, shareId))) return NextResponse.json({ error: 'Claim this home to turn off a link.' }, { status: 403 });   // h2
       // Confined to this home, to minted read/repairs links, and to ones still active.
       const r = await fetch(`${base}?id=eq.${encodeURIComponent(body.id)}&share_id=eq.${sid}`
         + `&scope=in.(read,repairs)&revoked_at=is.null`, {

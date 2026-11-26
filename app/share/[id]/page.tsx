@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import ValOrbVoice from '@/components/ValOrbVoice';
-import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
+import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, setPortalHolds, setPortalBearer, isEditLink, lookOnly, setClaimOpener, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
 import { Skeleton, NotFound, NavBar, Footer, HomeRail } from './ui';
 import { HomeTab } from './HomeTab';
 import { EthixTab } from './EthixTab';
@@ -67,6 +67,15 @@ export default function SharePage() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
+  // h2 — LOOK-ONLY UNTIL CLAIMED (owner 2026-11-25). `holds`: the signed-in person holds this home (my_claim_state =
+  // 'home'); only then does the page offer changes, and every change carries their access token so the server can check
+  // the same thing (lib/shareAccess.ts holdsShare). Signed out, buying, or waiting: everything reads, nothing changes.
+  const [holds, setHolds] = useState(false);
+  const markHolds = (h: boolean) => { setPortalHolds(h); setHolds(h); };
+  useEffect(() => {
+    setPortalBearer(session?.access_token ?? '');
+    if (!session) markHolds(false);
+  }, [session]);   // eslint-disable-line react-hooks/exhaustive-deps
   // CLAIM ON SIGN-IN (One Home phase 3, owner 2026-11-12): signed in on this page, the person becomes a homeowner
   // (homeowner_profiles; the server refuses an inspector's email), claims every report sent to their email
   // (claim_my_reports, #110 — the owner), and, on the report's own link, joins this home (claim_by_link, #123 — a
@@ -81,7 +90,7 @@ export default function SharePage() {
   const [buying, setBuying] = useState<{ closesOn: string | null } | null>(null);
   const [closeBusy, setCloseBusy] = useState(false);
   const [newDate, setNewDate] = useState<string | null>(null);
-  const markBuying = (closesOn: string | null) => { setPortalScope('read'); setBuying({ closesOn }); setClaim(null); };
+  const markBuying = (closesOn: string | null) => { markHolds(false); setBuying({ closesOn }); setClaim(null); };
   useEffect(() => {
     const uid = session?.user?.id;
     if (!uid || !shareId || claimTried.current) return;
@@ -91,9 +100,9 @@ export default function SharePage() {
       const prof = await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });
       if (inspector(prof.error?.message)) { setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' }); return; }
       const st0 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
-      if (st0.data?.state === 'home') { setClaim({ kind: 'claimed', text: 'This home is on your account.' }); return; }
+      if (st0.data?.state === 'home') { markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' }); return; }
       if (st0.data?.state === 'buying') { markBuying(st0.data.closes_on ?? null); return; }
-      if (canEdit() && PORTAL_TOKEN) {
+      if (isEditLink() && PORTAL_TOKEN) {
         if (!claimAnswer) { setNeedAnswer(true); claimTried.current = false; return; }
         setNeedAnswer(false);
         const ir = await supabase.rpc('set_claim_intent', { raw_token: PORTAL_TOKEN, p_owned: claimAnswer.owned, p_closes_on: claimAnswer.owned ? null : claimAnswer.closesOn });
@@ -102,12 +111,13 @@ export default function SharePage() {
       const mine = await supabase.rpc('claim_my_reports');
       const homes = Array.isArray(mine.data) ? mine.data : [];
       let viaLink: unknown = null; let linkErr = '';
-      if (canEdit() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN }); viaLink = r.data ?? null; linkErr = r.error?.message ?? ''; }
+      if (isEditLink() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN }); viaLink = r.data ?? null; linkErr = r.error?.message ?? ''; }
       const st1 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
       if (st1.data?.state === 'buying') markBuying(st1.data.closes_on ?? null);
+      else if (st1.data?.state === 'home') { markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' }); }
       else if (homes.length || viaLink) setClaim({ kind: 'claimed', text: 'This home is on your account.' });
       else if (inspector(linkErr)) setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' });
-      else if (!canEdit()) setClaim({ kind: 'refused', text: 'This is a view-only link. Ask for the report’s own link to claim the home.' });
+      else if (!isEditLink()) setClaim({ kind: 'refused', text: 'This is a view-only link. Ask for the report’s own link to claim the home.' });
       else setClaim({ kind: 'waiting', text: 'Your claim is waiting: the current owner hands the home over when they move out.' });
     })().catch(() => { claimTried.current = false; });
   }, [session, shareId, claimAnswer]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -116,7 +126,7 @@ export default function SharePage() {
     const r = await supabase.rpc('confirm_closing', { p_share_id: shareId });
     setCloseBusy(false);
     if (r.error) { setClaim({ kind: 'refused', text: r.error.message || 'Couldn\u2019t confirm. Try again.' }); return; }
-    if (r.data) { setPortalScope('edit'); setBuying(null); setClaim({ kind: 'claimed', text: 'Congratulations — this home is on your account.' }); }
+    if (r.data) { markHolds(true); setBuying(null); setClaim({ kind: 'claimed', text: 'Congratulations — this home is on your account.' }); }
     else setClaim({ kind: 'waiting', text: 'Thanks. The seller still holds this home on Ledrix; it moves to you when they hand it over.' });
   };
   const moveClosing = async (d: string) => {
@@ -139,6 +149,16 @@ export default function SharePage() {
   };
   const openLedrix = () => (access ? setLedrixOpen(true) : setSubOpen(true));
   const seeded = useRef(false);
+  // The page's own schedule/manual reconciliation is a write: it runs once the person holds the home (h2).
+  useEffect(() => {
+    if (!holds || !shareId || !record || seeded.current || !canEdit()) return;
+    seeded.current = true;
+    seedIfEmpty(shareId, record.anomalies ?? [], record.specs ?? [])
+      .then(() => Promise.all([loadProjects(shareId), loadReminders(shareId)]).catch(() => {}))
+      .catch(() => {});
+  }, [holds, shareId, record]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // "Claim to add" (ui.tsx ClaimToAdd): signed out → the sign-in sheet; signed in → Home, where the claim question is.
+  setClaimOpener(() => { if (!session) setSubOpen(true); else go('home'); });
 
   // VAL (option a) — the FAB orb morphs + records, then transcribes and opens the chat
   // with the message auto-sent. The orb reads `valStream` for its live waveform.
@@ -258,12 +278,6 @@ export default function SharePage() {
       setRecord(rec);
       setShareId(canonicalId);
       await Promise.all([loadProjects(canonicalId), loadReminders(canonicalId), loadRepairs(canonicalId), loadLog(canonicalId), loadFloorPlan(canonicalId)]).catch(() => {});
-      if (!seeded.current && canEdit()) {
-        seeded.current = true;
-        seedIfEmpty(canonicalId, rec.anomalies ?? [], rec.specs ?? [])
-          .then(() => Promise.all([loadProjects(canonicalId), loadReminders(canonicalId)]).catch(() => {}))
-          .catch(() => {});
-      }
     })().catch(() => setNotFound(true)).finally(() => setLoading(false));
     // Keyed on routeId only — loaders are called with the resolved canonical id, so they
     // don't need to be effect deps (and including them would re-run this on shareId change).
@@ -367,9 +381,15 @@ export default function SharePage() {
           </div>
         );
       })()}
-      {!canEdit() && !buying && (
+      {!isEditLink() && (
         <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
           View-only link — you can look, but changes are turned off.
+        </div>
+      )}
+      {lookOnly() && !buying && claim?.kind !== 'waiting' && claim?.kind !== 'refused' && (
+        <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, padding: '9px 18px', textAlign: 'center' }}>
+          <b>Look-only.</b> Claim this home to add reminders, projects and documents.{' '}
+          <button onClick={() => (session ? go('home') : setSubOpen(true))} style={{ background: 'none', border: 'none', color: ACCENT, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>Claim</button>
         </div>
       )}
 
@@ -416,7 +436,7 @@ export default function SharePage() {
         </div>
       )}
       <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} signedIn={!!session} onSubscribe={startCheckout}
-        answer={claimAnswer} onAnswer={canEdit() && PORTAL_TOKEN ? setClaimAnswer : undefined} />
+        answer={claimAnswer} onAnswer={isEditLink() && PORTAL_TOKEN ? setClaimAnswer : undefined} />
       <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
     </div>
   );
