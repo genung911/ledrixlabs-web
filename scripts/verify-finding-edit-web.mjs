@@ -111,7 +111,7 @@ async function suite(src) {
     /export const IDLE_RELEASE_MS = 5 \* 60_000;/.test(ui) && /if \(Date\.now\(\) - lastUse\.current >= IDLE_RELEASE_MS\) \{ void releaseLease\(inspectionId, lease\); setLease\(null\); return; \}/.test(ui)
     && /const ensure = useCallback\(async \(\) => \{\s*lastUse\.current = Date\.now\(\);/.test(ui));
   ok('§3 controls only for someone who may edit, and not while their phone has the job', /const editable = access === 'edit' && !lock\.heldBy;/.test(ui));
-  ok('§3 Confirm waits for a complete card', /disabled=\{!!busy \|\| missing\.length > 0\}/.test(ui));
+  ok('§3 Confirm waits for a complete card (and, since batch 3, a ticked Ledrix priority)', /disabled=\{!!busy \|\| attention > 0\}/.test(ui) && /const attention = missing\.length \+ \(needsTick \? 1 : 0\);/.test(ui));
   ok('§3 one lock per page, and a save replaces the row', /const lock = useEditLock\(id, phoneHolderOf\(/.test(page) && /findings: s\.data\.findings\.map\(f => f\.id === row\.id \? row : f\)/.test(page));
   return out;
 }

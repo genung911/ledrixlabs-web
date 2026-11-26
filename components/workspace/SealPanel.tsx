@@ -21,9 +21,11 @@ type Sealed = { version: number; digest: string; shareUrl: string; warnings: str
 type Confirm = { open: boolean; attest: boolean; busy: boolean; error: string | null };
 const authHeader = async () => ({ Authorization: `Bearer ${(await workspace.auth.getSession()).data.session?.access_token ?? ''}` });
 
-export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: string; lock: EditLock;
+export function SealPanel({ inspectionId, lock, onOpenItem, summary }: { inspectionId: string; lock: EditLock;
   /** Opens Scope at this item (owner 2026-11-04: "click on those and go straight to the section to fix"). */
-  onOpenItem?: (nodeId: string) => void }) {
+  onOpenItem?: (nodeId: string) => void;
+  /** The phone's "Before you send" rows (website Apple pass batch 3, owner 2026-11-25, mockup TYeCBzBcDZpZ2cNHRKQR1d). */
+  summary?: { toReview: number; onFindings: () => void; onChecklist: () => void } }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [confirm, setConfirm] = useState<Confirm>({ open: false, attest: false, busy: false, error: null });
   const [sealed, setSealed] = useState<Sealed | null>(null);
@@ -85,6 +87,22 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
             {locked ? 'Locked items stop the seal until they are fixed — here or on a phone.' : 'The same checks your phone runs before a seal. These inform — sealing is your attestation.'}
           </p>
         </header>
+        {summary && (
+          // BEFORE YOU SEND, the phone's rows: each opens its place. The report check's detail follows below.
+          <div className="border-b border-hairline px-5 py-3">
+            <h3 className="pb-1.5 text-sm text-muted">Before you send</h3>
+            <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
+              <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm"><span className="text-ink">Report check</span>
+                <span className={locked ? 'font-semibold text-amber-700 dark:text-amber-400' : 'font-semibold text-emerald-700 dark:text-emerald-400'}>{locked ? `${c.locks.length} to fix` : 'Nothing blocks'}</span></div>
+              <button type="button" onClick={summary.onFindings} className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-sm hover:bg-ink/5"><span className="text-ink">Findings</span>
+                <span className={summary.toReview ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{summary.toReview ? `${summary.toReview} to review` : 'All approved'} <span aria-hidden className="text-muted">›</span></span></button>
+              <button type="button" onClick={summary.onChecklist} className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-sm hover:bg-ink/5"><span className="text-ink">Checklist</span>
+                <span className="text-body">Open <span aria-hidden className="text-muted">›</span></span></button>
+              <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm"><span className="text-ink">Status</span>
+                <span className="text-body">{c.isFinalized ? `Sent · next is version ${c.nextVersion}` : 'Not sent yet'}</span></div>
+            </div>
+          </div>
+        )}
         <ul className="divide-y divide-hairline px-5">
           {c.locks.map(l => (
             <li key={l.key} className="flex gap-3 py-3.5">
@@ -128,7 +146,7 @@ export function SealPanel({ inspectionId, lock, onOpenItem }: { inspectionId: st
             </li>
           )}
         </ul>
-        <div className="mt-auto flex flex-col gap-2.5 border-t border-hairline px-5 pb-5 pt-4">
+        <div className="sticky bottom-0 mt-auto flex flex-col gap-2.5 rounded-b-xl border-t border-hairline bg-surface/95 px-5 pb-5 pt-4 backdrop-blur">
           <div className="flex justify-between gap-3 text-sm text-body">
             <span>{lock.lease ? 'You hold the edit lock' : lock.heldBy ? `${lock.heldBy} is editing this job` : 'Sealing takes the edit lock, like any change here'}</span>
             <span className="shrink-0 font-mono text-xs">{c.isFinalized ? `Re-seal: version ${c.nextVersion}` : `Next: version ${c.nextVersion}`}</span>

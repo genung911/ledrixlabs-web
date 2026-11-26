@@ -97,12 +97,18 @@ export function FindingEditor<T extends Row>({ finding, team, names, lock, onSav
   // A different finding, or a newer copy of this one: start from what the server holds.
   useEffect(() => { setDraft(draftOf(finding)); }, [finding.id, finding.row_version]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setNote(null); }, [finding.id]);
+  // TICK EACH SUGGESTION (website Apple pass batch 3, owner 2026-11-25 — the phone's 945 rows): Ledrix's priority is kept
+  // only when the inspector ticks it (or picks another). Nothing is accepted by Confirm alone.
+  const [kept, setKept] = useState(false);
+  useEffect(() => { setKept(false); }, [finding.id]);
 
   const author = finding.inspector_id ? (names[finding.inspector_id]?.split(/\s+/)[0] ?? 'its inspector') : 'its inspector';
   const editable = access === 'edit' && !lock.heldBy;
   const dirty = Object.keys(changesOf(finding, draft)).length > 0;
   const missing = missingForConfirm(finding, draft);
   const suggested = finding.source === 'document_photo' && status !== 'confirmed' && !!finding.ai_severity && !priorityUnset(finding);
+  const needsTick = editable && suggested && status === 'proposed' && draft.severity === finding.severity && !kept;
+  const attention = missing.length + (needsTick ? 1 : 0);
 
   const run = async (label: string, patch: Record<string, unknown>, done: string) => {
     setBusy(label); setNote(null);
@@ -162,7 +168,13 @@ export function FindingEditor<T extends Row>({ finding, team, names, lock, onSav
               ))}
             </div>
           ) : <p className="text-ink">{priorityUnset(finding) ? 'Not set' : (SEVERITY_SHORT_LABELS[parseSeverity(finding.severity) ?? 'deficiency'] ?? '—')}</p>}
-          {editable && suggested && status === 'proposed' && <p className="mt-1 text-xs text-muted">Ledrix suggested {titleCase(SEVERITY_SHORT_LABELS[parseSeverity(finding.ai_severity) ?? 'deficiency'])}. Confirming accepts it unless you pick another.</p>}
+          {editable && suggested && status === 'proposed' && draft.severity === finding.severity && (
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-hairline px-3 py-2">
+              <span className="text-sm text-ink">Ledrix suggests <b>{titleCase(SEVERITY_SHORT_LABELS[parseSeverity(finding.ai_severity) ?? 'deficiency'])}</b></span>
+              <button type="button" aria-pressed={kept} onClick={() => setKept(k => !k)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${kept ? 'bg-emerald-600 text-white' : 'border border-hairline text-ink hover:bg-ink/5'}`}>{kept ? '✓ Kept' : 'Tick to keep'}</button>
+            </div>
+          )}
         </Labeled>
 
         {editable && status !== 'rejected' ? (
@@ -212,22 +224,23 @@ export function FindingEditor<T extends Row>({ finding, team, names, lock, onSav
       </div>
 
       {editable && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-3">
+        // Pinned to the bottom (batch 3), with where it stands on the left, as the phone's card does.
+        <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-hairline bg-surface/95 px-4 py-3 backdrop-blur">
+          {(status === 'proposed' || status === 'processing') && <span className={`mr-auto text-sm font-semibold ${attention ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{attention ? `${attention} need${attention === 1 ? 's' : ''} attention` : 'Ready to confirm'}</span>}
           {status === 'proposed' || status === 'processing' ? (
-            <button type="button" disabled={!!busy || missing.length > 0} onClick={() => run('confirm', confirmPatch(finding, draft), 'Confirmed.')}
+            <button type="button" disabled={!!busy || attention > 0} onClick={() => run('confirm', confirmPatch(finding, draft), 'Confirmed.')}
               className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50">{busy === 'confirm' ? 'Confirming…' : 'Confirm'}</button>
           ) : null}
           {status !== 'rejected' && (
             <button type="button" disabled={!!busy || !dirty} onClick={() => run('save', changesOf(finding, draft), 'Saved.')}
               className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5 disabled:opacity-50">{busy === 'save' ? 'Saving…' : 'Save changes'}</button>
           )}
-          <span className="flex-1" />
           {status === 'rejected'
             ? <button type="button" disabled={!!busy} onClick={() => run('restore', restorePatch(new Date().toISOString()), 'Restored to the review queue.')}
                 className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5 disabled:opacity-50">{busy === 'restore' ? 'Restoring…' : 'Restore'}</button>
             : <button type="button" disabled={!!busy} onClick={() => run('reject', rejectPatch(finding, draft, new Date().toISOString()), 'Rejected.')}
                 className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-safety hover:bg-safety/5 disabled:opacity-50">{busy === 'reject' ? 'Rejecting…' : 'Reject'}</button>}
-          {(status === 'proposed' || status === 'processing') && missing.length > 0 && <p className="basis-full text-xs text-muted">Still needed to confirm: {missing.join(', ')}.</p>}
+          {(status === 'proposed' || status === 'processing') && attention > 0 && <p className="basis-full text-xs text-muted">Still needed to confirm: {[...missing, ...(needsTick ? ['tick Ledrix’s priority (or pick another)'] : [])].join(', ')}.</p>}
         </div>
       )}
     </div>

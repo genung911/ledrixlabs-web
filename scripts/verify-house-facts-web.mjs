@@ -96,7 +96,7 @@ function suite() {
   ok('§6 a visit page saves its columns together, under the lock; the weather Save confirms it', panel.includes('const r = await saveFactColumns(row, patch, lease);')
     && panel.includes("if (v.target.id === 'weather' && visit.weather) {") && panel.includes('weather_confirmed_at: new Date().toISOString(), weather_confirmed_weather: visit.weather,')
     && api.includes(".update({ ...patch, updated_at:") && /COLS = '[^']*water_state, gas_state, power_state'/.test(api));
-  ok('§4 Before you start is first in the menu, with what is left', page.includes("{ id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },\n    { id: 'review',"));
+  ok('§4 Before you start is first in the menu, with what is left', page.includes("{ id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },"));   /* batch 3: Findings is one entry below it */
   // §5 w22 (2026-11-23): the appliances question is answered by the server's appliances_asked, as on the phone
   ok('§5 the page reads appliances_asked', /COLS = '[^']*appliances_asked,/.test(api));
   ok('§5 Appliances reads Not answered until stamped, and counts in what is left',

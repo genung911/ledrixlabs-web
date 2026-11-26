@@ -43,7 +43,7 @@ function checks(S) {
   ok('§1 a FieldRow saves when you leave it, and says Saved / Not saved', /onBlur=\{async \(\) => \{\s*if \(v === value\) return;/.test(ui) && /'Saved'/.test(ui) && /Not saved/.test(ui));
   ok('§1 a Sheet has Cancel and its commit at the top', /onClick=\{onCancel\} className="text-sm text-accent-ink hover:underline">Cancel</.test(ui) && /\{busy \? 'Saving…' : doneLabel\}/.test(ui));
   const insp = S['app/app/inspections/[id]/page.tsx'];
-  ok('§2 the inspection page uses the phone\'s words', ["label: 'To review'", "label: 'Confirmed'", "label: 'Checklist'", "label: 'Review & send'"].every(x => insp.includes(x))
+  ok('§2 the inspection page uses the phone\'s words', ["label: 'Findings'", "'To review'", "'Confirmed'", "label: 'Checklist'", "label: 'Review & send'"].every(x => insp.includes(x))   /* batch 3: one Findings entry; To review / Confirmed are its switch */
     && !/label: 'Seal & send'|label: 'Review queue'|label: 'Confirmed findings'/.test(insp));
   ok('§2 the inspection page groups findings by system', /const bySystem = groupBySystem\(list\);/.test(insp) && /function groupBySystem\(/.test(insp));
   const seal = S['components/workspace/SealPanel.tsx'];

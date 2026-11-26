@@ -11,6 +11,7 @@ import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ConflictsCard } from '@/components/workspace/ConflictsCard';
 import { CheckRequestsCard } from '@/components/workspace/CheckRequestsCard';
+import { draftOf, missingForConfirm } from '@/lib/findings/rules';
 import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
 import dynamic from 'next/dynamic';
 import PACK from '@/lib/scope/core/taxonomy/ledrix.core.json';
@@ -123,6 +124,15 @@ export default function InspectionPage() {
   // Electrical item reports under Electrical whichever tile it was found on; an unknown item goes under General, last.
   const list: FindingRow[] = section === 'review' ? groups.review : section === 'findings' ? groups.findings : section === 'rejected' ? groups.rejected : [];
   const current = list.find(r => r.id === selected) ?? list[0] ?? null;
+  // Each row's photo (batch 3): the list's storage photos signed together, once per list.
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const thumbPaths = useMemo(() => list.map(r => photoRef(r.image_uri)).flatMap(x => x?.kind === 'storage' ? [x.path] : []).join('|'), [list]);
+  useEffect(() => {
+    let live = true;
+    const paths = thumbPaths ? thumbPaths.split('|') : [];
+    if (paths.length) signEvidence(paths).then(u => { if (live) setThumbs(t => ({ ...t, ...u })); }).catch(() => {});
+    return () => { live = false; };
+  }, [thumbPaths]);
 
   // j / k (or ↓ / ↑) walk the list; the evidence panel follows.
   useEffect(() => {
@@ -159,9 +169,9 @@ export default function InspectionPage() {
   const rail: { id: Section; label: string; count?: number; show: boolean }[] = [
     // The phone's words (website Apple pass, 2026-11-23): To review · Confirmed · Rejected · Checklist · Review & send.
     { id: 'facts', label: 'Before you start', count: factsLeftN || undefined, show: true },
-    { id: 'review', label: 'To review', count: groups.review.length, show: findingsVisible },
-    { id: 'findings', label: 'Confirmed', count: groups.findings.length, show: findingsVisible },
-    { id: 'rejected', label: 'Rejected', count: groups.rejected.length, show: findingsVisible && groups.rejected.length > 0 },
+    // ONE FINDINGS ENTRY (website Apple pass batch 3, owner 2026-11-25, mockup TYeCBzBcDZpZ2cNHRKQR1d — "One entry as drawn"):
+    // To review, Confirmed and Rejected are a switch at the top of the list, as on the phone's Findings workspace.
+    { id: groups.review.length ? 'review' : 'findings', label: 'Findings', count: groups.review.length + groups.findings.length, show: findingsVisible },
     { id: 'scope', label: 'Checklist', show: findingsVisible },
     { id: 'specs', label: 'Specs', count: specs.length, show: findingsVisible },
     { id: 'photos', label: 'Photos', count: photos.length, show: findingsVisible },
@@ -169,7 +179,9 @@ export default function InspectionPage() {
     // "Seal & send" → "Review & send" (owner 2026-11-23: "Yes") — the phone's name; the seal is still how a report is frozen.
     { id: 'seal', label: 'Review & send', show: true },
   ];
-  const activeSection: Section = rail.find(r => r.id === section && r.show) ? section : 'reports';
+  const isFindings = (x: Section) => x === 'review' || x === 'findings' || x === 'rejected';
+  const activeSection: Section = isFindings(section) && findingsVisible ? section : rail.find(r => r.id === section && r.show) ? section : 'reports';
+  const railOn = (id: Section) => isFindings(id) ? isFindings(activeSection) : activeSection === id;
   const bySystem = groupBySystem(list);
 
   return (
@@ -234,8 +246,8 @@ export default function InspectionPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Inspection sections" className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
           {rail.filter(r => r.show).map(r => (
-            <button key={r.id} onClick={() => { setSection(r.id); setSelected(null); setScopeFocus(null); }} aria-current={activeSection === r.id ? 'true' : undefined}
-              className={`flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${activeSection === r.id ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
+            <button key={r.id} onClick={() => { setSection(r.id); setSelected(null); setScopeFocus(null); }} aria-current={railOn(r.id) ? 'true' : undefined}
+              className={`flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${railOn(r.id) ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
               {r.label}{typeof r.count === 'number' && <span className="font-mono text-xs">{r.count}</span>}
             </button>
           ))}
@@ -245,20 +257,33 @@ export default function InspectionPage() {
         {(activeSection === 'review' || activeSection === 'findings' || activeSection === 'rejected') && (
           <>
             <div className="flex flex-col gap-4">
-              {activeSection === 'review' && <p className="px-3 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects, in the app or here. Nothing becomes a finding until they do.</p>}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-2xl font-bold tracking-tight text-ink">Findings</h2>
+                <div role="tablist" aria-label="Findings" className="inline-flex gap-0.5 rounded-lg bg-ground p-0.5">
+                  {([['review', 'To review', groups.review.length], ['findings', 'Confirmed', groups.findings.length], ['rejected', 'Rejected', groups.rejected.length]] as [Section, string, number][]).map(([id, label, n]) => (
+                    <button key={id} type="button" role="tab" aria-selected={activeSection === id} onClick={() => { setSection(id); setSelected(null); }}
+                      className={`rounded-md px-3 py-1 text-sm ${activeSection === id ? 'bg-surface font-semibold text-ink shadow-sm' : 'text-muted hover:text-ink'}`}>{label}{n ? ` · ${n}` : ''}</button>
+                  ))}
+                </div>
+              </div>
+              {activeSection === 'review' && <p className="px-1 text-xs text-body">Ledrix proposes; the inspector confirms, adjusts or rejects, in the app or here. Nothing becomes a finding until they do.</p>}
               {list.length === 0 ? <Card><Empty>{activeSection === 'review' ? 'Nothing waiting to review.' : activeSection === 'findings' ? 'No confirmed findings yet.' : 'None.'}</Empty></Card> : bySystem.map(g => (
                 <section key={g.label} className="flex flex-col gap-1.5">
-                  <h2 className="px-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">{g.label} · {g.rows.length}</h2>
+                  <h3 className="px-1 text-sm text-muted">{g.label} · {g.rows.length}</h3>
                   <ul role="listbox" aria-label={`${g.label} findings`} className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
                     {g.rows.map(r => (
                       <li key={r.id} role="option" aria-selected={current?.id === r.id}>
-                        <button onClick={() => setSelected(r.id)} className={`flex w-full items-center gap-3 px-4 py-2.5 text-left focus:outline-none focus-visible:bg-ground ${current?.id === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
+                        <button onClick={() => setSelected(r.id)} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:bg-ground ${current?.id === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
+                          <FindingThumb uri={r.image_uri} urls={thumbs} />
                           <span className="min-w-0 flex-1">
-                            <span className="line-clamp-2 text-sm text-ink">{r.description || r.ai_description || 'No description'}</span>
+                            <span className="line-clamp-2 text-sm font-medium text-ink">{r.description || r.ai_description || 'No description'}</span>
                             <span className="block truncate text-xs text-muted">{uniq([titleCase(r.component), r.room, r.location]).join(' · ') || 'No location'}</span>
                           </span>
                           {r.is_safety && <span className="shrink-0 rounded-full bg-safety/10 px-2 py-0.5 text-[11px] font-semibold text-safety">Safety</span>}
                           <PriorityPill severity={r.severity} unset={isPriorityUnset(r)} suggested={isPrioritySuggested(r)} />
+                          {/* Where it stands, the phone's words (n13): "2 need attention ›", "Ready ›". */}
+                          {activeSection === 'review' && (() => { const n = missingForConfirm(r as any, draftOf(r as any)).length + (isPrioritySuggested(r) ? 1 : 0);
+                            return <span className={`shrink-0 text-xs font-semibold ${n ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{n ? `${n} need${n === 1 ? 's' : ''} attention` : 'Ready'}</span>; })()}
                           <span aria-hidden className="shrink-0 text-muted">›</span>
                         </button>
                       </li>
@@ -313,7 +338,8 @@ export default function InspectionPage() {
           </Card>
         )}
 
-        {activeSection === 'seal' && <SealPanel inspectionId={id} lock={lock} onOpenItem={nodeId => { setScopeFocus({ nodeId, n: Date.now() }); setSection('scope'); setSelected(null); }} />}
+        {activeSection === 'seal' && <SealPanel inspectionId={id} lock={lock} onOpenItem={nodeId => { setScopeFocus({ nodeId, n: Date.now() }); setSection('scope'); setSelected(null); }}
+          summary={findingsVisible ? { toReview: groups.review.length, onFindings: () => { setSection(groups.review.length ? 'review' : 'findings'); setSelected(null); }, onChecklist: () => { setSection('scope'); setSelected(null); setScopeFocus(null); } } : undefined} />}
 
         {activeSection === 'reports' && <ReportsPanel reports={reports} seals={seals} portal={portal} phase={phase} />}
       </div>
@@ -343,6 +369,14 @@ function specDetail(s: SpecRow): string {
     }
   }
   return parts.join(' · ') || '—';
+}
+
+/** A finding's photo in the list (batch 3): its signed storage photo, a web URL, or a plain tile. */
+function FindingThumb({ uri, urls }: { uri: string | null; urls: Record<string, string> }) {
+  const r = photoRef(uri);
+  const src = r?.kind === 'storage' ? urls[r.path] : r?.kind === 'url' ? r.url : undefined;
+  // eslint-disable-next-line @next/next/no-img-element
+  return src ? <img src={src} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" /> : <span aria-hidden className="h-10 w-10 shrink-0 rounded-lg bg-ground" />;
 }
 
 function EvidencePanel({ finding, team, names, lock, onSaved }: {
