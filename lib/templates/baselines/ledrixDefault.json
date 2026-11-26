@@ -8431,8 +8431,8 @@
           ]
         },
         {
-          "id": "interior__doors_trim",
-          "label": "Doors & Trim",
+          "id": "interior__doors",
+          "label": "Doors",
           "kind": "subsystem",
           "trimmed": [],
           "children": [
@@ -8470,10 +8470,18 @@
                   "optional": true
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "kind": "subsystem",
+          "trimmed": [],
+          "id": "interior__trim",
+          "label": "Trim",
+          "children": [
             {
               "id": "int_trim",
-              "label": "Trim / Doors Finish",
+              "label": "Trim",
               "kind": "component",
               "keywords": [
                 "baseboard",

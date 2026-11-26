@@ -1,7 +1,7 @@
 {
   "packId": "ledrix.core",
   "schemaVersion": 3,
-  "packVersion": "2026.11.25.2",
+  "packVersion": "2026.11.25.3",
   "revision": 283,
   "locale": "en-US",
   "severityVocabulary": [
@@ -12406,7 +12406,7 @@
         },
         {
           "id": "int_trim",
-          "label": "Trim / Doors Finish",
+          "label": "Trim",
           "keywords": [
             "baseboard",
             "casing",
@@ -13020,10 +13020,16 @@
           ]
         },
         {
-          "id": "interior__doors_trim",
-          "name": "Doors & Trim",
+          "id": "interior__doors",
+          "name": "Doors",
           "nodeIds": [
-            "int_doors",
+            "int_doors"
+          ]
+        },
+        {
+          "id": "interior__trim",
+          "name": "Trim",
+          "nodeIds": [
             "int_trim"
           ]
         },
