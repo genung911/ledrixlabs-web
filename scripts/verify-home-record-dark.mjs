@@ -27,6 +27,10 @@ function checks(src) {
   ok('the report document stays paper-white', S.includes('<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab') && /\.sp \.sp-paper\{\$\{SP_LIGHT\}/.test(S));
   ok('no white text on an ink button (it would vanish in dark)', !/background: TEXT,[^}\n]*color: '#fff'/.test(S));
   ok('the status bands use tokens', !/'#EEF4FD'|'#EAF5EE'|'#FDF0EC'/.test(S));
+  ok('Home DNA\'s locked preview frosts with the page (not a light veil), and its button is a card', S.includes("background: FROST, backdropFilter: 'blur(9px) saturate(140%)'") && !/rgba\(247,249,251,0\.42\)/.test(S)
+    && /--sfrost:rgba\(21,23,26,\.55\)/.test(S) && S.includes("<button onClick={onUnlock} style={{ background: CARD, border: `1px solid ${ACCENT}66`"));
+  ok('Analyze a photo is a card in the page\'s colours (it was drawn for a dark card: white text on white in light mode)', !/#3A2A16|rgba\(255,255,255,0\.64\)/.test(S)
+    && S.includes("background: TINT_INFO, boxShadow: `0 0 0 1px ${ACCENT}55`") && S.includes("textAlign: 'left', color: TEXT, fontFamily: 'inherit' }}>"));
   ok('the orb follows the device too', S.includes("tone={darkUi ? 'dark' : 'light'}"));
   // bottom bar
   ok('on a phone the tabs are a bottom bar; on a computer along the top', S.includes('{desk && <HomeRail active={tab} onPick={pick} />}') && S.includes('{!desk && <HomeRail active={tab} onPick={pick} bottom />}'));
@@ -56,6 +60,11 @@ const MUTS = [
   ['the report goes dark', 'page', '<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab', '<div><ReportTab'],
   ['white on ink', 'page', "onClick={onUnlock} style={{ background: TEXT, color: INK_ON,", "onClick={onUnlock} style={{ background: TEXT, color: '#fff',"],
   ['a light band', 'page', "background: claim.kind === 'claimed' ? TINT_OK", "background: claim.kind === 'claimed' ? '#EAF5EE'"],
+  ['Home DNA frost is a light veil', 'page', "background: FROST, backdropFilter: 'blur(9px) saturate(140%)'", "background: 'rgba(247,249,251,0.42)', backdropFilter: 'blur(9px) saturate(140%)'"],
+  ['no dark frost', 'page', '--sfrost:rgba(21,23,26,.55);', '--sfrost:rgba(247,249,251,.45);'],
+  ['the unlock button is white', 'page', "<button onClick={onUnlock} style={{ background: CARD, border: `1px solid ${ACCENT}66`", "<button onClick={onUnlock} style={{ background: '#fff', border: `1px solid ${ACCENT}66`"],
+  ['the photo row keeps its brown glow', 'page', "background: TINT_INFO, boxShadow: `0 0 0 1px ${ACCENT}55`", "background: 'radial-gradient(circle at 50% 38%, #3A2A16, #201710)', boxShadow: `0 0 0 1px ${ACCENT}55`"],
+  ['the photo row text is white', 'page', "textAlign: 'left', color: TEXT, fontFamily: 'inherit' }}>", "textAlign: 'left', color: '#fff', fontFamily: 'inherit' }}>"],
   ['the orb stays light', 'page', "tone={darkUi ? 'dark' : 'light'}", 'tone="light"'],
   ['phones keep the top rail', 'page', '{!desk && <HomeRail active={tab} onPick={pick} bottom />}', '{!desk && <HomeRail active={tab} onPick={pick} />}'],
   ['the dock covers the bar', 'page', "bottom: desk ? 0 : `calc(${TABBAR_H}px + env(safe-area-inset-bottom, 0px))`", 'bottom: 0'],

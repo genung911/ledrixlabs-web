@@ -144,10 +144,12 @@ const GLASS    = 'var(--sglass)';
 const TINT_INFO = 'var(--stinfo)';
 const TINT_OK   = 'var(--stok)';
 const TINT_BAD  = 'var(--stbad)';
+/** The frosted veil over a locked preview (Home DNA). */
+const FROST     = 'var(--sfrost)';
 const SP_LIGHT = '--sbg:#F2F3F5;--scard:#FFFFFF;--scard2:#F7F8FA;--sline:rgba(15,18,22,.10);--sdim:#9AA1AB;--smed:#5F6672;--stext:#0F1216;'
-  + '--son:#FFFFFF;--sglass:rgba(242,243,245,.92);--stinfo:#EEF4FD;--stok:#EAF5EE;--stbad:#FDF0EC;--sbluet:#1D6DCE;';
+  + '--son:#FFFFFF;--sglass:rgba(242,243,245,.92);--stinfo:#EEF4FD;--stok:#EAF5EE;--stbad:#FDF0EC;--sbluet:#1D6DCE;--sfrost:rgba(247,249,251,.45);';
 const SP_DARK = '--sbg:#0A0B0D;--scard:#15171A;--scard2:#1D1F23;--sline:#272A2F;--sdim:#5F656C;--smed:#9198A1;--stext:#F4F5F7;'
-  + '--son:#0A0B0D;--sglass:rgba(16,17,20,.92);--stinfo:#14243A;--stok:#12291F;--stbad:#33191A;--sbluet:#4C9BF2;';
+  + '--son:#0A0B0D;--sglass:rgba(16,17,20,.92);--stinfo:#14243A;--stok:#12291F;--stbad:#33191A;--sbluet:#4C9BF2;--sfrost:rgba(21,23,26,.55);';
 const SP_CSS = `.sp{${SP_LIGHT}color-scheme:light}
 @media (prefers-color-scheme:dark){.sp{${SP_DARK}color-scheme:dark}}
 .sp .sp-paper{${SP_LIGHT}color-scheme:light}`;
@@ -486,5 +488,5 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
 
   await seedManualDocs(shareId, specs);
 }
-export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, setPortalHolds, setPortalBearer, authHeaders, isEditLink, lookOnly, setClaimOpener, openClaim, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, INK_ON, GLASS, TINT_INFO, TINT_OK, TINT_BAD, SP_CSS, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
+export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, setPortalHolds, setPortalBearer, authHeaders, isEditLink, lookOnly, setClaimOpener, openClaim, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, INK_ON, GLASS, TINT_INFO, TINT_OK, TINT_BAD, FROST, SP_CSS, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
 export type { Anomaly, Spec, HomeRecord, Project, Reminder, RepairRow, MaintenanceLog, FPRoom, FPLayout, FloorPlanRow, Tab, PrioKey };

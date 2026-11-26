@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import ValVoiceVisualizer from '../../../components/ValVoiceVisualizer';
 import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
-import { PORTAL_TOKEN, BLUE, ACCENT, CRITICAL, BG, CARD, BORDER, DIM, MED, TEXT, eyebrow } from './shared';
+import { PORTAL_TOKEN, BLUE, ACCENT, CRITICAL, BG, CARD, BORDER, DIM, MED, TEXT, eyebrow, FROST } from './shared';
 
 // ─── Ledrix (Phase 1 experience layer) ──────────────────────────────────────
 // Live chat + Insight are the paid tier. Blue returns here ONLY as the AI accent.
@@ -183,7 +183,7 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access, shareId]);
   return (
-    <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderLeft: `2px solid ${ACCENT}`, borderRadius: 8, padding: '14px 16px', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 16px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <ValDeltaSVG size={13} color={ACCENT} sheen />
         <span style={{ ...eyebrow(ACCENT, 8) }}>Ledrix Insight</span>
@@ -196,8 +196,8 @@ function InsightSection({ access, shareId, onUnlock }: { access: boolean; shareI
           <p style={{ color: TEXT, fontSize: 12, lineHeight: 1.65, filter: 'blur(4.5px)', userSelect: 'none', minHeight: 74 }}>
             Your home is in strong overall condition, with a few maintenance items worth scheduling before winter. The water heater is approaching the end of its typical service life, and the panel shows&hellip;
           </p>
-          <div style={{ position: 'absolute', inset: '-4px -16px -14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'rgba(247,249,251,0.42)', backdropFilter: 'blur(9px) saturate(140%)', WebkitBackdropFilter: 'blur(9px) saturate(140%)' }}>
-            <button onClick={onUnlock} style={{ background: '#fff', border: `1px solid ${ACCENT}55`, borderRadius: 6, padding: '11px 18px', cursor: 'pointer', ...eyebrow(ACCENT, 8.5) }}>Unlock Ledrix Insight</button>
+          <div style={{ position: 'absolute', inset: '-4px -16px -14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 9, background: FROST, backdropFilter: 'blur(9px) saturate(140%)', WebkitBackdropFilter: 'blur(9px) saturate(140%)' }}>
+            <button onClick={onUnlock} style={{ background: CARD, border: `1px solid ${ACCENT}66`, borderRadius: 999, padding: '11px 20px', cursor: 'pointer', ...eyebrow(ACCENT, 8.5) }}>Unlock Ledrix Insight</button>
             <span style={{ ...eyebrow(MED, 7.5) }}>Live AI analysis of your home</span>
           </div>
         </div>

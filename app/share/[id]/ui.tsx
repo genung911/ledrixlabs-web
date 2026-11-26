@@ -4,7 +4,7 @@ import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import { LedrixEye } from '@/components/LedrixEye';
 import { assetUrl } from '@/lib/portalAssets';
 import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
-import { PORTAL_TOKEN, can, lookOnly, openClaim, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, GLASS } from './shared';
+import { PORTAL_TOKEN, can, lookOnly, openClaim, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, GLASS, TINT_INFO } from './shared';
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
 // Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
@@ -766,14 +766,14 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
 
   return (
     <>
-      {/* Row inside the dark Ledrix Intelligence card — matches the Ask Ledrix row above it. */}
-      <button onClick={pick} style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', textAlign: 'left', color: '#fff' }}>
-        <span style={{ flexShrink: 0, width: 58, height: 58, borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 38%, #3A2A16, #201710)', boxShadow: '0 0 0 1px rgba(217,142,74,0.4)' }}>
-          <LedrixEye size={34} color="#217BE8" />
+      {/* A card row in the page's own colours (light and dark, approval pack item 4) — the Home tab's grouped-row voice. */}
+      <button onClick={pick} style={{ width: '100%', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', textAlign: 'left', color: TEXT, fontFamily: 'inherit' }}>
+        <span style={{ flexShrink: 0, width: 50, height: 50, borderRadius: '50%', display: 'grid', placeItems: 'center', background: TINT_INFO, boxShadow: `0 0 0 1px ${ACCENT}55` }}>
+          <LedrixEye size={30} color={ACCENT} />
         </span>
-        <span style={{ minWidth: 0 }}>
-          <span style={{ display: 'block', fontFamily: SERIF, fontSize: 17.5, fontWeight: 600 }}>Analyze a photo</span>
-          <span style={{ display: 'block', color: 'rgba(255,255,255,0.64)', fontSize: 12.5, lineHeight: 1.55, marginTop: 4 }}>Snap anything in your home — Ledrix tells you what it is and whether it needs attention.</span>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: 'block', fontSize: 15.5, fontWeight: 600 }}>Analyze a photo</span>
+          <span style={{ display: 'block', color: MED, fontSize: 12.5, lineHeight: 1.5, marginTop: 3 }}>Snap anything in your home — Ledrix tells you what it is and whether it needs attention.</span>
         </span>
       </button>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: 'none' }} />
