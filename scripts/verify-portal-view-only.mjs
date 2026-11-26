@@ -90,6 +90,8 @@ const STUB = 'data:text/javascript,' + encodeURIComponent(
   + 'export const supabase = { auth: { getSession: async () => ({ data: { session: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) } };');
 registerHooks({
   resolve(spec, ctx, next) {
+    // next/dynamic (the page's lazy tabs, 2026-11-25): a component that renders nothing — none of them is rendered here.
+    if (spec === 'next/dynamic') return { url: STUB, shortCircuit: true };
     if (spec === 'next/navigation' || spec.endsWith('/lib/supabaseClient') || spec.startsWith('@/components/') || spec.endsWith('/components/ValVoiceVisualizer')) {
       return { url: STUB, shortCircuit: true };
     }

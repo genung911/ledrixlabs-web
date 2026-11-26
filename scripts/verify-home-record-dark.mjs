@@ -25,7 +25,7 @@ function checks(src) {
   ok('the tokens have a dark set that follows the device', /@media \(prefers-color-scheme:dark\)\{:root,\.sp\{\$\{SP_DARK\}/.test(S) && /--sbg:#0A0B0D/.test(S));
   ok('the page root carries them', S.includes('<div className="sp" style={{ background: BG, color: TEXT,') && S.includes('<style>{SP_CSS}</style>'));
   ok('the top bar, rail and Ask Ledrix dock are frosted from the tokens, not light glass', !/rgba\(24[56],24[67],24[34],0\.9/.test(S) && (S.match(/background: GLASS/g) ?? []).length >= 3);
-  ok('the report document stays paper-white', S.includes('<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab') && /\.sp \.sp-paper\{\$\{SP_LIGHT\}/.test(S));
+  ok('the report document stays paper-white', S.includes('<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><LazyReportTab') && /\.sp \.sp-paper\{\$\{SP_LIGHT\}/.test(S));
   ok('no white text on an ink button (it would vanish in dark)', !/background: TEXT,[^}\n]*color: '#fff'/.test(S));
   ok('the status bands use tokens', !/'#EEF4FD'|'#EAF5EE'|'#FDF0EC'/.test(S));
   ok('Home DNA\'s locked preview frosts with the page (not a light veil), and its button is a card', S.includes("background: FROST, backdropFilter: 'blur(9px) saturate(140%)'") && !/rgba\(247,249,251,0\.42\)/.test(S)
@@ -60,7 +60,7 @@ const MUTS = [
   ['no dark set', 'page', '@media (prefers-color-scheme:dark){:root,.sp{${SP_DARK}color-scheme:dark}}', ''],
   ['the root has no tokens', 'page', '<div className="sp" style={{ background: BG, color: TEXT,', '<div style={{ background: BG, color: TEXT,'],
   ['the dock is light glass', 'page', "          background: GLASS, backdropFilter: 'blur(12px)',", "          background: 'rgba(245,246,243,0.9)', backdropFilter: 'blur(12px)',"],
-  ['the report goes dark', 'page', '<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab', '<div><ReportTab'],
+  ['the report goes dark', 'page', '<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><LazyReportTab', '<div><LazyReportTab'],
   ['white on ink', 'page', "onClick={onUnlock} style={{ background: TEXT, color: INK_ON,", "onClick={onUnlock} style={{ background: TEXT, color: '#fff',"],
   ['a light band', 'page', "background: claim.kind === 'claimed' ? TINT_OK", "background: claim.kind === 'claimed' ? '#EAF5EE'"],
   ['Home DNA frost is a light veil', 'page', "background: FROST, backdropFilter: 'blur(9px) saturate(140%)'", "background: 'rgba(247,249,251,0.42)', backdropFilter: 'blur(9px) saturate(140%)'"],

@@ -1,20 +1,27 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import ValOrbVoice from '@/components/ValOrbVoice';
 import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, setPortalHolds, setPortalBearer, isEditLink, lookOnly, setClaimOpener, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, GLASS, TINT_INFO, TINT_OK, TINT_BAD, SP_CSS, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
 import { Skeleton, NotFound, NavBar, Footer, HomeRail, TABBAR_H } from './ui';
 import { HomeTab } from './HomeTab';
-import { EthixTab } from './EthixTab';
 import { FindingsTab } from './FindingsTab';
 import { ProjectsTab, RemindersTab, MaintainTab, HistoryTab } from './MaintainTab';
-import { ReportTab } from './ReportTab';
 import { SystemsTab } from './SystemsTab';
 import { ClaimCard, DocsTab } from './RecordsTab';
-import { SubscribeSheet, LedrixPanel, ClaimQuestion, closingLabel, isoIn, type ClaimAnswer } from './LedrixPanel';
+import { SubscribeSheet, ClaimQuestion, closingLabel, isoIn, type ClaimAnswer } from './LedrixPanel';
 import { RepairsTab } from './RepairsTab';
+
+// LOADED WHEN OPENED (approval pack item 6, owner 2026-11-25): the Report tab (and its report viewer), Ethix and the Ledrix
+// chat (with its voice visualiser) are fetched the first time they are opened, not with the page. Their own files, so
+// the first visit downloads less; everything else is unchanged.
+const lazyNote = () => <div style={{ padding: '28px 18px', textAlign: 'center', color: 'var(--smed)', fontSize: 13 }}>Loading…</div>;
+const LazyReportTab = dynamic(() => import('./ReportTab').then(m => m.ReportTab), { ssr: false, loading: lazyNote });
+const LazyEthixTab = dynamic(() => import('./EthixTab').then(m => m.EthixTab), { ssr: false, loading: lazyNote });
+const LazyLedrixPanel = dynamic(() => import('./LedrixChat').then(m => m.LedrixPanel), { ssr: false });
 
 export default function SharePage() {
   const params  = useParams();
@@ -63,6 +70,8 @@ export default function SharePage() {
   const [subscribed, setSubscribed] = useState(false);
   const [subOpen, setSubOpen]       = useState(false);
   const [ledrixOpen, setLedrixOpen] = useState(false);
+  const [ledrixEver, setLedrixEver] = useState(false);
+  useEffect(() => { if (ledrixOpen) setLedrixEver(true); }, [ledrixOpen]);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -414,12 +423,12 @@ export default function SharePage() {
         onRefreshReminders={() => { loadReminders(); loadLog(); }} onRefreshProjects={loadProjects} onRefreshRepairs={loadRepairs} />}
       {tab === 'history'   && <HistoryTab log={log} record={record} onRefresh={loadLog} />}
       {/* The sealed report stays paper-white in dark mode (approval pack item 4): .sp-paper re-applies the light set. */}
-      {tab === 'report'    && <div className="sp-paper" style={{ background: '#fff', color: '#0F1216' }}><ReportTab anomalies={anomalies} record={record} onTabChange={go} /></div>}
+      {tab === 'report'    && <div className="sp-paper" style={{ background: '#fff', color: '#0F1216' }}><LazyReportTab anomalies={anomalies} record={record} onTabChange={go} /></div>}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} anomalies={anomalies} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} access={access} onUnlock={() => setSubOpen(true)} />}
       {tab === 'docs'      && <DocsTab record={record} />}
-      {tab === 'ethix'     && <EthixTab access={access} onUnlock={() => setSubOpen(true)} />}
+      {tab === 'ethix'     && <LazyEthixTab access={access} onUnlock={() => setSubOpen(true)} />}
 
       {/* VAL command line — a persistent bottom dock: text opens the chat, orb starts voice.
           Hidden on the wide report view, which carries its own Ask-Ledrix CTA. */}
@@ -451,7 +460,8 @@ export default function SharePage() {
       )}
       <SubscribeSheet open={subOpen} onClose={() => setSubOpen(false)} signedIn={!!session} onSubscribe={startCheckout}
         answer={claimAnswer} onAnswer={isEditLink() && PORTAL_TOKEN ? setClaimAnswer : undefined} />
-      <LedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />
+      {/* Mounted the first time Ask Ledrix opens, then kept, so the conversation stays. */}
+      {ledrixEver && <LazyLedrixPanel open={ledrixOpen} onClose={() => setLedrixOpen(false)} shareId={shareId} seed={valSeed} />}
     </div>
   );
 }

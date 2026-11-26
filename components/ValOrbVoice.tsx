@@ -14,10 +14,12 @@
 //     For dark grounds (the dollhouse hero, dark app-like contexts). This is the default,
 //     so existing call sites stay backward-compatible.
 //
-// Web-only (Web Audio + Framer Motion). The RN app uses the expo-av/reanimated twin.
+// Web-only (Web Audio + CSS). The RN app uses the expo-av/reanimated twin.
+// CSS, not Framer Motion (2026-11-25, approval pack item 6 "share page loads faster"): framer-motion was ~40 kB gzipped of
+// the Home Record's first visit for these four motions alone — the spread (a width transition), the breathing ring and
+// the mark / waveform fade (keyframes). Reduced motion turns them off (the media query below).
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ValVoiceVisualizer from './ValVoiceVisualizer';
 import { LedrixDelta } from './LedrixDelta';
 
@@ -101,7 +103,6 @@ export default function ValOrbVoice({
   const [selfListening, setSelfListening] = useState(false);
   const [hovered, setHovered] = useState(false);
   const listening = controlled ? controlled.listening : selfListening;
-  const reduce = useReducedMotion();
   const t = TONES[tone];
 
   const toggle = () => {
@@ -111,17 +112,16 @@ export default function ValOrbVoice({
   };
 
   return (
-    <motion.button
+    <button
       type="button"
+      className="vov"
       onClick={toggle}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       aria-label={listening ? 'Stop listening' : 'Talk to VAL'}
       aria-pressed={listening}
-      initial={false}
-      animate={{ width: listening ? size * 3 : size }}
-      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
       style={{
+        width: listening ? size * 3 : size,
         height: size,
         borderRadius: size,
         padding: 0,
@@ -136,44 +136,34 @@ export default function ValOrbVoice({
         WebkitBackdropFilter: 'blur(14px)',
         border: t.border(listening),
         boxShadow: quiet && !listening ? 'none' : t.shadow(listening, hovered),
-        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
         WebkitTapHighlightColor: 'transparent',
+        ['--vov-ring' as string]: t.ring,
+        ['--vov-peak' as string]: tone === 'light' ? 0.35 : 0.5,
       }}
     >
+      <style>{VOV_CSS}</style>
       {/* idle breathing glow ring */}
-      {!listening && !reduce && (
-        <motion.span
-          aria-hidden
-          style={{ position: 'absolute', inset: -2, borderRadius: size, border: `1.5px solid ${t.ring}` }}
-          animate={{ opacity: [0, tone === 'light' ? 0.35 : 0.5, 0], scale: [0.96, 1.12, 0.96] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-        />
+      {!listening && <span aria-hidden className="vov-ring" style={{ borderRadius: size }} />}
+      {listening ? (
+        <div key="wave" className="vov-in vov-wave" style={{ display: 'flex', alignItems: 'center' }}>
+          <ValVoiceVisualizer active={controlled ? !!controlled.stream : true} stream={controlled?.stream ?? undefined} bars={7} color={t.mark} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
+        </div>
+      ) : (
+        <div key="mark" className="vov-in vov-mark">
+          <LedrixDelta size={Math.round(size * 0.42)} color={t.mark} sheen={tone === 'light'} />
+        </div>
       )}
-
-      <AnimatePresence mode="wait" initial={false}>
-        {listening ? (
-          <motion.div
-            key="wave"
-            initial={{ opacity: 0, scaleX: 0.5 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            exit={{ opacity: 0, scaleX: 0.5 }}
-            transition={{ duration: 0.22 }}
-            style={{ display: 'flex', alignItems: 'center' }}
-          >
-            <ValVoiceVisualizer active={controlled ? !!controlled.stream : true} stream={controlled?.stream ?? undefined} bars={7} color={t.mark} height={Math.round(size * 0.46)} barWidth={4} gap={5} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="mark"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.7 }}
-            transition={{ duration: 0.22 }}
-          >
-            <LedrixDelta size={Math.round(size * 0.42)} color={t.mark} sheen={tone === 'light'} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
+    </button>
   );
 }
+
+// The motions, as they were: the spread springs a little past and settles (cubic-bezier overshoot ≈ the old spring
+// 300/26), the ring breathes over 2.6 s, the mark and the waveform fade in over 0.22 s.
+const VOV_CSS = `.vov{transition:width .42s cubic-bezier(.34,1.32,.64,1),box-shadow .3s ease,border-color .3s ease}
+.vov .vov-ring{position:absolute;inset:-2px;border:1.5px solid var(--vov-ring);opacity:0;animation:vovBreathe 2.6s ease-in-out infinite;pointer-events:none}
+@keyframes vovBreathe{0%,100%{opacity:0;transform:scale(.96)}50%{opacity:var(--vov-peak);transform:scale(1.12)}}
+.vov .vov-in{animation:vovIn .22s ease both}
+.vov .vov-wave{transform-origin:center;animation-name:vovWave}
+@keyframes vovIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes vovWave{from{opacity:0;transform:scaleX(.5)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.vov,.vov .vov-in{transition:none;animation:none}.vov .vov-ring{display:none}}`;

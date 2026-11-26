@@ -8,7 +8,7 @@ import { join } from 'node:path';
 export const SHARE_DIR = 'app/share/[id]';
 /** Every file of the page, in the order they are joined. A new file must be added here (verify-share-split checks). */
 export const SHARE_FILES = ['shared', 'ui', 'RepairStatus', 'HomeTab', 'EthixTab', 'FindingsTab', 'MaintainTab', 'ReportTab', 'SystemsTab',
-  'RecordsTab', 'LedrixPanel', 'RepairsTab', 'page'].map(f => `${f}.tsx`);
+  'RecordsTab', 'LedrixPanel', 'LedrixChat', 'RepairsTab', 'page'].map(f => `${f}.tsx`);
 
 /** Join `files` ({name: text}) into one module. */
 export function joinShare(files) {
