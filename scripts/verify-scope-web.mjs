@@ -124,7 +124,7 @@ ok('§3 the page has a Scope section that shares the findings’ lock', /\{ id: 
   const panel = read('components/workspace/ScopePanel.tsx');
   ok('§6 the panel opens that system, scrolls to the row and marks it, with a way back to Seal & send',
     /const at = locateItem\(view, focus\.nodeId\)/.test(panel) && /setOpen\(at\.systemId\)/.test(panel) && /id=\{`scope-row-\$\{row\.node\.id\}`\}/.test(panel)
-    && /getElementById\(`scope-row-\$\{at\.rowId\}`\)\?\.scrollIntoView/.test(panel) && /marked === row\.node\.id \?/.test(panel) && /onClick=\{onBackToSeal\}/.test(panel));
+    && /getElementById\(`scope-row-\$\{at\.rowId\}`\)\?\.scrollIntoView/.test(panel) && /const markCls = \(id: string\) => marked === id \?/.test(panel) && /\$\{markCls\(row\.node\.id\)\}/.test(panel) && /onClick=\{onBackToSeal\}/.test(panel));
 }
 
 // §7 (2026-11-04, owner: "age should be its own category like data plate is"): on a job made from the Ledrix default,
@@ -170,7 +170,7 @@ const { tmpdir } = await import('node:os');
 const MUTANTS = [
   { f: 'lib/scope/model.ts', why: 'a second unit opens nothing (2026-11-04)', from: 'for (const want of [nodeId, base])', to: 'for (const want of [nodeId])', expect: /^§6 a second unit/ },
   { f: 'lib/scope/model.ts', why: 'an item that is no row opens nothing (2026-11-04)', from: 'return sys ? { systemId: sys.node.id, rowId: null } : null;', to: 'return null;', expect: /^§6 an item that is no row/ },
-  { f: 'components/workspace/ScopePanel.tsx', why: 'the row is not marked (2026-11-04)', from: "${marked === row.node.id ? 'bg-accent/10 ring-2 ring-inset ring-accent' : ''}", to: '', expect: /^§6 the panel opens/ },
+  { f: 'components/workspace/ScopePanel.tsx', why: 'the row is not marked (2026-11-04)', from: "marked === id ? 'ring-2 ring-inset ring-accent' : ''", to: "''", expect: /^§6 the panel opens/ },
   { f: 'lib/scope/model.ts', why: 'the main house listed as another building (2026-11-03)', from: "b.id !== 'main' && typeof b.name", to: "typeof b.name", expect: /^§5 the snapshot’s other buildings/ },
   { f: 'lib/scope/model.ts', why: 'empty answers counted (2026-11-03)', from: 'r.structure_id === b.id && r.value != null', to: 'r.structure_id === b.id', expect: /^§5 the snapshot’s other buildings/ },
   { f: 'lib/scope/model.ts', why: 'pointer rows shown', from: 'return !!n && !n.pointsTo && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', to: 'return !!n && !recordsNothing(n) && !covered.has(id) && typeApplies(id, n);', expect: /^§2 a pointer row/ },

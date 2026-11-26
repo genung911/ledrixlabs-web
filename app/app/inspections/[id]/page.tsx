@@ -48,7 +48,9 @@ export default function InspectionPage() {
   const { access } = useWorkspace();
   const findingsVisible = access.role !== 'office';
   const [state, setState] = useState<State>({ kind: 'loading' });
-  const [section, setSection] = useState<Section>('review');
+  // The inspection opens on its systems (website Apple pass batch 1, owner 2026-11-25): the phone's list, Before you start
+  // to Review & send. Deep links (#review, #reports …) still open their own section.
+  const [section, setSection] = useState<Section>('scope');
   // BEFORE YOU START (owner 2026-11-14): the house facts' unanswered count, from the panel once it has loaded.
   const [factsLeftN, setFactsLeftN] = useState<number | undefined>(undefined);
   const [selected, setSelected] = useState<string | null>(null);
@@ -270,7 +272,11 @@ export default function InspectionPage() {
         {activeSection === 'scope' && (
           <ScopePanel inspectionId={id} team={team} names={names} lock={lock} counts={scopeCounts}
             onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }}
-            focus={scopeFocus} onBackToSeal={scopeFocus ? () => { setScopeFocus(null); setSection('seal'); } : undefined} />
+            focus={scopeFocus} onBackToSeal={scopeFocus ? () => { setScopeFocus(null); setSection('seal'); } : undefined}
+            around={{ factsLeft: factsLeftN, onFacts: () => { setSection('facts'); setSelected(null); },
+              findings: { total: groups.findings.length + groups.review.length, review: groups.review.length },
+              onFindings: () => { setSection(groups.review.length ? 'review' : 'findings'); setSelected(null); },
+              onSeal: () => { setSection('seal'); setSelected(null); setScopeFocus(null); } }} />
         )}
 
         {activeSection === 'photos' && <PhotosPanel photos={photos} labels={labels} />}
