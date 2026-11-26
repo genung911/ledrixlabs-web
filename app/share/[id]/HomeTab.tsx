@@ -42,13 +42,25 @@ const HR_PRIO: Record<HrPrio, { label: string; color: string }> = {
 };
 const hrPrioOf = (a: Anomaly): HrPrio | null => { const k = priorityOf(a).key; return k === 'safety' || k === 'major' || k === 'minor' || k === 'maint' ? k : null; };
 const HR_RANK: HrPrio[] = ['safety', 'major', 'minor', 'maint'];
-/** The four points on the drawing, and which of the record's systems each stands for. */
-const HR_POINTS: { id: string; label: string; keys: string[]; x: number; y: number }[] = [
-  { id: 'roof', label: 'Roof', keys: ['roof'], x: 150, y: 86 },
-  { id: 'hvac', label: 'HVAC', keys: ['hvac', 'heating', 'cooling', 'heat_pump', 'mini_split'], x: 347, y: 170 },
-  { id: 'electrical', label: 'Panel', keys: ['electrical'], x: 63, y: 154 },
-  { id: 'water_heater', label: 'Water heater', keys: ['water_heater'], x: 272, y: 146 },
+/** The four points on the drawing, and which of the record's systems each stands for. x/y is the two-story drawing;
+ *  `at` moves a point for the other drawings (item 5). */
+type HouseKind = 'two' | 'one' | 'manufactured' | 'condo';
+const HR_POINTS: { id: string; label: string; keys: string[]; x: number; y: number; at: Partial<Record<HouseKind, [number, number]>> }[] = [
+  { id: 'roof', label: 'Roof', keys: ['roof'], x: 150, y: 86, at: { one: [153, 100], manufactured: [190, 128], condo: [195, 72] } },
+  { id: 'hvac', label: 'HVAC', keys: ['hvac', 'heating', 'cooling', 'heat_pump', 'mini_split'], x: 347, y: 170, at: { one: [357, 170], manufactured: [366, 172], condo: [345, 172] } },
+  { id: 'electrical', label: 'Panel', keys: ['electrical'], x: 63, y: 154, at: { one: [50, 152], manufactured: [62, 158], condo: [96, 178] } },
+  { id: 'water_heater', label: 'Water heater', keys: ['water_heater'], x: 272, y: 146, at: { one: [290, 166], manufactured: [300, 160], condo: [195, 128] } },
 ];
+/** THE DRAWING BY HOME TYPE (owner 2026-11-25, approval pack item 5): the job's home type and stories (Before you start,
+ *  /api/share `house`). Manufactured / Mobile → the long low home on piers; Condo / Townhome → the building; Single family
+ *  with "1 story" → one story; anything else, or unknown (Multi-unit waits for its own work after launch) → two story. */
+function houseKind(h?: { homeType?: string | null; stories?: string | null } | null): HouseKind {
+  const t = h?.homeType ?? '';
+  if (t === 'Manufactured' || t === 'Mobile') return 'manufactured';
+  if (t === 'Condo/Townhome') return 'condo';
+  if (t === 'Site-Built' && h?.stories === '1 story') return 'one';
+  return 'two';
+}
 const hrIcon = (d: string, bg: string) => (
   <span aria-hidden style={{ width: 30, height: 30, borderRadius: 8, background: bg, display: 'grid', placeItems: 'center', flex: 'none' }}>
     <svg viewBox="0 0 24 24" width={17} height={17} fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
@@ -61,23 +73,61 @@ const HR_I = {
 };
 const Chev = () => <svg aria-hidden width={8} height={14} viewBox="0 0 8 14" style={{ flex: 'none' }}><path d="M1 1l6 6-6 6" fill="none" stroke="var(--hf)" strokeWidth={2} /></svg>;
 
-function HrHouse({ colorOf, onPick, present }: { colorOf: (id: string) => string; onPick: (id: string) => void; present: (id: string) => boolean }) {
-  const pts = HR_POINTS.filter(p => present(p.id));
+function HrHouse({ colorOf, onPick, present, kind = 'two' }: { colorOf: (id: string) => string; onPick: (id: string) => void; present: (id: string) => boolean; kind?: HouseKind }) {
+  const pts = HR_POINTS.filter(p => present(p.id)).map(p => { const [x, y] = p.at[kind] ?? [p.x, p.y]; return { ...p, x, y }; });
+  const win = (x: number, y: number, o = 1, w = 30, h = 25) => <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} rx="2" fill="var(--hwin)" opacity={o} />;
+  const ac = (x: number) => <><rect x={x} y="182" width="30" height="26" rx="3" fill="var(--hwall2)" stroke="var(--hl)" /><circle cx={x + 15} cy="195" r="8" fill="none" stroke="var(--hf)" strokeWidth="2" /></>;
+  const panel = (x: number, y: number) => <rect x={x} y={y} width="11" height="17" rx="1.5" fill="var(--hwall2)" stroke="var(--hl)" />;
+  const body = kind === 'one' ? (
+    <g data-house="one">
+      <path d="M44 126 L153 78 L262 126 Z" fill="var(--hroof)" /><path d="M153 78 L262 126 L246 126 L153 88Z" fill="var(--hroof2)" />
+      <rect x="56" y="126" width="194" height="82" fill="var(--hwall)" stroke="var(--hl)" />
+      {win(76, 146)}{win(196, 146, 0.85)}<rect x="138" y="160" width="24" height="48" rx="2" fill="var(--hroof2)" />
+      <path d="M246 146 L290 118 L334 146 Z" fill="var(--hroof)" /><rect x="250" y="146" width="80" height="62" fill="var(--hwall)" stroke="var(--hl)" />
+      <rect x="260" y="162" width="60" height="46" rx="2" fill="var(--hwall2)" />
+      {[0, 1, 2].map(i => <line key={i} x1="260" x2="320" y1={173 + i * 11} y2={173 + i * 11} stroke="var(--hl)" />)}
+      {ac(342)}{panel(44, 164)}
+    </g>
+  ) : kind === 'manufactured' ? (
+    <g data-house="manufactured">
+      <path d="M30 140 L190 118 L350 140 Z" fill="var(--hroof)" />
+      <rect x="40" y="140" width="300" height="54" fill="var(--hwall)" stroke="var(--hl)" />
+      <rect x="40" y="194" width="300" height="12" fill="var(--hwall2)" stroke="var(--hl)" />
+      {[60, 110, 160, 210, 260, 310].map(x => <line key={x} x1={x} x2={x} y1="194" y2="206" stroke="var(--hl)" />)}
+      {win(80, 152, 1, 34, 22)}{win(150, 152, 0.85, 34, 22)}{win(236, 152, 0.7, 34, 22)}
+      <rect x="196" y="150" width="22" height="44" rx="2" fill="var(--hroof2)" />
+      <path d="M190 206 h34 v-6 h-6 v-6 h-22z" fill="var(--hwall2)" stroke="var(--hl)" />
+      <rect x="290" y="150" width="20" height="40" rx="2" fill="var(--hwall2)" stroke="var(--hl)" />
+      {ac(352)}{panel(52, 150)}
+    </g>
+  ) : kind === 'condo' ? (
+    <g data-house="condo">
+      <rect x="70" y="58" width="250" height="150" fill="var(--hwall)" stroke="var(--hl)" />
+      <rect x="66" y="52" width="258" height="8" fill="var(--hroof)" />
+      {[70, 110, 150].flatMap(y => [88, 142, 196, 250].map(x => win(x, y, y === 110 && (x === 142 || x === 196) ? 1 : 0.55, 34, 24)))}
+      <rect x="138" y="106" width="114" height="32" rx="3" fill="none" stroke="var(--hblue)" strokeWidth="1.5" strokeDasharray="4 3" />
+      <rect x="182" y="168" width="26" height="40" rx="2" fill="var(--hroof2)" />
+      {ac(330)}{panel(90, 186)}
+    </g>
+  ) : (
+    <g data-house="two">
+      <path d="M64 112 L148 56 L232 112 Z" fill="var(--hroof)" /><path d="M148 56 L232 112 L216 112 L148 67Z" fill="var(--hroof2)" />
+      <rect x="76" y="112" width="144" height="96" fill="var(--hwall)" stroke="var(--hl)" /><rect x="192" y="112" width="28" height="96" fill="var(--hwall2)" />
+      <path d="M220 134 L268 100 L322 134 Z" fill="var(--hroof)" /><rect x="228" y="134" width="88" height="74" fill="var(--hwall)" stroke="var(--hl)" />
+      <rect x="238" y="152" width="68" height="56" rx="2" fill="var(--hwall2)" />
+      {[0, 1, 2, 3].map(i => <line key={i} x1="238" x2="306" y1={163 + i * 11} y2={163 + i * 11} stroke="var(--hl)" />)}
+      {win(94, 128)}{win(160, 128, 0.85)}
+      {win(94, 170, 0.7)}<rect x="136" y="166" width="22" height="42" rx="2" fill="var(--hroof2)" />
+      {ac(330)}{panel(58, 164)}
+    </g>
+  );
   return (
     <svg viewBox="0 0 390 236" preserveAspectRatio="xMidYMax meet" role="group" aria-label="Your home — tap a point to open that system" style={{ width: '100%', height: 'auto', display: 'block' }}>
       <defs><linearGradient id="hrsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--hsky1)" /><stop offset="1" stopColor="var(--hsky2)" /></linearGradient></defs>
       <rect width="390" height="236" fill="url(#hrsky)" />
       <path d="M0 206 Q130 196 200 200 T390 197 V236 H0z" fill="var(--hground)" />
       <ellipse cx="190" cy="210" rx="150" ry="7" fill="#000" opacity=".12" />
-      <path d="M64 112 L148 56 L232 112 Z" fill="var(--hroof)" /><path d="M148 56 L232 112 L216 112 L148 67Z" fill="var(--hroof2)" />
-      <rect x="76" y="112" width="144" height="96" fill="var(--hwall)" stroke="var(--hl)" /><rect x="192" y="112" width="28" height="96" fill="var(--hwall2)" />
-      <path d="M220 134 L268 100 L322 134 Z" fill="var(--hroof)" /><rect x="228" y="134" width="88" height="74" fill="var(--hwall)" stroke="var(--hl)" />
-      <rect x="238" y="152" width="68" height="56" rx="2" fill="var(--hwall2)" />
-      {[0, 1, 2, 3].map(i => <line key={i} x1="238" x2="306" y1={163 + i * 11} y2={163 + i * 11} stroke="var(--hl)" />)}
-      <rect x="94" y="128" width="30" height="25" rx="2" fill="var(--hwin)" /><rect x="160" y="128" width="30" height="25" rx="2" fill="var(--hwin)" opacity=".85" />
-      <rect x="94" y="170" width="30" height="25" rx="2" fill="var(--hwin)" opacity=".7" /><rect x="136" y="166" width="22" height="42" rx="2" fill="var(--hroof2)" />
-      <rect x="330" y="180" width="34" height="28" rx="3" fill="var(--hwall2)" stroke="var(--hl)" /><circle cx="347" cy="194" r="9" fill="none" stroke="var(--hf)" strokeWidth="2" />
-      <rect x="58" y="164" width="11" height="17" rx="1.5" fill="var(--hwall2)" stroke="var(--hl)" />
+      {body}
       {pts.map(p => (
         <g key={p.id} className="hr-pt" tabIndex={0} role="button" aria-label={`${p.label}: open`} onClick={() => onPick(p.id)}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(p.id); } }}>
@@ -213,7 +263,7 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
     const house = (
       <div>
         <div style={{ borderRadius: desk ? 18 : 0, overflow: 'hidden', marginTop: 8 }}>
-          <HrHouse colorOf={colorOf} onPick={id => setPage({ kind: 'system', id })} present={present} />
+          <HrHouse colorOf={colorOf} onPick={id => setPage({ kind: 'system', id })} present={present} kind={houseKind(record.house)} />
         </div>
         <div style={{ textAlign: 'center', color: 'var(--hf)', fontSize: 12, marginTop: 6 }}>
           {HR_POINTS.some(p => present(p.id)) ? 'Tap a point to open that system' : 'Systems appear here as your inspector records them'}
@@ -302,5 +352,5 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
     </div>
   );
 }
-export { HR_LIGHT, HR_DARK, HR_CSS, HR_PRIO, hrPrioOf, HR_RANK, HR_POINTS, hrIcon, HR_I, Chev, HrHouse, HomeTab };
-export type { HrPrio, HrPage };
+export { HR_LIGHT, HR_DARK, HR_CSS, HR_PRIO, hrPrioOf, HR_RANK, HR_POINTS, houseKind, hrIcon, HR_I, Chev, HrHouse, HomeTab };
+export type { HrPrio, HrPage, HouseKind };

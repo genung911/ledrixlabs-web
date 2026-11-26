@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { homeSystems, type HomeSystem } from '@/lib/scope/core/home/homeSystemsModel';
-import { ACCENT, CRITICAL, WARN, CARD, BORDER, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, priorityOf } from './shared';
+import { ACCENT, CRITICAL, WARN, CARD, BORDER, MED, TEXT, type Anomaly, type HomeRecord, priorityOf } from './shared';
 import { FindingDetailModal } from './ui';
 
 const SYS_MONO = 'Roboto Mono, monospace';
@@ -18,8 +18,8 @@ function SystemsTab({ record, anomalies, onAllFindings }: { record: HomeRecord; 
   if (current) return <SystemScreen s={current} record={record} onBack={() => setOpen(null)} />;
   return (
     <div style={{ padding: '16px 18px 96px' }}>
-      <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
-      <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600, marginBottom: 14 }}>Systems</div>
+      {/* The Home tab's voice (approval pack item 4): a large sans title over grouped rows. */}
+      <h2 style={{ color: TEXT, fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', margin: '0 0 14px' }}>Systems</h2>
       {anomalies.length > 0 && (
         <button onClick={onAllFindings} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '13px 15px', marginBottom: 12, cursor: 'pointer', textAlign: 'left' }}>
           <span style={{ fontSize: 15, fontWeight: 600, color: TEXT }}>All findings</span>
@@ -54,7 +54,7 @@ function SystemScreen({ s, record, onBack }: { s: HomeSystem; record: HomeRecord
     <div style={{ padding: '14px 18px 96px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <button onClick={onBack} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: ACCENT, fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: 0 }}>‹ Systems</button>
       <div>
-        <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 26, fontWeight: 600 }}>{s.label}</div>
+        <h2 style={{ color: TEXT, fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', margin: 0 }}>{s.label}</h2>
         {s.facts.length > 0 && <div style={{ fontSize: 13, color: MED, marginTop: 3 }}>{s.facts.slice(0, 3).map(f => f.value).join(' · ')}</div>}
       </div>
       {s.made && (

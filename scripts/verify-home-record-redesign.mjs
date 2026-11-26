@@ -16,7 +16,7 @@ const SRC = { page: shareSource(ROOT), api: readFileSync(join(ROOT, 'app/api/sha
 function checks(S) {
   const out = []; const ok = (n, v) => out.push([n, !!v]);
   const home = (S.page.match(/function HomeTab\([\s\S]*?\n}\n/) ?? [''])[0];
-  ok('1 a point only for a system the record has', /const pts = HR_POINTS\.filter\(p => present\(p\.id\)\);/.test(S.page) && home.includes('const present = (id: string) => sysOf(id).length > 0;'));
+  ok('1 a point only for a system the record has', /const pts = HR_POINTS\.filter\(p => present\(p\.id\)\)/.test(S.page) && home.includes('const present = (id: string) => sysOf(id).length > 0;'));
   ok('1 a point is coloured by its worst finding (Safety first)', home.includes('for (const k of HR_RANK) if (ks.includes(k)) return HR_PRIO[k].color;') && S.page.includes("const HR_RANK: HrPrio[] = ['safety', 'major', 'minor', 'maint'];"));
   ok('1 a point pushes its system inside Home, back returns', home.includes("onPick={id => setPage({ kind: 'system', id })}") && home.includes('onClick={() => setPage(null)}'));
   ok('1 the points are also a list for keyboards and screen readers', home.includes('aria-label="Systems on the drawing"') && /onKeyDown=\{e => \{ if \(e\.key === 'Enter' \|\| e\.key === ' '\)/.test(S.page));
@@ -27,7 +27,7 @@ function checks(S) {
   ok('3 the Home tab paints with tokens, not fixed colours', !/#(?:F6F2EA|141009|262016)/.test(home));
   ok('4 What wasn\'t inspected reads the share API\'s limitations', home.includes("const limits = Array.isArray(record.limitations) ? record.limitations : [];") && home.includes("setPage({ kind: 'limits' })"));
   ok('4 the API sends only item + reason, for its own share', /async function selectLimitations\(shareId: string\)/.test(S.api) && S.api.includes('inspection_id=eq.${encodeURIComponent(shareId)}&kind=eq.condition&select=node_key,value')
-    && S.api.includes('seen.add(k); out.push({ item, reason });') && S.api.includes('const limitations = await selectLimitations(access.shareId).catch(() => []);'));
+    && S.api.includes('seen.add(k); out.push({ item, reason });') && S.api.includes('selectLimitations(access.shareId).catch(() => [])'));
   ok('4 the inspector card names the inspector, company and license', home.includes("record.license_number ? `License ${record.license_number}` : ''"));
   ok('4 the scope line: observed on the date, not a warranty', home.includes('It is not a warranty or a guarantee. Questions about a finding go to your inspector.'));
   ok('4 each finding row shows its photo and opens the finding', home.includes('const k = hrPrioOf(a); const img = photoUrl(a.imageUri);') && home.includes('onClick={() => setOpen(a)}') && home.includes('<FindingDetailModal a={open}'));
@@ -38,14 +38,14 @@ const base = checks(SRC); let fail = 0;
 for (const [n, v] of base) { console.log(`${v ? '✓' : '✗'} ${n}`); if (!v) fail++; }
 const mut = (label, key, a, b) => ({ label, key, a, b });
 const mutants = [
-  mut('a point for every system, present or not', 'page', 'const pts = HR_POINTS.filter(p => present(p.id));', 'const pts = HR_POINTS;'),
+  mut('a point for every system, present or not', 'page', 'const pts = HR_POINTS.filter(p => present(p.id))', 'const pts = HR_POINTS'),
   mut('points always green', 'page', 'for (const k of HR_RANK) if (ks.includes(k)) return HR_PRIO[k].color;', ''),
   mut('a point jumps to the Systems tab instead', 'page', "onPick={id => setPage({ kind: 'system', id })}", "onPick={() => onTabChange('systems')}"),
   mut('no list for screen readers', 'page', 'aria-label="Systems on the drawing"', 'aria-hidden="true"'),
   mut('pulse ignores reduced motion', 'page', '@media (prefers-reduced-motion:reduce){.hr .hr-pulse{animation:none;opacity:0}}', ''),
   mut('a score comes back', 'page', '  const gut = 16;\n  const sealed', '  const score = 100;\n  const gut = 16;\n  const sealed'),
   mut('dark mode dropped', 'page', '@media (prefers-color-scheme:dark){.hr{${HR_DARK}}}', ''),
-  mut('limitations read from another share', 'api', 'const limitations = await selectLimitations(access.shareId).catch(() => []);', 'const limitations = await selectLimitations(String(req.nextUrl.searchParams.get("s") ?? "")).catch(() => []);'),
+  mut('limitations read from another share', 'api', 'selectLimitations(access.shareId).catch(() => [])', 'selectLimitations(String(req.nextUrl.searchParams.get("s") ?? "")).catch(() => [])'),
   mut('the API sends the whole value', 'api', 'seen.add(k); out.push({ item, reason });', 'seen.add(k); out.push({ item, reason, ...v });'),
   mut('no scope line', 'page', 'It is not a warranty or a guarantee. Questions about a finding go to your inspector.', 'Thanks for choosing us.'),
   mut('finding rows lose their photo', 'page', 'const k = hrPrioOf(a); const img = photoUrl(a.imageUri);', 'const k = hrPrioOf(a); const img = null;'),

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { ETHIX_CATEGORIES, ETHIX_CATEGORY_KEYS } from '@/lib/ethix';
-import { can, GREEN, CARD, BORDER, DIM, MED, TEXT, MONO } from './shared';
+import { can, GREEN, CARD, BORDER, DIM, MED, TEXT, MONO, INK_ON, TINT_INFO } from './shared';
 
 // ─── ETHIX TAB — the user-owned data program (opt-in, category control, $0 dashboard) ──
 function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void }) {
@@ -54,7 +54,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
       {!access ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 18, textAlign: 'center' }}>
           <p style={{ color: MED, fontSize: 14, lineHeight: 1.6, margin: '0 0 14px' }}>Sign in to set your Ethix preferences. It&apos;s tied to your account, so only you can change it.</p>
-          <button onClick={onUnlock} style={{ background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: '12px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Sign in</button>
+          <button onClick={onUnlock} style={{ background: TEXT, color: INK_ON, border: 'none', borderRadius: 9, padding: '12px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Sign in</button>
         </div>
       ) : loading ? (
         <div style={{ color: MED, fontSize: 14, padding: '20px 0' }}>Loading your preferences…</div>
@@ -66,8 +66,8 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
               <div style={{ color: MED, fontSize: 12.5, marginTop: 3 }}>{optedIn ? 'On — you’re sharing the categories below.' : 'Off — nothing is shared.'}</div>
             </div>
             <button onClick={() => optedIn ? save(false, []) : save(true, ETHIX_CATEGORY_KEYS)} aria-pressed={optedIn}
-              style={{ flexShrink: 0, width: 52, height: 30, borderRadius: 15, border: 'none', cursor: 'pointer', background: optedIn ? TEXT : '#CBD5D8', position: 'relative', transition: 'background 0.15s' }}>
-              <span style={{ position: 'absolute', top: 3, left: optedIn ? 25 : 3, width: 24, height: 24, borderRadius: '50%', background: '#fff', transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              style={{ flexShrink: 0, width: 52, height: 30, borderRadius: 15, border: 'none', cursor: 'pointer', background: optedIn ? TEXT : BORDER, position: 'relative', transition: 'background 0.15s' }}>
+              <span style={{ position: 'absolute', top: 3, left: optedIn ? 25 : 3, width: 24, height: 24, borderRadius: '50%', background: optedIn ? INK_ON : CARD, transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
             </button>
           </div>
 
@@ -79,7 +79,7 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
                   const on = cats.has(c.key);
                   return (
                     <div key={c.key} onClick={() => toggleCat(c.key)} style={{ background: CARD, border: `1px solid ${on ? 'rgba(11,143,166,0.4)' : BORDER}`, borderRadius: 13, padding: 14, cursor: 'pointer', display: 'flex', gap: 12 }}>
-                      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on ? TEXT : '#CBD5D8'}`, background: on ? TEXT : 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, marginTop: 1 }}>{on ? '✓' : ''}</div>
+                      <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on ? TEXT : BORDER}`, background: on ? TEXT : 'transparent', color: INK_ON, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, marginTop: 1 }}>{on ? '✓' : ''}</div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{c.label}</div>
                         <div style={{ color: MED, fontSize: 12, lineHeight: 1.5, marginTop: 3 }}><b style={{ color: GREEN, fontWeight: 700 }}>Shared:</b> {c.shares}</div>
@@ -90,12 +90,12 @@ function EthixTab({ access, onUnlock }: { access: boolean; onUnlock: () => void 
                 })}
               </div>
 
-              <div style={{ background: '#EAF6F6', border: '1px solid #CFE7E9', borderRadius: 14, padding: 16, marginTop: 18 }}>
+              <div style={{ background: TINT_INFO, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginTop: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#2A4247', fontSize: 13, fontWeight: 700 }}>Earned so far</span>
+                  <span style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>Earned so far</span>
                   <span style={{ color: TEXT, fontSize: 24, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>$0.00</span>
                 </div>
-                <p style={{ color: '#3C575C', fontSize: 12, lineHeight: 1.55, margin: '8px 0 0' }}>Nothing is being sold yet — we&apos;re building this carefully. Your choice is saved, and we&apos;ll ask you again before a single dollar ever changes hands. You&apos;ll see every cent.</p>
+                <p style={{ color: MED, fontSize: 12, lineHeight: 1.55, margin: '8px 0 0' }}>Nothing is being sold yet — we&apos;re building this carefully. Your choice is saved, and we&apos;ll ask you again before a single dollar ever changes hands. You&apos;ll see every cent.</p>
               </div>
 
               <button onClick={() => save(false, [])} style={{ width: '100%', marginTop: 14, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 12, padding: 13, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Turn off &amp; stop sharing</button>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { GREEN, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type FPRoom, type FPLayout, type FloorPlanRow, FLOORPLAN_ENABLED, PRIO, type PrioKey, PRIO_ORDER, PRIO_SHORT, anomalyInRoom, floorLabel, priorityOf } from './shared';
+import { GREEN, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type FPRoom, type FPLayout, type FloorPlanRow, FLOORPLAN_ENABLED, PRIO, type PrioKey, PRIO_ORDER, PRIO_SHORT, anomalyInRoom, floorLabel, priorityOf, INK_ON } from './shared';
 import { Icon, FindingCard } from './ui';
 
 // ─── FINDINGS TAB ─────────────────────────────────────────────────────────────
@@ -50,8 +50,8 @@ function FloorBlock({ label, rooms, pins, anomalies, onSelectRoom }: {
                   aria-label={`${count} finding${count > 1 ? 's' : ''} in ${r.label} — view`}
                   style={{
                     position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, transform: 'translate(-50%, -50%)',
-                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: TEXT, color: '#fff',
-                    border: '2px solid #fff', fontSize: 9.5, fontWeight: 700, lineHeight: '14px', display: 'grid',
+                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 99, background: TEXT, color: INK_ON,
+                    border: `2px solid ${CARD}`, fontSize: 9.5, fontWeight: 700, lineHeight: '14px', display: 'grid',
                     placeItems: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(16,24,28,0.35)',
                   }}
                 >{count}</button>

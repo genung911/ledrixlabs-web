@@ -4,8 +4,8 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import ValOrbVoice from '@/components/ValOrbVoice';
-import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, setPortalHolds, setPortalBearer, isEditLink, lookOnly, setClaimOpener, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
-import { Skeleton, NotFound, NavBar, Footer, HomeRail } from './ui';
+import { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, setPortalHolds, setPortalBearer, isEditLink, lookOnly, setClaimOpener, canEdit, can, shareUrlFor, portal, supaGet, supaPost, ACCENT, BLUE_TEXT, BG, CARD, BORDER, MED, TEXT, SERIF, eyebrow, GLASS, TINT_INFO, TINT_OK, TINT_BAD, SP_CSS, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, type FloorPlanRow, FLOORPLAN_ENABLED, type Tab, indexSystems, seedIfEmpty } from './shared';
+import { Skeleton, NotFound, NavBar, Footer, HomeRail, TABBAR_H } from './ui';
 import { HomeTab } from './HomeTab';
 import { EthixTab } from './EthixTab';
 import { FindingsTab } from './FindingsTab';
@@ -19,6 +19,15 @@ import { RepairsTab } from './RepairsTab';
 export default function SharePage() {
   const params  = useParams();
   const desk    = useDesk();
+  // The Ask Ledrix orb follows the device's light / dark setting, like the rest of the page (approval pack item 4).
+  const [darkUi, setDarkUi] = useState(false);
+  useEffect(() => {
+    const mq = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    if (!mq) return;
+    const on = () => setDarkUi(mq.matches); on();
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
   const routeId = params?.id as string;            // URL slug: a share_token (new) or legacy share_id
   const [shareId, setShareId] = useState('');      // canonical share_id (insp_ id) — keys all child tables
 
@@ -324,13 +333,16 @@ export default function SharePage() {
   const specs     = Array.isArray(record.specs)     ? record.specs     : [];
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : desk ? (tab === 'home' ? 1080 : 720) : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', paddingBottom: 24 }}>
+    <div className="sp" style={{ background: BG, color: TEXT, minHeight: '100vh', maxWidth: tab === 'report' ? 1400 : desk ? (tab === 'home' ? 1080 : 720) : 430, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif',
+      paddingBottom: desk ? 24 : `calc(${TABBAR_H + 24}px + env(safe-area-inset-bottom, 0px))` }}>
+      <style>{SP_CSS}</style>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{display:none}
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-        input::placeholder{color:#9AA6AB}
+        input::placeholder,textarea::placeholder{color:var(--sdim)}
+        html,body{background:var(--sbg,#F2F3F5)}
         button{-webkit-tap-highlight-color:transparent}
         .rpt{display:grid;grid-template-columns:250px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"side hero" "side main";background:#fff;min-height:100vh}
         .rpt-hero{grid-area:hero}
@@ -349,9 +361,10 @@ export default function SharePage() {
       `}</style>
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut({ scope: 'local' })} />
-      <HomeRail active={tab} onPick={pick} />
+      {desk && <HomeRail active={tab} onPick={pick} />}
+      {!desk && <HomeRail active={tab} onPick={pick} bottom />}
       {claim && (
-        <div role="status" style={{ background: claim.kind === 'claimed' ? '#EAF5EE' : claim.kind === 'waiting' ? '#EEF4FD' : '#FDF0EC', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, fontWeight: 600, padding: '9px 18px', textAlign: 'center' }}>{claim.text}</div>
+        <div role="status" style={{ background: claim.kind === 'claimed' ? TINT_OK : claim.kind === 'waiting' ? TINT_INFO : TINT_BAD, borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, fontWeight: 600, padding: '9px 18px', textAlign: 'center' }}>{claim.text}</div>
       )}
       {buying && (() => {
         // BUYING (owner 2026-11-25): look-only until closing; on or after the date, "Did you close?".
@@ -359,7 +372,7 @@ export default function SharePage() {
         const btn = (primary: boolean): CSSProperties => ({ border: primary ? 'none' : `1px solid ${BORDER}`, background: primary ? ACCENT : CARD, color: primary ? '#fff' : TEXT,
           borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' });
         return (
-          <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: TEXT, padding: '11px 18px', textAlign: 'center' }}>
+          <div role="status" style={{ background: TINT_INFO, borderBottom: `1px solid ${BORDER}`, color: TEXT, padding: '11px 18px', textAlign: 'center' }}>
             {due ? <>
               <div style={{ fontSize: 14, fontWeight: 700 }}>Did you close on {record.address ?? 'this home'}?</div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
@@ -382,12 +395,12 @@ export default function SharePage() {
         );
       })()}
       {!isEditLink() && (
-        <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
+        <div role="status" style={{ background: TINT_INFO, borderBottom: `1px solid ${BORDER}`, color: BLUE_TEXT, fontSize: 12, fontWeight: 600, padding: '8px 18px', textAlign: 'center' }}>
           View-only link — you can look, but changes are turned off.
         </div>
       )}
       {lookOnly() && !buying && claim?.kind !== 'waiting' && claim?.kind !== 'refused' && (
-        <div role="status" style={{ background: '#EEF4FD', borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, padding: '9px 18px', textAlign: 'center' }}>
+        <div role="status" style={{ background: TINT_INFO, borderBottom: `1px solid ${BORDER}`, color: TEXT, fontSize: 12.5, padding: '9px 18px', textAlign: 'center' }}>
           <b>Look-only.</b> Claim this home to add reminders, projects and documents.{' '}
           <button onClick={() => (session ? go('home') : setSubOpen(true))} style={{ background: 'none', border: 'none', color: ACCENT, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>Claim</button>
         </div>
@@ -400,7 +413,8 @@ export default function SharePage() {
       {tab === 'maintain'  && <MaintainTab reminders={reminders} log={log} projects={projects} repairs={repairs} anomalies={anomalies} record={record} shareId={shareId} access={access} onUnlock={() => setSubOpen(true)}
         onRefreshReminders={() => { loadReminders(); loadLog(); }} onRefreshProjects={loadProjects} onRefreshRepairs={loadRepairs} />}
       {tab === 'history'   && <HistoryTab log={log} record={record} onRefresh={loadLog} />}
-      {tab === 'report'    && <ReportTab anomalies={anomalies} record={record} onTabChange={go} />}
+      {/* The sealed report stays paper-white in dark mode (approval pack item 4): .sp-paper re-applies the light set. */}
+      {tab === 'report'    && <div className="sp-paper" style={{ background: '#fff', color: '#0F1216' }}><ReportTab anomalies={anomalies} record={record} onTabChange={go} /></div>}
       {tab === 'repairs'   && <RepairsTab anomalies={anomalies} shareId={shareId} repairs={repairs} record={record} onRefresh={loadRepairs} signedIn={access} />}
       {tab === 'projects'  && <ProjectsTab projects={projects} anomalies={anomalies} shareId={shareId} address={record.address} onRefresh={loadProjects} />}
       {tab === 'reminders' && <RemindersTab reminders={reminders} log={log} shareId={shareId} onRefresh={() => { loadReminders(); loadLog(); }} access={access} onUnlock={() => setSubOpen(true)} />}
@@ -410,15 +424,15 @@ export default function SharePage() {
       {/* VAL command line — a persistent bottom dock: text opens the chat, orb starts voice.
           Hidden on the wide report view, which carries its own Ask-Ledrix CTA. */}
       {tab !== 'report' && (
-        <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: desk ? 560 : 430, zIndex: 120,
+        <div style={{ position: 'fixed', bottom: desk ? 0 : `calc(${TABBAR_H}px + env(safe-area-inset-bottom, 0px))`, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: desk ? 560 : 430, zIndex: 120,
           borderRadius: desk ? '14px 14px 0 0' : undefined, borderLeft: desk ? `1px solid ${BORDER}` : undefined, borderRight: desk ? `1px solid ${BORDER}` : undefined,
-          background: 'rgba(245,246,243,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          background: GLASS, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
           borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px 11px' }}>
           <button onClick={openLedrix} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
             <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 14.5, fontWeight: 600 }}>Ask Ledrix</div>
             <div style={{ ...eyebrow(MED, 7.5), marginTop: 3 }}>Voice or type · about this home</div>
           </button>
-          <ValOrbVoice size={46} tone="light" quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
+          <ValOrbVoice size={46} tone={darkUi ? 'dark' : 'light'} quiet controlled={{ listening: valListening, onToggle: handleVal, stream: valStream }} />
         </div>
       )}
       {valLog && can('log.add') && (

@@ -63,6 +63,19 @@ async function selectOne(column: 'share_id', value: string) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+/** The house for the drawing (approval pack item 5, owner 2026-11-25): the job's home type and stories, and only values
+ *  from the app's own lists leave the server. A read failure returns null; the page then draws the two-story house. */
+const HOME_TYPES = new Set(['Site-Built', 'Manufactured', 'Mobile', 'Condo/Townhome', 'Multi-Unit']);
+const STORIES = new Set(['1 story', '1½ stories', '2 stories', '3+ stories', 'Split-level']);
+async function selectHouse(shareId: string): Promise<{ homeType: string | null; stories: string | null } | null> {
+  const url = `${SUPA_URL}/rest/v1/inspections?id=eq.${encodeURIComponent(shareId)}&select=home_type,stories&limit=1`;
+  const r = await fetch(url, { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` }, cache: 'no-store' });
+  if (!r.ok) return null;
+  const row = (await r.json().catch(() => []))?.[0];
+  if (!row) return null;
+  return { homeType: HOME_TYPES.has(row.home_type) ? row.home_type : null, stories: STORIES.has(row.stories) ? row.stories : null };
+}
+
 /** "What wasn't inspected" (Home Record redesign, owner 2026-11-25, mockup 1CCUJycYwNKA8862rsStQ4): the inspection's
  *  limitations — each condition answer recorded as "<reason> (Limitation)", with its item's name. Only the item label
  *  and the reason leave the server. A read failure returns none; the page then says it has none to show. */
@@ -125,8 +138,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       let reportGroups: unknown = null;
       try { reportGroups = (await import('../../../../lib/report/render.mjs')).groupReportFindings(anomalies as Record<string, any>[]); }
       catch { reportGroups = null; }
-      const limitations = await selectLimitations(access.shareId).catch(() => []);
-      return NextResponse.json({ ...rec, anomalies, reportGroups, limitations, specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
+      const [limitations, house] = await Promise.all([selectLimitations(access.shareId).catch(() => []), selectHouse(access.shareId).catch(() => null)]);
+      return NextResponse.json({ ...rec, anomalies, reportGroups, limitations, house, specs: publishedSpecs(rec.specs), access: access.scope }, { headers });
     }
 
     // The legacy `share_id` fallback lived here and is GONE (2026-08-28). It resolved an old

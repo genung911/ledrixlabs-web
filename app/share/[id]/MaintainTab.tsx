@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { canEdit, can, supaPost, supaDelete, ACCENT, GREEN, BG, CARD, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, priorityOf, fmtDate } from './shared';
+import { canEdit, can, supaPost, supaDelete, ACCENT, GREEN, BG, CARD, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, priorityOf, fmtDate, INK_ON } from './shared';
 import { homeView, ProjectCard, ReminderCard, ClaimToAdd } from './ui';
 import { DocsTab } from './RecordsTab';
 import { RepairsTab } from './RepairsTab';
@@ -74,7 +74,7 @@ function ProjectsTab({ projects, anomalies, shareId, address, onRefresh }: { pro
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 13, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: fromFindings.length ? 14 : 0 }}>
             <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addManual()} placeholder="New project…" style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 9, padding: '10px 12px', color: TEXT, fontSize: 13, outline: 'none' }} />
-            <button onClick={addManual} disabled={busy || !title.trim()} style={{ background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: '0 16px', fontSize: 12, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default', opacity: title.trim() ? 1 : 0.5 }}>Add</button>
+            <button onClick={addManual} disabled={busy || !title.trim()} style={{ background: TEXT, color: INK_ON, border: 'none', borderRadius: 9, padding: '0 16px', fontSize: 12, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default', opacity: title.trim() ? 1 : 0.5 }}>Add</button>
           </div>
           {fromFindings.length > 0 && (
             <>
@@ -121,7 +121,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
   };
   if (!can('log.add')) return <ClaimToAdd label="Log a service or improvement" />;
   if (!open) return (
-    <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 14, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>+ Log a service or improvement</button>
+    <button onClick={() => access ? setOpen(true) : onUnlock()} style={{ width: '100%', background: TEXT, color: INK_ON, border: 'none', borderRadius: 9, padding: 14, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>+ Log a service or improvement</button>
   );
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 15, padding: 16, boxShadow: '0 1px 2px rgba(16,24,28,0.04)' }}>
@@ -135,7 +135,7 @@ function LogServiceForm({ shareId, onSaved, access, onUnlock }: { shareId: strin
         <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note — contractor, cost, warranty (optional)" style={inp} />
         <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
           <button onClick={() => setOpen(false)} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: MED, borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={save} disabled={saving || !title.trim()} style={{ flex: 2, background: TEXT, color: '#fff', border: 'none', borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: title.trim() ? 1 : 0.5 }}>{saving ? 'Saving…' : 'Add to home record'}</button>
+          <button onClick={save} disabled={saving || !title.trim()} style={{ flex: 2, background: TEXT, color: INK_ON, border: 'none', borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: title.trim() ? 1 : 0.5 }}>{saving ? 'Saving…' : 'Add to home record'}</button>
         </div>
       </div>
     </div>

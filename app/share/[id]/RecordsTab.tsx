@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PORTAL_TOKEN, canEdit, can, lookOnly, openClaim, authHeaders, supaGet, ACCENT, WARN, CARD, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type HomeRecord, fmtDate } from './shared';
+import { PORTAL_TOKEN, canEdit, can, lookOnly, openClaim, authHeaders, supaGet, ACCENT, WARN, CARD, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type HomeRecord, fmtDate, INK_ON } from './shared';
 import { Icon, pdfHref, Footer } from './ui';
 function ClaimCard({ onClaim }: { onClaim: () => void }) {
   return (
-    <div style={{ background: CARD, border: '1px solid #C9DBF4', borderRadius: 14, padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ background: CARD, border: `1px solid ${ACCENT}40`, borderRadius: 14, padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>Make this home yours</div>
       <div style={{ fontSize: 13, lineHeight: 1.45, color: MED }}>Keep the record on your account, log upkeep, store receipts and ask Ledrix about your home.</div>
       <button onClick={onClaim} style={{ minHeight: 44, borderRadius: 22, border: 'none', background: ACCENT, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Claim your home</button>
@@ -80,7 +80,7 @@ function DocsTab({ record }: { record: HomeRecord }) {
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '16px 18px' }}>
             <p style={{ color: TEXT, fontSize: 11, lineHeight: 1.65, marginBottom: 12 }}>Your full inspection report — a permanent record of this property&apos;s condition at the time of inspection.</p>
             {pdfHref(record) ? (
-              <a href={pdfHref(record)!} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: TEXT, border: 'none', color: '#fff', borderRadius: 8, padding: 12, fontSize: 10, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW / PRINT REPORT PDF ↗</a>
+              <a href={pdfHref(record)!} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', background: TEXT, border: 'none', color: INK_ON, borderRadius: 8, padding: 12, fontSize: 10, fontWeight: 600, letterSpacing: 1, fontFamily: 'Roboto Mono, monospace', textDecoration: 'none' }}>VIEW / PRINT REPORT PDF ↗</a>
             ) : (
               <div style={{ color: DIM, fontSize: 9, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>PDF AVAILABLE IN LEDRIX APP · REQUEST A COPY FROM YOUR INSPECTOR</div>
             )}

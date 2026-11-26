@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
-import { can, lookOnly, shareUrlFor, portal, supaPost, supaPatch, supaDelete, GREEN, INFO, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type RepairRow, SEV_COLOR, SEV_LABEL } from './shared';
+import { can, lookOnly, INK_ON, shareUrlFor, portal, supaPost, supaPatch, supaDelete, GREEN, INFO, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type RepairRow, SEV_COLOR, SEV_LABEL } from './shared';
 import { homeView, ClaimToAdd } from './ui';
 
 function repairRefOf(a: Anomaly, i: number): string { return a.id || `a${i}`; }
@@ -153,7 +153,7 @@ function RepairsTab({ anomalies, shareId, repairs, record, onRefresh, signedIn }
 
       {included.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          {can('repair.share') && <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : TEXT, border: `1px solid ${linkCopied ? GREEN + '55' : TEXT}`, color: linkCopied ? GREEN : '#fff', borderRadius: 8, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>}
+          {can('repair.share') && <button onClick={shareLink} style={{ width: '100%', background: linkCopied ? `${GREEN}20` : TEXT, border: `1px solid ${linkCopied ? GREEN + '55' : TEXT}`, color: linkCopied ? GREEN : INK_ON, borderRadius: 8, padding: '11px', fontSize: 9.5, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace', marginBottom: 8 }}>{linkCopied ? 'LINK COPIED ✓' : 'SHARE REQUEST LINK'}</button>}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={copyText} style={{ flex: 1, background: copied ? `${GREEN}20` : 'none', border: `1px solid ${copied ? GREEN + '44' : BORDER}`, color: copied ? GREEN : TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>{copied ? 'COPIED ✓' : 'COPY TEXT'}</button>
             <button onClick={() => window.print()} style={{ flex: 1, background: 'none', border: `1px solid ${BORDER}`, color: TEXT, borderRadius: 8, padding: '9px', fontSize: 9, fontWeight: 600, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Roboto Mono, monospace' }}>PRINT / PDF</button>

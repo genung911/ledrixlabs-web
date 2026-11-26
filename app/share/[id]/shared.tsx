@@ -119,20 +119,38 @@ async function supaDelete(table: string, filter: string) {
 // blue, #1D6DCE is the same hue at 89% and measures 4.55:1 — the minimum shift that passes.
 const BLUE     = '#217BE8';   // the Ledrix blue — see the contrast note above
 const ACCENT   = '#217BE8';   // primary UI accent — the Ledrix blue (owner call: blue, not the report teal)
-const BLUE_TEXT = '#1D6DCE';  // AA-safe variant for SMALL text on paper (4.55:1); same hue, 89%
+const BLUE_TEXT = 'var(--sbluet)';  // AA-safe blue for SMALL text: #1D6DCE on light (4.55:1), #4C9BF2 on dark
 const CRITICAL = '#DC2626';   // safety (readable on light)
 const WARN     = '#CA8A04';   // deficiency (amber, readable on light)
 const GREEN    = '#16A34A';   // satisfactory / resolved
 const INFO     = '#5B7183';   // slate — maintenance + in-progress
 const PURPLE   = INFO;        // legacy alias → muted (no rainbow)
-const BG       = '#F6F2EA';   // warm stone paper (Rivian register, 2026-07-10)
-// Surfaces: clean white cards on the paper ground.
-const CARD     = '#FFFFFF';
-const CARD2    = '#FBFCFB';
-const BORDER   = 'rgba(16,24,28,0.10)';
-const DIM      = '#A3988A';   // faint muted — warm stone secondary
-const MED      = '#75695C';   // muted body/secondary — warm
-const TEXT     = '#262016';   // warm dark ink
+// ── NEUTRALS ARE TOKENS (owner 2026-11-25, approval pack item 4: "the other tabs in light and dark") ───────────────────
+// Every tab takes the Home tab's palette (HomeTab HR_LIGHT / HR_DARK) and follows the device's setting. The values live
+// in SP_CSS on the page root (.sp); the Report tab's document stays paper-white (.sp-paper re-applies the light set).
+// Status colours stay hex — they are suffixed with alpha (`${GREEN}20`) and read on both grounds.
+const BG       = 'var(--sbg)';
+const CARD     = 'var(--scard)';
+const CARD2    = 'var(--scard2)';
+const BORDER   = 'var(--sline)';
+const DIM      = 'var(--sdim)';
+const MED      = 'var(--smed)';
+const TEXT     = 'var(--stext)';
+/** Text on a TEXT-coloured button (white on light ink; ink on the light button dark mode draws). */
+const INK_ON   = 'var(--son)';
+/** The frosted bars (top bar, rail, Ask Ledrix dock). */
+const GLASS    = 'var(--sglass)';
+/** Soft status bands: information, done, a problem. */
+const TINT_INFO = 'var(--stinfo)';
+const TINT_OK   = 'var(--stok)';
+const TINT_BAD  = 'var(--stbad)';
+const SP_LIGHT = '--sbg:#F2F3F5;--scard:#FFFFFF;--scard2:#F7F8FA;--sline:rgba(15,18,22,.10);--sdim:#9AA1AB;--smed:#5F6672;--stext:#0F1216;'
+  + '--son:#FFFFFF;--sglass:rgba(242,243,245,.92);--stinfo:#EEF4FD;--stok:#EAF5EE;--stbad:#FDF0EC;--sbluet:#1D6DCE;';
+const SP_DARK = '--sbg:#0A0B0D;--scard:#15171A;--scard2:#1D1F23;--sline:#272A2F;--sdim:#5F656C;--smed:#9198A1;--stext:#F4F5F7;'
+  + '--son:#0A0B0D;--sglass:rgba(16,17,20,.92);--stinfo:#14243A;--stok:#12291F;--stbad:#33191A;--sbluet:#4C9BF2;';
+const SP_CSS = `.sp{${SP_LIGHT}color-scheme:light}
+@media (prefers-color-scheme:dark){.sp{${SP_DARK}color-scheme:dark}}
+.sp .sp-paper{${SP_LIGHT}color-scheme:light}`;
 
 // Shared type voices — mirrors the inspection report's system: serif display for titles,
 // sans body, mono for tracked-caps labels. One definition; tabs reuse instead of redeclaring.
@@ -169,6 +187,8 @@ type HomeRecord = {
   reportGroups?: ReportGroup[] | null;
   /** What wasn't inspected: the inspection's limitations, item + reason (/api/share, 2026-11-25). */
   limitations?: { item: string; reason: string }[];
+  /** The job's home type and stories (Before you start), for the drawing (/api/share, 2026-11-25). */
+  house?: { homeType: string | null; stories: string | null } | null;
 };
 type Project = {
   id: string; share_id: string; title: string; system?: string; priority?: string;
@@ -466,5 +486,5 @@ async function seedIfEmpty(shareId: string, anomalies: Anomaly[], specs: Spec[])
 
   await seedManualDocs(shareId, specs);
 }
-export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, setPortalHolds, setPortalBearer, authHeaders, isEditLink, lookOnly, setClaimOpener, openClaim, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
+export { useDesk, PORTAL_TOKEN, setPortalToken, setPortalScope, PORTAL_SCOPE, setPortalHolds, setPortalBearer, authHeaders, isEditLink, lookOnly, setClaimOpener, openClaim, canEdit, can, shareUrlFor, splitPath, portal, supaGet, supaPost, supaPatch, supaDelete, BLUE, ACCENT, BLUE_TEXT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, INK_ON, GLASS, TINT_INFO, TINT_OK, TINT_BAD, SP_CSS, SERIF, MONO, eyebrow, FLOORPLAN_ENABLED, TAB_LABEL, RAIL, RAIL_OF, APPLIANCE_SYSTEMS, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, PRIO, PRIO_ORDER, PRIO_SHORT, SEV_TO_PRIO, prioKeyOf, SEV_COLOR, SEV_LABEL, SYSTEM_OF, indexSystems, reportSystem, normKey, textOverlap, anomalyInRoom, floorLabel, PRIO_LABEL, PRIO_COLOR, prioRank, isSafetyFinding, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, buildMaintenanceReminders, seedManualDocs, seedIfEmpty };
 export type { Anomaly, Spec, HomeRecord, Project, Reminder, RepairRow, MaintenanceLog, FPRoom, FPLayout, FloorPlanRow, Tab, PrioKey };

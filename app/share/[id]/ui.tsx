@@ -4,7 +4,7 @@ import { LedrixDelta as ValDeltaSVG } from '@/components/LedrixDelta';
 import { LedrixEye } from '@/components/LedrixEye';
 import { assetUrl } from '@/lib/portalAssets';
 import { forHomeowner, neutralProSearch, FURTHER_EVALUATION_HEADING } from '@/lib/homeownerRecommendation';
-import { PORTAL_TOKEN, can, lookOnly, openClaim, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto } from './shared';
+import { PORTAL_TOKEN, can, lookOnly, openClaim, supaPost, supaPatch, BLUE, ACCENT, CRITICAL, WARN, GREEN, INFO, PURPLE, BG, CARD, CARD2, BORDER, DIM, MED, TEXT, SERIF, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type Tab, TAB_LABEL, RAIL, RAIL_OF, STATUS_COLOR, STATUS_LABEL, STATUS_NEXT, SEV_COLOR, SEV_LABEL, priorityOf, fmtDate, addDays, haversineM, isApplianceSystem, compressPhoto, GLASS } from './shared';
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
 // Clean SVG line icons (Lucide-style) matching the inspector app's thin-stroke
@@ -139,7 +139,7 @@ function FindingCard({ a, zip, cityState, shareId }: { a: Anomaly; zip?: string;
           {hv.observations.map((b, i) => (
             <div key={i} style={{ display: 'flex', gap: 7, marginTop: 4 }}>
               <span style={{ color: DIM, flexShrink: 0, lineHeight: 1.55 }}>•</span>
-              <span style={{ color: '#33454B', fontSize: 12, lineHeight: 1.55 }}>{b}</span>
+              <span style={{ color: MED, fontSize: 12, lineHeight: 1.55 }}>{b}</span>
             </div>
           ))}
           {hv.evaluation && <div style={{ ...eyebrow(TEXT, 7.5), marginTop: 8 }}>{hv.evaluation.heading}</div>}
@@ -259,7 +259,7 @@ function FindingDetailModal({ a, zip, cityState, shareId, onClose }: { a: Anomal
 
         <CardSection label="REPAIR VIDEOS">
           <a href={ytUrl} target="_blank" rel="noreferrer" style={cta}>▶ Watch how-to videos</a>
-          <p style={{ color: '#8a6a2e', fontSize: 10.5, lineHeight: 1.55, marginTop: 9, borderLeft: `2px solid ${WARN}66`, paddingLeft: 10 }}>
+          <p style={{ color: WARN, fontSize: 10.5, lineHeight: 1.55, marginTop: 9, borderLeft: `2px solid ${WARN}66`, paddingLeft: 10 }}>
             Videos are a guide for minor upkeep only. For anything structural, electrical, gas, or plumbing — use a licensed pro.
           </p>
         </CardSection>
@@ -640,7 +640,7 @@ function ReminderCard({ r, onUpdate, access, onUnlock }: { r: Reminder; onUpdate
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton() {
   const bar = (w: string, h = 10, mb = 8) => (
-    <div style={{ width: w, height: h, background: '#111', borderRadius: 6, marginBottom: mb,
+    <div style={{ width: w, height: h, background: CARD2, borderRadius: 6, marginBottom: mb,
       animation: 'pulse 1.5s ease-in-out infinite' }} />
   );
   return (
@@ -669,7 +669,7 @@ function NotFound() {
 function NavBar({ address, onShare, copied, active, onBack, signedIn, onSignOut }: { address: string; onShare: () => void; copied: boolean; active: Tab; onBack: () => void; signedIn?: boolean; onSignOut?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(246,247,244,0.9)',
+      padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, background: GLASS,
       position: 'sticky', top: 0, zIndex: 90, backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)', width: '100%', boxSizing: 'border-box',
     }}>
@@ -794,10 +794,40 @@ function PhotoAnalyze({ access, onUnlock, shareId }: { access: boolean; onUnlock
     </>
   );
 }
-function HomeRail({ active, onPick }: { active: Tab; onPick: (t: Tab) => void }) {
+// THE TABS (owner 2026-11-25, approval pack item 4): along the top on a computer; on a phone a bottom bar with icons,
+// the Ask Ledrix dock sitting just above it (page.tsx TABBAR_H). Same five tabs, same order, either way.
+const RAIL_ICON: Record<string, string> = {
+  home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  systems: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  maintain: 'M4 5h16v16H4zM4 10h16M9 3v4M15 3v4',
+  history: 'M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  report: 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h4',
+};
+const TABBAR_H = 56;
+function HomeRail({ active, onPick, bottom }: { active: Tab; onPick: (t: Tab) => void; bottom?: boolean }) {
   const on = RAIL_OF[active] ?? active;
+  if (bottom) {
+    return (
+      <nav aria-label="Home sections" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 125, background: GLASS, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+        borderTop: `1px solid ${BORDER}`, paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
+        <div style={{ display: 'flex', maxWidth: 430, margin: '0 auto', height: TABBAR_H }}>
+          {RAIL.map(r => {
+            const cur = on === r.tab;
+            return (
+              <button key={r.tab} onClick={() => onPick(r.tab)} aria-current={cur ? 'page' : undefined}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer',
+                  color: cur ? ACCENT : MED, fontSize: 10.5, fontWeight: cur ? 700 : 500, fontFamily: 'inherit' }}>
+                <svg aria-hidden viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={cur ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={RAIL_ICON[r.tab] ?? RAIL_ICON.home} /></svg>
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
   return (
-    <nav aria-label="Home sections" style={{ display: 'flex', gap: 4, padding: '8px 12px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(246,247,244,0.95)', position: 'sticky', top: 57, zIndex: 89, overflowX: 'auto' }}>
+    <nav aria-label="Home sections" style={{ display: 'flex', gap: 4, padding: '8px 12px', borderBottom: `1px solid ${BORDER}`, background: GLASS, position: 'sticky', top: 57, zIndex: 89, overflowX: 'auto' }}>
       {RAIL.map(r => (
         <button key={r.tab} onClick={() => onPick(r.tab)} aria-current={on === r.tab ? 'page' : undefined}
           style={{ flex: '1 0 auto', minHeight: 36, padding: '6px 12px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
@@ -806,5 +836,5 @@ function HomeRail({ active, onPick }: { active: Tab; onPick: (t: Tab) => void })
     </nav>
   );
 }
-export { ClaimToAdd, Icon, Logo, photoUrl, Lightbox, homeView, projectSeverity, splitBullets, FLabel, pdfHref, FindingCard, CardSection, FindingDetailModal, ProjectCard, ApplianceModal, ReminderCard, Skeleton, NotFound, NavBar, Footer, PhotoAnalyze, HomeRail };
+export { TABBAR_H, ClaimToAdd, Icon, Logo, photoUrl, Lightbox, homeView, projectSeverity, splitBullets, FLabel, pdfHref, FindingCard, CardSection, FindingDetailModal, ProjectCard, ApplianceModal, ReminderCard, Skeleton, NotFound, NavBar, Footer, PhotoAnalyze, HomeRail };
 export type { IconName };
