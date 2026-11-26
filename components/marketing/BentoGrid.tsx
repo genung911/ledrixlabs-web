@@ -50,7 +50,7 @@ function DevicesOneBrain() {
       </svg>
       {/* the brain — the real Ledrix delta mark, centered on the pedestal */}
       <div className="absolute" style={{ left: 90 - 11, top: 36 - 11 }}>
-        <LedrixDelta size={22} sheen />
+        <LedrixDelta size={22} color="#217BE8" />
       </div>
     </div>
   );

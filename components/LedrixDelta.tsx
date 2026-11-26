@@ -16,7 +16,9 @@ type P = [number, number];
 
 export function LedrixDelta({
   size = 22,
-  color = '#217BE8',
+  // The logo is black on light, white on dark (owner 2026-11-26, logo option D): it takes the text colour around it.
+  // Ledrix blue stays the accent; pass `color` for the Ledrix Intelligence orb (VAL), which stays blue.
+  color = 'currentColor',
   sheen = false,
   className,
 }: {
@@ -119,6 +121,7 @@ export function LedrixDelta({
 }
 
 // ─── The three official treatments of the mark ───────────────────────────────
-//   Blue (brand, on dark)  →  <LedrixDelta sheen />            top-lit blue gradient + glow
+//   Logo (brand)           →  <LedrixDelta />                  black on light, white on dark (currentColor)
+//   Blue sheen (VAL only)  →  <LedrixDelta sheen />            the Ledrix Intelligence orb, not the logo
 //   White (mono, on dark)  →  <LedrixDelta color="#ffffff" />  favicons, watermarks, photos
 //   Ink   (mono, on light) →  <LedrixDelta color="#070707" />  print, the report PDF, light UI

@@ -61,7 +61,7 @@ export function Navbar({ overLight = false, links = LINKS, ctaHref = '/inspect#p
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="group flex items-center gap-2.5">
-          <LedrixDelta size={22} sheen className="transition-transform duration-300 group-hover:scale-110" />
+          <LedrixDelta size={22} className={`transition-transform duration-300 group-hover:scale-110 ${inkChrome ? 'text-ink' : 'text-white'}`} />
           <span className={`text-base font-bold tracking-tight transition-colors duration-300 ${inkChrome ? 'text-ink' : 'text-white'}`}>
             Ledrix
           </span>

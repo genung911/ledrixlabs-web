@@ -177,7 +177,7 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen bg-ground lg:flex">
         {/* Top bar below lg (phones and tablets keep it); the icon rail at lg and above. */}
         <div className="flex h-14 items-center justify-between border-b border-hairline bg-surface px-4 lg:hidden">
-          <a href="/app" className="flex items-center gap-2"><LedrixDelta size={18} /><span className="text-sm font-bold text-ink">Ledrix Inspect</span></a>
+          <a href="/app" className="flex items-center gap-2"><LedrixDelta size={18} className="text-ink" /><span className="text-sm font-bold text-ink">Ledrix Inspect</span></a>
           <button aria-label={navOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={navOpen} onClick={() => setNavOpen(o => !o)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-ink hover:bg-ink/5">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -274,7 +274,7 @@ function Rail({ nav, isActive, name, detail, signOut }: {
         className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-hairline bg-surface transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none ${
           open ? 'w-60 shadow-xl' : 'w-14'}`}>
         <a href="/app" aria-label="Ledrix Inspect — Today" className="flex h-16 shrink-0 items-center gap-2.5 px-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
-          <LedrixDelta size={20} />
+          <LedrixDelta size={20} className="text-ink" />
           <span className={`whitespace-nowrap text-sm font-bold tracking-tight text-ink ${open ? '' : 'sr-only'}`}>Ledrix Inspect</span>
         </a>
         <nav aria-label="Workspace" className="flex flex-col gap-0.5 px-2 py-1">

@@ -60,7 +60,7 @@ export default function LedrixLabsHome() {
           />
           <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 text-center">
             <span className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-white/70 backdrop-blur">
-              <LedrixDelta size={14} sheen />
+              <LedrixDelta size={14} />
               Ledrix Labs
             </span>
             <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl md:text-7xl">
@@ -96,7 +96,7 @@ export default function LedrixLabsHome() {
                 For inspectors
               </span>
               <h2 className="mt-4 flex items-center gap-3 text-3xl font-bold tracking-tight md:text-4xl">
-                <LedrixDelta size={26} sheen />
+                <LedrixDelta size={26} />
                 Ledrix Inspect
               </h2>
               <p className="mt-5 text-xl font-semibold leading-snug text-white [text-wrap:balance] md:text-2xl">
@@ -132,7 +132,7 @@ export default function LedrixLabsHome() {
                 For homeowners
               </span>
               <h2 className="mt-4 flex items-center gap-3 text-3xl font-bold tracking-tight text-ink md:text-4xl">
-                <LedrixDelta size={26} sheen />
+                <LedrixDelta size={26} />
                 Ledrix Home
               </h2>
               <p className="mt-5 text-xl font-semibold leading-snug text-ink [text-wrap:balance] md:text-2xl">
@@ -165,7 +165,7 @@ export default function LedrixLabsHome() {
         {/* ── SHARED INTELLIGENCE ── */}
         <section className="border-t border-hairline bg-ground px-6 py-24">
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-            <LedrixDelta size={40} sheen />
+            <LedrixDelta size={40} />
             <h3 className="mt-6 text-3xl font-bold tracking-tight text-ink md:text-4xl">
               One brain. Ledrix Intelligence.
             </h3>

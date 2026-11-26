@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
         padding: '20px 40px', borderBottom: '1px solid #111',
       }}>
         <Link href="/">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><LedrixDelta size={22} sheen /><span style={{ color: '#fff', fontSize: 16, fontWeight: 800 }}>Ledrix</span></span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><LedrixDelta size={22} /><span style={{ color: '#fff', fontSize: 16, fontWeight: 800 }}>Ledrix</span></span>
         </Link>
         <Link href="/" style={{ color: '#9AA3AC', fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: 'none' }}>← BACK</Link>
       </nav>

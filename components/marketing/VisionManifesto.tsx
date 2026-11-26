@@ -24,7 +24,7 @@ export function VisionManifesto() {
       <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-28 text-center sm:pt-32">
         <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center">
           <motion.div variants={fadeUp} className="mb-10">
-            <LedrixDelta size={168} sheen className="h-[120px] w-[120px] sm:h-[168px] sm:w-[168px]" />
+            <LedrixDelta size={168} className="h-[120px] w-[120px] sm:h-[168px] sm:w-[168px]" />
           </motion.div>
 
           <motion.span

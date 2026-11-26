@@ -61,8 +61,8 @@ export default function LedrixHomePage() {
           />
           <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-14 px-6 md:grid-cols-2">
             <div>
-              <span className="inline-flex items-center gap-2.5 rounded-full border border-hairline bg-surface px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-body">
-                <LedrixDelta size={14} sheen />
+              <span className="inline-flex items-center gap-2.5 rounded-full border border-hairline bg-surface px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-body [&>svg]:text-ink">
+                <LedrixDelta size={14} />
                 Ledrix Home
               </span>
               <h1 className="mt-7 text-5xl font-extrabold leading-[1.05] tracking-tight text-ink [text-wrap:balance] sm:text-6xl">
@@ -136,7 +136,7 @@ export default function LedrixHomePage() {
         {/* ── SHARED INTELLIGENCE ── */}
         <section className="border-t border-hairline bg-dark px-6 py-24 text-white">
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-            <LedrixDelta size={40} sheen />
+            <LedrixDelta size={40} />
             <h3 className="mt-6 text-3xl font-bold tracking-tight md:text-4xl">
               Powered by Ledrix Intelligence.
             </h3>

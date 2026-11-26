@@ -16,21 +16,17 @@ export default function OpengraphImage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0b0f11',
-          backgroundImage: 'radial-gradient(circle at 50% 32%, rgba(33,123,232,0.10), transparent 60%)',
+          background: '#0B0C0E',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
-          {/* Delta mark, drawn with borders so it needs no glyph/font */}
-          <div
-            style={{
-              width: 0,
-              height: 0,
-              borderLeft: '48px solid transparent',
-              borderRight: '48px solid transparent',
-              borderBottom: '82px solid #217BE8',
-            }}
-          />
+          {/* The Ledrix logo (owner 2026-11-26, option D): the delta in white. Same geometry as components/LedrixDelta.tsx. */}
+          <svg width="112" height="112" viewBox="0 0 100 100">
+            <defs>
+              <mask id="g"><rect width="100" height="100" fill="white" /><rect x="29.2" y="74.64" width="20.8" height="12" fill="black" /></mask>
+            </defs>
+            <path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill="#FFFFFF" fillRule="evenodd" mask="url(#g)" />
+          </svg>
           <div style={{ fontSize: 124, fontWeight: 800, color: '#e7f0f2', letterSpacing: -4 }}>Ledrix</div>
         </div>
         <div style={{ fontSize: 46, fontWeight: 600, color: '#9fb2b7', marginTop: 34 }}>

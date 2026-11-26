@@ -44,7 +44,7 @@ function LoginForm() {
     <div className="flex min-h-screen flex-col bg-ground">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-6">
         <a href="/inspect" className="flex items-center gap-2.5">
-          <LedrixDelta size={22} />
+          <LedrixDelta size={22} className="text-ink" />
           <span className="text-base font-bold tracking-tight text-ink">Ledrix</span>
         </a>
       </header>

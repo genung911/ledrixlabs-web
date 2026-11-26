@@ -56,12 +56,12 @@ function checks(S, exists = p => fs.existsSync(path.join(root, 'public', p))) {
     !!tok(sd) && tok(sd) === tok(fh) && sd.includes('const SAMPLE_WEB_REPORT_URL = `/share/${SAMPLE_PORTAL_ID}?tab=report`;'));
   const legal = [S['app/privacy/page.tsx'], S['app/terms/page.tsx']];
   ok('10 Privacy and Terms carry the Ledrix Δ mark and readable body text (not the old LX logo, not #555 on near-black)',
-    legal.every(l => l.includes('<LedrixDelta size={22} sheen />') && !l.includes('/logo.png') && l.includes("fontSize: 14, color: '#B4BCC4', lineHeight: 1.8")));
+    legal.every(l => l.includes('<LedrixDelta size={22} />') && !l.includes('/logo.png') && l.includes("fontSize: 14, color: '#B4BCC4', lineHeight: 1.8")));
   return out;
 }
 const MUT = [
   ['app/terms/page.tsx', "fontSize: 14, color: '#B4BCC4', lineHeight: 1.8", "fontSize: 14, color: '#555', lineHeight: 1.8", 'the Terms body goes back to dark grey'],
-  ['app/privacy/page.tsx', '<LedrixDelta size={22} sheen />', '<Image src="/logo.png" alt="Ledrix" width={80} height={40} />', 'Privacy shows the old LX logo again'],
+  ['app/privacy/page.tsx', '<LedrixDelta size={22} />', '<Image src="/logo.png" alt="Ledrix" width={80} height={40} />', 'Privacy shows the old LX logo again'],
   ['components/marketing/ForHomeowners.tsx', "const SAMPLE_PORTAL_ID = '3278d9ad528e73043203892cdfee2fb2';", "const SAMPLE_PORTAL_ID = 'eval-house-seed-v1';", 'the homeowners link drifts to another sample'],
   ['components/marketing/SampleDeliverables.tsx', 'const SAMPLE_WEB_REPORT_URL = `/share/${SAMPLE_PORTAL_ID}?tab=report`;', "const SAMPLE_WEB_REPORT_URL = '/share/fa062955cf681a0c0a49b8cee0395f6b?tab=report';", 'the report link goes back to a token that matches no home'],
   ['components/marketing/VisionManifesto.tsx', 'You shoot, Ledrix fills in the details', 'You look, you talk, you confirm', 'the opener promises voice again'],
