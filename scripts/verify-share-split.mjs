@@ -9,7 +9,9 @@
 import { readdirSync, readFileSync } from 'node:fs'; import { join, dirname } from 'node:path'; import { fileURLToPath } from 'node:url';
 import { SHARE_DIR, SHARE_FILES, joinShare } from './lib/shareSource.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const onDisk = readdirSync(join(ROOT, SHARE_DIR), { withFileTypes: true }).filter(e => e.isFile() && e.name.endsWith('.tsx')).map(e => e.name);
+const onDisk = readdirSync(join(ROOT, SHARE_DIR), { withFileTypes: true })
+  // layout.tsx is Next's route wrapper (theme-color, 2026-11-25), not a part of the page: it holds no component the page uses.
+  .filter(e => e.isFile() && e.name.endsWith('.tsx') && e.name !== 'layout.tsx').map(e => e.name);
 const FILES = Object.fromEntries(onDisk.map(f => [f, readFileSync(join(ROOT, SHARE_DIR, f), 'utf8')]));
 function checks(list, files) {
   const out = []; const ok = (n, v) => out.push([n, !!v]);
