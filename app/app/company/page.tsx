@@ -12,11 +12,18 @@ import { Card, ErrorBox, FieldRow, Group, Loading, Page, PageHeader, Row } from 
 import { loadMembers, loadTemplates } from '@/lib/workspace/data';
 import { loadCompanyProfile, logoDataUri, saveCompanyLogo, saveCompanyName } from '@/lib/office/companyProfile';
 import { TrainingCard } from '@/components/workspace/TrainingCard';
+import { loadBookingPage, loadServices, loadStripeStatus, type StripeStatus } from '@/lib/office/api';
+import { mayManagePayments } from '@/lib/office/access';
 
-type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; members: number; templates: number; name: string; logo: string | null };
+// Website Apple pass batch 4 (owner 2026-11-25, mockup Xz88Phv45CdsgNoCuuhaEA "Approved"): People and work · Getting paid ·
+// Ledrix, each row saying where it stands and opening its page. A part that can't be read (no right to it, not set up)
+// simply isn't listed.
+type Extra = { services: number | null; stripe: StripeStatus | null; booking: boolean | null };
+type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; members: number; templates: number; name: string; logo: string | null; extra: Extra };
 
 export default function CompanyPage() {
-  const { access, companyName } = useWorkspace();
+  const { access, companyName, canServices } = useWorkspace();
+  const mayPay = mayManagePayments({ companyId: access.companyId, role: access.role });
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoErr, setLogoErr] = useState<string | null>(null);
@@ -25,15 +32,21 @@ export default function CompanyPage() {
   const mayBrand = isOwner || access.role === 'admin';
 
   const load = useCallback(async () => {
-    if (!access.companyId) { setState({ kind: 'ready', members: 0, templates: 0, name: companyName ?? '', logo: null }); return; }
+    const none: Extra = { services: null, stripe: null, booking: null };
+    if (!access.companyId) { setState({ kind: 'ready', members: 0, templates: 0, name: companyName ?? '', logo: null, extra: none }); return; }
     setState({ kind: 'loading' });
     try {
       const [members, templates, profile] = await Promise.all([loadMembers(), loadTemplates(access.companyId), loadCompanyProfile(access.companyId)]);
-      setState({ kind: 'ready', members: members.length, templates: templates.length, name: profile.name || (companyName ?? ''), logo: profile.logo });
+      const [services, stripe, booking] = await Promise.all([
+        canServices ? loadServices({ companyId: access.companyId, userId: access.userId }, true).then(x => x.length).catch(() => null) : Promise.resolve(null),
+        mayPay ? loadStripeStatus().catch(() => null) : Promise.resolve(null),
+        canServices ? loadBookingPage({ userId: access.userId, ownsIt: access.role === 'owner' }).then(b => b.active).catch(() => null) : Promise.resolve(null),
+      ]);
+      setState({ kind: 'ready', members: members.length, templates: templates.length, name: profile.name || (companyName ?? ''), logo: profile.logo, extra: { services, stripe, booking } });
     } catch (e) {
       setState({ kind: 'error', message: e instanceof Error ? e.message : 'The company could not load.' });
     }
-  }, [access.companyId, companyName]);
+  }, [access.companyId, access.userId, access.role, companyName, canServices, mayPay]);
   useEffect(() => { load(); }, [load]);
 
   const setLogo = async (dataUri: string | null) => {
@@ -78,10 +91,18 @@ export default function CompanyPage() {
             </div>
             <Row label="Your role" value={roleLabel(access.role)} />
           </Group>
-          <Group heading="Your company">
-            <Row label="Team" value={`${state.members} ${state.members === 1 ? 'member' : 'members'}`} href="/app/team" />
+          <Group heading="People and work">
+            <Row label="Team" value={`${state.members} ${state.members === 1 ? 'person' : 'people'}`} href="/app/team" />
             <Row label="Templates" value={`${state.templates} ${state.templates === 1 ? 'template' : 'templates'}`} href="/app/templates" />
+            {state.extra.services !== null && <Row label="Services & prices" value={state.extra.services ? `${state.extra.services}` : 'None yet'} valueTone={state.extra.services ? undefined : 'need'} href="/app/company/services" />}
           </Group>
+          {(state.extra.stripe || state.extra.booking !== null) && (
+            <Group heading="Getting paid" footnote="Plan & billing joins this group once Ledrix billing is built.">
+              {state.extra.stripe && <Row label="Payments" value={state.extra.stripe.connected ? `Stripe connected${state.extra.stripe.mode === 'test' ? ' · test' : ''}` : 'Not connected'} valueTone={state.extra.stripe.connected ? 'ok' : 'need'} href="/app/company/payments" />}
+              {state.extra.booking !== null && <Row label="Booking page" value={state.extra.booking ? 'On' : 'Off'} valueTone={state.extra.booking ? 'ok' : undefined} href="/app/company/services" />}
+            </Group>
+          )}
+          {access.companyId && <div className="px-3 text-sm text-muted">Ledrix</div>}
           {access.companyId && <TrainingCard companyId={access.companyId} companyName={state.name || companyName || null} isOwner={access.role === 'owner'} />}
           <p className="px-3 text-xs text-muted">Removing the company is done in the Ledrix app (Settings › Company profile, last row), where it asks you to type the name.</p>
         </div>

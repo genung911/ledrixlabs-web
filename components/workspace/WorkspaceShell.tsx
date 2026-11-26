@@ -191,9 +191,9 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
           <nav aria-label="Workspace" className="flex flex-col gap-0.5 px-3 py-3">
             {nav.map(n => (
               <a key={n.href} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isActive(n.href) ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
-                {n.label}
+                <NavIcon d={NAV_ICON[n.href] ?? NAV_ICON['/app']} tint={NAV_TINT[n.href]} />{n.label}
               </a>
             ))}
           </nav>
@@ -223,8 +223,16 @@ const NAV_ICON: Record<string, string> = {
   '/app/templates': 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
   '/app/company': 'M4 21V5l8-2v18M12 7l8 2v12M7 8h2M7 12h2M7 16h2M15 12h2M15 16h2M2 21h20',
 };
-const NavIcon = ({ d }: { d: string }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0"><path d={d} /></svg>
+// A COLOURED TILE PER SECTION (website Apple pass batch 4, owner 2026-11-25, mockup Xz88Phv45CdsgNoCuuhaEA): the line icon
+// in white on a small rounded square, like iPhone Settings — quicker to find at a glance.
+const NAV_TINT: Record<string, string> = {
+  '/app': '#FF9F0A', '/app/inspections': '#217BE8', '/app/crm': '#AF52DE', '/app/reports': '#30B0C7',
+  '/app/invoices': '#34C759', '/app/templates': '#5E5CE6', '/app/company': '#8E8E93',
+};
+const NavIcon = ({ d, tint }: { d: string; tint?: string }) => (
+  <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-md" style={{ background: tint ?? '#8E8E93' }}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+  </span>
 );
 
 function initialsOf(name: string | null | undefined): string {
@@ -276,7 +284,7 @@ function Rail({ nav, isActive, name, detail, signOut }: {
               <a key={n.href} href={n.href} aria-label={n.label} title={open ? undefined : n.label} aria-current={on ? 'page' : undefined}
                 className={`flex h-10 items-center gap-3 rounded-lg px-[10px] text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   on ? 'bg-accent/10 text-accent-ink' : 'text-body hover:bg-ink/5 hover:text-ink'}`}>
-                <NavIcon d={NAV_ICON[n.href] ?? NAV_ICON['/app']} />
+                <NavIcon d={NAV_ICON[n.href] ?? NAV_ICON['/app']} tint={NAV_TINT[n.href]} />
                 <span className={`whitespace-nowrap ${open ? '' : 'sr-only'}`}>{n.label}</span>
               </a>
             );

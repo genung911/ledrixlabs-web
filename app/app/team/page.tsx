@@ -28,6 +28,9 @@ type Pending = { member: MemberRow; role: string } | null;
 const FIELD = 'h-11 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
 
+const AVATAR_TINT: Record<string, string> = { owner: '#217BE8', admin: '#5E5CE6', manager: '#AF52DE', inspector: '#30B0C7', office: '#8E8E93' };
+const initials = (n: string | null | undefined) => { const p = (n ?? '').trim().split(/[\s@.]+/).filter(Boolean); return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[1][0] : '')).toUpperCase() || '·'; };
+
 export default function TeamPage() {
   const { companyName, access } = useWorkspace();
   // Who may manage the team is the server's `team` permission since #76 (2026-10-29); the role is only its default and
@@ -193,14 +196,19 @@ export default function TeamPage() {
                   const p = perms[m.id]; const changed = p?.permissions.filter(x => x.changed).length ?? 0;
                   return (
                     <Row key={m.id}
-                      label={<>{m.full_name || m.email || 'Member'}{m.id === access.userId && <span className="ml-2 text-xs text-muted">(you)</span>}</>}
+                      // Batch 4 (owner 2026-11-25, mockup Xz88Phv45CdsgNoCuuhaEA): the person's initials, then their name.
+                      label={<span className="flex items-center gap-3"><span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background: AVATAR_TINT[m.role ?? ''] ?? '#217BE8' }}>{initials(m.full_name || m.email)}</span>
+                        <span>{m.full_name || m.email || 'Member'}{m.id === access.userId && <span className="ml-2 text-xs text-muted">(you)</span>}</span></span>}
                       sub={[m.email, m.phone, manages && changed ? `${changed} permission${changed === 1 ? '' : 's'} changed` : null].filter(Boolean).join(' · ') || undefined}
                       value={roleLabel(m.role)}
                       onClick={manages ? () => { setOpenInvite(null); setOpenPerm(openPerm === m.id ? null : m.id); } : undefined}
                       disabled={!manages || (!grantable && m.id !== access.userId && !manages)} />
                   );
                 })}
-                {manages && state.invites.map(inv => {
+              </Group>
+              {/* Invitations in their own group, as drawn (batch 4): who hasn't joined yet. */}
+              {manages && state.invites.length > 0 && <Group heading="Waiting to join" footnote="Open one to copy how to join, or to revoke it.">
+                {state.invites.map(inv => {
                   const n = invPerms[inv.id]?.permissions.filter(x => x.changed).length ?? 0;
                   return (
                     <Row key={inv.id} label={inv.email}
@@ -209,7 +217,7 @@ export default function TeamPage() {
                       onClick={() => { setOpenPerm(null); setOpenInvite(openInvite === inv.id ? null : inv.id); }} />
                   );
                 })}
-              </Group>
+              </Group>}
 
               {manages && (
                 <details className="px-3">

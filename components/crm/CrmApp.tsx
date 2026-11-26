@@ -639,6 +639,13 @@ function HomeTab({ data, act, busy }: { data: Data; act: Act; busy: boolean }) {
           </Group>
         </Sheet>
       )}
+      {/* THE LISTS AS ROWS (website Apple pass batch 4, owner 2026-11-25, mockup Xz88Phv45CdsgNoCuuhaEA): each with its count. */}
+      <Group>
+        <Row label="Contacts" value={String(data.contacts.length)} href="/app/crm/contacts" />
+        <Row label="Agents" value={String(data.contacts.filter(c => c.type === 'agent').length)} href="/app/crm/contacts" />
+        <Row label="Accounts" value="Brokerages and partners" href="/app/crm/accounts" />
+        <Row label="Schedule" value={`${k.jobsThisMonth} this month`} href="/app/crm/schedule" />
+      </Group>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Jobs this month" value={String(k.jobsThisMonth)} sub={`${diff >= 0 ? '+' : '−'}${Math.abs(diff)} vs last month`} />
         {k.invoicedThisMonthCents != null

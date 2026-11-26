@@ -36,7 +36,8 @@ export default function InvoicesPage() {
   const [sel, setSel] = useState<InvoiceDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
-  const [filter, setFilter] = useState<'all' | 'unpaid' | 'draft' | 'paid'>('all');
+  // Opens on Unpaid (website Apple pass batch 4, owner 2026-11-25, mockup Xz88Phv45CdsgNoCuuhaEA): what needs you first.
+  const [filter, setFilter] = useState<'all' | 'unpaid' | 'draft' | 'paid'>('unpaid');
   const [q, setQ] = useState('');
   const [jobsOpen, setJobsOpen] = useState(false);
 
@@ -110,39 +111,52 @@ export default function InvoicesPage() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-3">
             <Seg label="Invoice status" value={filter} onChange={setFilter} options={[
-              { key: 'all', label: 'All' }, { key: 'unpaid', label: 'Unpaid' }, { key: 'draft', label: 'Drafts' }, { key: 'paid', label: 'Paid' },
+              { key: 'unpaid', label: 'Unpaid' }, { key: 'paid', label: 'Paid' }, { key: 'draft', label: 'Drafts' }, { key: 'all', label: 'All' },
             ]} />
             <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search client or address" aria-label="Search invoices"
               className="w-full rounded-lg border border-hairline bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-accent sm:w-64" />
-            {state.jobs.length > 0 && <button type="button" onClick={() => setJobsOpen(true)} className="ml-auto text-sm font-semibold text-accent-ink hover:underline">Jobs not invoiced · {state.jobs.length} ›</button>}
           </div>
 
           <div className="flex flex-wrap items-start gap-5">
             <section aria-label="Invoices" className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-xl border border-hairline bg-surface">
-              {state.rows.length === 0 ? <Empty>No invoices yet. Create one from a job, or with New invoice.</Empty> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[620px] text-left text-sm">
-                    <thead className="border-b border-hairline text-xs uppercase tracking-wide text-muted">
-                      <tr><th className="px-4 py-2.5 font-semibold">Invoice</th><th className="px-4 py-2.5 font-semibold">Client</th><th className="px-4 py-2.5 font-semibold">Status</th><th className="px-4 py-2.5 font-semibold">Due</th><th className="px-4 py-2.5 text-right font-semibold">Balance</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-hairline">
-                      {state.rows.filter(r => (filter === 'all' || (filter === 'unpaid' ? isUnpaid(r) : filter === 'draft' ? r.status === 'draft' : r.shown_status === 'paid'))
-                        && (!q.trim() || [r.bill_to_name, r.property_address, invoiceNumber(r)].some(v => String(v ?? '').toLowerCase().includes(q.trim().toLowerCase())))).map(r => (
-                        <tr key={r.id} onClick={() => setSelId(r.id)} className={`cursor-pointer ${selId === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
-                          <td className="px-4 py-2.5"><button type="button" onClick={() => setSelId(r.id)} className="font-semibold text-accent-ink hover:underline">{invoiceNumber(r)}</button></td>
-                          <td className="px-4 py-2.5 text-ink">{r.bill_to_name ?? '—'}<span className="block text-xs text-body">{r.property_address ?? ''}</span></td>
-                          <td className="px-4 py-2.5"><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PILL[r.shown_status]}`}>{STATUS_LABEL[r.shown_status]}</span></td>
-                          <td className="px-4 py-2.5 text-body">{r.status === 'draft' ? '—' : r.due_on ?? '—'}</td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-ink">{money(Math.max(r.balance_cents, 0))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {state.rows.length === 0 ? <Empty>No invoices yet. Create one from a job, or with New invoice.</Empty> : (() => {
+                // ONE INVOICE A ROW (batch 4): number · address, client · when it's due, the balance; overdue in amber.
+                const shown = state.rows.filter(r => (filter === 'all' || (filter === 'unpaid' ? isUnpaid(r) : filter === 'draft' ? r.status === 'draft' : r.shown_status === 'paid'))
+                  && (!q.trim() || [r.bill_to_name, r.property_address, invoiceNumber(r)].some(v => String(v ?? '').toLowerCase().includes(q.trim().toLowerCase()))));
+                if (!shown.length) return <Empty>{filter === 'unpaid' ? 'Nothing unpaid.' : filter === 'draft' ? 'No drafts.' : filter === 'paid' ? 'Nothing paid yet.' : 'No invoices match.'}</Empty>;
+                return (
+                  <ul className="divide-y divide-hairline">
+                    {shown.map(r => {
+                      const late = r.shown_status === 'overdue';
+                      return (
+                        <li key={r.id}>
+                          <button type="button" onClick={() => setSelId(r.id)} className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm ${selId === r.id ? 'bg-accent/5' : 'hover:bg-ground'}`}>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-medium text-ink">{invoiceNumber(r)}{r.property_address ? ` · ${r.property_address}` : ''}</span>
+                              <span className="block truncate text-xs text-muted">{[r.bill_to_name, r.status === 'draft' ? 'Draft' : r.due_on ? `${late ? 'overdue · was due' : 'due'} ${r.due_on}` : null].filter(Boolean).join(' · ')}</span>
+                            </span>
+                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${PILL[r.shown_status]}`}>{STATUS_LABEL[r.shown_status]}</span>
+                            <span className={`w-24 shrink-0 text-right font-semibold ${late ? 'text-amber-700 dark:text-amber-400' : 'text-ink'}`}>{money(Math.max(r.balance_cents, 0))}</span>
+                            <span aria-hidden className="shrink-0 text-muted">›</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
             </section>
             {sel && <InvoicePanel inv={sel} busy={busy} business={companyName} act={act} />}
           </div>
+          {state.jobs.length > 0 && (
+            // JOBS NOT INVOICED, its own group (batch 4): the first few here, all of them in the sheet.
+            <Group heading={`Jobs not invoiced · ${state.jobs.length}`}>
+              {state.jobs.slice(0, 3).map(j => (
+                <Row key={j.order_id} label={j.client_name ?? j.address} sub={j.client_name ? j.address : undefined} value="Create invoice" disabled={busy} onClick={() => create(j.order_id)} />
+              ))}
+              {state.jobs.length > 3 && <Row label={`All ${state.jobs.length}`} onClick={() => setJobsOpen(true)} />}
+            </Group>
+          )}
         </div>
       )}
       {jobsOpen && state.kind === 'ready' && (

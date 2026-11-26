@@ -145,7 +145,7 @@ async function suite(src) {
   const page = strip(src.page);
   ok('§4 the page writes nothing directly (only through lib/team)', !/\.(insert|update|upsert|delete|rpc)\s*\(/.test(page));
   ok('§4 the invite form, the pending list and the role picker are each gated on the role',
-    /\{manages && inviting && \(\s*<Sheet title="Invite someone"/.test(page) /* 2026-11-23 website Apple pass: the invite is a sheet */ && /\{manages && state\.invites\.map\(inv => \{/.test(page) /* 2026-11-24 #150: invited people sit in People */ && /manages && !lock \?/.test(page));
+    /\{manages && inviting && \(\s*<Sheet title="Invite someone"/.test(page) /* 2026-11-23 website Apple pass: the invite is a sheet */ && /\{manages && state\.invites\.length > 0 && <Group heading="Waiting to join"/.test(page) && /\{state\.invites\.map\(inv => \{/.test(page) /* 2026-11-25 batch 4 (mockup Xz88Phv45CdsgNoCuuhaEA): invitations in their own group, Waiting to join */ && /manages && !lock \?/.test(page));
   ok('§4 the invite note says no email is sent', /Ledrix doesn’t send an email/.test(page));
   ok('§4 a role change asks first (a dialog), then calls the server', /setPending\(\{ member: m, role: e\.target\.value \}\)/.test(page) && /role="dialog"/.test(page) && /await setMemberRole\(pending\.member\.id, pending\.role\)/.test(page));
   ok('§4 no member removal is offered (the server has no such operation)', !/remove member|removeMember|Remove from team/i.test(page));
