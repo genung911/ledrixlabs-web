@@ -29,6 +29,8 @@ type TablePolicy = {
   update?: ReadonlySet<string>;
   /** A server-side term AND-ed onto every delete, limiting which rows a link holder may remove. */
   deleteGuard?: string;
+  /** When set, a select may name only these columns (no `*`, no default): the rest of the row stays server-side. */
+  selectCols?: ReadonlySet<string>;
 };
 
 const set = <T,>(...xs: T[]) => new Set<T>(xs);
@@ -66,6 +68,13 @@ export const PORTAL_POLICY: Record<string, TablePolicy> = {
     deleteGuard: 'source=in.(manual,task,voice)',
   },
   home_reports: { ops: set<Op>('select') },
+  // The homeowner's repair status (#152/#154). Read-only here — every change goes through set_finding_status (the
+  // homeowner, signed in) or mark_finding_verified (the inspector). The homeowner's note to their inspector and who
+  // changed it are not readable through the link.
+  home_finding_status: {
+    ops: set<Op>('select'),
+    selectCols: set('anomaly_ref', 'status', 'check_requested_at', 'verified_at', 'verified_name', 'updated_at'),
+  },
   floor_plans:  { ops: set<Op>('select') },
 };
 
@@ -160,6 +169,14 @@ export function cleanSelect(raw: string | undefined): string | null | undefined 
   if (s === '*') return s;
   const cols = s.split(',').map(c => c.trim());
   return cols.every(c => IDENT.test(c)) ? cols.join(',') : null;
+}
+
+/** A select naming only the table's readable columns, when it has a list; null = refused. */
+export function selectFor(table: string, select: string | undefined): string | null | undefined {
+  const cols = PORTAL_POLICY[table]?.selectCols;
+  if (!cols) return select;
+  if (!select || select === '*') return null;
+  return select.split(',').every(c => cols.has(c)) ? select : null;
 }
 
 /** `col.asc.nullslast,col2.desc` — nothing else. */

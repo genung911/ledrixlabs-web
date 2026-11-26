@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ConflictsCard } from '@/components/workspace/ConflictsCard';
+import { CheckRequestsCard } from '@/components/workspace/CheckRequestsCard';
 import { FindingEditor, phoneHolderOf, useEditLock } from '@/components/workspace/FindingEditor';
 import dynamic from 'next/dynamic';
 import PACK from '@/lib/scope/core/taxonomy/ledrix.core.json';
@@ -216,6 +217,8 @@ export default function InspectionPage() {
         </div>
       )}
       {/* When two devices disagree (2026-11-03): only when something does; the job's team settles it. */}
+      {/* Repairs the homeowner fixed and asked you to check (approval pack item 3): only when there are some. */}
+      <CheckRequestsCard inspectionId={id} />
       <ConflictsCard inspectionId={id} lock={lock} canEdit={!!team && team.people.some(p => p.user_id === team.me)} onSettled={load} />
       <p className="-mt-3 mb-6 text-xs text-muted">Notes and the rest of the intake details are kept on the phone and aren’t shown here yet. Before you start, Scope and photos are. Findings are confirmed, adjusted or rejected here or in the Ledrix app.</p>
 

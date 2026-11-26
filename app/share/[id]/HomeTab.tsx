@@ -3,6 +3,7 @@ import { homeSystems } from '@/lib/scope/core/home/homeSystemsModel';
 import { useDesk, can, type Anomaly, type HomeRecord, type Project, type Reminder, type RepairRow, type Tab, priorityOf, fmtDate } from './shared';
 import { photoUrl, FindingDetailModal, Footer, PhotoAnalyze } from './ui';
 import { InsightSection } from './LedrixPanel';
+import { useRepairStatuses, StatusPill, StatusSheet } from './RepairStatus';
 
 // ─── HOME TAB — the house is the home screen (owner 2026-11-25, mockup 1CCUJycYwNKA8862rsStQ4 "Approved") ─────────────
 // Apple's layout, Elon's taps: the house drawn with a point on each system this record has (colour = its worst finding);
@@ -90,7 +91,7 @@ function HrHouse({ colorOf, onPick, present }: { colorOf: (id: string) => string
   );
 }
 
-type HrPage = { kind: 'system'; id: string } | { kind: 'limits' } | null;
+type HrPage = { kind: 'system'; id: string } | { kind: 'limits' } | { kind: 'repairs' } | null;
 
 function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, onUnlock, claim }: {
   record: HomeRecord; anomalies: Anomaly[];
@@ -103,12 +104,17 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
   const desk = useDesk();
   const [page, setPage] = useState<HrPage>(null);
   const [open, setOpen] = useState<Anomaly | null>(null);
+  // Repair status (approval pack item 2): the pill on every finding row; it opens the sheet for the home's holder only.
+  const [statuses, reloadStatuses] = useRepairStatuses(record.share_id);
+  const [statusFor, setStatusFor] = useState<Anomaly | null>(null);
   const systems = useMemo(() => homeSystems({ specs: Array.isArray(record.specs) ? record.specs : [], findings: anomalies, inspectedAt: record.inspection_date || null }), [record, anomalies]);
   const subAddress = [record.city, record.state, record.zip].filter(Boolean).join(', ');
   const cover = photoUrl(record.cover_url);
   const listed = anomalies.filter(a => hrPrioOf(a));
   const count = (k: HrPrio) => listed.filter(a => hrPrioOf(a) === k).length;
-  const first = [...listed].sort((a, b) => HR_RANK.indexOf(hrPrioOf(a)!) - HR_RANK.indexOf(hrPrioOf(b)!)).slice(0, 3);
+  const ranked = [...listed].sort((a, b) => HR_RANK.indexOf(hrPrioOf(a)!) - HR_RANK.indexOf(hrPrioOf(b)!));
+  const first = ranked.slice(0, 3);
+  const openCount = listed.filter(a => (a.id ? statuses[a.id]?.status : undefined) !== 'fixed').length;
   const point = (id: string) => HR_POINTS.find(p => p.id === id)!;
   const sysOf = (id: string) => systems.filter(s => point(id).keys.includes(s.key));
   const findingsOf = (id: string) => { const ids = new Set(sysOf(id).flatMap(s => s.findings.map(f => f.id))); return anomalies.filter(a => a.id && ids.has(a.id)); };
@@ -126,8 +132,10 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
   const findingRow = (a: Anomaly, i: number) => {
     const k = hrPrioOf(a); const img = photoUrl(a.imageUri);
     const title = (a.issueTitle && a.issueTitle.trim()) || a.unit || 'Finding';
+    const st = a.id ? statuses[a.id] : undefined;
     return (
-      <button key={a.id ?? i} className="hr-row" onClick={() => setOpen(a)} style={{ alignItems: 'flex-start' }}>
+      <div key={a.id ?? i} className="hr-row" style={{ alignItems: 'center', cursor: 'default' }}>
+      <button onClick={() => setOpen(a)} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 0, padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}>
         {img
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={img} alt="" style={{ width: 46, height: 46, borderRadius: 9, objectFit: 'cover', flex: 'none' }} />
@@ -137,8 +145,9 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
           <span style={{ display: 'block', fontSize: 14.5, fontWeight: 600, lineHeight: 1.3, marginTop: 2 }}>{title}</span>
           <span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)', marginTop: 2 }}>{[a.component || a.unit, a.location].filter(Boolean).join(' · ')}</span>
         </span>
-        <Chev />
       </button>
+        <StatusPill st={st} onOpen={can('status.set') && a.id ? () => setStatusFor(a) : undefined} />
+      </div>
     );
   };
 
@@ -170,6 +179,18 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
         ))}
         <div className="hr-gh" style={{ marginLeft: 0, marginRight: 0 }}><span>Findings</span></div>
         <div className="hr-card">{fs.length ? fs.map(findingRow) : <div className="hr-row" style={{ cursor: 'default', justifyContent: 'space-between' }}><span>No findings</span><span style={{ color: 'var(--hok)', fontWeight: 600, fontSize: 12.5 }}>All clear</span></div>}</div>
+      </div>
+    );
+  } else if (page?.kind === 'repairs') {
+    body = (
+      <div style={{ padding: `4px ${gut}px 0` }}>
+        {back}
+        <h2 style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', margin: '0 0 4px' }}>Repairs</h2>
+        <p style={{ color: 'var(--hd)', fontSize: 13, margin: '0 0 12px' }}>
+          {can('status.set') ? 'Tap a status to mark a repair Scheduled or Fixed. When it\u2019s fixed you can ask your inspector to check it.'
+            : 'Open, Scheduled and Fixed are the homeowner\u2019s; ✓ Verified is the inspector\u2019s.'}
+        </p>
+        <div className="hr-card">{ranked.length ? ranked.map(findingRow) : <div className="hr-row" style={{ cursor: 'default', justifyContent: 'space-between' }}><span>No repairs</span><span style={{ color: 'var(--hok)', fontWeight: 600, fontSize: 12.5 }}>All clear</span></div>}</div>
       </div>
     );
   } else if (page?.kind === 'limits') {
@@ -222,7 +243,7 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
         <div className="hr-gh">Your home</div>
         <div className="hr-card" style={{ margin: `0 ${gut}px` }}>
           <button className="hr-row" onClick={() => onTabChange('systems')}>{hrIcon(HR_I.grid, '#5E5CE6')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>Systems</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Details and findings, system by system</span></span><span style={{ color: 'var(--hd)', fontSize: 14 }}>{systems.length}</span><Chev /></button>
-          <button className="hr-row" onClick={() => onTabChange('findings')}>{hrIcon(HR_I.wrench, '#D9590B')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>Repairs</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Everything your inspector found</span></span><span style={{ color: 'var(--hd)', fontSize: 14 }}>{listed.length}</span><Chev /></button>
+          <button className="hr-row" onClick={() => setPage({ kind: 'repairs' })}>{hrIcon(HR_I.wrench, '#D9590B')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>Repairs</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Everything your inspector found, and where each stands</span></span><span style={{ color: 'var(--hd)', fontSize: 14 }}>{listed.length ? `${openCount} open` : 0}</span><Chev /></button>
           <button className="hr-row" onClick={() => onTabChange('maintain')}>{hrIcon(HR_I.cal, '#A87A00')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>Maintenance</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>{nextUp ? `Next: ${nextUp.title}` : 'Upkeep reminders and the repair request'}</span></span><Chev /></button>
         </div>
         <div className="hr-gh">Records</div>
@@ -276,6 +297,7 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
       <style>{HR_CSS}</style>
       {body}
       <div style={{ marginTop: 28 }}><Footer /></div>
+      {statusFor && <StatusSheet a={statusFor} st={statusFor.id ? statuses[statusFor.id] : undefined} record={record} onClose={() => setStatusFor(null)} onSaved={reloadStatuses} />}
       {open && <FindingDetailModal a={open} zip={record.zip} cityState={[record.city, record.state].filter(Boolean).join(', ')} shareId={record.share_id} onClose={() => setOpen(null)} />}
     </div>
   );

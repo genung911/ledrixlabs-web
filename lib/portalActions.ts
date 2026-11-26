@@ -17,6 +17,7 @@ export const PORTAL_WRITE_ACTIONS = [
   'repair.share',                            // mint a repairs-only link
   'log.add', 'log.delete',                   // maintenance log (manual form, voice)
   'doc.upload', 'doc.delete',
+  'status.set',                              // a finding's repair status (Open / Scheduled / Fixed, ask for a check)
   'seed',                                    // the page's own schedule/manual reconciliation
 ] as const;
 export type PortalAction = typeof PORTAL_WRITE_ACTIONS[number];

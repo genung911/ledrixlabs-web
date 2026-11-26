@@ -32,7 +32,7 @@
 // Once every client call goes through here, anon is revoked on all seven tables
 // (`supabase_portal_lockdown.sql`) and there is no path to them except a valid token.
 import { NextRequest, NextResponse } from 'next/server';
-import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, scopeTerm, stampRow, endedRefuses, UPKEEP_TABLES, type Op, type TenureRef } from '../../../lib/portalPolicy';
+import { PORTAL_POLICY, MAX_ROWS, REPAIRS_SCOPE_TERM, selectFor, cleanFilter, cleanSelect, cleanOrder, cleanRow, scopeAllows, scopeTerm, stampRow, endedRefuses, UPKEEP_TABLES, type Op, type TenureRef } from '../../../lib/portalPolicy';
 import { resolvePortalToken, tenureForShare, holdsShare } from '../../../lib/shareAccess';
 
 export const runtime = 'nodejs';
@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
     const base = `${SUPA_URL}/rest/v1/${table}`;
 
     if (op === 'select') {
-      const select = cleanSelect(payload.select);
+      const cleaned = cleanSelect(payload.select);
+      const select = cleaned === null ? null : selectFor(table, cleaned);
       const order  = cleanOrder(payload.order);
       if (select === null || order === null) return fail(400, 'Bad request.');
       const qp: string[] = [scoped(terms, table, shareId, tenure)];

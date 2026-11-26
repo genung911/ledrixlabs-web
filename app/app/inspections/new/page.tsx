@@ -60,6 +60,18 @@ export default function NewInspectionPage() {
   const [f, setF] = useState({ address: '', city: '', state: '', zip: '', date: localToday(), time: '09:00', yearBuilt: '', sqft: '', bedrooms: '', bathrooms: '',
     homeType: '', unitCount: '', buildingCount: '', deltas: [] as string[], deltasNone: false, waterSource: '', sewerType: '', gasSupply: '', inspectionType: '', lockbox: '', notes: '' });
   const set = (k: keyof typeof f, v: any) => setF(p => ({ ...p, [k]: v }));
+  // BOOK A RE-CHECK (approval pack item 3, owner 2026-11-25): the inspection page's check request opens this form with
+  // the job's address, client and home type filled in (components/workspace/CheckRequestsCard recheckHref), and the
+  // Re-inspection type once the company's types have loaded. Everything stays editable; nothing is saved until Create.
+  const recheck = useRef<{ type: boolean; client: string; email: string } | null>(null);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('type') !== 'reinspection') return;
+    const g = (k: string) => (q.get(k) ?? '').trim().slice(0, 200);
+    setF(p => ({ ...p, address: g('address') || p.address, city: g('city') || p.city, state: g('state') || p.state, zip: g('zip') || p.zip }));
+    recheck.current = { type: true, client: g('client'), email: g('email') };
+    if (g('client') || g('email')) setClient({ mode: 'new', id: '', name: g('client'), email: g('email'), phone: '' });
+  }, []);
   const [templateId, setTemplateId] = useState('');
   const [unitLayout, setUnitLayout] = useState<UnitLayout>('one');
   const [booked, setBooked] = useState<string[]>([]);            // the template's add-on services booked
@@ -109,6 +121,21 @@ export default function NewInspectionPage() {
     autoPick(name, f.homeType);
   };
   const pickHome = (h: string) => { set('homeType', h); autoPick(f.inspectionType, h); };
+  // The re-check's type and client, once the company's types and contacts are known.
+  useEffect(() => {
+    const rc = recheck.current;
+    if (!rc) return;
+    if (rc.type && (types.length || templates.length)) {
+      const name = (types.length ? types.map(t => t.name) : Object.keys(TYPE_DEFAULT_TEMPLATE)).find(n => /re-?inspection/i.test(n));
+      if (name) pickType(name);
+      rc.type = false;
+    }
+    if (contacts && rc.email) {
+      const c = contacts.find(x => x.type === 'client' && (x.email ?? '').toLowerCase() === rc.email.toLowerCase());
+      if (c) setClient({ ...NO_PERSON, mode: 'pick', id: c.id });
+      rc.email = '';
+    }
+  }, [types, templates, contacts]);   // eslint-disable-line react-hooks/exhaustive-deps
   const typeNames = types.length ? types.map(t => t.name) : Object.keys(TYPE_DEFAULT_TEMPLATE);
   const templateChoices = [...templates.map(t => ({ id: t.id, name: t.name })), ...BASELINES];
   const offerTpl = templates.find(t => t.id === templateId)?.tree ?? null;
