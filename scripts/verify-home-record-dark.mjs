@@ -8,7 +8,8 @@ import ts from 'typescript';
 import { shareSource } from './lib/shareSource.mjs';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
-const real = { page: shareSource(REPO), route: readFileSync(new URL('../app/api/share/[token]/route.ts', import.meta.url), 'utf8') };
+const real = { page: shareSource(REPO), route: readFileSync(new URL('../app/api/share/[token]/route.ts', import.meta.url), 'utf8'),
+  layout: readFileSync(new URL('../app/share/[id]/layout.tsx', import.meta.url), 'utf8') };
 
 function houseKindOf(S) {
   const m = S.match(/function houseKind\([\s\S]*?\n}\n/);
@@ -18,10 +19,10 @@ function houseKindOf(S) {
 }
 
 function checks(src) {
-  const S = src.page, R = src.route; const out = []; const ok = (n, c) => out.push([n, !!c]);
+  const S = src.page, R = src.route, LAYOUT = src.layout; const out = []; const ok = (n, c) => out.push([n, !!c]);
   // dark
   ok('the neutrals are tokens, not light hex', ['BG', 'CARD', 'CARD2', 'BORDER', 'DIM', 'MED', 'TEXT'].every(k => new RegExp(`const ${k}\\s+= 'var\\(--s`).test(S)));
-  ok('the tokens have a dark set that follows the device', /@media \(prefers-color-scheme:dark\)\{\.sp\{\$\{SP_DARK\}/.test(S) && /--sbg:#0A0B0D/.test(S));
+  ok('the tokens have a dark set that follows the device', /@media \(prefers-color-scheme:dark\)\{:root,\.sp\{\$\{SP_DARK\}/.test(S) && /--sbg:#0A0B0D/.test(S));
   ok('the page root carries them', S.includes('<div className="sp" style={{ background: BG, color: TEXT,') && S.includes('<style>{SP_CSS}</style>'));
   ok('the top bar, rail and Ask Ledrix dock are frosted from the tokens, not light glass', !/rgba\(24[56],24[67],24[34],0\.9/.test(S) && (S.match(/background: GLASS/g) ?? []).length >= 3);
   ok('the report document stays paper-white', S.includes('<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab') && /\.sp \.sp-paper\{\$\{SP_LIGHT\}/.test(S));
@@ -31,6 +32,8 @@ function checks(src) {
     && /--sfrost:rgba\(21,23,26,\.55\)/.test(S) && S.includes("<button onClick={onUnlock} style={{ background: CARD, border: `1px solid ${ACCENT}66`"));
   ok('Analyze a photo is a card in the page\'s colours (it was drawn for a dark card: white text on white in light mode)', !/#3A2A16|rgba\(255,255,255,0\.64\)/.test(S)
     && S.includes("background: TINT_INFO, boxShadow: `0 0 0 1px ${ACCENT}55`") && S.includes("textAlign: 'left', color: TEXT, fontFamily: 'inherit' }}>"));
+  ok('the whole screen: the page behind Safari\'s bars takes the ground, and Safari\'s bars are tinted', S.includes('html,body{background:var(--sbg,#F2F3F5)!important}')
+    && /const SP_CSS = `:root,\.sp\{/.test(S) && /color: '#0A0B0D' \}/.test(LAYOUT) && /prefers-color-scheme: dark/.test(LAYOUT));
   ok('the orb follows the device too', S.includes("tone={darkUi ? 'dark' : 'light'}"));
   // bottom bar
   ok('on a phone the tabs are a bottom bar; on a computer along the top', S.includes('{desk && <HomeRail active={tab} onPick={pick} />}') && S.includes('{!desk && <HomeRail active={tab} onPick={pick} bottom />}'));
@@ -54,7 +57,7 @@ function checks(src) {
 }
 const MUTS = [
   ['TEXT is light hex again', 'page', "const TEXT     = 'var(--stext)';", "const TEXT     = '#262016';"],
-  ['no dark set', 'page', '@media (prefers-color-scheme:dark){.sp{${SP_DARK}color-scheme:dark}}', ''],
+  ['no dark set', 'page', '@media (prefers-color-scheme:dark){:root,.sp{${SP_DARK}color-scheme:dark}}', ''],
   ['the root has no tokens', 'page', '<div className="sp" style={{ background: BG, color: TEXT,', '<div style={{ background: BG, color: TEXT,'],
   ['the dock is light glass', 'page', "          background: GLASS, backdropFilter: 'blur(12px)',", "          background: 'rgba(245,246,243,0.9)', backdropFilter: 'blur(12px)',"],
   ['the report goes dark', 'page', '<div className="sp-paper" style={{ background: \'#fff\', color: \'#0F1216\' }}><ReportTab', '<div><ReportTab'],
@@ -65,6 +68,9 @@ const MUTS = [
   ['the unlock button is white', 'page', "<button onClick={onUnlock} style={{ background: CARD, border: `1px solid ${ACCENT}66`", "<button onClick={onUnlock} style={{ background: '#fff', border: `1px solid ${ACCENT}66`"],
   ['the photo row keeps its brown glow', 'page', "background: TINT_INFO, boxShadow: `0 0 0 1px ${ACCENT}55`", "background: 'radial-gradient(circle at 50% 38%, #3A2A16, #201710)', boxShadow: `0 0 0 1px ${ACCENT}55`"],
   ['the photo row text is white', 'page', "textAlign: 'left', color: TEXT, fontFamily: 'inherit' }}>", "textAlign: 'left', color: '#fff', fontFamily: 'inherit' }}>"],
+  ['the browser\'s bars stay light', 'layout', "{ media: '(prefers-color-scheme: dark)', color: '#0A0B0D' },", ''],
+  ['the page behind the bars stays light', 'page', 'html,body{background:var(--sbg,#F2F3F5)!important}', 'html,body{background:#F2F3F5}'],
+  ['the ground tokens stop at the page', 'page', 'const SP_CSS = `:root,.sp{', 'const SP_CSS = `.sp{'],
   ['the orb stays light', 'page', "tone={darkUi ? 'dark' : 'light'}", 'tone="light"'],
   ['phones keep the top rail', 'page', '{!desk && <HomeRail active={tab} onPick={pick} bottom />}', '{!desk && <HomeRail active={tab} onPick={pick} />}'],
   ['the dock covers the bar', 'page', "bottom: desk ? 0 : `calc(${TABBAR_H}px + env(safe-area-inset-bottom, 0px))`", 'bottom: 0'],

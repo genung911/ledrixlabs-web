@@ -150,8 +150,9 @@ const SP_LIGHT = '--sbg:#F2F3F5;--scard:#FFFFFF;--scard2:#F7F8FA;--sline:rgba(15
   + '--son:#FFFFFF;--sglass:rgba(242,243,245,.92);--stinfo:#EEF4FD;--stok:#EAF5EE;--stbad:#FDF0EC;--sbluet:#1D6DCE;--sfrost:rgba(247,249,251,.45);';
 const SP_DARK = '--sbg:#0A0B0D;--scard:#15171A;--scard2:#1D1F23;--sline:#272A2F;--sdim:#5F656C;--smed:#9198A1;--stext:#F4F5F7;'
   + '--son:#0A0B0D;--sglass:rgba(16,17,20,.92);--stinfo:#14243A;--stok:#12291F;--stbad:#33191A;--sbluet:#4C9BF2;--sfrost:rgba(21,23,26,.55);';
-const SP_CSS = `.sp{${SP_LIGHT}color-scheme:light}
-@media (prefers-color-scheme:dark){.sp{${SP_DARK}color-scheme:dark}}
+// :root too, so the page behind the browser's own bars (html/body, page.tsx) takes the same ground.
+const SP_CSS = `:root,.sp{${SP_LIGHT}color-scheme:light}
+@media (prefers-color-scheme:dark){:root,.sp{${SP_DARK}color-scheme:dark}}
 .sp .sp-paper{${SP_LIGHT}color-scheme:light}`;
 
 // Shared type voices — mirrors the inspection report's system: serif display for titles,

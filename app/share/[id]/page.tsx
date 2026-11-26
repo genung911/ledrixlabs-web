@@ -342,7 +342,7 @@ export default function SharePage() {
         ::-webkit-scrollbar{display:none}
         @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
         input::placeholder,textarea::placeholder{color:var(--sdim)}
-        html,body{background:var(--sbg,#F2F3F5)}
+        html,body{background:var(--sbg,#F2F3F5)!important}
         button{-webkit-tap-highlight-color:transparent}
         .rpt{display:grid;grid-template-columns:250px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"side hero" "side main";background:#fff;min-height:100vh}
         .rpt-hero{grid-area:hero}
