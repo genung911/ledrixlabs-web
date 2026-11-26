@@ -373,7 +373,8 @@ export default function SharePage() {
         }
       `}</style>
 
-      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={access} onSignOut={() => supabase.auth.signOut({ scope: 'local' })} />
+      <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={!!session} onSignOut={() => supabase.auth.signOut({ scope: 'local' })}
+        account={{ name: (session?.user?.user_metadata?.full_name as string | undefined) || null, email: session?.user?.email ?? null, status: holds ? 'yours' : buying ? 'waiting' : 'not_yet' }} />
       {desk && <HomeRail active={tab} onPick={pick} />}
       {!desk && <HomeRail active={tab} onPick={pick} bottom />}
       {claim && (
