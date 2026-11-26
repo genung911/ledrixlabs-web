@@ -4,6 +4,7 @@ import { useDesk, can, type Anomaly, type HomeRecord, type Project, type Reminde
 import { photoUrl, FindingDetailModal, Footer, PhotoAnalyze } from './ui';
 import { InsightSection } from './LedrixPanel';
 import { useRepairStatuses, StatusPill, StatusSheet } from './RepairStatus';
+import { PassOnRow } from './PassOn';
 
 // ─── HOME TAB — the house is the home screen (owner 2026-11-25, mockup 1CCUJycYwNKA8862rsStQ4 "Approved") ─────────────
 // Apple's layout, Elon's taps: the house drawn with a point on each system this record has (colour = its worst finding);
@@ -302,6 +303,8 @@ function HomeTab({ record, anomalies, reminders, onTabChange, access, shareId, o
           <button className="hr-row" onClick={() => setPage({ kind: 'limits' })}>{hrIcon(HR_I.eye, '#5B6678')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>What wasn&apos;t inspected</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Limitations and areas not entered</span></span><span style={{ color: 'var(--hd)', fontSize: 14 }}>{limits.length}</span><Chev /></button>
           <button className="hr-row" onClick={() => onTabChange('history')}>{hrIcon(HR_I.doc, '#17834B')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>History & documents</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Service history, manuals, permits, receipts</span></span><Chev /></button>
           <button className="hr-row" onClick={() => onTabChange('ethix')}>{hrIcon(HR_I.ethix, '#30B0C7')}<span style={{ flex: 1 }}><span style={{ display: 'block', fontSize: 15.5 }}>Ethix</span><span style={{ display: 'block', fontSize: 12.5, color: 'var(--hd)' }}>Your data, your call</span></span><Chev /></button>
+          {/* hr2: the owner's "pass it on" switch — shown only to the home's owner (the server answers no one else). */}
+          <PassOnRow shareId={record.share_id} />
         </div>
         {(record.inspector || record.company) && <>
           <div className="hr-gh">Your inspector</div>

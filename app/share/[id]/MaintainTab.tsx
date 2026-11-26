@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { canEdit, can, supaPost, supaDelete, ACCENT, GREEN, BG, CARD, BORDER, DIM, MED, TEXT, SERIF, MONO, eyebrow, type Anomaly, type HomeRecord, type Project, type Reminder, type RepairRow, type MaintenanceLog, priorityOf, fmtDate, INK_ON } from './shared';
 import { homeView, ProjectCard, ReminderCard, ClaimToAdd } from './ui';
 import { DocsTab } from './RecordsTab';
+import { EarlierInspections } from './PassOn';
 import { RepairsTab } from './RepairsTab';
 
 // ─── SPECS TAB — the property's recorded systems/components inventory ─────────
@@ -246,6 +247,8 @@ function HistoryTab({ log, record, onRefresh }: { log: MaintenanceLog[]; record:
         <div style={{ ...eyebrow(MED, 8.5), marginBottom: 4 }}>Home Record</div>
         <div style={{ fontFamily: SERIF, color: TEXT, fontSize: 22, fontWeight: 600 }}>History</div>
         <ServiceHistory log={log} onRefresh={onRefresh} />
+        {/* hr2: earlier owners' inspections passed on to whoever holds the home now (SQL #155). */}
+        <EarlierInspections shareId={record.share_id} />
       </div>
       <DocsTab record={record} />
     </div>

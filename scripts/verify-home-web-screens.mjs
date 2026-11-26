@@ -33,7 +33,7 @@ function checks(src) {
   ok('3 the old specs link opens Systems', src.includes("(tab === 'systems' || tab === 'specs') && <SystemsTab") && src.includes("setTab(t === 'specs' ? 'systems' : t)"));
   ok('4 Maintain: upkeep, repair status, repair request', src.includes("const parts: [typeof part, string][] = [['upkeep', 'Upkeep'], ['projects', 'Repair status'], ['repairs', 'Repair request']];")
     && src.includes('showHistory={false} />}') && src.includes("{tab === 'maintain'  && <MaintainTab"));
-  ok('4 History: the service history, then documents', /function HistoryTab[\s\S]{0,600}<ServiceHistory log=\{log\} onRefresh=\{onRefresh\} \/>[\s\S]{0,120}<DocsTab record=\{record\} \/>/.test(src)
+  ok('4 History: the service history, then documents', /function HistoryTab[\s\S]{0,600}<ServiceHistory log=\{log\} onRefresh=\{onRefresh\} \/>[\s\S]{0,320}<DocsTab record=\{record\} \/>/.test(src)   /* 2026-11-25 hr2: Earlier inspections sit between them */
     && src.includes("{tab === 'history'   && <HistoryTab"));
   // 6 (phase 3, owner 2026-11-12 "email code first", "spouse yes"): claim by an emailed code, then claim on sign-in
   ok('6 the emailed code signs in on this page', src.includes("await supabase.auth.verifyOtp({ email: email.trim(), token: t, type: 'email' });")

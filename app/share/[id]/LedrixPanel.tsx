@@ -28,7 +28,8 @@ function PlanCard({ title, price, sub, highlight }: { title: string; price: stri
 // ─── "IS THIS HOME YOURS YET?" (owner 2026-11-25, SQL #153; DECISIONS "who holds a home's data") ─────────────────────────
 // Asked before a claim. "Yes, I own it" claims as before; "Not yet — I'm buying it" + the closing date files the claim
 // under a WAITING tenure: the Home Record stays look-only (no repair marking) until "Did you close?".
-type ClaimAnswer = { owned: boolean; closesOn: string | null };
+// passOn (hr2, SQL #155, owner 2026-11-25): "Let future owners of this home see this inspection" — off unless ticked.
+type ClaimAnswer = { owned: boolean; closesOn: string | null; passOn?: boolean };
 /** A date input's value (YYYY-MM-DD), `days` from today, in local time. */
 const isoIn = (days: number): string => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 /** "Dec 18, 2026" from a YYYY-MM-DD date — read as a LOCAL day (a UTC read prints the day before in Mountain time). */
@@ -39,6 +40,7 @@ const closingLabel = (iso: string | null | undefined): string => {
 function ClaimQuestion({ onAnswer, cta = 'Continue' }: { onAnswer: (a: ClaimAnswer) => void; cta?: string }) {
   const [owned, setOwned] = useState<boolean | null>(null);
   const [date, setDate] = useState(isoIn(30));
+  const [passOn, setPassOn] = useState(false);
   const ok = owned === true || (owned === false && /^\d{4}-\d{2}-\d{2}$/.test(date));
   const opt = (on: boolean, label: string, sub: string, pick: () => void) => (
     <button type="button" role="radio" aria-checked={on} onClick={pick} style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left', cursor: 'pointer',
@@ -53,6 +55,14 @@ function ClaimQuestion({ onAnswer, cta = 'Continue' }: { onAnswer: (a: ClaimAnsw
       <div style={{ color: TEXT, fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Is this home yours yet?</div>
       {opt(owned === true, 'Yes, I own it', 'The record goes on your account now.', () => setOwned(true))}
       {opt(owned === false, 'Not yet — I\u2019m buying it', 'You can read everything now. Tracking repairs opens when you close.', () => setOwned(false))}
+      {owned === true && (
+        // PASS IT ON (hr2, approval pack item 13): off unless turned on; changeable any time from Home.
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '10px 14px', marginBottom: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={passOn} onChange={e => setPassOn(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, accentColor: ACCENT, flex: 'none' }} />
+          <span><span style={{ display: 'block', color: TEXT, fontSize: 14, fontWeight: 600 }}>Let future owners of this home see this inspection</span>
+            <span style={{ display: 'block', color: MED, fontSize: 12, marginTop: 2, lineHeight: 1.45 }}>Off unless you turn it on. You can change it any time.</span></span>
+        </label>
+      )}
       {owned === false && (
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '10px 14px', marginBottom: 8 }}>
           <span style={{ color: TEXT, fontSize: 14, fontWeight: 600 }}>Closing date</span>
@@ -60,7 +70,7 @@ function ClaimQuestion({ onAnswer, cta = 'Continue' }: { onAnswer: (a: ClaimAnsw
             style={{ border: 'none', background: 'none', color: TEXT, fontSize: 14, fontFamily: 'inherit' }} />
         </label>
       )}
-      <button type="button" disabled={!ok} onClick={() => ok && onAnswer({ owned: owned === true, closesOn: owned === true ? null : date })}
+      <button type="button" disabled={!ok} onClick={() => ok && onAnswer({ owned: owned === true, closesOn: owned === true ? null : date, passOn: owned === true && passOn })}
         style={{ width: '100%', background: ACCENT, color: '#fff', border: 'none', borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700, cursor: ok ? 'pointer' : 'default', opacity: ok ? 1 : 0.45, marginTop: 4 }}>{cta}</button>
     </div>
   );

@@ -132,7 +132,11 @@ export default function SharePage() {
       if (isEditLink() && PORTAL_TOKEN) { const r = await supabase.rpc('claim_by_link', { raw_token: PORTAL_TOKEN }); viaLink = r.data ?? null; linkErr = r.error?.message ?? ''; }
       const st1 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
       if (st1.data?.state === 'buying') markBuying(st1.data.closes_on ?? null);
-      else if (st1.data?.state === 'home') { markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' }); }
+      else if (st1.data?.state === 'home') {
+        markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' });
+        // "Let future owners see this inspection", ticked with "Yes, I own it" (hr2, #155). Off is the default; nothing to send.
+        if (claimAnswer?.owned && claimAnswer.passOn) void supabase.rpc('set_report_pass_on', { p_share_id: shareId, p_on: true });
+      }
       else if (homes.length || viaLink) setClaim({ kind: 'claimed', text: 'This home is on your account.' });
       else if (inspector(linkErr)) setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' });
       else if (!isEditLink()) setClaim({ kind: 'refused', text: 'This is a view-only link. Ask for the report’s own link to claim the home.' });
