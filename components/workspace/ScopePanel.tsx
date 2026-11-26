@@ -20,9 +20,13 @@ type Props = { inspectionId: string; team: TeamLike; names: Record<string, strin
   focus?: { nodeId: string; n: number } | null; onBackToSeal?: () => void;
   /** The phone's list around the systems (website Apple pass batch 1, owner 2026-11-25): Before you start on top, Findings
    *  and Review & send below. Each opens its own section of the inspection page. */
-  around?: { factsLeft?: number; onFacts: () => void; findings: { total: number; review: number }; onFindings: () => void; onSeal: () => void } };
+  around?: { factsLeft?: number; onFacts: () => void; findings: { total: number; review: number }; onFindings: () => void; onSeal: () => void };
+  /** GUIDED (Apple pass batch 2, owner 2026-11-25): the walk system by system — a pinned bar with the neighbours, what is
+   *  still to answer marked, Next never blocking; the last Next goes to Review & send. `start` changing opens the first
+   *  system not done. */
+  guided?: { start: number; onDone: () => void; onStop: () => void } };
 
-export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos, focus, onBackToSeal, around }: Props) {
+export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFindings, onOpenPhotos, focus, onBackToSeal, around, guided }: Props) {
   const [state, setState] = useState<{ kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; template: { systems?: TemplateNode[] } | null; values: ValueMap; utilities: Utilities; house: Record<string, unknown> | null; others: OtherBuilding[] }>({ kind: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: 'warn' | 'bad'; text: string } | null>(null);
@@ -43,6 +47,14 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
     // The main building's checklist (other buildings are listed apart): the house facts decide its items, as on the phone.
     ? buildScope(state.template, state.values, { findings: id => counts.findings[id] ?? 0, photos: id => counts.photos[id] ?? 0 }, state.utilities, { extras: state.house, inMain: true })
     : null, [state, counts]);
+
+  // Guided starts at the first system not done (the phone's startGuided), each time it is chosen.
+  useEffect(() => {
+    if (!guided || !view?.systems.length) return;
+    const first = view.systems.find(x => x.total > 0 && x.done < x.total) ?? view.systems[0];
+    setOpen(first.node.id); setRowOpen(null); setNote(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guided?.start, !!view]);
 
   // A Seal & send item: open its system once the checklist is loaded, then bring its row into view and mark it.
   const [marked, setMarked] = useState<string | null>(null);
@@ -155,7 +167,7 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
     const lim = v.find(x => /\(limitation\)/i.test(x));
     if (lim) return { text: `Limited · ${limitationReasonOf(lim)}`, tone: 'limit' };
     if (v.includes(CONDITION_OK)) return { text: 'Satisfactory', tone: 'ok' };
-    return { text: 'Not answered', tone: 'todo' };
+    return { text: guided ? 'Not answered ●' : 'Not answered', tone: guided ? 'warn' : 'todo' };
   };
   const multiField = (row: ScopeRow) => row.specs.length > 1 || !!row.condition;
   // A Seal & send item's row, marked (2026-11-04).
@@ -205,6 +217,13 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
       </nav>
 
       <div className="flex min-w-0 flex-col gap-4">
+        {guided && (() => {
+          const i = view.systems.findIndex(x => x.node.id === current.node.id), left = current.total - current.done;
+          return <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent/10 px-3 py-2 text-sm text-ink">
+            <span>Guided · <b>{i + 1} of {view.systems.length}</b> · {sentence(current.node.label)}{left > 0 ? `. The ${left} still to answer ${left === 1 ? 'is' : 'are'} marked.` : '. All answered.'}</span>
+            <button type="button" onClick={guided.onStop} className="text-xs font-semibold text-accent-ink hover:underline">Stop guiding</button>
+          </div>;
+        })()}
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-2xl font-bold tracking-tight text-ink">{sentence(current.node.label)}</h2>
@@ -246,7 +265,7 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
                     <button type="button" onClick={() => setRowOpen(isOpen ? null : id)} aria-expanded={isOpen}
                       className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 text-left text-sm ${isOpen ? 'bg-accent/5' : 'hover:bg-ink/5'}`}>
                       <span className="min-w-0 text-ink">{label}</span>
-                      <span className={`max-w-[18rem] truncate text-right ${f.picked.length ? 'text-body' : 'text-muted'}`}>{f.picked.length ? f.picked.join(', ') : 'Not answered'}</span>
+                      <span className={`max-w-[18rem] truncate text-right ${f.picked.length ? 'text-body' : guided ? 'text-amber-700 dark:text-amber-400' : 'text-muted'}`}>{f.picked.length ? f.picked.join(', ') : guided ? 'Not answered ●' : 'Not answered'}</span>
                     </button>
                     {isOpen && (
                       <div className="flex flex-wrap gap-1.5 px-4 pb-3">
@@ -296,6 +315,18 @@ export function ScopePanel({ inspectionId, team, names, lock, counts, onOpenFind
           </section>
         )}
         <p className="px-1 text-xs text-muted">Saved as you go. Phones on the job get it the next time they sync. Findings and photos are added on the phone.</p>
+        {guided && (() => {
+          const i = view.systems.findIndex(x => x.node.id === current.node.id), prev = view.systems[i - 1], next = view.systems[i + 1];
+          const go = (sid: string) => { setOpen(sid); setNote(null); setLimitFor(null); setRowOpen(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+          return (
+            <div aria-label="Guided" className="sticky bottom-0 z-10 flex min-h-[56px] flex-wrap items-center gap-2 rounded-xl border border-hairline bg-surface/95 px-4 py-2.5 backdrop-blur">
+              <span className="mr-auto min-w-0 truncate text-sm text-muted">Guided · {i + 1} of {view.systems.length} · {sentence(current.node.label)}</span>
+              {prev && <button type="button" onClick={() => go(prev.node.id)} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5">‹ {sentence(prev.node.label)}</button>}
+              {next ? <button type="button" onClick={() => go(next.node.id)} className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white">Next: {sentence(next.node.label)} ›</button>
+                : <button type="button" onClick={guided.onDone} className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white">Review &amp; send ›</button>}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

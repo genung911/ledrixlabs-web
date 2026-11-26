@@ -56,6 +56,13 @@ export default function InspectionPage() {
   const [selected, setSelected] = useState<string | null>(null);
   // Seal & send → Scope at one item (owner 2026-11-04). `n` makes a second click on the same item scroll to it again.
   const [scopeFocus, setScopeFocus] = useState<{ nodeId: string; n: number } | null>(null);
+  // GUIDED (Apple pass batch 2, owner 2026-11-25): the walk system by system, chosen after Before you start; this browser
+  // remembers it per inspection, as the phone keeps its tour per job. `guidedStart` sends the list to the first system not done.
+  const [guidedWalk, setGuidedWalkState] = useState(false);
+  const [guidedStart, setGuidedStart] = useState(0);
+  const guidedKey = `ledrix_guided_${id}`;
+  useEffect(() => { try { setGuidedWalkState(localStorage.getItem(guidedKey) === '1'); } catch { /* this browser */ } }, [guidedKey]);
+  const setGuidedWalk = (on: boolean) => { setGuidedWalkState(on); try { if (on) localStorage.setItem(guidedKey, '1'); else localStorage.removeItem(guidedKey); } catch { /* this browser */ } };
 
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
@@ -264,11 +271,13 @@ export default function InspectionPage() {
           </>
         )}
 
-        {activeSection === 'facts' && (
+        {/* Kept mounted (hidden when not shown) so its count is in the list from the start (Apple pass batch 2). */}
+        <div className={activeSection === 'facts' ? 'contents' : 'hidden'}>
           <HouseFactsPanel inspectionId={id} lock={lock} findings={scopeCounts.findings} onLeft={setFactsLeftN}
             // The job's own people change it (the phone's rule); the Office role and anyone else sees it.
-            canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))} />
-        )}
+            canEdit={findingsVisible && (!team || team.people.some(p => p.user_id === team.me))}
+            onStart={findingsVisible ? (style => { setGuidedWalk(style === 'guided'); setGuidedStart(n => n + 1); setSection('scope'); setSelected(null); setScopeFocus(null); }) : undefined} />
+        </div>
         {activeSection === 'scope' && (
           <ScopePanel inspectionId={id} team={team} names={names} lock={lock} counts={scopeCounts}
             onOpenFindings={() => { setSection('findings'); setSelected(null); }} onOpenPhotos={() => { setSection('photos'); setSelected(null); }}
@@ -276,7 +285,8 @@ export default function InspectionPage() {
             around={{ factsLeft: factsLeftN, onFacts: () => { setSection('facts'); setSelected(null); },
               findings: { total: groups.findings.length + groups.review.length, review: groups.review.length },
               onFindings: () => { setSection(groups.review.length ? 'review' : 'findings'); setSelected(null); },
-              onSeal: () => { setSection('seal'); setSelected(null); setScopeFocus(null); } }} />
+              onSeal: () => { setSection('seal'); setSelected(null); setScopeFocus(null); } }}
+            guided={guidedWalk ? { start: guidedStart, onDone: () => { setGuidedWalk(false); setSection('seal'); setSelected(null); }, onStop: () => setGuidedWalk(false) } : undefined} />
         )}
 
         {activeSection === 'photos' && <PhotosPanel photos={photos} labels={labels} />}

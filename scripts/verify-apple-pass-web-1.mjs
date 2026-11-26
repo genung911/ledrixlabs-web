@@ -26,7 +26,7 @@ function checks({ panel: P, page: G }) {
   ok('the open system is two groups, Details and Condition', P.includes('<section aria-label="Details">') && P.includes('<section aria-label="Condition">'));
   ok('Details puts the type rows first', P.includes('.sort((a, b) => typeFirst(a.f) - typeFirst(b.f) || a.n - b.n)') && P.includes('const typeFirst = (f: SpecField) => (/\\btype\\b/i.test('));
   ok('a condition row answers in words: findings, Limited · reason, Satisfactory, Not answered', P.includes("return { text: `Limited · ${limitationReasonOf(lim)}`, tone: 'limit' };")
-    && P.includes("if (v.includes(CONDITION_OK)) return { text: 'Satisfactory', tone: 'ok' };") && P.includes("return { text: 'Not answered', tone: 'todo' };"));
+    && P.includes("if (v.includes(CONDITION_OK)) return { text: 'Satisfactory', tone: 'ok' };") && P.includes("return { text: guided ? 'Not answered ●' : 'Not answered', tone: guided ? 'warn' : 'todo' };"));   /* batch 2: Guided marks what is still to answer */
   ok('one answer per row: a row opens its choices in place', (P.match(/onClick=\{\(\) => (?:\{ )?setRowOpen\(isOpen \? null : id\)/g) ?? []).length === 2);
   ok('the phone\'s words on the choices (sentence case, no capitals)', P.includes("{ok ? '✓ Satisfactory' : 'Satisfactory'}") && P.includes('>Limitation ▾</button>') && !/SATISFACTORY|LIMITATION ▾/.test(P));
   const sentence = sentenceOf(P);

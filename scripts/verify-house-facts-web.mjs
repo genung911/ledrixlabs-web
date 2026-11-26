@@ -92,7 +92,7 @@ function suite() {
   ok('§3 the lock is taken before any save; a type goes through put_inspection_values; recorded work is checked first',
     (panel.match(/const lease = await lock\.ensure\(\);/g) ?? []).length === 4   // Save, a visit page's Save (z22), an appliance tap, the appliances stamp
     && panel.includes("await putValue(inspectionId, { key: t.key, kind: 'spec', section: t.section, value, baseSeq: t.seq });")
-    && panel.includes('if (blocked.length) { setNote({ tone: \'bad\', text: blockedSentence(blocked) }); return; }'));
+    && panel.includes('if (blocked.length) { setNote({ tone: \'bad\', text: blockedSentence(blocked) }); return false; }'));   /* 2026-11-25 batch 2: a save reports success, so the walk moves on only then */
   ok('§6 a visit page saves its columns together, under the lock; the weather Save confirms it', panel.includes('const r = await saveFactColumns(row, patch, lease);')
     && panel.includes("if (v.target.id === 'weather' && visit.weather) {") && panel.includes('weather_confirmed_at: new Date().toISOString(), weather_confirmed_weather: visit.weather,')
     && api.includes(".update({ ...patch, updated_at:") && /COLS = '[^']*water_state, gas_state, power_state'/.test(api));
@@ -119,7 +119,7 @@ const MUT = [
   [MODEL, 'recorded work is not protected', '    if (before && !after) out.push(', '    if (false) out.push('],
   [MODEL, 'a house fact is not read as the phone reads house::garage', "Object.keys(HOUSE_KEY).find(k => HOUSE_KEY[k] === (v.target as { key: ExtrasKey }).key)!", '(v.target as { key: ExtrasKey }).key'],
   [API, 'a save does not name its version', 'sync_base_version: row.row_version, ', ''],
-  [PANEL, 'a save skips the lock', "      const lease = await lock.ensure();\n      if (!lease) return;\n      if (v.target.kind === 'extras') {", "      const lease = { epoch: 0 };\n      if (v.target.kind === 'extras') {"],   // anchored on Save (2026-11-23: two saves share the lock lines)
+  [PANEL, 'a save skips the lock', "      const lease = await lock.ensure();\n      if (!lease) return false;\n      if (v.target.kind === 'extras') {", "      const lease = { epoch: 0 };\n      if (v.target.kind === 'extras') {"],   // anchored on Save (2026-11-23: two saves share the lock lines)
   [API, 'appliances_asked is not read', ", stories, appliances_asked,", ", stories,"],
   [MODEL, 'the visit pages are left to the phone again', 'const inTemplate = HOUSE_FACTS.filter(f => VISIT_IDS.has(f.id) || (', 'const inTemplate = HOUSE_FACTS.filter(f => ('],
   [MODEL, 'utilities answered with gas unasked', "return utilitiesOnValue({ gasSupply: row.gas_supply, waterState: row.water_state, gasState: row.gas_state, powerState: row.power_state });", "return utilitiesOnValue({ gasSupply: 'No gas service', waterState: row.water_state, gasState: row.gas_state, powerState: row.power_state });"],
