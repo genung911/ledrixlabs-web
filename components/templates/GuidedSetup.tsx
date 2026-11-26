@@ -101,13 +101,20 @@ export function GuidedSetup({ tree, onOps, disabled, onFocus, onAllSettings }: P
   return (
     <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
       {rail}
-      <section aria-label="Guided setup" className="flex min-h-[520px] flex-col gap-4 rounded-xl border border-hairline bg-surface px-6 py-6 lg:px-10">
+      <section aria-label="Guided setup" className="flex min-h-[520px] flex-col gap-4 rounded-xl border border-hairline bg-surface px-6 pt-6 lg:px-10">
         <div className="flex items-center justify-end"><button type="button" className={`${btn.ghost} px-0`} onClick={onAllSettings}>All settings</button></div>
         {!system ? <Start tree={tree} systems={systems} pct={pct} onOpen={open} /> : at === 'end' || !step ? (
-          <Review system={system} steps={steps} tree={tree} onChange={i => setAt(i)} onNext={() => {
-            const i = systems.findIndex(s => s.id === system.id);
-            if (systems[i + 1]) open(systems[i + 1].id); else setSysId(null);
-          }} nextLabel={systems[systems.findIndex(s => s.id === system.id) + 1] ? `Next system: ${displayLabel(systems[systems.findIndex(s => s.id === system.id) + 1].label)} ›` : 'Done ›'} />
+          <>
+            <Review system={system} steps={steps} tree={tree} onChange={i => setAt(i)} />
+            {(() => {
+              const i = systems.findIndex(s => s.id === system.id), after = systems[i + 1];
+              return <StepBar where={`${i + 1} of ${systems.length} · ${displayLabel(system.label)}`}>
+                <button type="button" className={btn.secondary} onClick={back}>‹ Back</button>
+                <button type="button" className={`${btn.primary} min-w-[180px]`} onClick={() => { if (after) open(after.id); else setSysId(null); }}>
+                  {after ? `Next: ${displayLabel(after.label)} ›` : 'Done ›'}</button>
+              </StepBar>;
+            })()}
+          </>
         ) : (
           <>
             <div className="flex items-center gap-3">
@@ -116,12 +123,11 @@ export function GuidedSetup({ tree, onOps, disabled, onFocus, onAllSettings }: P
             </div>
             <p className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-muted">{step.group}</p>
             <StepBody step={step} tree={tree} defs={defs} onOps={onOps} disabled={disabled} />
-            <div className="mt-auto flex flex-wrap items-center gap-2.5 pt-4">
+            <StepBar where={`${displayLabel(system.label)} · ${(at as number) + 1} of ${steps.length}`} hint="Enter = Next · ← key = Back">
               <button type="button" className={btn.secondary} onClick={back}>‹ Back</button>
               <button type="button" className={btn.secondary} onClick={next}>Skip</button>
               <button type="button" className={`${btn.primary} min-w-[180px]`} onClick={next}>Next</button>
-              <span className="ml-auto hidden text-xs text-muted sm:inline">Enter = Next · ← key = Back</span>
-            </div>
+            </StepBar>
           </>
         )}
       </section>
@@ -149,7 +155,7 @@ function Start({ tree, systems, pct, onOpen }: { tree: InspectionTemplate; syste
           );
         })}
       </div>
-      {next ? <div className="mt-auto pt-4"><button type="button" className={`${btn.primary} min-w-[220px]`} onClick={() => onOpen(next.id)}>Continue {displayLabel(next.label)} ›</button></div> : null}
+      {next ? <StepBar where={`${systems.length} system${systems.length === 1 ? '' : 's'}`}><button type="button" className={`${btn.primary} min-w-[220px]`} onClick={() => onOpen(next.id)}>Continue {displayLabel(next.label)} ›</button></StepBar> : null}
     </>
   );
 }
@@ -293,7 +299,19 @@ function systemOf(tree: InspectionTemplate, node: TemplateNode): TemplateNode {
   return tree.systems.find(has) ?? tree.systems[0];
 }
 
-function Review({ system, steps, tree, onChange, onNext, nextLabel }: { system: TemplateNode; steps: GuidedStep[]; tree: InspectionTemplate; onChange: (i: number) => void; onNext: () => void; nextLabel: string }) {
+// NEXT STAYS IN ONE PLACE (owner 2026-11-24: "The next button jumps around, can that be stationary?"; approval pack item 11,
+// approved 2026-11-25). Back and Next sit in one bar pinned to the bottom of the walk — the same spot on every question
+// and on a system's summary, however tall the question is — with where you are on the left.
+function StepBar({ where, hint, children }: { where: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div aria-label="Steps" className="sticky bottom-0 z-10 -mx-6 mt-auto flex min-h-[60px] rounded-b-xl flex-wrap items-center gap-2.5 border-t border-hairline bg-surface/95 px-6 py-3 backdrop-blur lg:-mx-10 lg:px-10">
+      <span className="mr-auto min-w-0 truncate text-sm text-muted">{where}{hint ? <span className="ml-3 hidden text-xs xl:inline">{hint}</span> : null}</span>
+      {children}
+    </div>
+  );
+}
+
+function Review({ system, steps, tree, onChange }: { system: TemplateNode; steps: GuidedStep[]; tree: InspectionTemplate; onChange: (i: number) => void }) {
   const answer = (st: GuidedStep): string => {
     if (st.kind === 'materials') { const on = materialChoices(st.q).filter(c => c.on); return `${on.length} material${on.length === 1 ? '' : 's'}`; }
     if (st.kind === 'materialPhoto') { const p = materialPhotoOf(st.q); return p.mode === 'no' ? 'No photo' : p.mode === 'every' ? 'Photo every time' : `Photo for ${p.values.join(', ')}`; }
@@ -317,7 +335,6 @@ function Review({ system, steps, tree, onChange, onNext, nextLabel }: { system: 
       {(system.id === 'heat_pump' || system.id === 'mini_split') && sharedPartsOf(tree, rulesFor(tree), system.id).map(g => (
         <p key={g.system} className="max-w-2xl text-sm text-body"><span className="font-semibold text-ink">Also on the {displayLabel(system.label)} page, from {g.system}:</span> {g.labels.join(' · ')} <span className="text-muted">(set under {g.system})</span></p>
       ))}
-      <div className="mt-auto pt-4"><button type="button" className={`${btn.primary} min-w-[220px]`} onClick={onNext}>{nextLabel}</button></div>
     </>
   );
 }
