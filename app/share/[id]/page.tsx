@@ -89,6 +89,8 @@ export default function SharePage() {
   // 'home'); only then does the page offer changes, and every change carries their access token so the server can check
   // the same thing (lib/shareAccess.ts holdsShare). Signed out, buying, or waiting: everything reads, nothing changes.
   const [holds, setHolds] = useState(false);
+  // "Yours since …" in the account menu (#156: my_claim_state's `since`, when this person got the home). Null until known.
+  const [since, setSince] = useState<string | null>(null);
   const markHolds = (h: boolean) => { setPortalHolds(h); setHolds(h); };
   useEffect(() => {
     setPortalBearer(session?.access_token ?? '');
@@ -118,7 +120,7 @@ export default function SharePage() {
       const prof = await supabase.from('homeowner_profiles').upsert({ id: uid, email: session.user.email ?? null, origin: 'claim_link' });
       if (inspector(prof.error?.message)) { setClaim({ kind: 'refused', text: 'This email is registered as an inspector. Use a different email for Ledrix Home.' }); return; }
       const st0 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
-      if (st0.data?.state === 'home') { markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' }); return; }
+      if (st0.data?.state === 'home') { setSince(st0.data.since ?? null); markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' }); return; }
       if (st0.data?.state === 'buying') { markBuying(st0.data.closes_on ?? null); return; }
       if (isEditLink() && PORTAL_TOKEN) {
         if (!claimAnswer) { setNeedAnswer(true); claimTried.current = false; return; }
@@ -133,7 +135,7 @@ export default function SharePage() {
       const st1 = await supabase.rpc('my_claim_state', { p_share_id: shareId });
       if (st1.data?.state === 'buying') markBuying(st1.data.closes_on ?? null);
       else if (st1.data?.state === 'home') {
-        markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' });
+        setSince(st1.data.since ?? null); markHolds(true); setClaim({ kind: 'claimed', text: 'This home is on your account.' });
         // "Let future owners see this inspection", ticked with "Yes, I own it" (hr2, #155). Off is the default; nothing to send.
         if (claimAnswer?.owned && claimAnswer.passOn) void supabase.rpc('set_report_pass_on', { p_share_id: shareId, p_on: true });
       }
@@ -374,7 +376,7 @@ export default function SharePage() {
       `}</style>
 
       <NavBar address={record.address ?? ''} onShare={handleShare} copied={copied} active={tab} onBack={back} signedIn={!!session} onSignOut={() => supabase.auth.signOut({ scope: 'local' })}
-        account={{ name: (session?.user?.user_metadata?.full_name as string | undefined) || null, email: session?.user?.email ?? null, status: holds ? 'yours' : buying ? 'waiting' : 'not_yet' }} />
+        account={{ name: (session?.user?.user_metadata?.full_name as string | undefined) || null, email: session?.user?.email ?? null, status: holds ? 'yours' : buying ? 'waiting' : 'not_yet', since: holds ? since : null }} />
       {desk && <HomeRail active={tab} onPick={pick} />}
       {!desk && <HomeRail active={tab} onPick={pick} bottom />}
       {claim && (
