@@ -1,8 +1,8 @@
 'use client';
 
 // Inspector sign-in — the existing Supabase Auth email + password accounts (the same call the
-// Ledrix Inspect app makes in AuthService.signIn). Sign-in ONLY: no sign-up and no magic link here,
-// so this page adds no new way to create an account.
+// Ledrix Inspect app makes in AuthService.signIn). Sign-in only, no magic link; a new account starts at /app/start
+// (b7, plan mockup 13QNuHGzRGv2t2GdyextR4 screen 2, "Approved").
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LedrixDelta } from '@/components/LedrixDelta';
@@ -75,8 +75,7 @@ function LoginForm() {
           </button>
 
           <p className="mt-5 text-xs leading-relaxed text-muted">
-            No account yet? Ledrix accounts are created in the app or by invitation from your company.{' '}
-            <a href="/inspect#pricing" className="font-semibold text-body hover:text-ink">How to start</a>
+            No account yet? <a href="/app/start" className="font-semibold text-body hover:text-ink">Start a free trial</a>, or join your company from the invitation it sent you.
           </p>
         </form>
       </main>

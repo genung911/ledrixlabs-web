@@ -1,8 +1,9 @@
 'use client';
 
 // Pricing / Start — replaces the "Request a demo" form (owner 2026-11-24: "Pricing start, no demo anymore"; mockup
-// PAVcpwJ9d4gDpC17efHUJ7, approved). One plan card, no price shown yet ("No prices shown yet"), and Start goes to the
-// iPhone app, where the account is made as it is today ("Download the iPhone app"). The website stays sign-in only.
+// PAVcpwJ9d4gDpC17efHUJ7, approved). The price (b7; plan mockup 13QNuHGzRGv2t2GdyextR4 screen 1, "Approved"): one
+// plan, per inspector — $79 for 6 months in the launch window, then $119 — and Start goes to the website's trial
+// sign-up (/app/start), 14 days, no card. The app is downloaded after (APP_STORE_URL, below the card).
 //
 // APP_STORE_URL is null until the app is public on the App Store (it is TestFlight-only today): while null the button
 // reads "Coming to the App Store" and is not a link, so nobody lands on a page that doesn't exist. Set it at launch.
@@ -36,13 +37,15 @@ export function Pricing() {
             Start inspecting with Ledrix.
           </motion.h2>
           <motion.p variants={fadeUp} className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-body">
-            One plan, everything included. Pricing is announced at launch.
+            One plan, everything included, priced per inspector.
           </motion.p>
 
           <motion.div variants={fadeUp}
             className="mx-auto mt-10 max-w-md rounded-2xl border border-ink/15 bg-surface p-7 text-left shadow-[0_20px_60px_-34px_rgba(10,15,20,0.5)]">
-            <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-muted">Ledrix Inspect</span>
-            <div className="mt-2 text-3xl font-bold tracking-tight text-ink">Pricing at launch</div>
+            <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-ink">Launch offer</span>
+            <span className="mt-3 block font-mono text-xs font-bold uppercase tracking-[0.2em] text-muted">Ledrix Inspect</span>
+            <div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-bold tracking-tight text-ink">$79</span><span className="text-sm text-muted">per inspector / month for 6 months</span></div>
+            <p className="mt-1 text-sm text-body">Then $119. Office staff are free.</p>
             <ul className="mt-5 flex flex-col gap-3">
               {INCLUDED.map((p) => (
                 <li key={p} className="flex items-start gap-3">
@@ -54,16 +57,10 @@ export function Pricing() {
               ))}
             </ul>
             <div className="mt-7">
-              {APP_STORE_URL ? (
-                <GlowButton href={APP_STORE_URL} variant="primary" className="w-full justify-center">
-                  Download for iPhone
-                </GlowButton>
-              ) : (
-                <span aria-disabled="true"
-                  className="block w-full cursor-default rounded-full border border-hairline py-3 text-center text-sm font-semibold text-muted">
-                  Coming to the App Store
-                </span>
-              )}
+              <GlowButton href="/app/start" variant="primary" className="w-full justify-center">
+                Start your 14-day free trial
+              </GlowButton>
+              <p className="mt-2 text-center text-sm text-muted">No card to start. Cancel any time.</p>
             </div>
             <p className="mt-4 text-center text-sm text-muted">
               Already have an account?{' '}

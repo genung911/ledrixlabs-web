@@ -19,6 +19,8 @@ export function CompanyTabs({ subtitle }: { subtitle?: string }) {
     { href: '/app/team', label: 'Team', show: !!access.companyId },
     { href: '/app/company/services', label: 'Services & prices', show: canServices },
     { href: '/app/company/payments', label: 'Payments', show: mayManagePayments({ companyId: access.companyId, role: access.role }) },
+    // Plan & billing (b7, mockup 13QNuHGzRGv2t2GdyextR4 screen 3): the company OWNER only; everyone else sees the band.
+    { href: '/app/company/plan', label: 'Plan & billing', show: !!access.companyId && access.role === 'owner' },
   ].filter(t => t.show);
   return (<>
     <PageHeader title="Company" subtitle={subtitle ?? companyName ?? 'Your company'} />

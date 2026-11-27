@@ -307,7 +307,9 @@ const NAV_RULES = {
     const t = s.tabs, bad = [];
     const got = [...t.matchAll(/\{ href: '([^']+)', label: '([^']+)', show: (.*) \},?$/gm)].map(m => `${m[2]}=${m[1]}:${m[3]}`);
     const want = ['Profile=/app/company:true', 'Team=/app/team:!!access.companyId', 'Services & prices=/app/company/services:canServices',
-      'Payments=/app/company/payments:mayManagePayments({ companyId: access.companyId, role: access.role })'];
+      'Payments=/app/company/payments:mayManagePayments({ companyId: access.companyId, role: access.role })',
+      // Plan & billing (b7, owner 2026-11-25, plan mockup 13QNuHGzRGv2t2GdyextR4 screen 3): the company owner only.
+      "Plan & billing=/app/company/plan:!!access.companyId && access.role === 'owner'"];
     if (JSON.stringify(got) !== JSON.stringify(want)) bad.push(JSON.stringify(got));
     if (!/\.filter\(t => t\.show\)/.test(t)) bad.push('hidden tabs are shown');
     for (const [k, f] of [['company', 'app/app/company/page.tsx'], ['team', 'app/app/team/page.tsx'], ['services', 'app/app/company/services/page.tsx'], ['payments', 'app/app/company/payments/page.tsx']])

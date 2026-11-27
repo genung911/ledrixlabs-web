@@ -6,7 +6,7 @@
 //   3 How it works is four steps: Shoot · Details fill in · Findings · Review & send
 //   4 Why Ledrix: the VAL tile is the template tile; the finding card is the vent-connector finding
 //   5 duplicates are worded as the app does them (Merge into one / Keep separate), with no "related findings"
-//   6 Pricing shows no price, and its button is no link while APP_STORE_URL is null
+//   6 Pricing shows the launch price ($79 for 6 months, then $119) and Start goes to /app/start (b7)
 //   7 every image a marketing page names exists in public/, so the site can't ship with a missing screenshot
 //   8 no hardware on the site: nothing says Sensors (manifesto)
 //  10 Privacy and Terms: the Δ mark and readable body text (owner 2026-11-24, w8 "Fix these")
@@ -44,8 +44,11 @@ function checks(S, exists = p => fs.existsSync(path.join(root, 'public', p))) {
     S['components/marketing/LegacyVsLedrix.tsx'].includes('asks: Merge into one, or Keep separate')
     && S['components/marketing/FAQ.tsx'].includes('asks: Merge into one, or Keep separate') && !/related findings/i.test(all));
   const pr = S['components/marketing/Pricing.tsx'] ?? '';
-  ok('6 Pricing: no price, and no link while APP_STORE_URL is null', /export const APP_STORE_URL: string \| null = null;/.test(pr)
-    && /\{APP_STORE_URL \? \([\s\S]*?\) : \([\s\S]*?Coming to the App Store/.test(pr) && !/\$\s?\d/.test(code(pr)) && pr.includes('id="pricing"'));
+  // 6 (b7, owner 2026-11-25 DECISIONS "How inspectors pay Ledrix", plan mockup 13QNuHGzRGv2t2GdyextR4 screen 1): the
+  // launch price and only it — $79 for 6 months, then $119 — and Start goes to the website's trial sign-up.
+  ok('6 Pricing: $79 for 6 months then $119, Start → /app/start', pr.includes('id="pricing"')
+    && [...code(pr).matchAll(/\$\s?(\d+)/g)].map(m => m[1]).every(d => d === '79' || d === '119')
+    && /\$79<\/span><span[^>]*>per inspector \/ month for 6 months/.test(pr) && /Then \$119\./.test(pr) && /href="\/app\/start"/.test(pr));
   const imgs = [...new Set([...all.matchAll(/["'](\/(?:screenshots\/[^"']+|[\w-]+\.(?:jpe?g|png|JPG)))["']/g)].map(m => m[1]))];
   const missing = imgs.filter(p => !exists(p.slice(1)));
   ok(`7 every image the pages name exists in public/${missing.length ? ' — missing: ' + missing.join(', ') : ''}`, imgs.length > 0 && !missing.length);
@@ -70,8 +73,9 @@ const MUT = [
   ['components/marketing/HowItWorks.tsx', "    title: 'Details fill in',\n", '', 'How it works loses the details step'],
   ['components/marketing/BentoGrid.tsx', "title: 'Your template, your checklist.'", "title: 'Log by voice with VAL'", 'the VAL tile comes back'],
   ['components/marketing/LegacyVsLedrix.tsx', 'asks: Merge into one, or Keep separate', 'flags likely duplicate photos and related findings', 'duplicates go back to related findings'],
-  ['components/marketing/Pricing.tsx', 'export const APP_STORE_URL: string | null = null;', "export const APP_STORE_URL: string | null = null; const PRICE = '$49';", 'a price appears'],
-  ['components/marketing/Pricing.tsx', '{APP_STORE_URL ? (', '{true ? (', 'the button links before there is an App Store page'],
+  ['components/marketing/Pricing.tsx', 'export const APP_STORE_URL: string | null = null;', "export const APP_STORE_URL: string | null = null; const PRICE = '$49';", 'a different price appears'],
+  ['components/marketing/Pricing.tsx', 'Then $119.', 'Then $99.', 'the step price changes'],
+  ['components/marketing/Pricing.tsx', '<GlowButton href="/app/start"', '<GlowButton href="/app/login"', 'Start no longer starts a trial'],
   ['components/marketing/HowItWorks.tsx', "'/screenshots/site-2026-11/s2-details.jpg'", "'/screenshots/site-2026-11/nope.jpg'", 'a step names an image that is not there'],
   ['app/home/page.tsx', 'Today, it begins with a real inspection.', 'See the Sensors tab.', 'the Home page mentions Sensors'],
 ];

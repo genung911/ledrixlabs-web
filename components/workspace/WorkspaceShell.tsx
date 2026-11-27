@@ -12,6 +12,7 @@ import { decideAccess, type Access } from '@/lib/workspace/model';
 import { THEME_PREFS, applyTheme, effectiveTheme, readThemePref, systemPrefersDark, writeThemePref, type ThemePref } from '@/lib/workspace/theme';
 import { loadMyCapabilities } from '@/lib/team/permissions';
 import { mayEditServices, mayManagePayments } from '@/lib/office/access';
+import { PlanBand } from './PlanBand';
 
 // canServices rides the context so the Company tabs (components/workspace/CompanyTabs) gate Services & prices exactly as
 // the menu used to — one answer, computed once here.
@@ -33,7 +34,8 @@ type Gate =
 export function WorkspaceRoot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   // .ws-root scopes the optional dark theme to the workspace (app/globals.css).
-  return <div className="ws-root">{pathname === '/app/login' ? children : <WorkspaceShell>{children}</WorkspaceShell>}</div>;
+  // /app/start (b7, mockup screen 2: start a trial) is outside the gate too: it's where an account and a company begin.
+  return <div className="ws-root">{pathname === '/app/login' || pathname === '/app/start' ? children : <WorkspaceShell>{children}</WorkspaceShell>}</div>;
 }
 
 /** The saved appearance, applied; Auto follows the computer's setting live. */
@@ -204,14 +206,14 @@ function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
         <Rail nav={nav} isActive={isActive} name={access.name} detail={[companyName, roleLabel(access.role)].filter(Boolean).join(' · ')} signOut={signOut} />
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{access.companyId && <PlanBand />}{children}</main>
       </div>
     </WorkspaceCtx.Provider>
   );
 }
 
 /** Company's tabs live on these routes (CompanyTabs); the menu's Company item is lit on all of them. */
-const COMPANY_PATHS = ['/app/company', '/app/team'];
+const COMPANY_PATHS = ['/app/company', '/app/team'];   // /app/company/plan rides /app/company
 
 // One line icon per menu item, in the Template Builder's style (24-grid, 1.8 stroke, round caps).
 const NAV_ICON: Record<string, string> = {
