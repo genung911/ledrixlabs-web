@@ -9,7 +9,7 @@ import { CompanyTabs } from '@/components/workspace/CompanyTabs';
 import { useWorkspace } from '@/components/workspace/WorkspaceShell';
 import { ErrorBox, Group, Loading, Page, Row } from '@/components/workspace/ui';
 import { loadBillingStatus, loadPlanState, openPortal, redeemInviteCode, startCheckout, type BillingStatus } from '@/lib/billing/api';
-import { FULL_CENTS, INTRO_CENTS, cleanInviteCode, money, priceLine, statusPill, type PlanState } from '@/lib/billing/model';
+import { FULL_CENTS, INTRO_CENTS, cleanInviteCode, money, priceLine, shortPrice, statusPill, type PlanState } from '@/lib/billing/model';
 
 const FIELD = 'h-10 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20';
 const PILL: Record<string, string> = { blue: 'bg-accent/10 text-accent-ink', ok: 'bg-[#17834B]/10 text-[#17834B]', warn: 'bg-[#D98C00]/15 text-[#A86A00]', bad: 'bg-[#C0392B]/10 text-[#C0392B]' };
@@ -62,10 +62,10 @@ function PlanBody() {
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${PILL[pill.tone]}`}>{pill.label}</span>
         </div>
 
-        <Group footnote={plan.state === 'comp' ? 'This company is Ledrix’s own: nothing to pay.' : 'Every member who can do inspections is an inspector. Office staff are free. Adding or removing an inspector changes the next bill.'}>
+        <Group footnote={plan.state === 'comp' ? 'This company is Ledrix’s own: nothing to pay.' : `${priceLine(plan.kind)}. Every member who can do inspections is an inspector; Office staff are free. Adding or removing an inspector changes the next bill.`}>
           <Row label="Plan" value="Ledrix Inspect" />
           <Row label="Inspectors" value={String(seats)} />
-          <Row label="Price" value={priceLine(plan.kind)} />
+          <Row label="Price per inspector" value={shortPrice(plan.kind)} />
           {plan.state === 'trial' && !subscribed && plan.kind !== 'comp' && <Row label="After your trial" value={`${money(unit * seats)} / month`} />}
           {bill?.next && <Row label="Next bill" value={`${money(bill.next.amount)} on ${fmtDay(bill.next.date * 1000)}`} />}
           {bill?.card && <Row label="Card" value={`${bill.card.brand[0].toUpperCase()}${bill.card.brand.slice(1)} ···· ${bill.card.last4}`} />}

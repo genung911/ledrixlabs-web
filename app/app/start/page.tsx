@@ -11,7 +11,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LedrixDelta } from '@/components/LedrixDelta';
 import { redeemInviteCode } from '@/lib/billing/api';
-import { clearPending, createCompany, myCompanyId, signUpForTrial } from '@/lib/billing/signup';
+import { clearPending, createCompany, forgetEmail, myCompanyId, rememberEmail, rememberedEmail, resendSignupCode, signUpForTrial, verifySignupCode } from '@/lib/billing/signup';
 import { cleanInviteCode, planError } from '@/lib/billing/model';
 
 const ROW = 'flex items-center gap-3 px-3 py-1';
@@ -31,6 +31,16 @@ function Start() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [otp, setOtp] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+
+  const confirmCode = async (addr: string) => {
+    setErr(null); setNote(null);
+    try { await verifySignupCode(addr, otp); } catch (e) { setErr((e as Error).message); return; }
+    const me = await myCompanyId();
+    if (me.pending) void finish(me.pending.company, me.pending.code ?? '', me.pending.fullName);
+    else { forgetEmail(); setStep({ kind: 'form', signedIn: true }); }
+  };
 
   /** Signed in: make the company (if none yet), apply the code, and go to Plan & billing. */
   const finish = useCallback(async (companyName: string, rawCode: string, fullName: string) => {
@@ -43,14 +53,18 @@ function Start() {
       const c = cleanInviteCode(rawCode);
       if (c) { try { await redeemInviteCode(c); } catch (e) { await clearPending(); router.replace(`/app/company/plan?code_error=${encodeURIComponent((e as Error).message)}`); return; } }
     }
-    await clearPending();
+    await clearPending(); forgetEmail();
     router.replace('/app/company/plan');
   }, [router]);
 
   useEffect(() => {
     (async () => {
       const me = await myCompanyId();
-      if (!me.userId) { setStep({ kind: 'form', signedIn: false }); return; }
+      if (!me.userId) {
+        // Back from the email's link (or a reload while waiting): ask for the code from that email.
+        const waiting = rememberedEmail();
+        setStep(waiting ? { kind: 'check-email', email: waiting } : { kind: 'form', signedIn: false }); return;
+      }
       if (me.companyId) { router.replace('/app'); return; }
       if (me.pending) { void finish(me.pending.company, me.pending.code ?? '', me.pending.fullName); return; }
       setStep({ kind: 'form', signedIn: true });
@@ -68,7 +82,7 @@ function Start() {
       const r = await signUpForTrial(email, password, { company, code: cleanInviteCode(code), fullName: name });
       if (r.signedIn) { void finish(company, code, name); return; }
     } catch (e) { setErr((e as Error).message); setStep({ kind: 'form', signedIn: false }); return; }
-    setStep({ kind: 'check-email', email: email.trim() });
+    rememberEmail(email); setStep({ kind: 'check-email', email: email.trim() });
   }
 
   const signedIn = step.kind === 'form' && step.signedIn;
@@ -81,11 +95,21 @@ function Start() {
         {step.kind === 'loading' || step.kind === 'working' ? (
           <p className="text-sm text-muted">{step.kind === 'working' ? 'Setting up your company…' : 'Loading…'}</p>
         ) : step.kind === 'check-email' ? (
-          <div className="w-full max-w-sm rounded-2xl border border-hairline bg-surface p-7 shadow-sm">
+          <form className="w-full max-w-sm rounded-2xl border border-hairline bg-surface p-7 shadow-sm" noValidate
+            onSubmit={e => { e.preventDefault(); void confirmCode(step.email); }}>
             <h1 className="text-xl font-bold tracking-tight text-ink">Check your email</h1>
-            <p className="mt-2 text-sm text-body">We sent a confirmation link to <b className="text-ink">{step.email}</b>. Open it on this computer and your company is set up, with your 14-day trial started.</p>
-            <p className="mt-4 text-xs text-muted">Nothing there? Check spam, or wait a minute.</p>
-          </div>
+            <p className="mt-2 text-sm text-body">We sent a 6-digit code to <b className="text-ink">{step.email}</b>. Enter it here to set up your company and start your 14-day trial.</p>
+            <div className="mt-5 overflow-hidden rounded-xl border border-hairline">
+              <label className={ROW}><span className={LABEL}>Code</span><input className={INPUT} inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={8} value={otp} onChange={e => setOtp(e.target.value)} placeholder="6 digits" /></label>
+            </div>
+            {err && <p role="alert" className="mt-4 rounded-lg bg-safety/10 px-3 py-2 text-sm text-ink">{err}</p>}
+            {note && <p role="status" className="mt-4 text-sm text-body">{note}</p>}
+            <button type="submit" disabled={otp.replace(/\s/g, '').length !== 6}
+              className="mt-5 w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:bg-hairline disabled:text-muted">Confirm</button>
+            <p className="mt-4 text-xs text-muted">Nothing there? Check spam, or{' '}
+              <button type="button" className="font-semibold text-body hover:text-ink" onClick={() => resendSignupCode(step.email).then(() => setNote('A new code is on its way.'), e => setErr((e as Error).message))}>send a new code</button>.{' '}
+              <button type="button" className="font-semibold text-body hover:text-ink" onClick={() => { forgetEmail(); setStep({ kind: 'form', signedIn: false }); }}>Start over</button></p>
+          </form>
         ) : (
           <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-hairline bg-surface p-7 shadow-sm" noValidate>
             <h1 className="text-xl font-bold tracking-tight text-ink">Start your free trial</h1>

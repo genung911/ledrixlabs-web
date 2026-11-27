@@ -15,6 +15,25 @@ export async function signUpForTrial(email: string, password: string, p: Pending
   return { signedIn: !!data.session };
 }
 
+/** The 6-digit code from the confirmation email (the workspace never takes a session from a link: detectSessionInUrl
+ *  is off on purpose, so the code is how a new account signs in here). Works on any device. */
+export async function verifySignupCode(email: string, code: string): Promise<void> {
+  const token = code.replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(token)) throw new Error('The code is the 6 digits in the email.');
+  const { error } = await workspace.auth.verifyOtp({ email: email.trim(), token, type: 'signup' });
+  if (error) throw new Error(/expired|invalid/i.test(error.message) ? 'That code didn’t work or has expired. Check the newest email, or resend it.' : error.message);
+}
+
+export async function resendSignupCode(email: string): Promise<void> {
+  const { error } = await workspace.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/app/start` } });
+  if (error) throw new Error(error.message);
+}
+
+const PENDING_EMAIL = 'ledrix-start-email';
+export const rememberEmail = (e: string) => { try { localStorage.setItem(PENDING_EMAIL, e.trim()); } catch { /* private window */ } };
+export const rememberedEmail = () => { try { return localStorage.getItem(PENDING_EMAIL) ?? ''; } catch { return ''; } };
+export const forgetEmail = () => { try { localStorage.removeItem(PENDING_EMAIL); } catch { /* */ } };
+
 /** The signed-in person's company, if they have one yet. */
 export async function myCompanyId(): Promise<{ userId: string | null; companyId: string | null; pending: Pending | null }> {
   const { data } = await workspace.auth.getSession();

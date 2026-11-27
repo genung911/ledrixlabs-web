@@ -89,6 +89,8 @@ async function run(src) {
   ok('/app/start is outside the sign-in gate', /pathname === '\/app\/start'/.test(src.shell));
   ok('Pricing shows $79, then $119, and starts the trial', /\$79/.test(src.pricing) && /Then \$119/.test(src.pricing) && /href="\/app\/start"/.test(src.pricing));
   ok('sign-up makes the company with create_my_company', /rpc\('create_my_company'/.test(src.signup) && /createCompany\(/.test(src.start));
+  ok('a new account confirms with the email’s 6-digit code (never a session from the link)', /auth\.verifyOtp\(\{ email: email\.trim\(\), token, type: 'signup' \}\)/.test(src.signup)
+    && !/setSession|exchangeCodeForSession|access_token/.test(src.signup + src.start) && /verifySignupCode\(addr, otp\)/.test(src.start));
   const others = [...clientFiles(), ...libFiles()].filter(f => f !== 'lib/billing/signup.ts');
   ok('the website creates accounts in ONE place (lib/billing/signup.ts)', /auth\.signUp\(/.test(src.signup) && others.every(f => !/\.signUp\s*\(/.test(read(f))) && !/\.signUp\s*\(/.test(src.start));
   return c;
@@ -112,6 +114,8 @@ const MUTANTS = [
   ['tabs', 'everyone sees Plan & billing', s => s.replace(`show: !!access.companyId && access.role === 'owner' }`, `show: !!access.companyId }`)],
   ['start', 'the page signs up by itself', s => s.replace(`import { redeemInviteCode } from '@/lib/billing/api';`, `import { redeemInviteCode } from '@/lib/billing/api';\nconst x = () => workspace.auth.signUp({ email: '', password: '' });`)],
   ['signup', 'no company made at sign-up', s => s.replace(`workspace.rpc('create_my_company', { p_name: name.trim() })`, `Promise.resolve({ error: null })`)],
+  ['signup', 'a session taken from the link', s => s.replace(`/** The signed-in person's company, if they have one yet. */`, `export const adopt = (h: any) => workspace.auth.setSession(h);\n/** The signed-in person's company, if they have one yet. */`)],
+  ['start', 'the code is never checked', s => s.replace(`try { await verifySignupCode(addr, otp); } catch (e) { setErr((e as Error).message); return; }`, ``)],
   ['api', 'the browser writes the plan', s => s.replace(`export async function redeemInviteCode`, `export const pay = () => workspace.from('company_plans').update({ status: 'active' });\nexport async function redeemInviteCode`)],
 ];
 

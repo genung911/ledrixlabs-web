@@ -69,6 +69,14 @@ export function priceLine(kind: PlanKind | null | undefined): string {
   return `${money(INTRO_CENTS)} per inspector / month for ${LAUNCH_INTRO_MONTHS} months, then ${money(FULL_CENTS)}`;
 }
 
+/** The short value on the Price row (fits a phone); priceLine says it in full under the group. */
+export function shortPrice(kind: PlanKind | null | undefined): string {
+  if (kind === 'comp') return 'Free';
+  if (kind === 'early') return `${money(INTRO_CENTS)} / mo`;
+  if (kind === 'standard') return `${money(FULL_CENTS)} / mo`;
+  return `${money(INTRO_CENTS)}, then ${money(FULL_CENTS)}`;
+}
+
 export type Band = { tone: 'blue' | 'yellow' | 'red'; title: string; body: string; action?: { label: string; href: string } } | null;
 
 /** The band at the top of every workspace page (mockup screen 6). Owners get the action; everyone else is told who can. */
