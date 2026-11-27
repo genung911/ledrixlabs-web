@@ -41,7 +41,9 @@ async function status(req: NextRequest) {
   return NextResponse.json({
     configured: true, subscribed: true, seats, synced,
     cancelAtPeriodEnd: !!sub.cancel_at_period_end,
-    card: pm?.card ? { brand: pm.card.brand, last4: pm.card.last4 } : null,
+    // A card shows its brand and last 4; Link (Stripe's saved wallet) and anything else show by name.
+    payment: pm ? (pm.card ? `${pm.card.brand[0].toUpperCase()}${pm.card.brand.slice(1)} ···· ${pm.card.last4}`
+      : pm.type === 'link' ? `Link${pm.link?.email ? ` · ${pm.link.email}` : ''}` : pm.type.replace(/_/g, ' ')) : null,
     next, problem,
   });
 }

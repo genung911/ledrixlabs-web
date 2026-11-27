@@ -68,7 +68,7 @@ function PlanBody() {
           <Row label="Price per inspector" value={shortPrice(plan.kind)} />
           {plan.state === 'trial' && !subscribed && plan.kind !== 'comp' && <Row label="After your trial" value={`${money(unit * seats)} / month`} />}
           {bill?.next && <Row label="Next bill" value={`${money(bill.next.amount)} on ${fmtDay(bill.next.date * 1000)}`} />}
-          {bill?.card && <Row label="Card" value={`${bill.card.brand[0].toUpperCase()}${bill.card.brand.slice(1)} ···· ${bill.card.last4}`} />}
+          {bill?.payment && <Row label="Pays with" value={bill.payment} />}
           {bill?.cancelAtPeriodEnd && <Row label="Ends" value="At the end of this month (cancelled)" valueTone="need" />}
           <Row label="Office staff" value="Free" />
         </Group>
