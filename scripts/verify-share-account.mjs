@@ -17,6 +17,10 @@ function checks({ ui: U, page: P }) {
   ok('Sign out asks first, and only its confirm signs out', U.includes('aria-label="Sign out?"') && U.includes('onClick={() => { setConfirm(false); onSignOut?.(); }}') && (U.match(/onSignOut\?\.\(\)/g) ?? []).length === 1);
   ok('the menu closes on a click away and on Escape', U.includes("if (e.key === 'Escape') setOpen(false);") && U.includes("document.addEventListener('mousedown', away)"));
   ok('the Home Record logo is white, not the blue sheen', U.includes('<ValDeltaSVG size={Math.round(size * 0.82)} color="#FFFFFF" />'));
+  // h7 (owner 2026-11-27, Ledrix Home mockup RGxzKqE49fQukzkbksoPzC screen 1): Get Ledrix Home, only once the home is theirs.
+  ok('Get Ledrix Home shows only to the person who holds the home', P.includes(': holds ? <GetAppCard email={session?.user?.email ?? null} /> : undefined} />}'));
+  ok('…with no App Store link until there is one', U.includes('export const HOME_APP_STORE_URL: string | null = null;') && U.includes('{HOME_APP_STORE_URL\n        ? <a href={HOME_APP_STORE_URL}') && U.includes('Coming to the App Store'));
+  ok('…and never a word about sensors (not made yet)', !/sensor|pod\b/i.test(U.slice(U.indexOf('export function GetAppCard'))));
   return out;
 }
 const MUTS = [
@@ -28,6 +32,9 @@ const MUTS = [
   ['the date never read on the second check', 'page', 'setSince(st1.data.since ?? null); ', ''],
   ['Escape no longer closes it', 'ui', "if (e.key === 'Escape') setOpen(false);", ''],
   ['the logo goes blue again', 'ui', 'color="#FFFFFF" />\n', 'color={BLUE} sheen />\n'],
+  ['the app card for anyone signed in', 'page', ': holds ? <GetAppCard email={session?.user?.email ?? null} /> : undefined} />}', ': <GetAppCard email={session?.user?.email ?? null} />} />}'],
+  ['a dead App Store link', 'ui', 'export const HOME_APP_STORE_URL: string | null = null;', "export const HOME_APP_STORE_URL: string | null = 'https://apps.apple.com/';"],
+  ['the card mentions sensors', 'ui', '<br />· Your inspection kept as the first snapshot of your home', '<br />· Sensors in the attic and walls'],
 ];
 let fail = 0;
 for (const [n, v] of checks(real)) { console.log(`${v ? '✓' : '✗'} ${n}`); if (!v) fail++; }

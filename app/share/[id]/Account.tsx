@@ -68,3 +68,30 @@ function AccountButton({ account, address, onSignOut }: { account?: AccountInfo;
 
 export { AccountButton };
 export type { AccountInfo };
+
+// ─── Get Ledrix Home (h7, owner 2026-11-27, Ledrix Home mockup RGxzKqE49fQukzkbksoPzC screen 1, "Approved") ─────────────────
+// Once the home is the signed-in person's: the free app, where upkeep reminders reach them (push needs the app). The
+// claimed home is already in it — signing in with the same email (an emailed code, no password) lists it. Nothing about
+// sensors: they aren't made yet (owner 2026-11-27, "Do not mention").
+/** The App Store page for Ledrix Home. Null until the app is public: the button then says so and links nowhere. */
+export const HOME_APP_STORE_URL: string | null = null;
+
+export function GetAppCard({ email }: { email: string | null }) {
+  const row: CSSProperties = { fontSize: 13.5, lineHeight: 1.45, color: MED };
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <svg aria-hidden width="30" height="30" viewBox="0 0 100 100"><path d="M50 15.36 L90 84.64 L10 84.64 Z M47.40 28.86 L20.39 75.64 L74.41 75.64 Z" fill={TEXT} fillRule="evenodd" /></svg>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>Get Ledrix Home</div>
+          <div style={{ fontSize: 12.5, color: MED }}>Free on iPhone</div>
+        </div>
+      </div>
+      <div style={row}>· Reminders when the filter, water heater or gutters are due<br />· Your systems and repairs in your pocket<br />· Your inspection kept as the first snapshot of your home</div>
+      {HOME_APP_STORE_URL
+        ? <a href={HOME_APP_STORE_URL} style={{ minHeight: 44, borderRadius: 22, background: TEXT, color: CARD, fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Download on the App Store</a>
+        : <span aria-disabled="true" style={{ minHeight: 44, borderRadius: 22, border: `1px solid ${BORDER}`, color: MED, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Coming to the App Store</span>}
+      <div style={row}>Sign in with {email ? <b style={{ color: TEXT }}>{email}</b> : 'the same email'} and your home is already there.</div>
+    </div>
+  );
+}

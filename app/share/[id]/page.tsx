@@ -14,6 +14,7 @@ import { SystemsTab } from './SystemsTab';
 import { ClaimCard, DocsTab } from './RecordsTab';
 import { SubscribeSheet, ClaimQuestion, closingLabel, isoIn, type ClaimAnswer } from './LedrixPanel';
 import { RepairsTab } from './RepairsTab';
+import { GetAppCard } from './Account';
 
 // LOADED WHEN OPENED (approval pack item 6, owner 2026-11-25): the Report tab (and its report viewer), Ethix and the Ledrix
 // chat (with its voice visualiser) are fetched the first time they are opened, not with the page. Their own files, so
@@ -423,7 +424,7 @@ export default function SharePage() {
       )}
 
       {tab === 'home'      && <HomeTab record={record} anomalies={anomalies} projects={projects} reminders={reminders} repairs={repairs} onTabChange={go} access={access} shareId={shareId} onUnlock={() => setSubOpen(true)} onAsk={openLedrix}
-        claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : needAnswer ? <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 14 }}><ClaimQuestion cta="Claim my home" onAnswer={setClaimAnswer} /></div> : undefined} />}
+        claim={!session ? <ClaimCard onClaim={() => setSubOpen(true)} /> : needAnswer ? <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 14 }}><ClaimQuestion cta="Claim my home" onAnswer={setClaimAnswer} /></div> : holds ? <GetAppCard email={session?.user?.email ?? null} /> : undefined} />}
       {tab === 'findings'  && <FindingsTab anomalies={anomalies} record={record} shareId={shareId} floorPlan={floorPlan} />}
       {(tab === 'systems' || tab === 'specs') && <SystemsTab record={record} anomalies={anomalies} onAllFindings={() => go('findings')} />}
       {tab === 'maintain'  && <MaintainTab reminders={reminders} log={log} projects={projects} repairs={repairs} anomalies={anomalies} record={record} shareId={shareId} access={access} onUnlock={() => setSubOpen(true)}
