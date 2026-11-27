@@ -91,6 +91,8 @@ async function run(src) {
   ok('sign-up makes the company with create_my_company', /rpc\('create_my_company'/.test(src.signup) && /createCompany\(/.test(src.start));
   ok('a new account confirms with the email’s 6-digit code (never a session from the link)', /auth\.verifyOtp\(\{ email: email\.trim\(\), token, type: 'signup' \}\)/.test(src.signup)
     && !/setSession|exchangeCodeForSession|access_token/.test(src.signup + src.start) && /verifySignupCode\(addr, otp\)/.test(src.start));
+  ok('the email’s link goes to sign-in, saying the email is confirmed, then back to /app/start', /\/app\/login\?confirmed=1&next=\$\{encodeURIComponent\('\/app\/start'\)\}/.test(src.signup)
+    && (src.signup.match(/emailRedirectTo: CONFIRMED_URL\(\)/g) || []).length === 2);
   const others = [...clientFiles(), ...libFiles()].filter(f => f !== 'lib/billing/signup.ts');
   ok('the website creates accounts in ONE place (lib/billing/signup.ts)', /auth\.signUp\(/.test(src.signup) && others.every(f => !/\.signUp\s*\(/.test(read(f))) && !/\.signUp\s*\(/.test(src.start));
   return c;
@@ -116,6 +118,7 @@ const MUTANTS = [
   ['signup', 'no company made at sign-up', s => s.replace(`workspace.rpc('create_my_company', { p_name: name.trim() })`, `Promise.resolve({ error: null })`)],
   ['signup', 'a session taken from the link', s => s.replace(`/** The signed-in person's company, if they have one yet. */`, `export const adopt = (h: any) => workspace.auth.setSession(h);\n/** The signed-in person's company, if they have one yet. */`)],
   ['start', 'the code is never checked', s => s.replace(`try { await verifySignupCode(addr, otp); } catch (e) { setErr((e as Error).message); return; }`, ``)],
+  ['signup', 'the link lands on the form again', s => s.replace("/app/login?confirmed=1&next=${encodeURIComponent('/app/start')}", "/app/start")],
   ['api', 'the browser writes the plan', s => s.replace(`export async function redeemInviteCode`, `export const pay = () => workspace.from('company_plans').update({ status: 'active' });\nexport async function redeemInviteCode`)],
 ];
 

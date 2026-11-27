@@ -4,12 +4,16 @@
 // the same call the app makes (SQL #158's trigger starts the 14-day trial on it).
 import { workspace } from '@/lib/workspace/client';
 
+/** Where the email's link lands (owner 2026-11-26: "I should just go back to the sign in page from the email"): sign-in,
+ *  saying the email is confirmed; signing in returns to /app/start, which finishes from what they typed (pending_*). */
+const CONFIRMED_URL = () => `${window.location.origin}/app/login?confirmed=1&next=${encodeURIComponent('/app/start')}`;
+
 export type Pending = { company: string; code: string | null; fullName: string };
 
 export async function signUpForTrial(email: string, password: string, p: Pending): Promise<{ signedIn: boolean }> {
   const { data, error } = await workspace.auth.signUp({
     email: email.trim(), password,
-    options: { data: { full_name: p.fullName.trim(), pending_company: p.company.trim(), pending_code: p.code }, emailRedirectTo: `${window.location.origin}/app/start` },
+    options: { data: { full_name: p.fullName.trim(), pending_company: p.company.trim(), pending_code: p.code }, emailRedirectTo: CONFIRMED_URL() },
   });
   if (error) throw new Error(/registered|exists/i.test(error.message) ? 'That email already has a Ledrix account. Sign in instead.' : error.message);
   return { signedIn: !!data.session };
@@ -25,7 +29,7 @@ export async function verifySignupCode(email: string, code: string): Promise<voi
 }
 
 export async function resendSignupCode(email: string): Promise<void> {
-  const { error } = await workspace.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/app/start` } });
+  const { error } = await workspace.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: CONFIRMED_URL() } });
   if (error) throw new Error(error.message);
 }
 

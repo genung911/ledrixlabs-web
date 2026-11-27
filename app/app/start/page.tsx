@@ -98,7 +98,8 @@ function Start() {
           <form className="w-full max-w-sm rounded-2xl border border-hairline bg-surface p-7 shadow-sm" noValidate
             onSubmit={e => { e.preventDefault(); void confirmCode(step.email); }}>
             <h1 className="text-xl font-bold tracking-tight text-ink">Check your email</h1>
-            <p className="mt-2 text-sm text-body">We sent a 6-digit code to <b className="text-ink">{step.email}</b>. Enter it here to set up your company and start your 14-day trial.</p>
+            <p className="mt-2 text-sm text-body">We sent an email to <b className="text-ink">{step.email}</b>. Tap <b className="text-ink">Confirm and sign in</b> in it, then sign in — your company is set up and your 14-day trial starts.</p>
+            <p className="mt-3 text-sm text-body">Or enter the 6-digit code from that email here:</p>
             <div className="mt-5 overflow-hidden rounded-xl border border-hairline">
               <label className={ROW}><span className={LABEL}>Code</span><input className={INPUT} inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={8} value={otp} onChange={e => setOtp(e.target.value)} placeholder="6 digits" /></label>
             </div>

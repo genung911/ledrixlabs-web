@@ -51,7 +51,9 @@ function LoginForm() {
       <main className="flex flex-1 items-start justify-center px-4 pt-10 sm:pt-20">
         <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-hairline bg-surface p-7 shadow-sm" noValidate>
           <h1 className="text-xl font-bold tracking-tight text-ink">Sign in to Ledrix Inspect</h1>
-          <p className="mt-1.5 text-sm text-body">Use the account you sign in with in the Ledrix app.</p>
+          {params?.get('confirmed') === '1'
+            ? <p role="status" className="mt-1.5 text-sm text-body"><b className="text-ink">Your email is confirmed.</b> Sign in to finish setting up your company.</p>
+            : <p className="mt-1.5 text-sm text-body">Use the account you sign in with in the Ledrix app.</p>}
 
           {/* Website Apple pass (2026-11-23): the fields as one group with sentence-case labels, as on the phone's sign-in. */}
           <div className="mt-6 divide-y divide-hairline overflow-hidden rounded-xl border border-hairline">
