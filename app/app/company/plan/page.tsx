@@ -94,6 +94,7 @@ function PlanBody() {
             </form>
           </Group>
         )}
+        {bill?.problem && <p className="px-3 text-xs text-muted">Billing details couldn’t be read from Stripe: {bill.problem}</p>}
         {msg && <p role="status" className="px-3 text-sm font-semibold text-[#1f8a4c]">{msg}</p>}
         {err && <p role="alert" className="px-3 text-sm text-[#b42318]">{err}</p>}
       </div>

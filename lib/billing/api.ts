@@ -28,7 +28,7 @@ async function post<T>(path: string): Promise<T> {
 
 export type BillingStatus = {
   configured: boolean; subscribed?: boolean; seats?: number; synced?: boolean; cancelAtPeriodEnd?: boolean;
-  card?: { brand: string; last4: string } | null; next?: { amount: number; date: number } | null;
+  card?: { brand: string; last4: string } | null; next?: { amount: number; date: number } | null; problem?: string;
 };
 export const loadBillingStatus = () => post<BillingStatus>('/api/billing/status');
 export const startCheckout = async () => { const { url } = await post<{ url: string }>('/api/billing/checkout'); window.location.assign(url); };
